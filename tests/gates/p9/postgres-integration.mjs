@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
-import { parseSafeTestDatabaseUrl } from '../../../scripts/p9-postgres-contract.mjs';
+import {
+  deriveRuntimeContracts,
+  parseGoJSONL,
+  parseSafeTestDatabaseUrl,
+  requiredPostgresTests,
+} from '../../../scripts/p9-postgres-contract.mjs';
 import { validateP9PostgresIntegrationClosure } from '../../../scripts/p9-postgres-integration-gate.mjs';
 
 function batchEvidence(batchId, overrides = {}) {
@@ -137,5 +142,31 @@ assertFails('runtimeSummaryHashVerified', { runtimeIntegrity: { summaryHashVerif
 assertFails('runtimeRawArtifactHashesVerified', { runtimeIntegrity: { rawArtifactHashesVerified: false } });
 assertFails('runtimeSourceManifestVerified', { runtimeIntegrity: { sourceManifestVerified: false } });
 assertFails('racePassed', { runtime: { racePassed: false } });
+
+const databaseNameHash = 'b'.repeat(64);
+const packageNames = [
+  'github.com/trademind-ai/trademind/backend/internal/modules/inventorysyncp9',
+  'github.com/trademind-ai/trademind/backend/internal/testing/integration',
+];
+const rawEvents = [
+  {
+    Action: 'output',
+    Output: `P9PG_META driver=postgresql hostCategory=local databaseNameHash=${databaseNameHash} serverVersion=16.14 (Debian 16.14-1.pgdg13+1) sqliteFallbackUsed=false schemaIsolated=true\n`,
+  },
+  ...requiredPostgresTests.map((Test) => ({ Action: 'pass', Test })),
+  ...packageNames.map((Package) => ({ Action: 'pass', Package })),
+];
+const parsedRuntime = parseGoJSONL(rawEvents.map((event) => JSON.stringify(event)).join('\n'));
+assert.deepEqual(parsedRuntime.metadata, {
+  driver: 'postgresql',
+  hostCategory: 'local',
+  databaseNameHash,
+  serverVersion: '16.14',
+  sqliteFallbackUsed: false,
+  schemaIsolated: true,
+});
+const parsedContracts = deriveRuntimeContracts(parsedRuntime, true);
+assert.equal(parsedContracts.sqliteFallbackUsed, false);
+assert.equal(parsedContracts.postgresIntegrationPassed, true);
 
 console.log(JSON.stringify({ status: 'passed', fixtureCount: fixtures.length, fixtures: fixtures.map(([id, description]) => ({ id, description })) }, null, 2));

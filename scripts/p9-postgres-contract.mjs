@@ -122,6 +122,11 @@ export function sanitizeRuntimeText(value) {
     .replace(/(password|passwd|pwd)\s*[=:]\s*[^\s,;]+/gi, '$1=[REDACTED]');
 }
 
+function normalizeServerVersion(value) {
+  const token = String(value || '').trim().split(/\s+/, 1)[0];
+  return /^\d+(?:\.\d+)*$/.test(token) ? token : 'unknown';
+}
+
 export function parseGoJSONL(text) {
   const events = [];
   const tests = new Map();
@@ -141,13 +146,13 @@ export function parseGoJSONL(text) {
     if (!event.Test && event.Package && ['pass', 'fail', 'skip'].includes(event.Action)) packages.set(event.Package, event.Action);
     const output = String(event.Output || '');
     if (output.includes('WARNING: DATA RACE')) dataRaces += 1;
-    const match = output.match(/P9PG_META driver=(\S+) hostCategory=(\S+) databaseNameHash=([a-f0-9]{64}) serverVersion=(\S+) sqliteFallbackUsed=(true|false) schemaIsolated=(true|false)/);
+    const match = output.match(/P9PG_META driver=(\S+) hostCategory=(\S+) databaseNameHash=([a-f0-9]{64}) serverVersion=(.*?) sqliteFallbackUsed=(true|false) schemaIsolated=(true|false)(?:\s|$)/);
     if (match) {
       metadata = {
         driver: match[1],
         hostCategory: match[2],
         databaseNameHash: match[3],
-        serverVersion: match[4],
+        serverVersion: normalizeServerVersion(match[4]),
         sqliteFallbackUsed: match[5] === 'true',
         schemaIsolated: match[6] === 'true',
       };

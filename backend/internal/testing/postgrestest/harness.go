@@ -17,7 +17,10 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var safeIdentifier = regexp.MustCompile(`^[a-z][a-z0-9_]{0,62}$`)
+var (
+	safeIdentifier      = regexp.MustCompile(`^[a-z][a-z0-9_]{0,62}$`)
+	safePostgresVersion = regexp.MustCompile(`^\d+(?:\.\d+)*$`)
+)
 
 type Harness struct {
 	DB               *gorm.DB
@@ -133,13 +136,9 @@ func quoteIdentifier(value string) string {
 }
 
 func safeServerVersion(raw string) string {
-	raw = strings.TrimSpace(raw)
-	parts := strings.Split(raw, ".")
-	if len(parts) == 0 {
+	fields := strings.Fields(strings.TrimSpace(raw))
+	if len(fields) == 0 || !safePostgresVersion.MatchString(fields[0]) {
 		return "unknown"
 	}
-	if len(parts) == 1 {
-		return parts[0]
-	}
-	return parts[0] + "." + parts[1]
+	return fields[0]
 }
