@@ -29,16 +29,18 @@ No database password, user password, authorization value, token, cookie, or comp
 - Stable keyset pagination without duplicate or missing rows, with cursor tenant/endpoint/filter scope protection.
 - Bearer authentication, RBAC, safe DTO/error behavior, fixture sync, audit persistence, and zero inventory mutation.
 - PostgreSQL-tagged race tests completed with no detected data races.
+- `GET /api/v1/product-skus/search` now fails closed without trusted Tenant context and enforces `products.tenant_id` for default, keyword, `productId`, ordering, and limited result windows.
+- Cross-tenant `selectedLocalSkuId` confirmation remains atomically rejected without binding, request resolution, decision history, or success audit creation.
 
 ## Runtime evidence
 
 ```text
-runtimeRunId=p9pg-20260730074632-3b1bbb38
+runtimeRunId=p9pg-20260730163956-e8f3ae37
 runtimeSummaryPath=artifacts/p9-postgres-runtime.json
-runtimeSummarySha256=bf2427b1a6e2961b19298afbf1d77784ef12333cbe465a410d96a441d77f23f6
-sourceManifestSha256=e366293850a4ffdbb22901683c79a80e77922b2acee17a31c03a588e481c7f7a
-runtimeFinishedAt=2026-07-30T07:47:32.008Z
-currentHead=80fab97663cee3a3b02c7172474190e587ad4461
+runtimeSummarySha256=7b63ab8fccb35cfbf14638bc765aafaabaee809b08f0f9dd906431b6746b6910
+sourceManifestSha256=56ed8d31edb7814dd69d4232ab6ddb98cd58c31e37a72c84bc7a1cf72ea5c6d5
+runtimeFinishedAt=2026-07-30T16:41:00.319Z
+currentHead=26818a46ee82688e7b66c19bd2bdffb4d5da0529
 racePassed=true
 dataRaces=0
 historicalGateFailureCount=0

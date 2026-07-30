@@ -6,7 +6,7 @@ Status: **passed**
 - Canonical phase name: Douyin Shop inventory sync MVP with SKU binding calibration and manual binding fallback
 - Discovery base head: 313726f310f4d76f5967ef169b9c197488f8bed4
 - Current branch: dev
-- Current head: 80fab97663cee3a3b02c7172474190e587ad4461
+- Current head: 26818a46ee82688e7b66c19bd2bdffb4d5da0529
 - Head detached: false
 - Staged files: 0
 - Canonical scope resolved: true

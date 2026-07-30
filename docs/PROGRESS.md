@@ -848,7 +848,8 @@ P9 Product Batch 3 — Completed
 P9 Product Batch 4 — Completed
 P9 Product Batch 5 — Completed
 P9 PostgreSQL Integration Baseline — Passed
-P9 Product Batch 6 — Ready to Start (Not Started)
+P9 Product Batch 6 Prerequisite Tenant-Scoped Local SKU Search — Repaired and PostgreSQL Verified
+P9 Product Batch 6 — Ready to Restart (Admin UI Not Started)
 productionReady=false
 Tag deferred
 Final Production Acceptance Deferred to P10

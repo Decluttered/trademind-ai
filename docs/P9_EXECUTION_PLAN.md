@@ -63,8 +63,9 @@ p9FinalClosureBlocker=false
 postgresIntegrationEvidence=docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md
 postgresIntegrationGateStatus=passed
 P9 Product Batch 1–5 Completed
-P9 Product Batch 6 Ready to Start
-P9 Product Batch 6 Started=false
+P9 Product Batch 6 Prerequisite Tenant-Scoped Local SKU Search Repaired=true
+P9 Product Batch 6 Ready to Restart
+P9 Product Batch 6 Admin UI Started=false
 productionReady=false
 ```
 

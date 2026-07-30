@@ -90,6 +90,10 @@ export function p9SourceFiles() {
   walk('backend/internal/testing/safeenv', (file) => file.endsWith('.go'), files);
   files.push(
     'backend/internal/testing/integration/p9_postgres_integration_test.go',
+    'backend/internal/modules/product/sku_search.go',
+    'backend/internal/modules/product/sku_search_test.go',
+    'backend/internal/modules/product/handler.go',
+    'backend/internal/modules/product/service.go',
     'backend/internal/database/migrate.go',
     'scripts/p9-postgres-contract.mjs',
     'scripts/p9-postgres-runtime.mjs',
@@ -169,6 +173,8 @@ export function parseGoJSONL(text) {
 
 export const requiredPostgresTests = [
   'TestP9PostgresAutoMigrateAgainstIsolatedDatabase',
+  'TestP9PostgresTenantScopedProductSKUSearch',
+  'TestP9PostgresManualBindingCrossTenantSelectedSKUIsolation',
   'TestP9PostgresMigrationSchemaIndexesConstraintsAndJSONB',
   'TestP9PostgresRepositoryConstraintsImmutabilityAndAtomicity',
   'TestP9PostgresIdempotencyOptimisticConcurrencyAndManualResolution',
@@ -185,6 +191,8 @@ export function deriveRuntimeContracts(parsed, commandPassed) {
   const packagesPassed = Object.keys(parsed.packages).length >= 2 && Object.values(parsed.packages).every((status) => status === 'pass');
   const allRequiredTestsPassed = requiredPostgresTests.every(passed);
   const metadata = parsed.metadata || {};
+  const skuSearchPassed = passed('TestP9PostgresTenantScopedProductSKUSearch');
+  const manualBindingCrossTenantPassed = passed('TestP9PostgresManualBindingCrossTenantSelectedSKUIsolation');
   const basePassed = commandPassed && packagesPassed && allRequiredTestsPassed && metadata.driver === 'postgresql' && metadata.sqliteFallbackUsed === false && metadata.schemaIsolated === true;
   return {
     postgresConnectionPassed: Boolean(metadata.driver === 'postgresql'),
@@ -203,7 +211,12 @@ export function deriveRuntimeContracts(parsed, commandPassed) {
     decisionHistoryImmutabilityPassed: passed('TestP9PostgresIdempotencyOptimisticConcurrencyAndManualResolution'),
     auditHistoryImmutabilityPassed: passed('TestP9PostgresIdempotencyOptimisticConcurrencyAndManualResolution'),
     repositoryTestsPassed: passed('TestP9PostgresRepositoryConstraintsImmutabilityAndAtomicity'),
-    tenantIsolationPassed: passed('TestP9PostgresRepositoryConstraintsImmutabilityAndAtomicity') && passed('TestP9PostgresAPIKeysetSafetyAndP10Boundary'),
+    skuSearchAuthenticationFailClosedPassed: skuSearchPassed,
+    skuSearchNormalTenantIsolationPassed: skuSearchPassed,
+    skuSearchProductIDTenantIsolationPassed: skuSearchPassed,
+    skuSearchLimitWindowTenantIsolationPassed: skuSearchPassed,
+    manualBindingCrossTenantSelectedSKURejected: manualBindingCrossTenantPassed,
+    tenantIsolationPassed: passed('TestP9PostgresRepositoryConstraintsImmutabilityAndAtomicity') && passed('TestP9PostgresAPIKeysetSafetyAndP10Boundary') && skuSearchPassed && manualBindingCrossTenantPassed,
     idempotencyTestsPassed: passed('TestP9PostgresIdempotencyOptimisticConcurrencyAndManualResolution') && passed('TestP9PGConcurrentDatabaseConstraintsAndIdempotency'),
     optimisticConcurrencyPassed: passed('TestP9PostgresIdempotencyOptimisticConcurrencyAndManualResolution'),
     transactionAtomicityPassed: passed('TestP9PGPageTransactionRollbackKeepsCursorAndStatistics'),
@@ -211,7 +224,7 @@ export function deriveRuntimeContracts(parsed, commandPassed) {
     keysetPaginationPassed: passed('TestP9PGKeysetPaginationNoDuplicateOmissionAndScopeProtection') && passed('TestP9PostgresAPIKeysetSafetyAndP10Boundary'),
     jsonContractPassed: passed('TestP9PostgresMigrationSchemaIndexesConstraintsAndJSONB') && passed('TestP9PGBearerAuthAndFixtureGoldenPath'),
     timestampContractPassed: passed('TestP9PGSchemaForeignKeysPartialIndexesAndTimeContract') && passed('TestP9PGKeysetPaginationNoDuplicateOmissionAndScopeProtection'),
-    postgresApiIntegrationPassed: passed('TestP9PostgresAPIKeysetSafetyAndP10Boundary') && passed('TestP9PGBearerAuthAndFixtureGoldenPath'),
+    postgresApiIntegrationPassed: passed('TestP9PostgresAPIKeysetSafetyAndP10Boundary') && passed('TestP9PGBearerAuthAndFixtureGoldenPath') && skuSearchPassed && manualBindingCrossTenantPassed,
     postgresFixtureGoldenPathPassed: passed('TestP9PGBearerAuthAndFixtureGoldenPath'),
     allRequiredTestsPassed,
     packagesPassed,

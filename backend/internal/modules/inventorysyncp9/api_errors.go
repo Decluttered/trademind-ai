@@ -32,7 +32,7 @@ func apiError(err error) apiErrorSpec {
 		return apiErrorSpec{status: http.StatusUnauthorized, code: "authentication_required", msg: "authentication required", biz: response.CodeUnauthorized}
 	case errors.Is(err, ErrValidation), pagination.ErrorCode(err) != "":
 		return apiErrorSpec{status: http.StatusBadRequest, code: ErrCodeValidation, msg: "validation error", biz: response.CodeBadRequest}
-	case errors.Is(err, ErrNotFound), errors.Is(err, ErrTenantMismatch):
+	case errors.Is(err, ErrNotFound), errors.Is(err, ErrTenantMismatch), errors.Is(err, ErrCandidateLocalSKUNotFound), errors.Is(err, ErrCandidateLocalSKUTenantMismatch):
 		return apiErrorSpec{status: http.StatusNotFound, code: ErrCodeNotFound, msg: "not found", biz: response.CodeNotFound}
 	case errors.Is(err, ErrPermissionDenied):
 		return apiErrorSpec{status: http.StatusForbidden, code: ErrCodePermissionDenied, msg: "permission denied", biz: response.CodePermissionDenied}

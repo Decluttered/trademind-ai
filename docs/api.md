@@ -102,10 +102,21 @@
 | `GET` | `/api/v1/products/:id/operation-progress` | 商品运营进度摘要；只读聚合商品、图片、SKU 与既有发布前检查，不调用平台 API、不创建任务、不修改商品。 |
 | `PUT` | `/api/v1/products/:id` | 更新商品草稿。 |
 | `DELETE` | `/api/v1/products/:id` | 删除或归档商品。 |
+| `GET` | `/api/v1/product-skus/search` | 已认证的本地 SKU 搜索；仅返回可信认证上下文所属 Tenant 的 SKU。Query 保持 `keyword`、`productId`、`limit`（默认 20、最大 50），响应保持 `data.list`。 |
 | `POST` | `/api/v1/products/:id/apply-ai-title` | 应用 AI 标题；body 支持 `aiTitle`、`taskId`、`expectedUpdatedAt`、`sourceSnapshotHash`，冲突时返回 `AI_CONTENT_APPLY_CONFLICT`，不会静默覆盖人工修改。 |
 | `POST` | `/api/v1/products/:id/undo-ai-title` | 安全撤销最近一次 AI 标题应用；若应用后字段又被人工修改，返回 `AI_CONTENT_UNDO_CONFLICT`。 |
 | `POST` | `/api/v1/products/:id/apply-ai-description` | 应用 AI 描述；body 支持 `aiDescription`、`taskId`、`expectedUpdatedAt`、`sourceSnapshotHash`，冲突时返回 `AI_CONTENT_APPLY_CONFLICT`。 |
 | `POST` | `/api/v1/products/:id/undo-ai-description` | 安全撤销最近一次 AI 描述应用；若应用后字段又被人工修改，返回 `AI_CONTENT_UNDO_CONFLICT`。 |
+
+### 本地 SKU 搜索安全合同
+
+`GET /api/v1/product-skus/search` 必须经过认证，并从可信认证上下文取得正数 `TenantID` 与有效、启用的 Tenant Membership。普通列表、关键词、`productId`、排序和 `limit` 窗口均强制按 `products.tenant_id` 隔离；缺少认证/可信 Tenant 时返回 `401 authentication_required`，Membership 无效或不匹配时返回 `403 permission_denied`，且不会执行 SKU 搜索 SQL。
+
+- `keyword` 仅搜索 SKU Code、SKU Name 和 Product Title；`productId` 只在当前 Tenant 内匹配。
+- 跨 Tenant `productId` 返回相同成功 Envelope 下的空 `list`，不泄露 Product 是否存在。
+- `tenantId`、`tenant_id` 及其他客户端 Tenant 选择字段在当前 Query 解析方式下被忽略（若未来改为严格绑定也可拒绝），绝不参与数据范围。
+- 现有 API 不包含 Barcode/Status 搜索、Count、Offset/Keyset Pagination 或分页元数据；本次安全修复不扩展这些合同。
+- 响应 DTO、字段名、字段类型、`data.list` 结构及 Request ID/Trace ID 行为保持不变。
 
 **批量 AI 文案（Phase A3.1）**
 

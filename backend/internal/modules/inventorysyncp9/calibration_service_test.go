@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 )
 
 type staticCandidateProvider struct {
@@ -247,6 +248,49 @@ func TestManualBindingServiceAuthorizationIdempotencyAndConcurrency(t *testing.T
 	require.NotNil(t, replayed.Binding)
 	_, err = service.ConfirmBinding(ctx, ConfirmManualBindingInput{Actor: ManualBindingActor{TenantID: 605, ActorID: actorID}, RequestID: request.ID, ExpectedRevision: request.Revision, SelectedLocalSKUID: uuid.New(), IdempotencyKeyHash: successKey})
 	require.ErrorIs(t, err, ErrIdempotencyPayloadConflict)
+}
+
+func TestManualBindingRejectsCrossTenantSelectedLocalSKUWithoutMutation(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+	storeA, _, _ := seedShopAndSKU(t, db, 608)
+	_, _, skuB := seedShopAndSKU(t, db, 609)
+	run := createRun(t, ctx, db, 608, storeA.ID)
+	snapshot := validSnapshot(608, run, "remote-sku-cross-tenant-1")
+	require.NoError(t, NewInventorySnapshotRepository(db).CreateBatch(ctx, 608, []InventorySnapshotItem{snapshot}))
+	stored, err := NewInventorySnapshotRepository(db).GetByRunAndExternalSKU(ctx, 608, run.ID, snapshot.ExternalSKUID)
+	require.NoError(t, err)
+	request, err := NewManualBindingRequestRepository(db).Create(ctx, &ManualBindingRequest{
+		TenantID: 608, InventorySyncRunID: run.ID, InventorySnapshotItemID: stored.ID, ShopConnectionID: storeA.ID,
+		ExternalSKUID: stored.ExternalSKUID, Status: ManualBindingStatusPending, ReasonCode: ReasonManualReviewRequired,
+		CandidateCount: 1, RequestID: "manual-cross-tenant-req-1", IdempotencyKeyHash: testHashB, InputFingerprint: testHashC, Revision: 1,
+	})
+	require.NoError(t, err)
+
+	actorID := uuid.New()
+	service := NewManualBindingService(db, testAuthorizer{allowed: true})
+	_, err = service.ConfirmBinding(ctx, ConfirmManualBindingInput{
+		Actor: ManualBindingActor{TenantID: 608, ActorID: actorID}, RequestID: request.ID,
+		CorrelationID: "trace-cross-tenant-manual", ExpectedRevision: request.Revision,
+		SelectedLocalSKUID: skuB.ID, IdempotencyKeyHash: testHashA,
+	})
+	require.ErrorIs(t, err, ErrCandidateLocalSKUTenantMismatch)
+
+	fresh, err := NewManualBindingRequestRepository(db).GetByID(ctx, 608, request.ID)
+	require.NoError(t, err)
+	require.Equal(t, ManualBindingStatusPending, fresh.Status)
+	require.Equal(t, request.Revision, fresh.Revision)
+	require.Nil(t, fresh.ResolvedAt)
+	require.Nil(t, fresh.ResolvedBy)
+	require.Nil(t, fresh.SelectedLocalSKUID)
+
+	var count int64
+	require.NoError(t, db.Model(&SKUBinding{}).Where("tenant_id = ? AND external_sku_id = ?", 608, stored.ExternalSKUID).Count(&count).Error)
+	require.Zero(t, count)
+	require.NoError(t, db.Model(&ManualBindingDecision{}).Where("tenant_id = ? AND manual_binding_request_id = ?", 608, request.ID).Count(&count).Error)
+	require.Zero(t, count)
+	require.NoError(t, db.Model(&operationlog.OperationLog{}).Where("tenant_id = ? AND action = ? AND resource_id = ?", 608, "sku_binding.manual_confirmed", request.ID.String()).Count(&count).Error)
+	require.Zero(t, count)
 }
 
 func TestManualBindingRejectPreservesCandidatesAndRequest(t *testing.T) {

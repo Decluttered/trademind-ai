@@ -1,16 +1,16 @@
 {
   "phase": "P9",
   "gate": "P9-POSTGRES-INTEGRATION",
-  "checkedAt": "2026-07-30T07:49:25.045Z",
+  "checkedAt": "2026-07-30T16:43:06.919Z",
   "status": "passed",
   "failed": [],
   "failedCount": 0,
   "currentBranch": "dev",
-  "currentHead": "80fab97663cee3a3b02c7172474190e587ad4461",
+  "currentHead": "26818a46ee82688e7b66c19bd2bdffb4d5da0529",
   "headDetached": false,
   "stagedFileCount": 0,
-  "runtimeRunId": "p9pg-20260730074632-3b1bbb38",
-  "runtimeSummarySha256": "bf2427b1a6e2961b19298afbf1d77784ef12333cbe465a410d96a441d77f23f6",
+  "runtimeRunId": "p9pg-20260730163956-e8f3ae37",
+  "runtimeSummarySha256": "7b63ab8fccb35cfbf14638bc765aafaabaee809b08f0f9dd906431b6746b6910",
   "testDatabase": {
     "driver": "postgresql",
     "purpose": "test",
@@ -37,6 +37,11 @@
     "decisionHistoryImmutabilityPassed": true,
     "auditHistoryImmutabilityPassed": true,
     "repositoryTestsPassed": true,
+    "skuSearchAuthenticationFailClosedPassed": true,
+    "skuSearchNormalTenantIsolationPassed": true,
+    "skuSearchProductIDTenantIsolationPassed": true,
+    "skuSearchLimitWindowTenantIsolationPassed": true,
+    "manualBindingCrossTenantSelectedSKURejected": true,
     "tenantIsolationPassed": true,
     "idempotencyTestsPassed": true,
     "optimisticConcurrencyPassed": true,
@@ -246,6 +251,26 @@
     },
     {
       "id": "repositoryTestsPassed",
+      "status": "passed"
+    },
+    {
+      "id": "skuSearchAuthenticationFailClosedPassed",
+      "status": "passed"
+    },
+    {
+      "id": "skuSearchNormalTenantIsolationPassed",
+      "status": "passed"
+    },
+    {
+      "id": "skuSearchProductIDTenantIsolationPassed",
+      "status": "passed"
+    },
+    {
+      "id": "skuSearchLimitWindowTenantIsolationPassed",
+      "status": "passed"
+    },
+    {
+      "id": "manualBindingCrossTenantSelectedSKURejected",
       "status": "passed"
     },
     {

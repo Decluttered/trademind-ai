@@ -48,7 +48,9 @@ const runtime = {
     schemaVerificationPassed: true, foreignKeysPresent: true, checkConstraintsPresent: true, partialUniqueIndexesPresent: true,
     snapshotUniquenessPassed: true, confirmedBindingUniquenessPassed: true, pendingManualRequestUniquenessPassed: true,
     snapshotImmutabilityPassed: true, calibrationImmutabilityPassed: true, decisionHistoryImmutabilityPassed: true, auditHistoryImmutabilityPassed: true,
-    repositoryTestsPassed: true, tenantIsolationPassed: true, idempotencyTestsPassed: true, optimisticConcurrencyPassed: true,
+    repositoryTestsPassed: true, skuSearchAuthenticationFailClosedPassed: true, skuSearchNormalTenantIsolationPassed: true,
+    skuSearchProductIDTenantIsolationPassed: true, skuSearchLimitWindowTenantIsolationPassed: true,
+    manualBindingCrossTenantSelectedSKURejected: true, tenantIsolationPassed: true, idempotencyTestsPassed: true, optimisticConcurrencyPassed: true,
     transactionAtomicityPassed: true, concurrencyTestsPassed: true, keysetPaginationPassed: true, jsonContractPassed: true,
     timestampContractPassed: true, postgresApiIntegrationPassed: true, postgresFixtureGoldenPathPassed: true,
     allRequiredTestsPassed: true, packagesPassed: true, postgresIntegrationPassed: true,
@@ -131,9 +133,14 @@ const fixtures = [
   ['PG-25', 'closure blocker remains', () => assertFails('p9FinalClosureBlocker', { evidence: { p9FinalClosureBlocker: true } })],
   ['PG-26', 'production ready incorrectly true', () => assertFails('productionReady', { evidence: { productionReady: true } })],
   ['PG-27', 'staged files present', () => assertFails('stagedFileCount', { stagedFileCount: 1 })],
+  ['PG-28', 'SKU search authentication not fail closed', () => assertFails('skuSearchAuthenticationFailClosedPassed', { runtime: { contracts: { skuSearchAuthenticationFailClosedPassed: false } } })],
+  ['PG-29', 'normal SKU search tenant isolation missing', () => assertFails('skuSearchNormalTenantIsolationPassed', { runtime: { contracts: { skuSearchNormalTenantIsolationPassed: false } } })],
+  ['PG-30', 'productId SKU search tenant isolation missing', () => assertFails('skuSearchProductIDTenantIsolationPassed', { runtime: { contracts: { skuSearchProductIDTenantIsolationPassed: false } } })],
+  ['PG-31', 'SKU limit window tenant isolation missing', () => assertFails('skuSearchLimitWindowTenantIsolationPassed', { runtime: { contracts: { skuSearchLimitWindowTenantIsolationPassed: false } } })],
+  ['PG-32', 'cross-tenant selected SKU accepted', () => assertFails('manualBindingCrossTenantSelectedSKURejected', { runtime: { contracts: { manualBindingCrossTenantSelectedSKURejected: false } } })],
 ];
-assert.equal(fixtures.length, 27);
-assert.deepEqual(fixtures.map(([id]) => id), Array.from({ length: 27 }, (_, index) => `PG-${String(index + 1).padStart(2, '0')}`));
+assert.equal(fixtures.length, 32);
+assert.deepEqual(fixtures.map(([id]) => id), Array.from({ length: 32 }, (_, index) => `PG-${String(index + 1).padStart(2, '0')}`));
 for (const [, , run] of fixtures) run();
 
 assert.equal(parseSafeTestDatabaseUrl(testDatabaseUrl, { APP_ENV: 'development' }).valid, false);

@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/trademind-ai/trademind/backend/internal/modules/admin"
 	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
+	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/ctxkey"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/model"
@@ -105,6 +106,40 @@ func TestInventorySyncAPIKeysetAndTenantIsolation(t *testing.T) {
 	rec = httptest.NewRecorder()
 	otherRouter.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/inventory-sync/runs/"+run.ID.String(), nil))
 	require.Equal(t, http.StatusNotFound, rec.Code)
+}
+
+func TestInventorySyncAPIRejectsCrossTenantSelectedLocalSKUWithoutMutation(t *testing.T) {
+	r, svc, _, shopID := newInventorySyncAPITestRouter(t, admin.RoleAdmin, 101)
+	_, _, foreignSKU := seedShopAndSKU(t, svc.DB, 202)
+	run := createRun(t, context.Background(), svc.DB, 101, shopID)
+	snapshot := validSnapshot(101, run, "remote-api-cross-tenant")
+	require.NoError(t, NewInventorySnapshotRepository(svc.DB).CreateBatch(context.Background(), 101, []InventorySnapshotItem{snapshot}))
+	stored, err := NewInventorySnapshotRepository(svc.DB).GetByRunAndExternalSKU(context.Background(), 101, run.ID, snapshot.ExternalSKUID)
+	require.NoError(t, err)
+	request, err := NewManualBindingRequestRepository(svc.DB).Create(context.Background(), &ManualBindingRequest{
+		TenantID: 101, InventorySyncRunID: run.ID, InventorySnapshotItemID: stored.ID, ShopConnectionID: shopID,
+		ExternalSKUID: stored.ExternalSKUID, Status: ManualBindingStatusPending, ReasonCode: ReasonManualReviewRequired,
+		CandidateCount: 1, RequestID: "manual-api-cross-tenant", IdempotencyKeyHash: sha256Hex("manual-api-request"), InputFingerprint: sha256Hex("manual-api-input"), Revision: 1,
+	})
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	r.ServeHTTP(recorder, p9Request(t, http.MethodPost, "/api/v1/inventory-sync/manual-binding-requests/"+request.ID.String()+"/confirm", ConfirmManualBindingRequest{ExpectedRevision: request.Revision, SelectedLocalSKUID: foreignSKU.ID}, "manual-api-confirm-key"))
+	require.Equal(t, http.StatusNotFound, recorder.Code)
+	require.Contains(t, recorder.Body.String(), ErrCodeNotFound)
+	require.NotContains(t, recorder.Body.String(), ErrCodeCandidateLocalSKUTenantMismatch)
+
+	fresh, err := NewManualBindingRequestRepository(svc.DB).GetByID(context.Background(), 101, request.ID)
+	require.NoError(t, err)
+	require.Equal(t, ManualBindingStatusPending, fresh.Status)
+	require.Equal(t, request.Revision, fresh.Revision)
+	var count int64
+	require.NoError(t, svc.DB.Model(&SKUBinding{}).Where("tenant_id = ? AND external_sku_id = ?", 101, stored.ExternalSKUID).Count(&count).Error)
+	require.Zero(t, count)
+	require.NoError(t, svc.DB.Model(&ManualBindingDecision{}).Where("tenant_id = ? AND manual_binding_request_id = ?", 101, request.ID).Count(&count).Error)
+	require.Zero(t, count)
+	require.NoError(t, svc.DB.Model(&operationlog.OperationLog{}).Where("tenant_id = ? AND action = ? AND resource_id = ?", 101, "sku_binding.manual_confirmed", request.ID.String()).Count(&count).Error)
+	require.Zero(t, count)
 }
 
 func TestInventorySyncAPIRoleAndProductionCaps(t *testing.T) {

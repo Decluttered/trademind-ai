@@ -431,6 +431,46 @@ func TestP9PostgresIdempotencyOptimisticConcurrencyAndManualResolution(t *testin
 	require.Error(t, db.Delete(&operationlog.OperationLog{}, "id = ?", audit.ID).Error)
 }
 
+func TestP9PostgresManualBindingCrossTenantSelectedSKUIsolation(t *testing.T) {
+	tenantA := p9PostgresTenantID()
+	tenantB := p9PostgresTenantID()
+	db := newP9PostgresTestDB(t)
+	ctx := context.Background()
+	storeA, _, _ := p9PostgresSeedShopAndSKU(t, db, tenantA, "manual-cross-a")
+	_, _, skuB := p9PostgresSeedShopAndSKU(t, db, tenantB, "manual-cross-b")
+	run := p9PostgresValidRun(tenantA, storeA.ID, "manual-cross")
+	createdRun, err := NewInventorySyncRunRepository(db).Create(ctx, &run)
+	require.NoError(t, err)
+	snapshot := p9PostgresValidSnapshot(tenantA, createdRun, "p9pg-manual-cross-sku", "manual-cross")
+	require.NoError(t, NewInventorySnapshotRepository(db).CreateBatch(ctx, tenantA, []InventorySnapshotItem{snapshot}))
+	stored, err := NewInventorySnapshotRepository(db).GetByRunAndExternalSKU(ctx, tenantA, createdRun.ID, snapshot.ExternalSKUID)
+	require.NoError(t, err)
+	request, err := NewManualBindingRequestRepository(db).Create(ctx, p9PostgresManualRequest(tenantA, createdRun, stored, storeA, "manual-cross"))
+	require.NoError(t, err)
+
+	actorID := uuid.New()
+	_, err = NewManualBindingService(db, p9PostgresAllowManualAuthorizer{}).ConfirmBinding(ctx, ConfirmManualBindingInput{
+		Actor: ManualBindingActor{TenantID: tenantA, ActorID: actorID}, RequestID: request.ID,
+		CorrelationID: "p9pg-manual-cross", ExpectedRevision: request.Revision,
+		SelectedLocalSKUID: skuB.ID, IdempotencyKeyHash: p9PostgresHash("manual-cross-confirm"),
+	})
+	require.ErrorIs(t, err, ErrCandidateLocalSKUTenantMismatch)
+
+	fresh, err := NewManualBindingRequestRepository(db).GetByID(ctx, tenantA, request.ID)
+	require.NoError(t, err)
+	require.Equal(t, ManualBindingStatusPending, fresh.Status)
+	require.Equal(t, request.Revision, fresh.Revision)
+	require.Nil(t, fresh.ResolvedAt)
+	require.Nil(t, fresh.SelectedLocalSKUID)
+	var count int64
+	require.NoError(t, db.Model(&SKUBinding{}).Where("tenant_id = ? AND external_sku_id = ?", tenantA, stored.ExternalSKUID).Count(&count).Error)
+	require.Zero(t, count)
+	require.NoError(t, db.Model(&ManualBindingDecision{}).Where("tenant_id = ? AND manual_binding_request_id = ?", tenantA, request.ID).Count(&count).Error)
+	require.Zero(t, count)
+	require.NoError(t, db.Model(&operationlog.OperationLog{}).Where("tenant_id = ? AND action = ? AND resource_id = ?", tenantA, "sku_binding.manual_confirmed", request.ID.String()).Count(&count).Error)
+	require.Zero(t, count)
+}
+
 func TestP9PostgresAPIKeysetSafetyAndP10Boundary(t *testing.T) {
 	tenantID := p9PostgresTenantID()
 	router, svc, actorID, shopID := newP9PostgresAPITestRouter(t, admin.RoleAdmin, tenantID)
