@@ -35,12 +35,12 @@ No database password, user password, authorization value, token, cookie, or comp
 ## Runtime evidence
 
 ```text
-runtimeRunId=p9pg-20260730163956-e8f3ae37
+runtimeRunId=p9pg-20260804120930-89396c44
 runtimeSummaryPath=artifacts/p9-postgres-runtime.json
-runtimeSummarySha256=7b63ab8fccb35cfbf14638bc765aafaabaee809b08f0f9dd906431b6746b6910
-sourceManifestSha256=56ed8d31edb7814dd69d4232ab6ddb98cd58c31e37a72c84bc7a1cf72ea5c6d5
-runtimeFinishedAt=2026-07-30T16:41:00.319Z
-currentHead=26818a46ee82688e7b66c19bd2bdffb4d5da0529
+runtimeSummarySha256=8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454
+sourceManifestSha256=b58427e39405c256386a57512a0c6431f6dbc6b9765a0798110e27f6a920c1bc
+runtimeFinishedAt=2026-08-04T12:10:34.567Z
+currentHead=05239617130a7685ee4aba54176fcf0062e531ff
 racePassed=true
 dataRaces=0
 historicalGateFailureCount=0

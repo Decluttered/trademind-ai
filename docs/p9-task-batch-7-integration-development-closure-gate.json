@@ -1,0 +1,142 @@
+{
+  "phase": "P9",
+  "gate": "P9-TASK-BATCH-7-E2E",
+  "status": "passed",
+  "checkedAt": "2026-08-04T12:21:41.881Z",
+  "failed": [],
+  "failedCount": 0,
+  "currentBranch": "dev",
+  "currentHead": "05239617130a7685ee4aba54176fcf0062e531ff",
+  "headDetached": false,
+  "stagedFileCount": 0,
+  "runtimeRunId": "p9b7-20260804122024-89396c44",
+  "runtimeSummarySha256": "8e62454ebdced2ee5e01f27669c8a7c6459d32e6db09beded9f3f2d28b477211",
+  "sourceManifestSha256": "39763934c179a9f9dc27f49b500d4cd53d388790c61766d572d41717a324c5b2",
+  "postgresRuntimeRunId": "p9pg-20260804120930-89396c44",
+  "productionReady": false,
+  "productionAcceptancePassed": false,
+  "p10BoundaryPreserved": true,
+  "integrationDefectFixes": [],
+  "checks": [
+    {
+      "id": "requiredFilesPresent",
+      "status": "passed"
+    },
+    {
+      "id": "packageScriptsPresent",
+      "status": "passed"
+    },
+    {
+      "id": "currentBranch",
+      "status": "passed"
+    },
+    {
+      "id": "headDetached",
+      "status": "passed"
+    },
+    {
+      "id": "stagedFileCount",
+      "status": "passed"
+    },
+    {
+      "id": "batchId",
+      "status": "passed"
+    },
+    {
+      "id": "status",
+      "status": "passed"
+    },
+    {
+      "id": "P9-1101 status",
+      "status": "passed"
+    },
+    {
+      "id": "P9-1102 status",
+      "status": "passed"
+    },
+    {
+      "id": "P9-1103 status",
+      "status": "passed"
+    },
+    {
+      "id": "P9-1104 status",
+      "status": "passed"
+    },
+    {
+      "id": "P9-1105 status",
+      "status": "passed"
+    },
+    {
+      "id": "formalTaskCount",
+      "status": "passed"
+    },
+    {
+      "id": "acceptanceCoverage",
+      "status": "passed"
+    },
+    {
+      "id": "runtimeBinding",
+      "status": "passed"
+    },
+    {
+      "id": "sourceManifestBinding",
+      "status": "passed"
+    },
+    {
+      "id": "postgresRuntimeBinding",
+      "status": "passed"
+    },
+    {
+      "id": "postgresContracts",
+      "status": "passed"
+    },
+    {
+      "id": "authenticatedE2E",
+      "status": "passed"
+    },
+    {
+      "id": "tenantRbacIsolation",
+      "status": "passed"
+    },
+    {
+      "id": "idempotencyAndConflict",
+      "status": "passed"
+    },
+    {
+      "id": "keysetPagination",
+      "status": "passed"
+    },
+    {
+      "id": "adminE2E",
+      "status": "passed"
+    },
+    {
+      "id": "integrationFixtures",
+      "status": "passed"
+    },
+    {
+      "id": "platformBoundaryFinalGate",
+      "status": "passed"
+    },
+    {
+      "id": "noProductCapabilityAdded",
+      "status": "passed"
+    },
+    {
+      "id": "p10BoundaryPreserved",
+      "status": "passed"
+    },
+    {
+      "id": "productionNotReady",
+      "status": "passed"
+    },
+    {
+      "id": "noRealPlatformCapability",
+      "status": "passed"
+    },
+    {
+      "id": "secretLeakFree",
+      "status": "passed"
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+import assert from 'node:assert/strict';
+import { validateP9Batch7IntegrationBundle } from '../../../scripts/p9-task-batch-7-e2e-gate.mjs';
+
+const tasks = Object.fromEntries(['P9-1101', 'P9-1102', 'P9-1103', 'P9-1104', 'P9-1105'].map((id) => [id, { status: 'completed' }]));
+const evidence = {
+  batchId: 'P9-TASK-BATCH-7',
+  status: 'completed',
+  integrationStatus: 'passed',
+  formalTaskTotal: 5,
+  formalTaskCompletedCount: 5,
+  tasks,
+  acceptanceCriteriaPassedIds: ['AC-P9-09', 'AC-P9-10', 'AC-P9-11', 'AC-P9-12', 'AC-P9-13', 'AC-P9-14', 'AC-P9-15'],
+  runtimeEvidence: { runId: 'p9b7-run', runtimeSummarySha256: '', sourceManifestSha256: 'manifest-sha' },
+  postgresRuntimeEvidence: { runId: 'pg-run' },
+  integrationDefectFixes: [],
+  p10BoundaryPreserved: true,
+  productionReady: false,
+  productionAcceptancePassed: false,
+  realDouyinProviderImplemented: false,
+  oauthImplemented: false,
+  realPlatformReadEnabled: false,
+  realPlatformWriteEnabled: false,
+  workerImplemented: false,
+  backgroundSyncWorkerImplemented: false,
+  automaticRetryWorkerImplemented: false,
+};
+const runtime = {
+  batchId: 'P9-TASK-BATCH-7',
+  runId: 'p9b7-run',
+  status: 'passed',
+  completed: true,
+  sourceManifestSha256: 'manifest-sha',
+  authenticatedPostgresE2E: true,
+  tenantIsolationPassed: true,
+  rbacMatrixPassed: true,
+  crossTenantWriteDenied: true,
+  idempotencyPassed: true,
+  revisionConflictPassed: true,
+  keysetPaginationPassed: true,
+  adminE2EPassed: true,
+  integrationFixtures: { success: true, lowConfidence: true, conflict: true, manualBinding: true, failure: true },
+  platformBoundary: { realPlatformNetworkCalls: 0, realCredentialsUsed: false, inventoryMutationCalls: 0 },
+  p10BoundaryPreserved: true,
+  productionReady: false,
+  productionAcceptancePassed: false,
+};
+const postgresRuntime = {
+  runId: 'pg-run',
+  contracts: { postgresIntegrationPassed: true, postgresFixtureGoldenPathPassed: true },
+};
+const postgresGate = { status: 'passed' };
+const batch6Gate = { status: 'passed' };
+const sources = {
+  e2e: '@p9-batch7 viewports writeGuard.allow',
+  mocks: 'success_single_page',
+  service: 'nextCursor',
+  backendIntegration: 'TestP9PGBearerAuthAndFixtureGoldenPath',
+  packageJSON: 'test:p9-task-batch-7-e2e p9:task-batch-7-e2e-gate',
+};
+const gitState = { currentBranch: 'dev', currentHead: 'abc123', headDetached: false, stagedFileCount: 0 };
+const validFiles = true;
+
+function validate(overrides = {}) {
+  return validateP9Batch7IntegrationBundle({
+    evidence: { ...evidence, ...(overrides.evidence || {}) },
+    runtime: { ...runtime, ...(overrides.runtime || {}) },
+    postgresRuntime: { ...postgresRuntime, ...(overrides.postgresRuntime || {}) },
+    postgresGate: overrides.postgresGate || postgresGate,
+    batch6Gate: overrides.batch6Gate || batch6Gate,
+    sources: { ...sources, ...(overrides.sources || {}) },
+    gitState: { ...gitState, ...(overrides.gitState || {}) },
+    requiredFilesPresent: validFiles,
+    sourceManifest: overrides.sourceManifest || { sha256: 'manifest-sha' },
+    runtimeArtifactSha: overrides.runtimeArtifactSha ?? '',
+  });
+}
+
+function expectFailed(check, overrides = {}) {
+  const result = validate(overrides);
+  assert.equal(result.status, 'failed');
+  assert.ok(result.failed.includes(check), `${check} should fail; actual failures: ${result.failed.join(', ')}`);
+}
+
+assert.equal(validate().status, 'passed');
+expectFailed('P9-1102 status', { evidence: { tasks: { ...tasks, 'P9-1102': { status: 'planned' } } } });
+expectFailed('acceptanceCoverage', { evidence: { acceptanceCriteriaPassedIds: ['AC-P9-09'] } });
+expectFailed('postgresContracts', { postgresRuntime: { contracts: { postgresIntegrationPassed: false, postgresFixtureGoldenPathPassed: true } } });
+expectFailed('authenticatedE2E', { runtime: { authenticatedPostgresE2E: false } });
+expectFailed('tenantRbacIsolation', { runtime: { rbacMatrixPassed: false } });
+expectFailed('idempotencyAndConflict', { runtime: { revisionConflictPassed: false } });
+expectFailed('keysetPagination', { sources: { service: 'nextCursor offset' } });
+expectFailed('adminE2E', { sources: { e2e: '@p9-inventory-sync viewports writeGuard.allow' } });
+expectFailed('integrationFixtures', { runtime: { integrationFixtures: { ...runtime.integrationFixtures, conflict: false } } });
+expectFailed('platformBoundaryFinalGate', { runtime: { platformBoundary: { realPlatformNetworkCalls: 1, realCredentialsUsed: false, inventoryMutationCalls: 0 } } });
+expectFailed('noProductCapabilityAdded', { evidence: { integrationDefectFixes: [{ id: 'fix' }] } });
+expectFailed('productionNotReady', { evidence: { productionReady: true }, runtime: { productionReady: true } });
+expectFailed('noRealPlatformCapability', { evidence: { realPlatformWriteEnabled: true } });
+expectFailed('stagedFileCount', { gitState: { stagedFileCount: 1 } });
+
+console.log('p9 task batch 7 e2e fixtures passed');

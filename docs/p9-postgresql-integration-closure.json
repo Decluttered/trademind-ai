@@ -4,9 +4,9 @@
   "closureType": "postgresql_integration_baseline",
   "status": "passed",
   "baseBranch": "dev",
-  "baseCheckpoint": "26818a46ee82688e7b66c19bd2bdffb4d5da0529",
+  "baseCheckpoint": "05239617130a7685ee4aba54176fcf0062e531ff",
   "currentBranch": "dev",
-  "currentHead": "26818a46ee82688e7b66c19bd2bdffb4d5da0529",
+  "currentHead": "05239617130a7685ee4aba54176fcf0062e531ff",
   "headDetached": false,
   "changesCommitted": false,
   "checkpointCreated": false,
@@ -58,7 +58,7 @@
     "status": "passed",
     "evidencePath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md",
     "gateReportPath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md",
-    "verifiedAt": "2026-07-30T16:41:00.319Z"
+    "verifiedAt": "2026-08-04T12:10:34.567Z"
   },
   "currentPostgresIntegrationStatus": "passed",
   "postgresIntegrationStatus": "passed",
@@ -76,9 +76,9 @@
         "status": "passed",
         "evidencePath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md",
         "gateReportPath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md",
-        "verifiedAt": "2026-07-30T16:41:00.319Z",
-        "runId": "p9pg-20260730163956-e8f3ae37",
-        "runtimeSummarySha256": "7b63ab8fccb35cfbf14638bc765aafaabaee809b08f0f9dd906431b6746b6910"
+        "verifiedAt": "2026-08-04T12:10:34.567Z",
+        "runId": "p9pg-20260804120930-89396c44",
+        "runtimeSummarySha256": "8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454"
       },
       "currentPostgresIntegrationStatus": "passed"
     },
@@ -92,9 +92,9 @@
         "status": "passed",
         "evidencePath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md",
         "gateReportPath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md",
-        "verifiedAt": "2026-07-30T16:41:00.319Z",
-        "runId": "p9pg-20260730163956-e8f3ae37",
-        "runtimeSummarySha256": "7b63ab8fccb35cfbf14638bc765aafaabaee809b08f0f9dd906431b6746b6910"
+        "verifiedAt": "2026-08-04T12:10:34.567Z",
+        "runId": "p9pg-20260804120930-89396c44",
+        "runtimeSummarySha256": "8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454"
       },
       "currentPostgresIntegrationStatus": "passed"
     },
@@ -108,9 +108,9 @@
         "status": "passed",
         "evidencePath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md",
         "gateReportPath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md",
-        "verifiedAt": "2026-07-30T16:41:00.319Z",
-        "runId": "p9pg-20260730163956-e8f3ae37",
-        "runtimeSummarySha256": "7b63ab8fccb35cfbf14638bc765aafaabaee809b08f0f9dd906431b6746b6910"
+        "verifiedAt": "2026-08-04T12:10:34.567Z",
+        "runId": "p9pg-20260804120930-89396c44",
+        "runtimeSummarySha256": "8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454"
       },
       "currentPostgresIntegrationStatus": "passed"
     },
@@ -124,9 +124,9 @@
         "status": "passed",
         "evidencePath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md",
         "gateReportPath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md",
-        "verifiedAt": "2026-07-30T16:41:00.319Z",
-        "runId": "p9pg-20260730163956-e8f3ae37",
-        "runtimeSummarySha256": "7b63ab8fccb35cfbf14638bc765aafaabaee809b08f0f9dd906431b6746b6910"
+        "verifiedAt": "2026-08-04T12:10:34.567Z",
+        "runId": "p9pg-20260804120930-89396c44",
+        "runtimeSummarySha256": "8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454"
       },
       "currentPostgresIntegrationStatus": "passed"
     },
@@ -140,9 +140,9 @@
         "status": "passed",
         "evidencePath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md",
         "gateReportPath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md",
-        "verifiedAt": "2026-07-30T16:41:00.319Z",
-        "runId": "p9pg-20260730163956-e8f3ae37",
-        "runtimeSummarySha256": "7b63ab8fccb35cfbf14638bc765aafaabaee809b08f0f9dd906431b6746b6910"
+        "verifiedAt": "2026-08-04T12:10:34.567Z",
+        "runId": "p9pg-20260804120930-89396c44",
+        "runtimeSummarySha256": "8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454"
       },
       "currentPostgresIntegrationStatus": "passed"
     }
@@ -159,14 +159,14 @@
   "p10BoundaryPreserved": true,
   "batch6ReadyToStart": true,
   "p9Complete": false,
-  "verifiedAt": "2026-07-30T16:41:00.319Z",
+  "verifiedAt": "2026-08-04T12:10:34.567Z",
   "historicalGateFailureCount": 0,
   "runtimeEvidence": {
-    "runId": "p9pg-20260730163956-e8f3ae37",
+    "runId": "p9pg-20260804120930-89396c44",
     "summaryPath": "artifacts/p9-postgres-runtime.json",
-    "runtimeSummarySha256": "7b63ab8fccb35cfbf14638bc765aafaabaee809b08f0f9dd906431b6746b6910",
-    "sourceManifestSha256": "56ed8d31edb7814dd69d4232ab6ddb98cd58c31e37a72c84bc7a1cf72ea5c6d5",
-    "finishedAt": "2026-07-30T16:41:00.319Z"
+    "runtimeSummarySha256": "8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454",
+    "sourceManifestSha256": "b58427e39405c256386a57512a0c6431f6dbc6b9765a0798110e27f6a920c1bc",
+    "finishedAt": "2026-08-04T12:10:34.567Z"
   },
   "qualityBackendStatus": "blocked_by_existing_baseline",
   "qualityBackendExitCode": 1,

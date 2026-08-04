@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 1,
+  "phase": "P9",
+  "closureType": "final_development_closure",
+  "status": "passed",
+  "developmentClosureStatus": "passed",
+  "currentBranch": "dev",
+  "currentHead": "05239617130a7685ee4aba54176fcf0062e531ff",
+  "stagedFileCount": 0,
+  "changesCommitted": false,
+  "checkpointCreated": false,
+  "productTaskTotal": 38,
+  "productCompletedTaskCount": 38,
+  "formalTaskTotal": 38,
+  "formalTaskCompletedCount": 38,
+  "acceptanceCriteriaTotal": 15,
+  "acceptanceCriteriaPassedCount": 15,
+  "acceptanceCriteriaPassedIds": [
+    "AC-P9-01",
+    "AC-P9-02",
+    "AC-P9-03",
+    "AC-P9-04",
+    "AC-P9-05",
+    "AC-P9-06",
+    "AC-P9-07",
+    "AC-P9-08",
+    "AC-P9-09",
+    "AC-P9-10",
+    "AC-P9-11",
+    "AC-P9-12",
+    "AC-P9-13",
+    "AC-P9-14",
+    "AC-P9-15"
+  ],
+  "batch7Completed": true,
+  "batch7GatePassed": true,
+  "batch7RuntimeRunId": "p9b7-20260804122024-89396c44",
+  "batch7RuntimeSummarySha256": "8e62454ebdced2ee5e01f27669c8a7c6459d32e6db09beded9f3f2d28b477211",
+  "postgresIntegrationPassed": true,
+  "postgresRuntimeRunId": "p9pg-20260804120930-89396c44",
+  "postgresRuntimeSummarySha256": "8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454",
+  "adminE2EPassed": true,
+  "adminResponsiveE2EPassed": true,
+  "adminE2ESelector": "@p9-batch7",
+  "platformBoundary": {
+    "realPlatformNetworkCalls": 0,
+    "realCredentialsUsed": false,
+    "inventoryMutationCalls": 0
+  },
+  "validationCommands": [
+    {
+      "command": "pnpm test:p9-entry",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:entry-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-plan",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:plan-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-task-batch-1-scope",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:task-batch-1-scope-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-task-batch-1-domain-persistence",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:task-batch-1-domain-persistence-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-task-batch-2-sku-calibration",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:task-batch-2-sku-calibration-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-task-batch-3-sync-orchestration",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:task-batch-3-sync-orchestration-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-task-batch-4-permissions-audit-safety",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:task-batch-4-permissions-audit-safety-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-task-batch-5-backend-apis",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:task-batch-5-backend-apis-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:postgres-test-db:ensure",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-postgres-gate-fixtures",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-postgres-integration",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:postgres-integration-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-task-batch-6",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:task-batch-6-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-task-batch-7-e2e",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:task-batch-7-e2e-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-final-development-closure",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm p9:final-development-closure-gate",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:frontend",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:contracts",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm build:admin",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm check:ui-copy --strict",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm --filter @trademind/admin exec playwright test --config ../playwright.config.ts --grep '@p9-batch7'",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm --filter @trademind/admin exec playwright test --config ../playwright.config.ts --grep '@smoke'",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm quality:admin",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm quality:sensitive",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm check:dev",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:backend",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:affected",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm build:collector",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:collector",
+      "status": "passed"
+    },
+    {
+      "command": "cd backend; go test -count=1 ./...",
+      "status": "passed"
+    },
+    {
+      "command": "cd backend; go build ./cmd/server/... ./cmd/p7load ./cmd/p7verify",
+      "status": "passed"
+    },
+    {
+      "command": "cd backend; go vet ./...",
+      "status": "passed"
+    },
+    {
+      "command": "cd backend; go test -race -count=1 ./internal/modules/product/... ./internal/modules/inventorysyncp9/... ./internal/pkg/adminperm/...",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm architecture:check",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm architecture:affected",
+      "status": "blocked_by_existing_test_baseline",
+      "exitCode": 1,
+      "firstRootCause": "vitest architecture.test.ts invalid token loader baseline"
+    },
+    {
+      "command": "pnpm quality:backend",
+      "status": "blocked_by_existing_gofmt_baseline",
+      "exitCode": 1,
+      "firstRootCause": "repository-wide pre-existing gofmt debt, 446 unformatted files reported"
+    },
+    {
+      "command": "pnpm quality:affected",
+      "status": "blocked_by_existing_quality_backend_baseline",
+      "exitCode": 1,
+      "firstRootCause": "delegates to quality:backend and stops on existing gofmt baseline"
+    },
+    {
+      "command": "pnpm --filter @trademind/admin exec playwright test --config ../playwright.config.ts --grep @p9-batch7",
+      "status": "initial_failed_then_rerun_passed",
+      "exitCode": 1,
+      "firstRootCause": "cold Umi/MFSU dev-server bundling timeout at 375px; quoted rerun passed 7/7"
+    },
+    {
+      "command": "pnpm --filter @trademind/admin exec playwright test --config ../playwright.config.ts --grep @smoke",
+      "status": "invocation_error_then_quoted_rerun_passed",
+      "exitCode": 1,
+      "firstRootCause": "PowerShell parsed unquoted @smoke; quoted rerun passed 6/6"
+    }
+  ],
+  "integrationDefectFixes": [],
+  "p10BoundaryPreserved": true,
+  "p9Complete": true,
+  "developmentClosurePassed": true,
+  "productionReady": false,
+  "productionAcceptancePassed": false,
+  "realDouyinProviderImplemented": false,
+  "oauthImplemented": false,
+  "realPlatformReadEnabled": false,
+  "realPlatformWriteEnabled": false,
+  "inventoryMutationEnabled": false,
+  "workerImplemented": false,
+  "backgroundSyncWorkerImplemented": false,
+  "automaticRetryWorkerImplemented": false,
+  "productionTagCreated": false,
+  "releaseCreated": false,
+  "p10ReservedCapabilities": [
+    "real Douyin provider",
+    "OAuth and credentials",
+    "real platform inventory read/write",
+    "background worker and automatic retry",
+    "publish/listing automation",
+    "production tag/release/acceptance"
+  ],
+  "verifiedAt": "2026-08-04T12:32:24.173Z",
+  "qualityBackendStatus": "blocked_by_existing_gofmt_baseline",
+  "architectureAffectedStatus": "blocked_by_existing_test_baseline",
+  "qualityAffectedStatus": "blocked_by_existing_quality_backend_baseline",
+  "directArchitectureCheckPassed": true,
+  "newArchitectureViolationCount": 0,
+  "sensitiveScanFindings": 0,
+  "playwrightBatch7Status": "passed_after_cold_compile_rerun",
+  "playwrightSmokeStatus": "passed_after_quoted_rerun"
+}
