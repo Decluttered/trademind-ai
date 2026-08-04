@@ -45,4 +45,3 @@ Status: **passed**
 - PASS `productionNotReady`
 - PASS `noRealPlatformCapability`
 - PASS `secretLeakFree`
-
