@@ -1,0 +1,9 @@
+# P10 Risk Register
+
+Status: **Draft / Awaiting Owner Approval**
+
+The register tracks OAuth and credential leakage, refresh failure, Provider API drift and rate limiting, cross-tenant exposure, wrong SKU binding, wrong or duplicate inventory writes, retry storms, database and migration failure, rollback failure, performance collapse, monitoring failure, operator error, excessive gray scope, and repository-baseline masking.
+
+All 18 risks are production-blocking until their planned controls and evidence are accepted. No risk is accepted by this planning pack.
+
+The authoritative risks, impacts, and mitigations are in [`p10-risk-register.json`](p10-risk-register.json).

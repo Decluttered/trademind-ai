@@ -863,3 +863,41 @@ Final Production Acceptance Deferred to P10
 ```
 
 权威运行证据：`artifacts/p9-postgres-runtime.json`（run `p9pg-20260730074632-3b1bbb38`）。PostgreSQL 专项测试 fail-closed，不回退 SQLite；本轮未实现 Admin UI、真实 Provider、OAuth、后台 Worker 或库存写入。
+
+## P9 Current-HEAD Reclosure and P10 Planning Pack (2026-08-08)
+
+```text
+P8=Development Complete
+P9=Development Complete
+P9 Current Closure=Valid
+P9 to P10 Transition=Passed
+P10 Planning Pack=Prepared
+P10 Owner Review=Pending
+P10 Implementation=Not Started
+Production Ready=No
+```
+
+P9 was reclosed against current HEAD `c3e06988c128ca72b308d093729fdc304eba49fa` and protected-source manifest `0d37268513e6520a333d233cf2fba61ee510a73c60bf0f2917401404e1903e24`. PostgreSQL runtime `p9pg-20260808090639-b80bf4f2`, Batch 7 runtime `p9b7-20260808090929-9da721eb`, the final development closure, and the P9-to-P10 Transition Gate passed. Formal tasks remain 38/38 and acceptance criteria 15/15.
+
+The P10 Planning Pack is prepared for owner review with 15 decisions still `pending_owner_approval`. It includes the L0-L3 production boundary, 11 draft workstreams, 28 draft acceptance criteria, 18 risks, P7 dedicated-host performance closure, PostgreSQL backup/PITR/restore and rollback planning, five kill switches, security verification, observability, runbooks, and G0-G4 gray planning. Repository baseline disposition remains pending owner approval.
+
+No real Douyin Provider, OAuth, real credentials, real platform network, real inventory read/write, inventory mutation, Worker, automatic retry, gray release, Tag, Release, or Production Ready capability was approved or enabled. Next action: Owner Review of the 15 P10 decisions.
+
+## P10 Owner Decisions and Execution Plan Finalization (2026-08-08)
+
+```text
+P8=Development Complete
+P9=Development Complete
+P10 Owner Decisions=Approved 15/15
+P10 Execution Plan=Finalized
+P10 Acceptance Criteria=Finalized 28
+P10 Batch 1=Ready to Start
+P10 Implementation=Not Started
+Production Ready=No
+```
+
+The Owner approved all 15 decisions for gated P10 implementation planning. The approved first-release path is a real Douyin Provider through the existing `InventoryProviderPort`, read-only first, in an independent pre-production environment and then one allowlisted production shop limited to one tenant and at most 100 SKUs. Current runtime remains L0: no real credentials, network, inventory read/write, mutation, Worker, automatic business retry, or gray is enabled.
+
+The formal plan contains 11 workstreams and nine ordered batches. W1 is completed; W2-W10 are not started. W11 controlled inventory write is `conditional=true`, `deferred_pending_separate_owner_approval`, and not required for initial Production Ready. Recovery targets are RPO <=15 minutes and RTO <=60 minutes. Dedicated-host performance evidence requires at least three repeat runs and frozen SLOs before G1. Repository baseline Option B is approved: repair the architecture loader before final acceptance, ratchet new/growing violations, and retain the 446 historical unformatted Go files as registered non-blocking technical debt.
+
+Gray requires both Owner and Technical Lead approval. Final Production Ready approval belongs to the Owner after technical, operations/security, and final-gate sign-off. No commit, push, Tag, or Release was created. Next action: **P10 Batch 1 - Pre-production Foundation**.

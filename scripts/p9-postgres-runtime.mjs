@@ -89,7 +89,7 @@ function updatePostgresClosureEvidence(summary) {
   if (previous.reclosure?.runtimeRunId && previous.reclosure.runtimeRunId !== summary.runId) previousRuns.push(previous.reclosure);
   const reclosure = {
     status: 'passed',
-    reason: 'protected_p9_scope_changed_after_previous_closure',
+    reason: 'p9_runtime_and_gate_semantics_changed',
     head: summary.git.endHead,
     runtimeRunId: summary.runId,
     runtimeSummarySha256,

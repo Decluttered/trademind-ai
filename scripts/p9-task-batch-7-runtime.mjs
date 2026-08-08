@@ -314,7 +314,7 @@ const evidence = {
     ...(previousEvidence.reclosureAttempts || []),
     ...(previousEvidence.currentHeadReclosure?.runtimeRunId && previousEvidence.currentHeadReclosure.runtimeRunId !== runId ? [previousEvidence.currentHeadReclosure] : []),
   ],
-  currentHeadReclosure: { status: completed ? 'passed' : 'failed', reason: 'protected_p9_scope_changed_after_previous_closure', head, runtimeRunId: runId, runtimeSummarySha256, sourceManifestSha256: sourceAfter.sha256, protectedSourceManifestSha256: protectedSourceFreeze.sha256, e2eArtifactSha256, initialColdStartAttempt: runtime.initialColdStartAttempt, finalAuthenticatedE2EResult: runtime.finalAuthenticatedE2EResult, verifiedAt: finishedAt },
+  currentHeadReclosure: { status: completed ? 'passed' : 'failed', reason: 'p9_runtime_and_gate_semantics_changed', head, runtimeRunId: runId, runtimeSummarySha256, sourceManifestSha256: sourceAfter.sha256, protectedSourceManifestSha256: protectedSourceFreeze.sha256, e2eArtifactSha256, initialColdStartAttempt: runtime.initialColdStartAttempt, finalAuthenticatedE2EResult: runtime.finalAuthenticatedE2EResult, verifiedAt: finishedAt },
   authenticatedPostgresE2E: runtime.authenticatedPostgresE2E,
   adminE2EPassed,
   runtimeEvidence: { runId, summaryPath: P9_BATCH_7_RUNTIME_JSON, runtimeSummarySha256, runtimeHead: head, runtimeHeadMatchesCurrentHead: true, sourceManifestSha256: sourceAfter.sha256, sourceManifestHead: head, sourceManifestHeadMatchesCurrentHead: true, protectedSourceManifestSha256: protectedSourceFreeze.sha256, runtimeJsonlSha256, e2eArtifactSha256, raceArtifactSha256, finishedAt },

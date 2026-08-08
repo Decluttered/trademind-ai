@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "phase": "P10",
+  "planStatus": "draft_pending_owner_approval",
+  "p10ImplementationStarted": false,
+  "workstreams": [
+    {"workstreamId": "P10-W1", "name": "Owner Decision and Production Boundary", "status": "blocked_pending_owner_approval", "deliverables": ["15 approved owner decisions", "approved production boundary", "named approvers"]},
+    {"workstreamId": "P10-W2", "name": "Pre-production Environment", "status": "not_started", "deliverables": ["independent environment", "isolated data and network", "deployment and recovery evidence"]},
+    {"workstreamId": "P10-W3", "name": "OAuth and Credential Security", "status": "not_started", "deliverables": ["encrypted storage", "rotation", "revocation", "audit", "backend-only exposure"]},
+    {"workstreamId": "P10-W4", "name": "Real Douyin Provider Read-only Adapter", "status": "not_started", "deliverables": ["bounded client", "authentication", "timeout and rate-limit behavior", "safe error mapping"]},
+    {"workstreamId": "P10-W5", "name": "Real Platform Read Integration", "status": "not_started", "deliverables": ["tenant and shop allowlist", "golden read path", "snapshot comparison", "unauthorized write prevention"]},
+    {"workstreamId": "P10-W6", "name": "Read-only Gray Release", "status": "not_started", "deliverables": ["G0-G2 evidence", "observation windows", "metrics", "Go/No-Go records"]},
+    {"workstreamId": "P10-W7", "name": "Backup, Restore, Rollback and Kill Switch", "status": "not_started", "deliverables": ["backup and PITR", "restore drill", "deployment rollback", "migration recovery", "kill-switch drills"]},
+    {"workstreamId": "P10-W8", "name": "Security Hardening", "status": "not_started", "deliverables": ["threat review", "secret and static scans", "dependency and container scans", "adversarial test"]},
+    {"workstreamId": "P10-W9", "name": "Capacity, Performance and Observability", "status": "not_started", "deliverables": ["dedicated-host P7 closure", "capacity thresholds", "long-running stability", "dashboards and alerts"]},
+    {"workstreamId": "P10-W10", "name": "Final Production Acceptance", "status": "not_started", "deliverables": ["release integrity", "production checklist", "owner Go/No-Go", "final acceptance record"]},
+    {"workstreamId": "P10-W11", "name": "Conditional Controlled Inventory Write", "status": "blocked_pending_owner_approval", "conditional": true, "deliverables": ["explicit D04/D05 approval", "per-operation confirmation", "idempotent write path", "write incident drill"]}
+  ],
+  "performanceClosurePlan": {
+    "status": "open_blocking_for_production",
+    "sourceEvidence": [
+      "docs/p7-conditional-development-closure-and-engineering-waiver.json",
+      "docs/p7-v2-r3b-host-isolation-validation-final-gate.json",
+      "docs/p7-v2-r3b-host-isolation-validation-cleanup-summary.json"
+    ],
+    "historicalFacts": {
+      "validationMatrixId": "p7v2-diag-host-isolation-v3-validation-20260720054828",
+      "order": "B-C-C-B",
+      "completedRunCount": 2,
+      "expectedRunCount": 4,
+      "stoppedAt": "C2 dataset post-build barrier before measurement",
+      "failedCount": 8,
+      "validForFormalPlan": false,
+      "capacityAcceptanceStatus": "deferred_to_p10"
+    },
+    "requiredEvidence": [
+      "Exclusive Linux benchmark host",
+      "Fresh fixed B1-C1-C2-B2 validation matrix",
+      "Repeatable formal baseline/current pair",
+      "P50, P95, and P99 latency",
+      "Throughput and concurrency",
+      "Error rate",
+      "CPU and memory",
+      "Database connections",
+      "Provider rate-limit behavior",
+      "At least 30 minutes of long-running stability",
+      "Soak, demo x2, stability, race, and cleanup"
+    ],
+    "ownerThresholdDecision": "pending_owner_approval",
+    "historicalWaiverIsProductionAcceptance": false
+  },
+  "rollbackPlan": {
+    "postgresqlBackup": true,
+    "pointInTimeRecovery": true,
+    "restoreDrill": true,
+    "deploymentRollback": true,
+    "migrationRecovery": true,
+    "credentialRevocation": true,
+    "rpoRtoStatus": "pending_owner_approval"
+  },
+  "killSwitches": ["provider", "tenant", "shop", "read", "write"],
+  "securityPlan": {
+    "threats": ["OAuth", "tenant isolation", "SSRF", "injection", "authorization bypass", "privilege escalation", "replay", "idempotency abuse", "credential leakage", "audit tampering", "supply chain", "dependency vulnerabilities", "container security"],
+    "verification": ["secret scan", "SAST", "dependency scan", "container scan", "runtime permission review", "adversarial and penetration testing"]
+  },
+  "observabilityPlan": {
+    "metrics": ["provider latency", "HTTP 429", "HTTP 5xx", "OAuth expiry", "refresh failure", "inventory sync failure", "binding backlog", "database saturation", "CPU and memory", "security denial events"],
+    "alertingRequired": true,
+    "traceAndAuditCorrelationRequired": true
+  },
+  "runbooks": ["provider outage", "OAuth expired", "OAuth revoked", "credential leak", "rate limit exhausted", "partial sync", "duplicate sync", "binding conflict", "database failure", "rollback", "cross-tenant incident", "write incident conditional on write approval"],
+  "grayPlan": [
+    {"stage": "G0", "name": "Pre-production", "conditional": false, "required": ["entry criteria", "exit criteria", "observation window", "metrics", "rollback trigger", "kill switch", "required approver"]},
+    {"stage": "G1", "name": "One Tenant / One Shop / Read-only", "conditional": false, "required": ["entry criteria", "exit criteria", "observation window", "metrics", "rollback trigger", "kill switch", "required approver"]},
+    {"stage": "G2", "name": "Expanded Read-only", "conditional": false, "required": ["entry criteria", "exit criteria", "observation window", "metrics", "rollback trigger", "kill switch", "required approver"]},
+    {"stage": "G3", "name": "Controlled Write", "conditional": true, "required": ["entry criteria", "exit criteria", "observation window", "metrics", "rollback trigger", "kill switch", "required approver"]},
+    {"stage": "G4", "name": "Final Production Acceptance", "conditional": false, "required": ["entry criteria", "exit criteria", "observation window", "metrics", "rollback trigger", "kill switch", "required approver"]}
+  ],
+  "repositoryBaseline": {
+    "disposition": "pending_owner_approval",
+    "knownItems": [
+      "architecture:affected historical Vitest loader Invalid or unexpected token baseline",
+      "quality:backend 446 historical unformatted Go files",
+      "quality:affected historical baseline cascade"
+    ],
+    "options": [
+      "A: clear all before the Production Gate",
+      "B: repair the tooling blocker and apply a formal owner waiver only to unrelated historical formatting",
+      "C: defer all with explicit production risk acceptance"
+    ],
+    "silentlyWaived": false
+  },
+  "productionReady": false,
+  "productionAcceptancePassed": false
+}

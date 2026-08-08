@@ -6,7 +6,7 @@
   "status": "completed",
   "integrationStatus": "passed",
   "currentBranch": "dev",
-  "currentHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+  "currentHead": "c3e06988c128ca72b308d093729fdc304eba49fa",
   "changesCommitted": false,
   "stagedFileCount": 0,
   "formalTaskTotal": 5,
@@ -55,26 +55,26 @@
     "inventoryMutationCalls": 0
   },
   "runtimeEvidence": {
-    "runId": "p9b7-20260808080032-584819ba",
+    "runId": "p9b7-20260808090929-9da721eb",
     "summaryPath": "artifacts/p9-batch7-runtime.json",
-    "runtimeSummarySha256": "0b5a7ece01e8e8649629b3e5f24f1df48668b31792c56c72bf1ca98ab39e72eb",
-    "runtimeHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+    "runtimeSummarySha256": "ba68af890c1d4066f9f486df310db321bf513cb5e116b0d756e977a3d0c2fa20",
+    "runtimeHead": "c3e06988c128ca72b308d093729fdc304eba49fa",
     "runtimeHeadMatchesCurrentHead": true,
-    "sourceManifestSha256": "5fce794690fad3e86074b7e6c980a1a81ae00755728a73a8254f2aefed202444",
-    "sourceManifestHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+    "sourceManifestSha256": "0180ce866bb804cf5278126349b7817bcf9ead1814385716822430ccd0ed4a69",
+    "sourceManifestHead": "c3e06988c128ca72b308d093729fdc304eba49fa",
     "sourceManifestHeadMatchesCurrentHead": true,
-    "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
-    "runtimeJsonlSha256": "a472c016a1199de0880d24d76bfcd9d015854d7cc6634de8d8d1f0d489944d5c",
-    "e2eArtifactSha256": "edf0bf4139ec12b80788995f02e46140def0d94c773571655edb1a6a1294f925",
-    "raceArtifactSha256": "6a24a4e75a2b2ef2800260dc93094d23fc4cd339a502b0bb6456959a4a574295",
-    "finishedAt": "2026-08-08T08:01:07.070Z"
+    "protectedSourceManifestSha256": "0d37268513e6520a333d233cf2fba61ee510a73c60bf0f2917401404e1903e24",
+    "runtimeJsonlSha256": "9e3799b31fb0d995dab4001ea4bdecbe81815d269d7eb33514877f1d61019695",
+    "e2eArtifactSha256": "c96672a00ee204df34f876558af213869d2091bc40e3eac63f78a39b94cac266",
+    "raceArtifactSha256": "2ddf6f204d166665168acbe1c4a63da485f85859a8557ad7582299291d0cad27",
+    "finishedAt": "2026-08-08T09:10:03.431Z"
   },
   "postgresRuntimeEvidence": {
-    "runId": "p9pg-20260808075913-92f38005",
+    "runId": "p9pg-20260808090639-b80bf4f2",
     "summaryPath": "artifacts/p9-postgres-runtime.json",
-    "runtimeSummarySha256": "c35e7a87c38570038b8f3423d6c1aa7e3589df567ee09d55c05a765433c45e59",
-    "runtimeHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
-    "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+    "runtimeSummarySha256": "4b490bc1fecacdcaa4116b7ef6f5f86a6d67b6c03b3edf0a29875f5d6072481d",
+    "runtimeHead": "c3e06988c128ca72b308d093729fdc304eba49fa",
+    "protectedSourceManifestSha256": "0d37268513e6520a333d233cf2fba61ee510a73c60bf0f2917401404e1903e24",
     "gateReportPath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md"
   },
   "integrationDefectFixes": [],
@@ -89,7 +89,7 @@
   "automaticRetryWorkerImplemented": false,
   "p10BoundaryPreserved": true,
   "p9Complete": false,
-  "verifiedAt": "2026-08-08T08:01:07.070Z",
+  "verifiedAt": "2026-08-08T09:10:03.431Z",
   "initialClosure": {
     "status": "passed",
     "head": "05239617130a7685ee4aba54176fcf0062e531ff",
@@ -100,16 +100,16 @@
   },
   "currentHeadReclosure": {
     "status": "passed",
-    "reason": "protected_p9_scope_changed_after_previous_closure",
-    "head": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
-    "runtimeRunId": "p9b7-20260808080032-584819ba",
-    "runtimeSummarySha256": "0b5a7ece01e8e8649629b3e5f24f1df48668b31792c56c72bf1ca98ab39e72eb",
-    "sourceManifestSha256": "5fce794690fad3e86074b7e6c980a1a81ae00755728a73a8254f2aefed202444",
-    "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
-    "e2eArtifactSha256": "edf0bf4139ec12b80788995f02e46140def0d94c773571655edb1a6a1294f925",
+    "reason": "p9_runtime_and_gate_semantics_changed",
+    "head": "c3e06988c128ca72b308d093729fdc304eba49fa",
+    "runtimeRunId": "p9b7-20260808090929-9da721eb",
+    "runtimeSummarySha256": "ba68af890c1d4066f9f486df310db321bf513cb5e116b0d756e977a3d0c2fa20",
+    "sourceManifestSha256": "0180ce866bb804cf5278126349b7817bcf9ead1814385716822430ccd0ed4a69",
+    "protectedSourceManifestSha256": "0d37268513e6520a333d233cf2fba61ee510a73c60bf0f2917401404e1903e24",
+    "e2eArtifactSha256": "c96672a00ee204df34f876558af213869d2091bc40e3eac63f78a39b94cac266",
     "initialColdStartAttempt": "not_applicable",
     "finalAuthenticatedE2EResult": "passed",
-    "verifiedAt": "2026-08-08T08:01:07.070Z"
+    "verifiedAt": "2026-08-08T09:10:03.431Z"
   },
   "reclosureAttempts": [
     {
@@ -180,6 +180,19 @@
       "initialColdStartAttempt": "failed",
       "finalAuthenticatedE2EResult": "passed",
       "verifiedAt": "2026-08-08T07:54:11.391Z"
+    },
+    {
+      "status": "passed",
+      "reason": "protected_p9_scope_changed_after_previous_closure",
+      "head": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+      "runtimeRunId": "p9b7-20260808080032-584819ba",
+      "runtimeSummarySha256": "0b5a7ece01e8e8649629b3e5f24f1df48668b31792c56c72bf1ca98ab39e72eb",
+      "sourceManifestSha256": "5fce794690fad3e86074b7e6c980a1a81ae00755728a73a8254f2aefed202444",
+      "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+      "e2eArtifactSha256": "edf0bf4139ec12b80788995f02e46140def0d94c773571655edb1a6a1294f925",
+      "initialColdStartAttempt": "not_applicable",
+      "finalAuthenticatedE2EResult": "passed",
+      "verifiedAt": "2026-08-08T08:01:07.070Z"
     }
   ]
 }

@@ -6,8 +6,8 @@ This evidence validates whether the P9 development closure can be reused by the 
 
 ```text
 transition=P9_TO_P10
-p9ClosureHead=912a8af2eb97361c66acfd3f7df8ebb33e8c355c
-currentHead=912a8af2eb97361c66acfd3f7df8ebb33e8c355c
+p9ClosureHead=c3e06988c128ca72b308d093729fdc304eba49fa
+currentHead=c3e06988c128ca72b308d093729fdc304eba49fa
 p9ClosureHeadIsAncestor=true
 historicalClosureVerified=true
 closureIntegrityValid=true

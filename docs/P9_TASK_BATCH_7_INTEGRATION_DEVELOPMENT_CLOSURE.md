@@ -10,9 +10,9 @@ batch7Completed=true
 formalTaskTotal=5
 formalTaskCompletedCount=5
 integrationStatus=passed
-currentHead=912a8af2eb97361c66acfd3f7df8ebb33e8c355c
-postgresRuntimeRunId=p9pg-20260808075913-92f38005
-batch7RuntimeRunId=p9b7-20260808080032-584819ba
+currentHead=c3e06988c128ca72b308d093729fdc304eba49fa
+postgresRuntimeRunId=p9pg-20260808090639-b80bf4f2
+batch7RuntimeRunId=p9b7-20260808090929-9da721eb
 batch7RuntimeHeadMatchesCurrentHead=true
 batch7SourceManifestHeadMatchesCurrentHead=true
 adminE2ESelector=@p9-batch7
@@ -46,7 +46,7 @@ p9Complete=false
 
 ## Reclosure History
 
-The initial closure remains recorded as run `p9b7-20260804122024-89396c44` on HEAD `05239617130a7685ee4aba54176fcf0062e531ff`. The current authoritative reclosure is run `p9b7-20260808080032-584819ba` on HEAD `912a8af2eb97361c66acfd3f7df8ebb33e8c355c`; the historical run is not represented as current-HEAD evidence.
+The initial closure remains recorded as run `p9b7-20260804122024-89396c44` on HEAD `05239617130a7685ee4aba54176fcf0062e531ff`. The current authoritative reclosure is run `p9b7-20260808090929-9da721eb` on HEAD `c3e06988c128ca72b308d093729fdc304eba49fa`; the historical run is not represented as current-HEAD evidence.
 
 ## Boundary
 

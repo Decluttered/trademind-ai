@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "phase": "P10",
+  "ownerDecisionStatus": "approved",
+  "ownerDecisionCount": 15,
+  "ownerApprovedDecisionCount": 15,
+  "ownerApprovalPending": false,
+  "p10OwnerDecisionApproved": true,
+  "approvalMeaning": "approved_for_p10_implementation_planning_not_runtime_enablement",
+  "decisions": [
+    {"decisionId":"D01","status":"approved","ownerApproved":true,"decision":"Real Douyin Provider may be implemented in P10 through the existing InventoryProviderPort; it is currently disabled."},
+    {"decisionId":"D02","status":"approved","ownerApproved":true,"decision":"The first real Provider stage is strictly read-only."},
+    {"decisionId":"D03","status":"approved","ownerApproved":true,"decision":"Use independent pre-production first, then one allowlisted production shop; multiple shops and general availability are forbidden."},
+    {"decisionId":"D04","status":"approved","ownerApproved":true,"decision":"Real inventory write is deferred, separately approved, and not required for initial Production Ready."},
+    {"decisionId":"D05","status":"approved","ownerApproved":true,"decision":"Any future write requires one explicit manual confirmation plus idempotency, expected revision, tenant/shop allowlists, audit, and a write kill switch."},
+    {"decisionId":"D06","status":"approved","ownerApproved":true,"decision":"Background Worker is disabled for initial gray; only manual trigger is allowed."},
+    {"decisionId":"D07","status":"approved","ownerApproved":true,"decision":"Automatic business retry is disabled for initial gray; failures require an explicit manual rerun."},
+    {"decisionId":"D08","status":"approved","ownerApproved":true,"decision":"Initial production gray is limited to one tenant, one shop, and at most 100 SKUs, enforced fail closed."},
+    {"decisionId":"D09","status":"approved","ownerApproved":true,"decision":"Independent pre-production is required with isolated database, Redis, secrets, environment, deployment, domain, and observability."},
+    {"decisionId":"D10","status":"approved","ownerApproved":true,"decision":"Credentials are backend-only, encrypted at rest, managed-key backed, rotatable, revocable, audited, and redacted."},
+    {"decisionId":"D11","status":"approved","ownerApproved":true,"decision":"Production recovery objectives are RPO no more than 15 minutes and RTO no more than 60 minutes, proven by backup and restore drills."},
+    {"decisionId":"D12","status":"approved","ownerApproved":true,"decision":"Production performance acceptance requires a dedicated host and at least three repeat runs; concrete SLOs must be frozen before G1."},
+    {"decisionId":"D13","status":"approved","ownerApproved":true,"decision":"Repository baseline disposition is Option B: repair the architecture loader before final acceptance, ratchet new violations, and register 446 historical unformatted Go files as non-blocking technical debt."},
+    {"decisionId":"D14","status":"approved","ownerApproved":true,"decision":"Gray Go requires both Owner and Technical Lead approval; either missing approval means No-Go."},
+    {"decisionId":"D15","status":"approved","ownerApproved":true,"decision":"Owner is the final Production Ready approver after technical sign-off, operations/security sign-off, and the final production gate pass."}
+  ],
+  "implementationApprovals": {
+    "realProviderApprovedForImplementation": true,
+    "realReadApprovedForImplementation": true,
+    "realInventoryWriteApproved": false,
+    "inventoryMutationApproved": false,
+    "backgroundWorkerApproved": false,
+    "automaticRetryApproved": false
+  },
+  "providerImplementation": {
+    "provider": "douyin",
+    "existingPortRequired": "InventoryProviderPort",
+    "secondInventorySyncDomainAllowed": false,
+    "firstStage": "read_only",
+    "allowedOperations": ["GET", "read"],
+    "forbiddenCapabilities": ["inventory_mutation", "publish", "listing", "write"]
+  },
+  "shopScope": {
+    "stages": ["preproduction_test_shop", "one_allowlisted_production_shop"],
+    "productionShopLimit": 1,
+    "multipleProductionShopsAllowed": false,
+    "generalAvailabilityAllowed": false
+  },
+  "futureWritePolicy": {
+    "manualSingleConfirmationRequired": true,
+    "requiredControls": ["explicit_user_confirmation", "idempotency", "expected_revision", "tenant_allowlist", "shop_allowlist", "audit", "write_kill_switch"],
+    "automaticWriteAllowed": false,
+    "bulkAutomaticMutationAllowed": false,
+    "silentRetryWriteAllowed": false
+  },
+  "credentialSecurity": {
+    "backendOnly": true,
+    "encryptedAtRest": true,
+    "managedKeyRequired": true,
+    "rotatable": true,
+    "revocable": true,
+    "audited": true,
+    "redacted": true
+  },
+  "grayScope": {
+    "initialGrayTenantLimit": 1,
+    "initialGrayShopLimit": 1,
+    "initialGraySkuLimit": 100,
+    "scopeChangesRequire": ["gray_scope_change_request", "owner", "technical_lead"]
+  },
+  "initialAutomation": {
+    "triggerMode": "manual",
+    "rerunMode": "manual",
+    "newBusinessRunCreatedAutomatically": false
+  },
+  "environmentAndRecovery": {
+    "independentPreproductionRequired": true,
+    "rpoMinutesMax": 15,
+    "rtoMinutesMax": 60
+  },
+  "performanceAcceptance": {
+    "dedicatedHostRequired": true,
+    "repeatRunsMinimum": 3,
+    "sloFreezeRequiredBefore": "G1"
+  },
+  "repositoryBaselineDisposition": "option_b",
+  "grayApprovalMode": "owner_and_technical_lead",
+  "grayApprovalRequiredApprovers": ["owner", "technical_lead"],
+  "productionFinalApprover": "owner",
+  "productionFinalApprovalPrerequisites": ["technical_sign_off", "operations_security_sign_off", "final_production_gate_passed"],
+  "runtimeBoundary": {
+    "realPlatformNetworkEnabled": false,
+    "realCredentialsEnabled": false,
+    "inventoryMutationEnabled": false,
+    "backgroundWorkerEnabled": false,
+    "automaticBusinessRetryEnabled": false
+  },
+  "p10ImplementationStarted": false,
+  "productionReady": false,
+  "productionAcceptancePassed": false,
+  "tagCreated": false,
+  "releaseCreated": false,
+  "credentialValueRecorded": false,
+  "nextAction": "P10 Batch 1 - Pre-production Foundation"
+}

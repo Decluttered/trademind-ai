@@ -4,12 +4,12 @@ Status: **Passed**
 
 ```text
 operation=current_head_reclosure
-reclosureReason=protected_p9_scope_changed_after_previous_closure
-closureHead=912a8af2eb97361c66acfd3f7df8ebb33e8c355c
-protectedSourceManifestSha256=9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76
+reclosureReason=p9_runtime_and_gate_semantics_changed
+closureHead=c3e06988c128ca72b308d093729fdc304eba49fa
+protectedSourceManifestSha256=0d37268513e6520a333d233cf2fba61ee510a73c60bf0f2917401404e1903e24
 protectedSourceDriftDetected=false
-postgresRuntimeRunId=p9pg-20260808075913-92f38005
-batch7RuntimeRunId=p9b7-20260808080032-584819ba
+postgresRuntimeRunId=p9pg-20260808090639-b80bf4f2
+batch7RuntimeRunId=p9b7-20260808090929-9da721eb
 formalTaskCompleted=38/38
 acceptanceCriteriaPassed=15/15
 p9Complete=true
@@ -19,12 +19,13 @@ productionAcceptancePassed=false
 
 ## Source Identity
 
-The PostgreSQL runtime, Batch 7 runtime, and this closure bind the same live protected-source freeze at HEAD `912a8af2eb97361c66acfd3f7df8ebb33e8c355c`. Generated runtime and closure evidence is excluded from protected product-source identity.
+The PostgreSQL runtime, Batch 7 runtime, and this closure bind the same live protected-source freeze at HEAD `c3e06988c128ca72b308d093729fdc304eba49fa`. Generated runtime and closure evidence is excluded from protected product-source identity.
 
 ## Previous Closures
 
 - `05239617130a7685ee4aba54176fcf0062e531ff` (passed)
 - `7ba7c32be083ad802ed60798bd2c4e936cfbba93` (passed)
+- `912a8af2eb97361c66acfd3f7df8ebb33e8c355c` (passed)
 
 ## Boundary
 
