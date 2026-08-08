@@ -1,10 +1,26 @@
 # P10 Execution Plan
 
-Status: **Finalized / Implementation Not Started**
+Status: **Repository-side Development Complete / Manual Acceptance Ready / Runtime L0**
 
-The Owner-approved plan contains 11 workstreams. `P10-W1` is completed by the decision closure; `P10-W2` through `P10-W10` are not started. `P10-W11` is conditional, deferred pending separate Owner approval, and not required for initial Production Ready.
+The Owner-approved plan contains 11 workstreams. Repository-side foundation/development for `P10-W2` through `P10-W9` is complete, and `P10-W10` has a manual-acceptance package for this round. Automated verification, external provisioning/activation, real read/gray, performance acceptance, final Production Acceptance, Tag and Release remain deferred. `P10-W11` is conditional, deferred pending separate Owner approval, and not required for initial Production Ready.
 
 The authoritative machine-readable plan is [`p10-execution-plan.json`](p10-execution-plan.json). The original draft remains unchanged in [`P10_EXECUTION_PLAN_DRAFT.md`](P10_EXECUTION_PLAN_DRAFT.md) and [`p10-execution-plan-draft.json`](p10-execution-plan-draft.json).
+
+## Current Development and Acceptance Status
+
+| Batch | Development | Verification | Manual acceptance | External activation |
+| --- | --- | --- | --- | --- |
+| P10-B1 | Repository foundation completed | `deferred_by_owner_for_manual_acceptance` | pending | external pre-production provisioning deferred; batch not fully complete |
+| P10-B2 | completed | `deferred_by_owner_for_manual_acceptance` | pending | real OAuth deferred |
+| P10-B3 | completed | `deferred_by_owner_for_manual_acceptance` | pending | real Provider activation deferred |
+| P10-B4 | completed | `deferred_by_owner_for_manual_acceptance` | pending | real inventory read activation deferred |
+| P10-B5 | completed | `deferred_by_owner_for_manual_acceptance` | pending | recovery drills deferred |
+| P10-B6 | completed | `deferred_by_owner_for_manual_acceptance` | pending | security acceptance deferred |
+| P10-B7 | completed | `deferred_by_owner_for_manual_acceptance` | pending | dedicated-host performance acceptance deferred |
+| P10-B8 | completed | `deferred_by_owner_for_manual_acceptance` | pending | real Gray deferred |
+| P10-B9 | manual acceptance package prepared | `deferred_by_owner_for_manual_acceptance` | pending execution | Production Acceptance deferred |
+
+This status records development only. It does not satisfy any gate or acceptance criterion and does not authorize promotion beyond `currentAllowedLevel=L0`.
 
 ## Batch 1 - Pre-production Foundation
 
@@ -64,7 +80,7 @@ The authoritative machine-readable plan is [`p10-execution-plan.json`](p10-execu
 - Evidence/tests/gate: dual approval, scope snapshot, observations/incidents, runtime boundary/write-denial/kill-switch/alert checks and Batch 8 Go/No-Go gate.
 - Exit/rollback/approval: read-only gray passes without unauthorized writes; disable read/Provider, revoke the shop credential, and return to the prior level on failure. Both human approvals are mandatory.
 
-## Batch 9 - Final Production Acceptance and Release
+## Batch 9 - Final Production Acceptance and Release (Current Round: Manual Acceptance Preparation Only)
 
 - Task IDs: P10-901 to P10-904. Entry: Batch 8, complete initial criteria, technical and operations/security sign-offs.
 - Scope: evidence aggregation, release integrity, final production gate, Owner final decision. Forbidden: automatic approval, requiring real write, early release, silent baseline waiver.
@@ -75,4 +91,4 @@ The authoritative machine-readable plan is [`p10-execution-plan.json`](p10-execu
 
 `P10-W11` remains `deferred_pending_separate_owner_approval`, `conditional=true`, and `requiredForInitialProductionReady=false`. It cannot start until read-only gray passes and the Owner separately approves writes. Automatic, bulk, and silently retried writes remain forbidden.
 
-Next action: **P10 Batch 1 - Pre-production Foundation**. `p10ImplementationStarted=false`.
+Next action: **Manual Acceptance**. `p10RepositoryDevelopmentComplete=true`, `p10ManualAcceptanceReady=true`, `productionReady=false`, and `productionAcceptancePassed=false`.

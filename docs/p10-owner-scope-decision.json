@@ -95,11 +95,13 @@
     "backgroundWorkerEnabled": false,
     "automaticBusinessRetryEnabled": false
   },
-  "p10ImplementationStarted": false,
+  "p10ImplementationStarted": true,
+  "p10RepositoryDevelopmentComplete": true,
+  "p10ManualAcceptanceReady": true,
   "productionReady": false,
   "productionAcceptancePassed": false,
   "tagCreated": false,
   "releaseCreated": false,
   "credentialValueRecorded": false,
-  "nextAction": "P10 Batch 1 - Pre-production Foundation"
+  "nextAction": "Manual Acceptance"
 }

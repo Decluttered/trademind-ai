@@ -10,7 +10,9 @@ ownerApprovedDecisionCount=15
 ownerApprovalPending=false
 ownerDecisionStatus=approved
 p10OwnerDecisionApproved=true
-p10ImplementationStarted=false
+p10ImplementationStarted=true
+p10RepositoryDevelopmentComplete=true
+p10ManualAcceptanceReady=true
 ```
 
 ## Approved Boundary
@@ -41,4 +43,4 @@ productionAcceptancePassed=false
 
 The historical proposal remains unchanged in [`P10_OWNER_DECISION_PROPOSAL.md`](P10_OWNER_DECISION_PROPOSAL.md) and [`p10-owner-decision-proposal.json`](p10-owner-decision-proposal.json). The authoritative approved matrix is [`p10-owner-scope-decision.json`](p10-owner-scope-decision.json).
 
-Next action: **P10 Batch 1 - Pre-production Foundation**. Implementation has not started.
+Next action: **Manual Acceptance**. Repository-side implementation is complete; external provisioning, real activation and Production Acceptance remain deferred. Runtime remains L0.

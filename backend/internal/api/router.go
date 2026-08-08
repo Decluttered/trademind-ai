@@ -29,6 +29,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectrule"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectruleai"
 	"github.com/trademind-ai/trademind/backend/internal/modules/configstatus"
+	"github.com/trademind-ai/trademind/backend/internal/modules/credentialp10"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customerchat"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customersync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/demoseed"
@@ -40,6 +41,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
 	"github.com/trademind-ai/trademind/backend/internal/modules/imagetask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventory"
+	"github.com/trademind-ai/trademind/backend/internal/modules/inventoryreadp10"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysyncp9"
 	"github.com/trademind-ai/trademind/backend/internal/modules/observabilitymod"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationdashboard"
@@ -51,6 +53,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/pricing"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
+	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrolp10"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
 	"github.com/trademind-ai/trademind/backend/internal/modules/release"
 	"github.com/trademind-ai/trademind/backend/internal/modules/restore"
@@ -698,6 +701,32 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	operationtask.Register(authed, operationTaskH)
 	inventorySyncP9H := &inventorysyncp9.Handler{Svc: inventorysyncp9.NewAPIService(dep.DB)}
 	inventorysyncp9.Register(authed, inventorySyncP9H)
+	controlP10Svc := &productioncontrolp10.Service{DB: dep.DB, Config: dep.Config}
+	productioncontrolp10.Register(authed, &productioncontrolp10.Handler{Service: controlP10Svc})
+	var credentialCipher credentialp10.CredentialCipher
+	if dep.Config != nil && strings.TrimSpace(dep.Config.P10.LocalCredentialKey) != "" {
+		if keys, err := credentialp10.NewLocalKeyProvider(dep.Config.P10.LocalCredentialKeyRef, dep.Config.P10.LocalCredentialKey); err == nil {
+			credentialCipher = credentialp10.AESGCMCredentialCipher{Keys: keys}
+		}
+	}
+	credentialP10Svc := &credentialp10.Service{DB: dep.DB, Cipher: credentialCipher, Metrics: metricCatalog, Environment: "unknown"}
+	if dep.Config != nil {
+		credentialP10Svc.Environment = dep.Config.AppEnv
+		credentialP10Svc.OfflineEnabled = dep.Config.P10.OfflineOAuthEnabled
+		credentialP10Svc.RedirectAllowlist = append([]string(nil), dep.Config.P10.RedirectAllowlist...)
+		credentialP10Svc.OAuthStateTTL = dep.Config.P10.OAuthStateTTL
+	}
+	credentialp10.Register(authed, &credentialp10.Handler{Service: credentialP10Svc})
+	readProvider := &inventoryreadp10.DouyinReadOnlyInventoryProvider{Config: dep.Config, Credentials: credentialP10Svc, Guard: controlP10Svc, Source: inventoryreadp10.PublicationSource{DB: dep.DB}}
+	pageSize, maxPages := 50, 100
+	if dep.Config != nil {
+		pageSize, maxPages = dep.Config.P10.SKUPageSize, dep.Config.P10.PaginationLimit
+	}
+	readP10Svc := inventoryreadp10.NewManualReadService(dep.DB, readProvider, metricCatalog, pageSize, maxPages)
+	if dep.Config != nil {
+		readP10Svc.Environment = dep.Config.AppEnv
+	}
+	inventoryreadp10.Register(authed, &inventoryreadp10.Handler{Service: readP10Svc})
 
 	tcSvc := &taskcenter.Service{
 		DB:             dep.DB,

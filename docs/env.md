@@ -192,3 +192,33 @@ node scripts/p10-preproduction-preflight.mjs --mode config --env-file .env.stagi
 ```
 
 Operational values must be supplied by the target host or managed secret system and must never be committed or printed in evidence.
+
+## P10 Repository-side Runtime Controls
+
+P10 repository development is manual-acceptance ready, but runtime remains fail closed at `L0`. The following variables are present in `.env.example`, `.env.docker.example`, and the backend service in `docker-compose.full.yml`:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `P10_CURRENT_ALLOWED_LEVEL` | `L0` | Only accepted level in this development round. |
+| `P10_OFFLINE_OAUTH_ENABLED` | `false` | Enables development/test-only offline OAuth fixtures. Forbidden in staging/production. |
+| `P10_LOCAL_CREDENTIAL_KEY` | empty | Development/test-only local key material. Never commit a value; forbidden in staging/production. |
+| `P10_LOCAL_CREDENTIAL_KEY_REF` | `local-development-v1` | Non-secret local key reference. |
+| `P10_OAUTH_STATE_TTL_SECONDS` | `600` | Single-use OAuth state lifetime; valid range 60-1800 seconds. |
+| `P10_OAUTH_REDIRECT_ALLOWLIST` | empty | Comma-separated exact redirect URI allowlist. |
+| `P10_DOUYIN_API_BASE_URL` | empty | Trusted config only; when present it must be official HTTPS host `openapi-fxg.jinritemai.com`. |
+| `P10_PROVIDER_REQUEST_TIMEOUT_SECONDS` | `30` | Whole provider request timeout. |
+| `P10_PROVIDER_CONNECT_TIMEOUT_SECONDS` | `5` | Provider connection/TLS timeout foundation. |
+| `P10_PROVIDER_RESPONSE_HEADER_TIMEOUT_SECONDS` | `15` | Provider response-header timeout. |
+| `P10_PROVIDER_MAX_RESPONSE_BYTES` | `2097152` | Strict response body limit. |
+| `P10_PROVIDER_CONCURRENCY` | `2` | Per-host connection/concurrency bound. |
+| `P10_SKU_PAGE_SIZE` | `50` | Local publication page size, capped at 100. |
+| `P10_PAGINATION_LIMIT` | `100` | Maximum pages per manual read run. |
+| `P10_REAL_PROVIDER_ENABLED` | `false` | Real Provider feature flag; rejected when true at L0. |
+| `P10_REAL_PLATFORM_NETWORK_ENABLED` | `false` | Real network feature flag; rejected when true at L0. |
+| `P10_REAL_CREDENTIALS_ENABLED` | `false` | Real credential feature flag; rejected when true at L0. |
+| `P10_REAL_INVENTORY_READ_ENABLED` | `false` | Real read feature flag; rejected when true at L0. |
+| `P10_INVENTORY_MUTATION_ENABLED` | `false` | Inventory mutation guard; must remain false. |
+| `P10_BACKGROUND_WORKER_ENABLED` | `false` | P10 Worker guard; must remain false. |
+| `P10_AUTOMATIC_RETRY_ENABLED` | `false` | Automatic business retry guard; must remain false. |
+
+No current configuration can promote the application beyond L0. Promotion requires later code/config review plus manual and external acceptance; setting any real capability flag now makes startup validation fail.

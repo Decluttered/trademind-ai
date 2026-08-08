@@ -58,3 +58,7 @@
 # P10 Pre-production Foundation
 
 Changes to `.env.staging.example`, `deploy/preproduction/**`, `deploy/scripts/*preproduction*`, or `scripts/p10-preproduction-*` must be checked together with `docs/P10_PREPRODUCTION_ARCHITECTURE.md`, `docs/env.md`, `docs/docker-deployment.md`, the P10 Batch 1 fixture/gate, the planning semantic manifest, the P9 transition gate, and sensitive-diff checks. Production resources, credentials, and P9 protected source are outside this module's writable scope.
+
+## P10 Credential / Read-only / Control Modules
+
+Changes under `backend/internal/modules/credentialp10`, `inventoryreadp10`, or `productioncontrolp10` must be checked with backend routing, migration, `adminperm`, metrics/redaction, P10 config validation, Admin `/ops/p10-readiness`, `admin/src/services/p10Readiness.ts`, API/provider/security docs, environment templates, and the P10 manual-acceptance/completion evidence. `inventoryreadp10` may depend on the exported P9 inventory Provider/calibration/audit contracts, but P9 source and gates are frozen and must not be modified. Its P10-owned additive migration extends the existing PostgreSQL run `provider_mode` CHECK with `real_readonly`; the original three P9 modes remain unchanged. No P10 production code may expose `sku.syncStock`, a Worker, scheduler, queue consumer, or automatic business retry.

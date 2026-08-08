@@ -134,6 +134,12 @@ pnpm dev:collector
 go fmt ./...
 ```
 
+### P10 本地人工验收配置
+
+P10 默认保持 L0。仅在本地 development/test 环境进行离线凭据与 OAuth 人工验收时，才可临时设置 `P10_OFFLINE_OAUTH_ENABLED=true`、未提交的 `P10_LOCAL_CREDENTIAL_KEY` 和精确的 `P10_OAUTH_REDIRECT_ALLOWLIST`。不得配置真实抖店凭据或打开任何 `P10_REAL_*`、mutation、Worker、automatic retry 开关。
+
+Admin 入口为 `/ops/p10-readiness`。本轮 Owner 将自动测试、Gate、PostgreSQL runtime 和 Playwright 验收延后到人工验收阶段；允许的开发检查仅为 Go/Admin build、语法检查和 `git diff --check`。
+
 ## 采集服务调试
 
 ```bash

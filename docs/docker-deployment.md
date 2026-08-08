@@ -147,3 +147,7 @@ Inject `PREPRODUCTION_DB_PASSWORD`, `PREPRODUCTION_REDIS_PASSWORD`, `PREPRODUCTI
 The deployment waits for PostgreSQL and Redis health, starts the backend migration path with its advisory lock, and accepts the deployment only after `/health/ready` reports database, Redis, migrations, and `staging` as ready. Backup, isolated restore, application rollback, and non-destructive teardown entry points are under `deploy/scripts/*-preproduction.sh`.
 
 Current external infrastructure status is recorded in `docs/p10-task-batch-1-external-infrastructure.json`. Until host, PostgreSQL, Redis, domain, credential availability, deployment rehearsal, and teardown rehearsal are all proven, P10 Batch 1 remains incomplete.
+
+The full-stack development Compose explicitly passes the P10 L0 variables listed in [`env.md`](env.md). It rejects non-L0 and all real Provider/network/credential/read, mutation, Worker, and automatic-retry flags. It is only suitable for repository-side/manual fixture checks and must not be treated as the independent pre-production environment.
+
+P10 reuses the existing recovery foundations instead of creating parallel mechanisms: `deploy/scripts/backup-preproduction.sh` creates a PostgreSQL custom-format artifact, SHA-256 checksum and metadata; `restore-preproduction.sh` restores only into an explicit isolated database identity; `rollback-preproduction.sh` restores previous immutable application images and performs readiness checks without an implicit database restore. Production restore remains disabled by default.

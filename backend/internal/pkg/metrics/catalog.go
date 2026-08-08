@@ -26,6 +26,12 @@ type Catalog struct {
 	ProviderContractMismatch   *prometheus.CounterVec
 	ProviderCircuitState       *prometheus.GaugeVec
 	ProviderCircuitChanges     *prometheus.CounterVec
+	P10ProviderErrorsTotal     *prometheus.CounterVec
+	P10OAuthFailuresTotal      *prometheus.CounterVec
+	P10CredentialExpiringTotal *prometheus.CounterVec
+	P10InventorySyncRuns       *prometheus.CounterVec
+	P10InventorySyncFailures   *prometheus.CounterVec
+	P10ManualBindingBacklog    *prometheus.GaugeVec
 	TasksCreatedTotal          *prometheus.CounterVec
 	TasksClaimedTotal          *prometheus.CounterVec
 	TasksCompletedTotal        *prometheus.CounterVec
@@ -260,6 +266,30 @@ func (c *Catalog) registerAll() error {
 	c.ProviderCircuitChanges, err = c.reg.Counter(
 		"provider_circuit_breaker_transitions_total", "Provider circuit breaker state transitions",
 		"provider", "operation", "from_state", "to_state")
+	if err != nil {
+		return err
+	}
+	c.P10ProviderErrorsTotal, err = c.reg.Counter("provider_errors_total", "P10 read-only provider errors", "environment", "provider", "operation", "status")
+	if err != nil {
+		return err
+	}
+	c.P10OAuthFailuresTotal, err = c.reg.Counter("oauth_failures_total", "P10 OAuth failures", "environment", "provider", "operation", "status")
+	if err != nil {
+		return err
+	}
+	c.P10CredentialExpiringTotal, err = c.reg.Counter("credential_expiring_total", "P10 credentials observed near expiration", "environment", "provider", "operation", "status")
+	if err != nil {
+		return err
+	}
+	c.P10InventorySyncRuns, err = c.reg.Counter("inventory_sync_runs", "P10 manual inventory read runs", "environment", "provider", "operation", "status")
+	if err != nil {
+		return err
+	}
+	c.P10InventorySyncFailures, err = c.reg.Counter("inventory_sync_failures", "P10 manual inventory read failures", "environment", "provider", "operation", "status")
+	if err != nil {
+		return err
+	}
+	c.P10ManualBindingBacklog, err = c.reg.Gauge("manual_binding_backlog", "P10 manual SKU binding backlog", "environment", "provider", "operation", "status")
 	if err != nil {
 		return err
 	}
@@ -936,6 +966,32 @@ func (c *Catalog) ObserveProviderRetry(provider, operation, result, errorClass s
 		return
 	}
 	c.ProviderRetriesTotal.WithLabelValues(provider, operation, NormalizeResult(result), NormalizeResult(errorClass)).Inc()
+}
+
+// ObserveP10 records the bounded low-cardinality P10 readiness metrics.
+func (c *Catalog) ObserveP10(environment, provider, operation, status string, providerError, oauthFailure, credentialExpiring, syncRun, syncFailure bool, manualBacklog int) {
+	if c == nil {
+		return
+	}
+	labels := []string{NormalizeResult(environment), NormalizeResult(provider), NormalizeResult(operation), NormalizeResult(status)}
+	if providerError && c.P10ProviderErrorsTotal != nil {
+		c.P10ProviderErrorsTotal.WithLabelValues(labels...).Inc()
+	}
+	if oauthFailure && c.P10OAuthFailuresTotal != nil {
+		c.P10OAuthFailuresTotal.WithLabelValues(labels...).Inc()
+	}
+	if credentialExpiring && c.P10CredentialExpiringTotal != nil {
+		c.P10CredentialExpiringTotal.WithLabelValues(labels...).Inc()
+	}
+	if syncRun && c.P10InventorySyncRuns != nil {
+		c.P10InventorySyncRuns.WithLabelValues(labels...).Inc()
+	}
+	if syncFailure && c.P10InventorySyncFailures != nil {
+		c.P10InventorySyncFailures.WithLabelValues(labels...).Inc()
+	}
+	if manualBacklog >= 0 && c.P10ManualBindingBacklog != nil {
+		c.P10ManualBindingBacklog.WithLabelValues(labels...).Set(float64(manualBacklog))
+	}
 }
 
 // ObserveTask records task worker metrics.
