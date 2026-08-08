@@ -10,6 +10,11 @@ import {
   runtimeSummaryPath,
   sha256File,
 } from './p9-postgres-contract.mjs';
+import {
+  computeLiveProtectedSourceManifest,
+  readProtectedSourceFreeze,
+  validateProtectedSourceFreezeBundle,
+} from './p9-protected-source-freeze.mjs';
 
 export const P9_POSTGRES_INTEGRATION_CLOSURE_MD = 'docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md';
 export const P9_POSTGRES_INTEGRATION_CLOSURE_JSON = 'docs/p9-postgresql-integration-closure.json';
@@ -134,6 +139,13 @@ export function validateP9PostgresIntegrationClosure(bundle = {}) {
   const appEnv = bundle.appEnv ?? process.env.APP_ENV;
   const db = parseSafeTestDatabaseUrl(bundle.testDatabaseUrl ?? process.env.TEST_DATABASE_URL, { ...process.env, APP_ENV: appEnv });
   const runtimeIntegrity = bundle.runtimeIntegrity || liveRuntimeIntegrity(runtime);
+  const protectedSourceFreeze = bundle.protectedSourceFreeze || readProtectedSourceFreeze();
+  const liveProtectedSourceManifest = bundle.liveProtectedSourceManifest || computeLiveProtectedSourceManifest();
+  const protectedSourceValidation = validateProtectedSourceFreezeBundle({
+    freeze: protectedSourceFreeze,
+    live: liveProtectedSourceManifest,
+    gitState: { currentBranch: branch, currentHead: head },
+  });
   const historical = bundle.historicalGatesPassed === undefined ? historicalStatus() : {
     rows: [],
     passed: bundle.historicalGatesPassed,
@@ -159,6 +171,14 @@ export function validateP9PostgresIntegrationClosure(bundle = {}) {
     ['runtimeSummaryHashVerified', runtimeIntegrity.summaryHashVerified === true],
     ['runtimeRawArtifactHashesVerified', runtimeIntegrity.rawArtifactHashesVerified === true],
     ['runtimeSourceManifestVerified', runtimeIntegrity.sourceManifestVerified === true],
+    ['protectedSourceFreezeBinding', protectedSourceValidation.status === 'passed'
+      && runtime.protectedSourceFreeze?.gitHead === head
+      && runtime.protectedSourceFreeze?.sha256 === protectedSourceFreeze.sha256
+      && runtime.protectedSourceFreeze?.beforeSha256 === protectedSourceFreeze.sha256
+      && runtime.protectedSourceFreeze?.afterSha256 === protectedSourceFreeze.sha256
+      && runtime.protectedSourceFreeze?.frozen === true
+      && runtime.protectedSourceFreeze?.stable === true
+      && runtime.protectedSourceFreeze?.driftDetected === false],
     ['runtimeCompleted', runtime.completed === true && runtime.status === 'passed'],
     ['testDatabaseUrlPresent', db.present === true],
     ['testDatabaseUrlValid', db.valid === true],
@@ -228,6 +248,9 @@ export function validateP9PostgresIntegrationClosure(bundle = {}) {
     stagedFileCount: staged,
     runtimeRunId: runtime.runId || '',
     runtimeSummarySha256: runtimeIntegrity.summarySha256 || '',
+    protectedSourceManifestSha256: protectedSourceFreeze.sha256 || '',
+    currentProtectedSourceManifestSha256: liveProtectedSourceManifest.sha256 || '',
+    protectedSourceDriftDetected: protectedSourceValidation.protectedSourceDriftDetected,
     testDatabase: { driver: runtime.testDatabase?.driver || '', purpose: 'test', urlRecorded: false, hostCategory: runtime.testDatabase?.hostCategory || '', nameSafe: db.nameSafe === true, productionRejected: db.productionRejected === true, serverVersion: runtime.testDatabase?.serverVersion || '' },
     contracts,
     racePassed: runtime.racePassed === true,
@@ -252,7 +275,7 @@ export function buildP9PostgresIntegrationGateReport(bundle = {}) {
 
 export function writeP9PostgresIntegrationGateReport(report) {
   writeJSON(P9_POSTGRES_INTEGRATION_CLOSURE_GATE_JSON, report);
-  fs.writeFileSync(path.join(repoRoot, P9_POSTGRES_INTEGRATION_CLOSURE_GATE_MD), `# P9 PostgreSQL Integration Closure Gate\n\nStatus: **${report.status}**\n\n- Runtime run ID: ${report.runtimeRunId || 'missing'}\n- Runtime summary SHA-256: ${report.runtimeSummarySha256 || 'missing'}\n- Current branch: ${report.currentBranch}\n- Current HEAD: ${report.currentHead}\n- Staged files: ${report.stagedFileCount}\n- PostgreSQL driver: ${report.testDatabase.driver || 'missing'}\n- PostgreSQL server version: ${report.testDatabase.serverVersion || 'missing'}\n- SQLite fallback used: ${report.contracts?.sqliteFallbackUsed !== false}\n- Race passed: ${report.racePassed}\n- Data races: ${report.dataRaces ?? 'unknown'}\n- Historical gate failures: ${report.historicalGateFailureCount}\n- P9 final closure blocker: ${report.p9FinalClosureBlocker}\n- Production ready: ${report.productionReady}\n- Batch 6 ready to start: ${report.batch6ReadyToStart}\n- Failed checks: ${report.failedCount ? report.failed.join(', ') : 'none'}\n\nThis gate accepts only a fresh, hash-bound PostgreSQL runtime artifact. It does not enable production capabilities or close P9.\n`, 'utf8');
+  fs.writeFileSync(path.join(repoRoot, P9_POSTGRES_INTEGRATION_CLOSURE_GATE_MD), `# P9 PostgreSQL Integration Closure Gate\n\nStatus: **${report.status}**\n\n- Runtime run ID: ${report.runtimeRunId || 'missing'}\n- Runtime summary SHA-256: ${report.runtimeSummarySha256 || 'missing'}\n- Protected source manifest SHA-256: ${report.protectedSourceManifestSha256 || 'missing'}\n- Protected source drift detected: ${report.protectedSourceDriftDetected}\n- Current branch: ${report.currentBranch}\n- Current HEAD: ${report.currentHead}\n- Staged files: ${report.stagedFileCount}\n- PostgreSQL driver: ${report.testDatabase.driver || 'missing'}\n- PostgreSQL server version: ${report.testDatabase.serverVersion || 'missing'}\n- SQLite fallback used: ${report.contracts?.sqliteFallbackUsed !== false}\n- Race passed: ${report.racePassed}\n- Data races: ${report.dataRaces ?? 'unknown'}\n- Historical gate failures: ${report.historicalGateFailureCount}\n- P9 final closure blocker: ${report.p9FinalClosureBlocker}\n- Production ready: ${report.productionReady}\n- Batch 6 ready to start: ${report.batch6ReadyToStart}\n- Failed checks: ${report.failedCount ? report.failed.join(', ') : 'none'}\n\nThis gate accepts only a fresh, hash-bound PostgreSQL runtime artifact. It does not enable production capabilities or close P9.\n`, 'utf8');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

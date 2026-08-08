@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { validateP9Batch7IntegrationBundle } from '../../../scripts/p9-task-batch-7-e2e-gate.mjs';
+import { hashProtectedSourceEntries } from '../../../scripts/p9-protected-source-freeze.mjs';
+
+const protectedSourceSha = hashProtectedSourceEntries([]);
 
 const tasks = Object.fromEntries(['P9-1101', 'P9-1102', 'P9-1103', 'P9-1104', 'P9-1105'].map((id) => [id, { status: 'completed' }]));
 const evidence = {
@@ -12,8 +15,8 @@ const evidence = {
   formalTaskCompletedCount: 5,
   tasks,
   acceptanceCriteriaPassedIds: ['AC-P9-09', 'AC-P9-10', 'AC-P9-11', 'AC-P9-12', 'AC-P9-13', 'AC-P9-14', 'AC-P9-15'],
-  runtimeEvidence: { runId: 'p9b7-run', runtimeSummarySha256: 'runtime-sha', sourceManifestSha256: 'manifest-sha', runtimeJsonlSha256: 'runtime-jsonl-sha', e2eArtifactSha256: 'e2e-sha', raceArtifactSha256: 'race-sha', finishedAt: '2026-08-08T00:00:00.000Z' },
-  postgresRuntimeEvidence: { runId: 'pg-run' },
+  runtimeEvidence: { runId: 'p9b7-run', runtimeSummarySha256: 'runtime-sha', sourceManifestSha256: 'manifest-sha', protectedSourceManifestSha256: protectedSourceSha, runtimeJsonlSha256: 'runtime-jsonl-sha', e2eArtifactSha256: 'e2e-sha', raceArtifactSha256: 'race-sha', finishedAt: '2026-08-08T00:00:00.000Z' },
+  postgresRuntimeEvidence: { runId: 'pg-run', protectedSourceManifestSha256: protectedSourceSha },
   integrationDefectFixes: [],
   p10BoundaryPreserved: true,
   productionReady: false,
@@ -35,6 +38,13 @@ const runtime = {
   currentHead: 'abc123',
   finishedAt: '2026-08-08T00:00:00.000Z',
   sourceManifestSha256: 'manifest-sha',
+  protectedSourceManifestSha256: protectedSourceSha,
+  protectedSourceFreezeHead: 'abc123',
+  protectedSourceManifestBeforeSha256: protectedSourceSha,
+  protectedSourceManifestAfterSha256: protectedSourceSha,
+  protectedSourceFrozen: true,
+  protectedSourceStable: true,
+  protectedSourceDriftDetected: false,
   runtimeJsonlSha256: 'runtime-jsonl-sha',
   e2eArtifactSha256: 'e2e-sha',
   raceArtifactSha256: 'race-sha',
@@ -55,6 +65,7 @@ const runtime = {
 const postgresRuntime = {
   runId: 'pg-run',
   git: { endHead: 'abc123' },
+  protectedSourceFreeze: { sha256: protectedSourceSha },
   contracts: { postgresIntegrationPassed: true, postgresFixtureGoldenPathPassed: true },
 };
 const postgresGate = { status: 'passed', currentHead: 'abc123' };
@@ -81,6 +92,8 @@ function validate(overrides = {}) {
     requiredFilesPresent: validFiles,
     sourceManifest: overrides.sourceManifest || { sha256: 'manifest-sha', currentBranch: 'dev', currentHead: 'abc123' },
     liveSourceManifest: overrides.liveSourceManifest || { sha256: 'manifest-sha' },
+    protectedSourceFreeze: overrides.protectedSourceFreeze || { manifestType: 'p9_protected_source_freeze', currentBranch: 'dev', gitHead: 'abc123', sha256: protectedSourceSha, fileCount: 0, entries: [] },
+    liveProtectedSourceManifest: overrides.liveProtectedSourceManifest || { currentBranch: 'dev', gitHead: 'abc123', sha256: protectedSourceSha, fileCount: 0, dirtyProtectedChangedFiles: [], entries: [] },
     runtimeArtifactSha: overrides.runtimeArtifactSha ?? 'runtime-sha',
     runtimeJsonlSha: overrides.runtimeJsonlSha ?? 'runtime-jsonl-sha',
     e2eArtifactSha: overrides.e2eArtifactSha ?? 'e2e-sha',
@@ -101,6 +114,9 @@ expectFailed('postgresContracts', { postgresRuntime: { contracts: { postgresInte
 expectFailed('authenticatedE2E', { runtime: { authenticatedPostgresE2E: false } });
 expectFailed('runtimeHeadBinding', { runtime: { currentHead: 'stale-head' } });
 expectFailed('sourceManifestBinding', { liveSourceManifest: { sha256: 'changed-manifest' } });
+expectFailed('protectedSourceManifestBinding', { runtime: { protectedSourceManifestSha256: 'changed-manifest' } });
+expectFailed('protectedSourceManifestBinding', { liveProtectedSourceManifest: { currentBranch: 'dev', gitHead: 'abc123', sha256: 'e'.repeat(64), fileCount: 0, dirtyProtectedChangedFiles: [], entries: [] } });
+expectFailed('protectedSourceManifestBinding', { runtime: { protectedSourceDriftDetected: true, protectedSourceStable: false } });
 expectFailed('artifactHashBinding', { e2eArtifactSha: 'changed-e2e' });
 expectFailed('postgresRuntimeBinding', { postgresRuntime: { git: { endHead: 'stale-head' } } });
 expectFailed('tenantRbacIsolation', { runtime: { rbacMatrixPassed: false } });

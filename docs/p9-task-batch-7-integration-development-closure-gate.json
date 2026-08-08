@@ -2,17 +2,19 @@
   "phase": "P9",
   "gate": "P9-TASK-BATCH-7-E2E",
   "status": "passed",
-  "checkedAt": "2026-08-08T05:21:45.003Z",
+  "checkedAt": "2026-08-08T08:01:10.016Z",
   "failed": [],
   "failedCount": 0,
   "currentBranch": "dev",
-  "currentHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+  "currentHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
   "headDetached": false,
   "stagedFileCount": 0,
-  "runtimeRunId": "p9b7-20260808052115-bfb32c57",
-  "runtimeSummarySha256": "92879bc2be4a4f21549a3aaab4d2f620b95c256fc6b3d30f9645f3923fbba9b9",
-  "sourceManifestSha256": "7cb0fc8a1c6b28672cae7d0fea703f2253632af85bc569e8724c29a15349e1a8",
-  "postgresRuntimeRunId": "p9pg-20260808051205-17241dd1",
+  "runtimeRunId": "p9b7-20260808080032-584819ba",
+  "runtimeSummarySha256": "0b5a7ece01e8e8649629b3e5f24f1df48668b31792c56c72bf1ca98ab39e72eb",
+  "sourceManifestSha256": "5fce794690fad3e86074b7e6c980a1a81ae00755728a73a8254f2aefed202444",
+  "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+  "protectedSourceDriftDetected": false,
+  "postgresRuntimeRunId": "p9pg-20260808075913-92f38005",
   "productionReady": false,
   "productionAcceptancePassed": false,
   "p10BoundaryPreserved": true,
@@ -84,6 +86,10 @@
     },
     {
       "id": "sourceManifestBinding",
+      "status": "passed"
+    },
+    {
+      "id": "protectedSourceManifestBinding",
       "status": "passed"
     },
     {

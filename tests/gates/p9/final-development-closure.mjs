@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { validateP9FinalDevelopmentClosureBundle } from '../../../scripts/p9-final-development-closure-gate.mjs';
+import { hashProtectedSourceEntries } from '../../../scripts/p9-protected-source-freeze.mjs';
+
+const protectedSourceSha = hashProtectedSourceEntries([]);
 
 const productTaskIds = [
   'P9-501', 'P9-502', 'P9-503', 'P9-504', 'P9-505', 'P9-506',
@@ -49,6 +52,7 @@ const closure = {
   currentHead: 'abc123',
   currentClosureHead: 'abc123',
   previousClosureHead: 'old123',
+  previousClosures: [{ status: 'passed', head: 'old123' }],
   currentHeadClosureVerified: true,
   initialClosure: { status: 'passed', head: 'old123' },
   acceptanceCriteriaPassedIds: acceptanceIds,
@@ -56,8 +60,15 @@ const closure = {
   postgresIntegrationPassed: true,
   postgresRuntimeRunId: 'pg-run',
   postgresRuntimeHead: 'abc123',
+  postgresRuntimeSummarySha256: 'pg-sha',
+  postgresRuntimeProtectedSourceManifestSha256: protectedSourceSha,
   batch7RuntimeRunId: 'p9b7-run',
   batch7RuntimeHead: 'abc123',
+  batch7RuntimeSummarySha256: 'batch7-sha',
+  batch7RuntimeProtectedSourceManifestSha256: protectedSourceSha,
+  protectedSourceManifestSha256: protectedSourceSha,
+  protectedSourceDriftDetected: false,
+  currentReclosure: { protectedSourceManifestSha256: protectedSourceSha },
   adminE2EPassed: true,
   adminResponsiveE2EPassed: true,
   validationCommands: [{ command: 'pnpm p9:final-development-closure-gate', status: 'passed' }],
@@ -77,8 +88,8 @@ const closure = {
   integrationDefectFixes: [],
 };
 const batch7Evidence = { status: 'completed', currentHead: 'abc123' };
-const batch7Runtime = { runId: 'p9b7-run', currentHead: 'abc123' };
-const postgresRuntime = { runId: 'pg-run', git: { endHead: 'abc123' } };
+const batch7Runtime = { runId: 'p9b7-run', currentHead: 'abc123', protectedSourceManifestSha256: protectedSourceSha };
+const postgresRuntime = { runId: 'pg-run', git: { endHead: 'abc123' }, protectedSourceFreeze: { sha256: protectedSourceSha } };
 const gateReports = Object.fromEntries([
   'docs/p9-entry-gate-report.json',
   'docs/p9-plan-final-gate.json',
@@ -106,6 +117,9 @@ function validate(overrides = {}) {
     gateReports: { ...gateReports, ...(overrides.gateReports || {}) },
     gitState: { ...gitState, ...(overrides.gitState || {}) },
     requiredFilesPresent: true,
+    protectedSourceFreeze: overrides.protectedSourceFreeze || { manifestType: 'p9_protected_source_freeze', currentBranch: 'dev', gitHead: 'abc123', sha256: protectedSourceSha, fileCount: 0, entries: [] },
+    liveProtectedSourceManifest: overrides.liveProtectedSourceManifest || { currentBranch: 'dev', gitHead: 'abc123', sha256: protectedSourceSha, fileCount: 0, dirtyProtectedChangedFiles: [], entries: [] },
+    artifactHashes: { postgresRuntimeSha256: 'pg-sha', batch7RuntimeSha256: 'batch7-sha', ...(overrides.artifactHashes || {}) },
   });
 }
 
@@ -124,6 +138,9 @@ expectFailed('productTaskIdsPreserved', { plan: { workstreams: [{ ...workstreams
 expectFailed('productTasksCompleted', { plan: { productCompletedTaskCount: 37, workstreams: [{ ...workstreams[0], tasks: workstreams[0].tasks.map((task, index) => index === 0 ? { ...task, status: 'planned' } : task) }] } });
 expectFailed('batch7Completed', { plan: { batch7Completed: false } });
 expectFailed('runtimeHeadBindings', { batch7Runtime: { currentHead: 'stale-head' } });
+expectFailed('runtimeArtifactBindings', { artifactHashes: { postgresRuntimeSha256: 'stale-pg-sha' } });
+expectFailed('protectedSourceManifestBindings', { closure: { protectedSourceManifestSha256: 'stale-manifest' } });
+expectFailed('protectedSourceManifestBindings', { liveProtectedSourceManifest: { currentBranch: 'dev', gitHead: 'abc123', sha256: 'e'.repeat(64), fileCount: 0, dirtyProtectedChangedFiles: [], entries: [] } });
 expectFailed('acceptanceCriteriaPassed', { closure: { acceptanceCriteriaPassedIds: acceptanceIds.slice(0, 14), acceptanceCriteriaPassedCount: 14 } });
 expectFailed('historicalGatesPassed', { gateReports: { ...gateReports, 'docs/p9-task-batch-4-permissions-audit-safety-gate.json': { status: 'failed' } } });
 expectFailed('postgresIntegrationPassed', { closure: { postgresIntegrationPassed: false } });

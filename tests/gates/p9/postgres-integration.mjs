@@ -6,6 +6,9 @@ import {
   requiredPostgresTests,
 } from '../../../scripts/p9-postgres-contract.mjs';
 import { validateP9PostgresIntegrationClosure } from '../../../scripts/p9-postgres-integration-gate.mjs';
+import { hashProtectedSourceEntries } from '../../../scripts/p9-protected-source-freeze.mjs';
+
+const protectedSourceSha = hashProtectedSourceEntries([]);
 
 function batchEvidence(batchId, overrides = {}) {
   const base = {
@@ -41,6 +44,7 @@ const runtime = {
   finishedAt: '2026-07-29T00:10:00.000Z',
   git: { startBranch: 'dev', endBranch: 'dev', startHead: 'head-abc', endHead: 'head-abc', headDetached: false, stagedFileCountBefore: 0, stagedFileCountAfter: 0, stable: true },
   sourceManifest: { beforeSha256: 'a'.repeat(64), afterSha256: 'a'.repeat(64), fileCount: 10, stable: true },
+  protectedSourceFreeze: { gitHead: 'head-abc', sha256: protectedSourceSha, beforeSha256: protectedSourceSha, afterSha256: protectedSourceSha, frozen: true, stable: true, driftDetected: false },
   testDatabase: { driver: 'postgresql', purpose: 'test', urlRecorded: false, hostCategory: 'local', databaseNameHash: 'b'.repeat(64), nameSafe: true, productionRejected: true, actualDatabaseMatched: true, serverVersion: '17.9', schemaIsolated: true, sqliteFallbackUsed: false },
   commands: [{ name: 'postgres-integration', exitCode: 0, rawArtifactPath: 'artifacts/p9-postgres-runtime.jsonl', rawArtifactSha256: 'c'.repeat(64) }, { name: 'postgres-race', exitCode: 0, rawArtifactPath: 'artifacts/p9-postgres-race.jsonl', rawArtifactSha256: 'd'.repeat(64) }],
   contracts: {
@@ -85,6 +89,8 @@ function validBundle(overrides = {}) {
     evidence,
     runtime,
     runtimeIntegrity: { summaryHashVerified: true, rawArtifactHashesVerified: true, sourceManifestVerified: true },
+    protectedSourceFreeze: { manifestType: 'p9_protected_source_freeze', currentBranch: 'dev', gitHead: 'head-abc', sha256: protectedSourceSha, fileCount: 0, entries: [] },
+    liveProtectedSourceManifest: { currentBranch: 'dev', gitHead: 'head-abc', sha256: protectedSourceSha, fileCount: 0, dirtyProtectedChangedFiles: [], entries: [] },
     historicalGateFailureCount: 0,
     historicalGatesPassed: true,
     batchEvidence: batches,
@@ -95,6 +101,8 @@ function validBundle(overrides = {}) {
     evidence: { ...evidence, ...(overrides.evidence || {}) },
     runtime: { ...runtime, ...(overrides.runtime || {}), contracts: { ...runtime.contracts, ...(overrides.runtime?.contracts || {}) }, testDatabase: { ...runtime.testDatabase, ...(overrides.runtime?.testDatabase || {}) }, platformBoundary: { ...runtime.platformBoundary, ...(overrides.runtime?.platformBoundary || {}) } },
     runtimeIntegrity: { summaryHashVerified: true, rawArtifactHashesVerified: true, sourceManifestVerified: true, ...(overrides.runtimeIntegrity || {}) },
+    protectedSourceFreeze: overrides.protectedSourceFreeze || { manifestType: 'p9_protected_source_freeze', currentBranch: 'dev', gitHead: 'head-abc', sha256: protectedSourceSha, fileCount: 0, entries: [] },
+    liveProtectedSourceManifest: overrides.liveProtectedSourceManifest || { currentBranch: 'dev', gitHead: 'head-abc', sha256: protectedSourceSha, fileCount: 0, dirtyProtectedChangedFiles: [], entries: [] },
     batchEvidence: overrides.batchEvidence || batches,
   };
 }
@@ -148,6 +156,9 @@ assert.equal(parseSafeTestDatabaseUrl('postgresql://remote.example:5432/trademin
 assertFails('runtimeSummaryHashVerified', { runtimeIntegrity: { summaryHashVerified: false } });
 assertFails('runtimeRawArtifactHashesVerified', { runtimeIntegrity: { rawArtifactHashesVerified: false } });
 assertFails('runtimeSourceManifestVerified', { runtimeIntegrity: { sourceManifestVerified: false } });
+assertFails('protectedSourceFreezeBinding', { runtime: { protectedSourceFreeze: { ...runtime.protectedSourceFreeze, sha256: 'e'.repeat(64) } } });
+assertFails('protectedSourceFreezeBinding', { liveProtectedSourceManifest: { currentBranch: 'dev', gitHead: 'head-abc', sha256: 'e'.repeat(64), fileCount: 0, dirtyProtectedChangedFiles: [], entries: [] } });
+assertFails('protectedSourceFreezeBinding', { runtime: { protectedSourceFreeze: { ...runtime.protectedSourceFreeze, driftDetected: true, stable: false } } });
 assertFails('racePassed', { runtime: { racePassed: false } });
 
 const databaseNameHash = 'b'.repeat(64);

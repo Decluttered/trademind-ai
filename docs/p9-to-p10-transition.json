@@ -1,0 +1,175 @@
+{
+  "transition": "P9_TO_P10",
+  "gate": "P9-TO-P10-TRANSITION",
+  "status": "passed",
+  "checkedAt": "2026-08-08T08:11:01.849Z",
+  "failed": [],
+  "failedCount": 0,
+  "currentBranch": "dev",
+  "currentHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+  "headDetached": false,
+  "stagedFileCount": 0,
+  "p9ClosureHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+  "p9ClosureHeadIsAncestor": true,
+  "historicalClosurePassed": true,
+  "historicalClosureVerified": true,
+  "closureIntegrityValid": true,
+  "p9FinalClosureArtifactValid": true,
+  "postgresRuntimeHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+  "batch7RuntimeHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+  "postgresRuntimeMatchesClosureHead": true,
+  "batch7RuntimeMatchesClosureHead": true,
+  "postgresArtifactSha256Valid": true,
+  "batch7ArtifactSha256Valid": true,
+  "sourceManifestSha256Valid": true,
+  "closureProtectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+  "currentProtectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+  "dirtyProtectedSourceDriftDetected": false,
+  "protectedScopeManifestSha256": "de861112d842f695d2e761b2f8b10d29411667a22c3e7524d2fc9973e032db4b",
+  "categories": {
+    "P9_PRODUCT_SOURCE": [],
+    "P9_SECURITY_AND_PERSISTENCE_CONTRACT": [],
+    "P9_RUNTIME_CONTRACT": [],
+    "P9_GATE_SEMANTICS": [],
+    "P9_ADMIN_PRODUCT_SOURCE": [],
+    "P9_API_CONTRACT": [],
+    "P9_SCOPE_AND_ACCEPTANCE": []
+  },
+  "p9ProtectedChangedFiles": [],
+  "p9ProtectedChangedFileCount": 0,
+  "generatedEvidenceChangedFiles": [],
+  "unrelatedChangedFiles": [],
+  "p9ProductSourceChanged": false,
+  "p9SecurityContractChanged": false,
+  "p9RuntimeContractChanged": false,
+  "p9GateSemanticsChanged": false,
+  "p9AdminProductSourceChanged": false,
+  "p9ApiContractChanged": false,
+  "p9ScopeChanged": false,
+  "p9ReclosureRequired": false,
+  "minimumRepairAction": "none",
+  "p9ClosureReuseEligible": true,
+  "closureReusableForCurrentDescendant": true,
+  "p10PlanningEntryAllowed": true,
+  "p10PlanningPackPrepared": false,
+  "p10ImplementationStarted": false,
+  "productionReady": false,
+  "productionAcceptancePassed": false,
+  "commitsSinceP9Closure": [],
+  "semanticChanges": [],
+  "filesChangedSinceP9Closure": [],
+  "checks": [
+    {
+      "id": "requiredFilesPresent",
+      "status": "passed"
+    },
+    {
+      "id": "currentBranch",
+      "status": "passed"
+    },
+    {
+      "id": "headDetached",
+      "status": "passed"
+    },
+    {
+      "id": "stagedFileCount",
+      "status": "passed"
+    },
+    {
+      "id": "p9Complete",
+      "status": "passed"
+    },
+    {
+      "id": "p9DevelopmentClosurePassed",
+      "status": "passed"
+    },
+    {
+      "id": "p9FinalClosureArtifactPresent",
+      "status": "passed"
+    },
+    {
+      "id": "p9FinalClosureArtifactValid",
+      "status": "passed"
+    },
+    {
+      "id": "p9ClosureHeadPresent",
+      "status": "passed"
+    },
+    {
+      "id": "p9ClosureHeadIsAncestor",
+      "status": "passed"
+    },
+    {
+      "id": "postgresRuntimeHeadMatchesClosureHead",
+      "status": "passed"
+    },
+    {
+      "id": "batch7RuntimeHeadMatchesClosureHead",
+      "status": "passed"
+    },
+    {
+      "id": "postgresArtifactSha256Valid",
+      "status": "passed"
+    },
+    {
+      "id": "batch7ArtifactSha256Valid",
+      "status": "passed"
+    },
+    {
+      "id": "sourceManifestSha256Valid",
+      "status": "passed"
+    },
+    {
+      "id": "dirtyProtectedSourceDriftDetected",
+      "status": "passed"
+    },
+    {
+      "id": "p9ProtectedScopeManifestPresent",
+      "status": "passed"
+    },
+    {
+      "id": "p9ProductSourceChanged",
+      "status": "passed"
+    },
+    {
+      "id": "p9SecurityContractChanged",
+      "status": "passed"
+    },
+    {
+      "id": "p9RuntimeContractChanged",
+      "status": "passed"
+    },
+    {
+      "id": "p9GateSemanticsChanged",
+      "status": "passed"
+    },
+    {
+      "id": "p9AdminProductSourceChanged",
+      "status": "passed"
+    },
+    {
+      "id": "p9ApiContractChanged",
+      "status": "passed"
+    },
+    {
+      "id": "p9ScopeChanged",
+      "status": "passed"
+    },
+    {
+      "id": "p9ProtectedChangedFileCount",
+      "status": "passed"
+    },
+    {
+      "id": "p9ClosureReuseEligible",
+      "status": "passed"
+    },
+    {
+      "id": "productionReady",
+      "status": "passed"
+    },
+    {
+      "id": "productionAcceptancePassed",
+      "status": "passed"
+    }
+  ]
+}

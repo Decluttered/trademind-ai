@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -8,6 +9,12 @@ import {
   P9_BATCH_7_RUNTIME_JSON,
   validateP9Batch7IntegrationBundle,
 } from './p9-task-batch-7-e2e-gate.mjs';
+import {
+  P9_PROTECTED_SOURCE_FREEZE_JSON,
+  computeLiveProtectedSourceManifest,
+  readProtectedSourceFreeze,
+  validateProtectedSourceFreezeBundle,
+} from './p9-protected-source-freeze.mjs';
 
 export const P9_FINAL_CLOSURE_JSON = 'docs/p9-final-development-closure.json';
 export const P9_FINAL_CLOSURE_MD = 'docs/P9_FINAL_DEVELOPMENT_CLOSURE.md';
@@ -44,6 +51,9 @@ const REQUIRED_FILES = [
   P9_BATCH_7_JSON,
   P9_BATCH_7_GATE_JSON,
   P9_BATCH_7_RUNTIME_JSON,
+  P9_PROTECTED_SOURCE_FREEZE_JSON,
+  'docs/P9_CURRENT_HEAD_RECLOSURE.md',
+  'docs/p9-current-head-reclosure.json',
   'docs/P9_EXECUTION_PLAN.md',
   'docs/p9-execution-plan.json',
   'docs/PROGRESS.md',
@@ -78,8 +88,11 @@ function secretLeakFree(values) {
 function gateStatusPassed(gatePath, report) {
   return report.status === 'passed' || (gatePath === 'docs/p9-entry-gate-report.json' && report.status === 'allowed');
 }
+function sha256File(rel) {
+  return fs.existsSync(rootPath(rel)) ? crypto.createHash('sha256').update(fs.readFileSync(rootPath(rel))).digest('hex') : '';
+}
 
-export function validateP9FinalDevelopmentClosureBundle({ closure = {}, plan = {}, batch7Evidence = {}, batch7Runtime = {}, postgresRuntime: injectedPostgresRuntime, gateReports = {}, gitState = {}, requiredFilesPresent } = {}) {
+export function validateP9FinalDevelopmentClosureBundle({ closure = {}, plan = {}, batch7Evidence = {}, batch7Runtime = {}, postgresRuntime: injectedPostgresRuntime, gateReports = {}, gitState = {}, requiredFilesPresent, protectedSourceFreeze: injectedProtectedSourceFreeze, liveProtectedSourceManifest: injectedLiveProtectedSourceManifest, artifactHashes = {} } = {}) {
   const branch = gitState.currentBranch ?? git(['branch', '--show-current']);
   const head = gitState.currentHead ?? git(['rev-parse', 'HEAD']);
   const detached = gitState.headDetached ?? git(['rev-parse', '--abbrev-ref', 'HEAD']) === 'HEAD';
@@ -91,6 +104,15 @@ export function validateP9FinalDevelopmentClosureBundle({ closure = {}, plan = {
   const planAcceptanceIds = unique(productTasks.flatMap((task) => task.acceptanceCriteriaIds || []));
   const historicalGateRows = HISTORICAL_GATE_PATHS.map((gatePath) => ({ path: gatePath, report: gateReports[gatePath] || readJSON(gatePath) || {} }));
   const postgresRuntime = injectedPostgresRuntime || readJSON('artifacts/p9-postgres-runtime.json') || {};
+  const protectedSourceFreeze = injectedProtectedSourceFreeze || readProtectedSourceFreeze();
+  const liveProtectedSourceManifest = injectedLiveProtectedSourceManifest || computeLiveProtectedSourceManifest();
+  const protectedSourceValidation = validateProtectedSourceFreezeBundle({
+    freeze: protectedSourceFreeze,
+    live: liveProtectedSourceManifest,
+    gitState: { currentBranch: branch, currentHead: head },
+  });
+  const postgresRuntimeSha256 = artifactHashes.postgresRuntimeSha256 || sha256File('artifacts/p9-postgres-runtime.json');
+  const batch7RuntimeSha256 = artifactHashes.batch7RuntimeSha256 || sha256File(P9_BATCH_7_RUNTIME_JSON);
   const batch7Validation = gateReports.batch7Validation || validateP9Batch7IntegrationBundle({
     evidence: batch7Evidence,
     runtime: batch7Runtime,
@@ -122,12 +144,23 @@ export function validateP9FinalDevelopmentClosureBundle({ closure = {}, plan = {
     ['stagedFileCount', staged === 0],
     ['closureStatus', closure.status === 'passed' && closure.developmentClosureStatus === 'passed' && closure.p9Complete === true && closure.developmentClosurePassed === true],
     ['closureHeadBinding', closure.currentBranch === branch && closure.currentHead === head && closure.currentClosureHead === head && closure.currentHeadClosureVerified === true],
-    ['previousClosurePreserved', closure.previousClosureHead === closure.initialClosure?.head && closure.previousClosureHead !== head && closure.initialClosure?.status === 'passed'],
+    ['previousClosurePreserved', Array.isArray(closure.previousClosures)
+      ? closure.previousClosures.some((item) => item.head === closure.previousClosureHead && item.head !== head && item.status === 'passed')
+      : closure.previousClosureHead === closure.initialClosure?.head && closure.previousClosureHead !== head && closure.initialClosure?.status === 'passed'],
     ['planStatus', plan.phaseStatus === 'Development Complete' && plan.executionStatus === 'development_complete' && plan.p9Complete === true && plan.p9DevelopmentClosurePassed === true],
     ['productTaskIdsPreserved', sameSet(productTaskIds, PRODUCT_TASK_IDS)],
     ['productTasksCompleted', sameSet(productCompletedIds, PRODUCT_TASK_IDS) && plan.productCompletedTaskCount === 38],
     ['batch7Completed', plan.batch7Completed === true && batch7Evidence.status === 'completed' && batch7Validation.status === 'passed'],
     ['runtimeHeadBindings', closure.postgresRuntimeRunId === postgresRuntime.runId && closure.postgresRuntimeHead === head && postgresRuntime.git?.endHead === head && closure.batch7RuntimeRunId === batch7Runtime.runId && closure.batch7RuntimeHead === head && batch7Runtime.currentHead === head && batch7Evidence.currentHead === head],
+    ['runtimeArtifactBindings', closure.postgresRuntimeSummarySha256 === postgresRuntimeSha256 && closure.batch7RuntimeSummarySha256 === batch7RuntimeSha256],
+    ['protectedSourceManifestBindings', protectedSourceValidation.status === 'passed'
+      && closure.protectedSourceManifestSha256 === protectedSourceFreeze.sha256
+      && closure.postgresRuntimeProtectedSourceManifestSha256 === protectedSourceFreeze.sha256
+      && closure.batch7RuntimeProtectedSourceManifestSha256 === protectedSourceFreeze.sha256
+      && postgresRuntime.protectedSourceFreeze?.sha256 === protectedSourceFreeze.sha256
+      && batch7Runtime.protectedSourceManifestSha256 === protectedSourceFreeze.sha256
+      && closure.protectedSourceDriftDetected === false
+      && closure.currentReclosure?.protectedSourceManifestSha256 === protectedSourceFreeze.sha256],
     ['acceptanceCriteriaPassed', sameSet(planAcceptanceIds, ACCEPTANCE_IDS) && sameSet(closure.acceptanceCriteriaPassedIds || [], ACCEPTANCE_IDS) && closure.acceptanceCriteriaPassedCount === 15],
     ['historicalGatesPassed', historicalGateRows.every(({ path: gatePath, report }) => gateStatusPassed(gatePath, report))],
     ['postgresIntegrationPassed', plan.postgresIntegrationPassed === true && closure.postgresIntegrationPassed === true],
@@ -156,6 +189,12 @@ export function validateP9FinalDevelopmentClosureBundle({ closure = {}, plan = {
     acceptanceCriteriaPassedCount: closure.acceptanceCriteriaPassedCount || 0,
     historicalGateFailureCount: historicalGateRows.filter(({ path: gatePath, report }) => !gateStatusPassed(gatePath, report)).length,
     currentHeadClosureVerified: closure.currentHeadClosureVerified === true,
+    closureHeadBinding: closure.currentClosureHead === head,
+    runtimeHeadBindings: closure.postgresRuntimeHead === head && closure.batch7RuntimeHead === head,
+    protectedSourceManifestBindings: closure.protectedSourceManifestSha256 === protectedSourceFreeze.sha256,
+    protectedSourceManifestSha256: protectedSourceFreeze.sha256 || '',
+    currentProtectedSourceManifestSha256: liveProtectedSourceManifest.sha256 || '',
+    protectedSourceDriftDetected: protectedSourceValidation.protectedSourceDriftDetected || closure.protectedSourceDriftDetected === true,
     p9Complete: closure.p9Complete === true,
     developmentClosurePassed: closure.developmentClosurePassed === true,
     productionReady: closure.productionReady === true,
@@ -176,6 +215,8 @@ Status: **${report.status}**
 - Product tasks: ${report.productCompletedTaskCount}/${report.productTaskTotal}
 - Acceptance criteria: ${report.acceptanceCriteriaPassedCount}/${report.acceptanceCriteriaTotal}
 - Historical gate failures: ${report.historicalGateFailureCount}
+- Protected source manifest SHA-256: ${report.protectedSourceManifestSha256 || 'missing'}
+- Protected source drift detected: ${report.protectedSourceDriftDetected}
 - P9 complete: ${report.p9Complete}
 - Development closure passed: ${report.developmentClosurePassed}
 - Production ready: ${report.productionReady}

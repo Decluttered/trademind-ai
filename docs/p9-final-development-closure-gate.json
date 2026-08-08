@@ -2,11 +2,11 @@
   "phase": "P9",
   "gate": "P9-FINAL-DEVELOPMENT-CLOSURE",
   "status": "passed",
-  "checkedAt": "2026-08-08T05:23:57.262Z",
+  "checkedAt": "2026-08-08T08:05:46.654Z",
   "failed": [],
   "failedCount": 0,
   "currentBranch": "dev",
-  "currentHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+  "currentHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
   "headDetached": false,
   "stagedFileCount": 0,
   "productTaskTotal": 38,
@@ -15,6 +15,12 @@
   "acceptanceCriteriaPassedCount": 15,
   "historicalGateFailureCount": 0,
   "currentHeadClosureVerified": true,
+  "closureHeadBinding": true,
+  "runtimeHeadBindings": true,
+  "protectedSourceManifestBindings": true,
+  "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+  "currentProtectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+  "protectedSourceDriftDetected": false,
   "p9Complete": true,
   "developmentClosurePassed": true,
   "productionReady": false,
@@ -67,6 +73,14 @@
     },
     {
       "id": "runtimeHeadBindings",
+      "status": "passed"
+    },
+    {
+      "id": "runtimeArtifactBindings",
+      "status": "passed"
+    },
+    {
+      "id": "protectedSourceManifestBindings",
       "status": "passed"
     },
     {

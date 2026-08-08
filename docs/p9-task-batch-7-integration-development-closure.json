@@ -6,7 +6,7 @@
   "status": "completed",
   "integrationStatus": "passed",
   "currentBranch": "dev",
-  "currentHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+  "currentHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
   "changesCommitted": false,
   "stagedFileCount": 0,
   "formalTaskTotal": 5,
@@ -55,24 +55,26 @@
     "inventoryMutationCalls": 0
   },
   "runtimeEvidence": {
-    "runId": "p9b7-20260808052115-bfb32c57",
+    "runId": "p9b7-20260808080032-584819ba",
     "summaryPath": "artifacts/p9-batch7-runtime.json",
-    "runtimeSummarySha256": "92879bc2be4a4f21549a3aaab4d2f620b95c256fc6b3d30f9645f3923fbba9b9",
-    "runtimeHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+    "runtimeSummarySha256": "0b5a7ece01e8e8649629b3e5f24f1df48668b31792c56c72bf1ca98ab39e72eb",
+    "runtimeHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
     "runtimeHeadMatchesCurrentHead": true,
-    "sourceManifestSha256": "7cb0fc8a1c6b28672cae7d0fea703f2253632af85bc569e8724c29a15349e1a8",
-    "sourceManifestHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+    "sourceManifestSha256": "5fce794690fad3e86074b7e6c980a1a81ae00755728a73a8254f2aefed202444",
+    "sourceManifestHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
     "sourceManifestHeadMatchesCurrentHead": true,
-    "runtimeJsonlSha256": "a3bf203c06dc708789ea7cf8284b6c516d4be2231d66a1e4f1a06bbf87508ee6",
-    "e2eArtifactSha256": "e461148a167b52b3e25f0f900d83dd34277b446d8e3ab8801b6a15ba4d7cfad9",
-    "raceArtifactSha256": "067b31f807ea47b5eef7125f84ba808050dd289b6593621918b7a74469815ade",
-    "finishedAt": "2026-08-08T05:21:43.932Z"
+    "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+    "runtimeJsonlSha256": "a472c016a1199de0880d24d76bfcd9d015854d7cc6634de8d8d1f0d489944d5c",
+    "e2eArtifactSha256": "edf0bf4139ec12b80788995f02e46140def0d94c773571655edb1a6a1294f925",
+    "raceArtifactSha256": "6a24a4e75a2b2ef2800260dc93094d23fc4cd339a502b0bb6456959a4a574295",
+    "finishedAt": "2026-08-08T08:01:07.070Z"
   },
   "postgresRuntimeEvidence": {
-    "runId": "p9pg-20260808051205-17241dd1",
+    "runId": "p9pg-20260808075913-92f38005",
     "summaryPath": "artifacts/p9-postgres-runtime.json",
-    "runtimeSummarySha256": "825bad39bf77ba2d6c197c253eb22c722bea344754dfa623c38a62c13a9a197d",
-    "runtimeHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+    "runtimeSummarySha256": "c35e7a87c38570038b8f3423d6c1aa7e3589df567ee09d55c05a765433c45e59",
+    "runtimeHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+    "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
     "gateReportPath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md"
   },
   "integrationDefectFixes": [],
@@ -87,7 +89,7 @@
   "automaticRetryWorkerImplemented": false,
   "p10BoundaryPreserved": true,
   "p9Complete": false,
-  "verifiedAt": "2026-08-08T05:21:43.932Z",
+  "verifiedAt": "2026-08-08T08:01:07.070Z",
   "initialClosure": {
     "status": "passed",
     "head": "05239617130a7685ee4aba54176fcf0062e531ff",
@@ -98,15 +100,16 @@
   },
   "currentHeadReclosure": {
     "status": "passed",
-    "reason": "current_head_changed_after_previous_closure",
-    "head": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
-    "runtimeRunId": "p9b7-20260808052115-bfb32c57",
-    "runtimeSummarySha256": "92879bc2be4a4f21549a3aaab4d2f620b95c256fc6b3d30f9645f3923fbba9b9",
-    "sourceManifestSha256": "7cb0fc8a1c6b28672cae7d0fea703f2253632af85bc569e8724c29a15349e1a8",
-    "e2eArtifactSha256": "e461148a167b52b3e25f0f900d83dd34277b446d8e3ab8801b6a15ba4d7cfad9",
+    "reason": "protected_p9_scope_changed_after_previous_closure",
+    "head": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+    "runtimeRunId": "p9b7-20260808080032-584819ba",
+    "runtimeSummarySha256": "0b5a7ece01e8e8649629b3e5f24f1df48668b31792c56c72bf1ca98ab39e72eb",
+    "sourceManifestSha256": "5fce794690fad3e86074b7e6c980a1a81ae00755728a73a8254f2aefed202444",
+    "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+    "e2eArtifactSha256": "edf0bf4139ec12b80788995f02e46140def0d94c773571655edb1a6a1294f925",
     "initialColdStartAttempt": "not_applicable",
     "finalAuthenticatedE2EResult": "passed",
-    "verifiedAt": "2026-08-08T05:21:43.932Z"
+    "verifiedAt": "2026-08-08T08:01:07.070Z"
   },
   "reclosureAttempts": [
     {
@@ -152,6 +155,31 @@
       "initialColdStartAttempt": "not_applicable",
       "finalAuthenticatedE2EResult": "passed",
       "verifiedAt": "2026-08-08T05:16:21.927Z"
+    },
+    {
+      "status": "passed",
+      "reason": "current_head_changed_after_previous_closure",
+      "head": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+      "runtimeRunId": "p9b7-20260808052115-bfb32c57",
+      "runtimeSummarySha256": "92879bc2be4a4f21549a3aaab4d2f620b95c256fc6b3d30f9645f3923fbba9b9",
+      "sourceManifestSha256": "7cb0fc8a1c6b28672cae7d0fea703f2253632af85bc569e8724c29a15349e1a8",
+      "e2eArtifactSha256": "e461148a167b52b3e25f0f900d83dd34277b446d8e3ab8801b6a15ba4d7cfad9",
+      "initialColdStartAttempt": "not_applicable",
+      "finalAuthenticatedE2EResult": "passed",
+      "verifiedAt": "2026-08-08T05:21:43.932Z"
+    },
+    {
+      "status": "passed",
+      "reason": "protected_p9_scope_changed_after_previous_closure",
+      "head": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+      "runtimeRunId": "p9b7-20260808075241-40713caa",
+      "runtimeSummarySha256": "5762f894532a2319da2f7db6f6de46b36fdd3e38b240c2c6056c338ef089793b",
+      "sourceManifestSha256": "1ff54caa8cb06fde68aa5dd81f115f0674991a8d99190ffc4e7ac4205e66da72",
+      "protectedSourceManifestSha256": "5d0363664694a0a34652cf4fcddf42043393ff9ff0f353c24ed97dae949f58fe",
+      "e2eArtifactSha256": "28ab2cd2093b8e7ae8113523b5a0671306a54d0699910b80f16d173ecb0c68db",
+      "initialColdStartAttempt": "failed",
+      "finalAuthenticatedE2EResult": "passed",
+      "verifiedAt": "2026-08-08T07:54:11.391Z"
     }
   ]
 }

@@ -21,6 +21,12 @@ import {
   P9_BATCH_7_SOURCE_MANIFEST_JSON,
   p9Batch7SourceManifest,
 } from './p9-task-batch-7-e2e-gate.mjs';
+import {
+  P9_PROTECTED_SOURCE_FREEZE_JSON,
+  computeLiveProtectedSourceManifest,
+  readProtectedSourceFreeze,
+  validateProtectedSourceFreezeBundle,
+} from './p9-protected-source-freeze.mjs';
 
 const postgresRuntimePath = 'artifacts/p9-postgres-runtime.json';
 const postgresRawPath = 'artifacts/p9-postgres-runtime.jsonl';
@@ -171,6 +177,13 @@ const batch6Gate = readJSON(batch6GatePath);
 const postgresTests = parseGoJSONL(read(postgresRawPath)).tests;
 const historicalGateFailureCount = historicalGatePaths.filter((gatePath) => !gatePassed(gatePath)).length;
 const sourceBefore = p9Batch7SourceManifest();
+const protectedSourceFreeze = readProtectedSourceFreeze();
+const protectedSourceBefore = computeLiveProtectedSourceManifest();
+const protectedSourceValidationBefore = validateProtectedSourceFreezeBundle({
+  freeze: protectedSourceFreeze,
+  live: protectedSourceBefore,
+  gitState: { currentBranch: branch, currentHead: head },
+});
 const previousKnownColdStart = previousRuntimeSnapshot.currentHead === head
   && previousRuntimeSnapshot.status === 'failed'
   && previousPlaywrightAttempt?.passedTestCount === 6
@@ -184,6 +197,8 @@ if (postgresRuntime.status !== 'passed' || postgresRuntime.git?.endHead !== head
 if (batch6Gate.status !== 'passed') preflightIssues.push('batch6Gate');
 if (historicalGateFailureCount !== 0) preflightIssues.push('historicalGates');
 if (postgresTests.TestP9PGBearerAuthAndFixtureGoldenPath !== 'pass') preflightIssues.push('authenticatedPostgresE2E');
+if (protectedSourceValidationBefore.status !== 'passed') preflightIssues.push('protectedSourceFreeze');
+if (postgresRuntime.protectedSourceFreeze?.sha256 !== protectedSourceFreeze.sha256) preflightIssues.push('postgresProtectedSourceFreeze');
 
 const playwrightAttempts = [];
 if (preflightIssues.length === 0) {
@@ -194,6 +209,10 @@ const finalPlaywright = playwrightAttempts.at(-1) || { exitCode: 1, passedTestCo
 const adminE2EPassed = finalPlaywright.exitCode === 0 && finalPlaywright.passedTestCount >= 7;
 const sourceAfter = p9Batch7SourceManifest();
 const sourceStable = sourceBefore.sha256 === sourceAfter.sha256 && sourceAfter.currentHead === head;
+const protectedSourceAfter = computeLiveProtectedSourceManifest();
+const protectedSourceStable = protectedSourceValidationBefore.status === 'passed'
+  && protectedSourceBefore.sha256 === protectedSourceAfter.sha256
+  && protectedSourceAfter.sha256 === protectedSourceFreeze.sha256;
 writeJSON(P9_BATCH_7_SOURCE_MANIFEST_JSON, sourceAfter);
 
 writeJSONL(P9_BATCH_7_E2E_JSONL, [
@@ -206,7 +225,7 @@ const e2eArtifactSha256 = sha256File(P9_BATCH_7_E2E_JSONL);
 const raceArtifactSha256 = sha256File(P9_BATCH_7_RACE_JSONL);
 const contracts = postgresRuntime.contracts || {};
 const rbacMatrixPassed = ['TestRBACAuthorizerInventorySyncRunPermissions', 'TestRBACAuthorizerRerunAndManualBindingPermissions', 'TestInventorySyncAPIRoleAndProductionCaps'].every((testName) => postgresTests[testName] === 'pass');
-const completed = preflightIssues.length === 0 && adminE2EPassed && sourceStable && postgresRuntime.racePassed === true && postgresRuntime.dataRaces === 0;
+const completed = preflightIssues.length === 0 && adminE2EPassed && sourceStable && protectedSourceStable && postgresRuntime.racePassed === true && postgresRuntime.dataRaces === 0;
 const finishedAt = new Date().toISOString();
 const runtimeEvents = [
   { event: 'historical-gates', status: historicalGateFailureCount === 0 ? 'passed' : 'failed', historicalGateFailureCount, currentHead: head },
@@ -216,7 +235,7 @@ const runtimeEvents = [
 writeJSONL(P9_BATCH_7_RUNTIME_JSONL, runtimeEvents);
 const runtimeJsonlSha256 = sha256File(P9_BATCH_7_RUNTIME_JSONL);
 const runtime = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   phase: 'P9',
   batchId: 'P9-TASK-BATCH-7',
   closureType: 'integration_final_gates_development_closure_runtime',
@@ -234,6 +253,14 @@ const runtime = {
   sourceManifestSha256: sourceAfter.sha256,
   sourceManifestHead: sourceAfter.currentHead,
   sourceManifestStable: sourceStable,
+  protectedSourceFreezePath: P9_PROTECTED_SOURCE_FREEZE_JSON,
+  protectedSourceManifestSha256: protectedSourceFreeze.sha256 || '',
+  protectedSourceFreezeHead: protectedSourceFreeze.gitHead || '',
+  protectedSourceManifestBeforeSha256: protectedSourceBefore.sha256,
+  protectedSourceManifestAfterSha256: protectedSourceAfter.sha256,
+  protectedSourceFrozen: protectedSourceValidationBefore.status === 'passed',
+  protectedSourceStable,
+  protectedSourceDriftDetected: !protectedSourceStable,
   runtimeJsonlPath: P9_BATCH_7_RUNTIME_JSONL,
   runtimeJsonlSha256,
   e2eJsonlPath: P9_BATCH_7_E2E_JSONL,
@@ -287,15 +314,15 @@ const evidence = {
     ...(previousEvidence.reclosureAttempts || []),
     ...(previousEvidence.currentHeadReclosure?.runtimeRunId && previousEvidence.currentHeadReclosure.runtimeRunId !== runId ? [previousEvidence.currentHeadReclosure] : []),
   ],
-  currentHeadReclosure: { status: completed ? 'passed' : 'failed', reason: 'current_head_changed_after_previous_closure', head, runtimeRunId: runId, runtimeSummarySha256, sourceManifestSha256: sourceAfter.sha256, e2eArtifactSha256, initialColdStartAttempt: runtime.initialColdStartAttempt, finalAuthenticatedE2EResult: runtime.finalAuthenticatedE2EResult, verifiedAt: finishedAt },
+  currentHeadReclosure: { status: completed ? 'passed' : 'failed', reason: 'protected_p9_scope_changed_after_previous_closure', head, runtimeRunId: runId, runtimeSummarySha256, sourceManifestSha256: sourceAfter.sha256, protectedSourceManifestSha256: protectedSourceFreeze.sha256, e2eArtifactSha256, initialColdStartAttempt: runtime.initialColdStartAttempt, finalAuthenticatedE2EResult: runtime.finalAuthenticatedE2EResult, verifiedAt: finishedAt },
   authenticatedPostgresE2E: runtime.authenticatedPostgresE2E,
   adminE2EPassed,
-  runtimeEvidence: { runId, summaryPath: P9_BATCH_7_RUNTIME_JSON, runtimeSummarySha256, runtimeHead: head, runtimeHeadMatchesCurrentHead: true, sourceManifestSha256: sourceAfter.sha256, sourceManifestHead: head, sourceManifestHeadMatchesCurrentHead: true, runtimeJsonlSha256, e2eArtifactSha256, raceArtifactSha256, finishedAt },
-  postgresRuntimeEvidence: { runId: postgresRuntime.runId, summaryPath: postgresRuntimePath, runtimeSummarySha256: sha256File(postgresRuntimePath), runtimeHead: postgresRuntime.git?.endHead || '', gateReportPath: 'docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md' },
+  runtimeEvidence: { runId, summaryPath: P9_BATCH_7_RUNTIME_JSON, runtimeSummarySha256, runtimeHead: head, runtimeHeadMatchesCurrentHead: true, sourceManifestSha256: sourceAfter.sha256, sourceManifestHead: head, sourceManifestHeadMatchesCurrentHead: true, protectedSourceManifestSha256: protectedSourceFreeze.sha256, runtimeJsonlSha256, e2eArtifactSha256, raceArtifactSha256, finishedAt },
+  postgresRuntimeEvidence: { runId: postgresRuntime.runId, summaryPath: postgresRuntimePath, runtimeSummarySha256: sha256File(postgresRuntimePath), runtimeHead: postgresRuntime.git?.endHead || '', protectedSourceManifestSha256: postgresRuntime.protectedSourceFreeze?.sha256 || '', gateReportPath: 'docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md' },
   verifiedAt: finishedAt,
 };
 writeJSON(P9_BATCH_7_JSON, evidence);
 if (completed) writeAtomic(P9_BATCH_7_MD, renderEvidenceMarkdown(evidence));
 
-console.log(JSON.stringify({ runId, status: runtime.status, currentHead: head, sourceManifestSha256: sourceAfter.sha256, runtimeSummarySha256, e2eArtifactSha256, authenticatedPostgresE2E: runtime.authenticatedPostgresE2E, adminE2EPassed, playwrightAttemptCount: playwrightAttempts.length, historicalGateFailureCount, preflightIssues }, null, 2));
+console.log(JSON.stringify({ runId, status: runtime.status, currentHead: head, sourceManifestSha256: sourceAfter.sha256, protectedSourceManifestSha256: protectedSourceFreeze.sha256, protectedSourceDriftDetected: !protectedSourceStable, runtimeSummarySha256, e2eArtifactSha256, authenticatedPostgresE2E: runtime.authenticatedPostgresE2E, adminE2EPassed, playwrightAttemptCount: playwrightAttempts.length, historicalGateFailureCount, preflightIssues }, null, 2));
 process.exit(completed ? 0 : 1);

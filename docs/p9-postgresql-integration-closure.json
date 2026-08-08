@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "phase": "P9",
   "closureType": "postgresql_integration_baseline",
   "status": "passed",
   "baseBranch": "dev",
-  "baseCheckpoint": "05239617130a7685ee4aba54176fcf0062e531ff",
+  "baseCheckpoint": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
   "currentBranch": "dev",
-  "currentHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+  "currentHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
   "headDetached": false,
   "changesCommitted": false,
   "checkpointCreated": false,
@@ -58,7 +58,7 @@
     "status": "passed",
     "evidencePath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md",
     "gateReportPath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md",
-    "verifiedAt": "2026-08-08T05:13:11.078Z"
+    "verifiedAt": "2026-08-08T08:00:17.421Z"
   },
   "currentPostgresIntegrationStatus": "passed",
   "postgresIntegrationStatus": "passed",
@@ -159,7 +159,7 @@
   "p10BoundaryPreserved": true,
   "batch6ReadyToStart": true,
   "p9Complete": false,
-  "verifiedAt": "2026-08-08T05:13:11.078Z",
+  "verifiedAt": "2026-08-08T08:00:17.421Z",
   "historicalGateFailureCount": 0,
   "initialClosure": {
     "status": "passed",
@@ -171,12 +171,13 @@
   },
   "reclosure": {
     "status": "passed",
-    "reason": "current_head_changed_after_previous_closure",
-    "head": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
-    "runtimeRunId": "p9pg-20260808051205-17241dd1",
-    "runtimeSummarySha256": "825bad39bf77ba2d6c197c253eb22c722bea344754dfa623c38a62c13a9a197d",
-    "sourceManifestSha256": "3876d13710db47b968e796aed263dc72c145340076196c0fa7477a2add144dc9",
-    "verifiedAt": "2026-08-08T05:13:11.078Z"
+    "reason": "protected_p9_scope_changed_after_previous_closure",
+    "head": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+    "runtimeRunId": "p9pg-20260808075913-92f38005",
+    "runtimeSummarySha256": "c35e7a87c38570038b8f3423d6c1aa7e3589df567ee09d55c05a765433c45e59",
+    "sourceManifestSha256": "6081e6ed8db7533b14b7ee09c8a713ffb43383260be1ab92ed14ab1983c47755",
+    "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+    "verifiedAt": "2026-08-08T08:00:17.421Z"
   },
   "previousReclosureRuns": [
     {
@@ -186,18 +187,39 @@
       "runtimeSummarySha256": "fc1dce1e6d113b214f130d11f9599f88fd63f18abd92152bed6a222d27ebd853",
       "sourceManifestSha256": "6dd38b5072c85a55b1395d42126fe64f5a6f804cab2de87cad97d064a320eac4",
       "verifiedAt": "2026-08-08T04:53:03.007Z"
+    },
+    {
+      "status": "passed",
+      "reason": "current_head_changed_after_previous_closure",
+      "head": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+      "runtimeRunId": "p9pg-20260808051205-17241dd1",
+      "runtimeSummarySha256": "825bad39bf77ba2d6c197c253eb22c722bea344754dfa623c38a62c13a9a197d",
+      "sourceManifestSha256": "3876d13710db47b968e796aed263dc72c145340076196c0fa7477a2add144dc9",
+      "verifiedAt": "2026-08-08T05:13:11.078Z"
+    },
+    {
+      "status": "passed",
+      "reason": "protected_p9_scope_changed_after_previous_closure",
+      "head": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
+      "runtimeRunId": "p9pg-20260808075032-59368322",
+      "runtimeSummarySha256": "847f2f0a04a5979ae21344625eede9d882d60bb144527edfcb73a1af559066c2",
+      "sourceManifestSha256": "6081e6ed8db7533b14b7ee09c8a713ffb43383260be1ab92ed14ab1983c47755",
+      "protectedSourceManifestSha256": "5d0363664694a0a34652cf4fcddf42043393ff9ff0f353c24ed97dae949f58fe",
+      "verifiedAt": "2026-08-08T07:51:39.258Z"
     }
   ],
   "runtimeEvidence": {
-    "runId": "p9pg-20260808051205-17241dd1",
+    "runId": "p9pg-20260808075913-92f38005",
     "summaryPath": "artifacts/p9-postgres-runtime.json",
-    "runtimeSummarySha256": "825bad39bf77ba2d6c197c253eb22c722bea344754dfa623c38a62c13a9a197d",
-    "runtimeHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+    "runtimeSummarySha256": "c35e7a87c38570038b8f3423d6c1aa7e3589df567ee09d55c05a765433c45e59",
+    "runtimeHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
     "runtimeHeadMatchesCurrentHead": true,
-    "sourceManifestSha256": "3876d13710db47b968e796aed263dc72c145340076196c0fa7477a2add144dc9",
-    "sourceManifestHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+    "sourceManifestSha256": "6081e6ed8db7533b14b7ee09c8a713ffb43383260be1ab92ed14ab1983c47755",
+    "sourceManifestHead": "912a8af2eb97361c66acfd3f7df8ebb33e8c355c",
     "sourceManifestHeadMatchesCurrentHead": true,
-    "finishedAt": "2026-08-08T05:13:11.078Z"
+    "protectedSourceManifestSha256": "9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76",
+    "protectedSourceDriftDetected": false,
+    "finishedAt": "2026-08-08T08:00:17.421Z"
   },
   "qualityBackendStatus": "blocked_by_existing_baseline",
   "qualityBackendExitCode": 1,
@@ -206,5 +228,21 @@
   "architectureAffectedStatus": "blocked_by_existing_test_baseline",
   "architectureAffectedExitCode": 1,
   "directArchitectureCheckPassed": true,
-  "newArchitectureViolationCount": 0
+  "newArchitectureViolationCount": 0,
+  "foreignKeysPresent": true,
+  "checkConstraintsPresent": true,
+  "partialUniqueIndexesPresent": true,
+  "snapshotUniquenessPassed": true,
+  "confirmedBindingUniquenessPassed": true,
+  "pendingManualRequestUniquenessPassed": true,
+  "snapshotImmutabilityPassed": true,
+  "calibrationImmutabilityPassed": true,
+  "decisionHistoryImmutabilityPassed": true,
+  "auditHistoryImmutabilityPassed": true,
+  "tenantIsolationPassed": true,
+  "keysetPaginationPassed": true,
+  "postgresApiIntegrationPassed": true,
+  "postgresFixtureGoldenPathPassed": true,
+  "allRequiredTestsPassed": true,
+  "packagesPassed": true
 }

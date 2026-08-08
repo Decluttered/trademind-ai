@@ -3,6 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  P9_PROTECTED_SOURCE_FREEZE_JSON,
+  computeLiveProtectedSourceManifest,
+  readProtectedSourceFreeze,
+  validateProtectedSourceFreezeBundle,
+} from './p9-protected-source-freeze.mjs';
 
 export const P9_BATCH_7_JSON = 'docs/p9-task-batch-7-integration-development-closure.json';
 export const P9_BATCH_7_MD = 'docs/P9_TASK_BATCH_7_INTEGRATION_DEVELOPMENT_CLOSURE.md';
@@ -25,6 +31,7 @@ const REQUIRED_FILES = [
   P9_BATCH_7_E2E_JSONL,
   P9_BATCH_7_RACE_JSONL,
   P9_BATCH_7_SOURCE_MANIFEST_JSON,
+  P9_PROTECTED_SOURCE_FREEZE_JSON,
   'artifacts/p9-postgres-runtime.json',
   'docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md',
   'docs/p9-postgresql-integration-closure.json',
@@ -82,7 +89,7 @@ export function p9Batch7SourceManifest() {
   return { schemaVersion: 1, phase: 'P9', batchId: 'P9-TASK-BATCH-7', generatedAt: new Date().toISOString(), currentBranch, currentHead, sha256: hash.digest('hex'), fileCount: entries.length, entries };
 }
 
-export function validateP9Batch7IntegrationBundle({ evidence = {}, runtime = {}, postgresRuntime = {}, postgresGate = {}, batch6Gate = {}, sources = {}, gitState = {}, requiredFilesPresent, sourceManifest: injectedSourceManifest, liveSourceManifest: injectedLiveSourceManifest, runtimeArtifactSha: injectedRuntimeArtifactSha, e2eArtifactSha: injectedE2EArtifactSha, runtimeJsonlSha: injectedRuntimeJsonlSha, raceArtifactSha: injectedRaceArtifactSha } = {}) {
+export function validateP9Batch7IntegrationBundle({ evidence = {}, runtime = {}, postgresRuntime = {}, postgresGate = {}, batch6Gate = {}, sources = {}, gitState = {}, requiredFilesPresent, sourceManifest: injectedSourceManifest, liveSourceManifest: injectedLiveSourceManifest, protectedSourceFreeze: injectedProtectedSourceFreeze, liveProtectedSourceManifest: injectedLiveProtectedSourceManifest, runtimeArtifactSha: injectedRuntimeArtifactSha, e2eArtifactSha: injectedE2EArtifactSha, runtimeJsonlSha: injectedRuntimeJsonlSha, raceArtifactSha: injectedRaceArtifactSha } = {}) {
   const branch = gitState.currentBranch ?? git(['branch', '--show-current']);
   const head = gitState.currentHead ?? git(['rev-parse', 'HEAD']);
   const detached = gitState.headDetached ?? git(['rev-parse', '--abbrev-ref', 'HEAD']) === 'HEAD';
@@ -98,6 +105,13 @@ export function validateP9Batch7IntegrationBundle({ evidence = {}, runtime = {},
   const packageJSON = sources.packageJSON ?? read('package.json');
   const sourceManifest = injectedSourceManifest || readJSON(P9_BATCH_7_SOURCE_MANIFEST_JSON) || {};
   const liveSourceManifest = injectedLiveSourceManifest || p9Batch7SourceManifest();
+  const protectedSourceFreeze = injectedProtectedSourceFreeze || readProtectedSourceFreeze();
+  const liveProtectedSourceManifest = injectedLiveProtectedSourceManifest || computeLiveProtectedSourceManifest();
+  const protectedSourceValidation = validateProtectedSourceFreezeBundle({
+    freeze: protectedSourceFreeze,
+    live: liveProtectedSourceManifest,
+    gitState: { currentBranch: branch, currentHead: head },
+  });
   const runtimeArtifactSha = injectedRuntimeArtifactSha ?? sha256File(P9_BATCH_7_RUNTIME_JSON);
   const e2eArtifactSha = injectedE2EArtifactSha ?? sha256File(P9_BATCH_7_E2E_JSONL);
   const runtimeJsonlSha = injectedRuntimeJsonlSha ?? sha256File(P9_BATCH_7_RUNTIME_JSONL);
@@ -116,6 +130,17 @@ export function validateP9Batch7IntegrationBundle({ evidence = {}, runtime = {},
     ['acceptanceCoverage', ACCEPTANCE_IDS.every((id) => evidence.acceptanceCriteriaPassedIds?.includes(id))],
     ['runtimeBinding', evidence.runtimeEvidence?.runId === runtime.runId && evidence.runtimeEvidence?.finishedAt === runtime.finishedAt && evidence.runtimeEvidence?.runtimeSummarySha256 === runtimeArtifactSha],
     ['sourceManifestBinding', evidence.runtimeEvidence?.sourceManifestSha256 === sourceManifest.sha256 && runtime.sourceManifestSha256 === sourceManifest.sha256 && sourceManifest.currentBranch === branch && sourceManifest.currentHead === head && liveSourceManifest.sha256 === sourceManifest.sha256],
+    ['protectedSourceManifestBinding', protectedSourceValidation.status === 'passed'
+      && evidence.runtimeEvidence?.protectedSourceManifestSha256 === protectedSourceFreeze.sha256
+      && evidence.postgresRuntimeEvidence?.protectedSourceManifestSha256 === protectedSourceFreeze.sha256
+      && runtime.protectedSourceManifestSha256 === protectedSourceFreeze.sha256
+      && runtime.protectedSourceFreezeHead === head
+      && runtime.protectedSourceManifestBeforeSha256 === protectedSourceFreeze.sha256
+      && runtime.protectedSourceManifestAfterSha256 === protectedSourceFreeze.sha256
+      && runtime.protectedSourceFrozen === true
+      && runtime.protectedSourceStable === true
+      && runtime.protectedSourceDriftDetected === false
+      && postgresRuntime.protectedSourceFreeze?.sha256 === protectedSourceFreeze.sha256],
     ['artifactHashBinding', evidence.runtimeEvidence?.e2eArtifactSha256 === e2eArtifactSha && runtime.e2eArtifactSha256 === e2eArtifactSha && evidence.runtimeEvidence?.runtimeJsonlSha256 === runtimeJsonlSha && runtime.runtimeJsonlSha256 === runtimeJsonlSha && evidence.runtimeEvidence?.raceArtifactSha256 === raceArtifactSha && runtime.raceArtifactSha256 === raceArtifactSha],
     ['postgresRuntimeBinding', evidence.postgresRuntimeEvidence?.runId === postgresRuntime.runId && postgresRuntime.git?.endHead === head && postgresGate.status === 'passed' && postgresGate.currentHead === head],
     ['postgresContracts', postgresRuntime.contracts?.postgresIntegrationPassed === true && postgresRuntime.contracts?.postgresFixtureGoldenPathPassed === true],
@@ -147,6 +172,8 @@ export function validateP9Batch7IntegrationBundle({ evidence = {}, runtime = {},
     runtimeRunId: runtime.runId || '',
     runtimeSummarySha256: runtimeArtifactSha,
     sourceManifestSha256: sourceManifest.sha256 || '',
+    protectedSourceManifestSha256: protectedSourceFreeze.sha256 || '',
+    protectedSourceDriftDetected: protectedSourceValidation.protectedSourceDriftDetected,
     postgresRuntimeRunId: postgresRuntime.runId || '',
     productionReady: evidence.productionReady === true,
     productionAcceptancePassed: evidence.productionAcceptancePassed === true,
@@ -164,6 +191,8 @@ Status: **${report.status}**
 - Runtime run ID: ${report.runtimeRunId || 'missing'}
 - Runtime summary SHA-256: ${report.runtimeSummarySha256 || 'missing'}
 - Source manifest SHA-256: ${report.sourceManifestSha256 || 'missing'}
+- Protected source manifest SHA-256: ${report.protectedSourceManifestSha256 || 'missing'}
+- Protected source drift detected: ${report.protectedSourceDriftDetected}
 - PostgreSQL runtime run ID: ${report.postgresRuntimeRunId || 'missing'}
 - Current branch: ${report.currentBranch}
 - Current HEAD: ${report.currentHead}

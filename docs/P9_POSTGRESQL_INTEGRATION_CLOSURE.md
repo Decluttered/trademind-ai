@@ -2,86 +2,32 @@
 
 Status: **Passed**
 
-The P9 Batch 1–5 persistence, constraints, concurrency, transaction, keyset pagination, API, authentication, RBAC, audit, and fixture golden path were revalidated against an isolated PostgreSQL test database. The PostgreSQL-specific suite is fail-closed and does not fall back to SQLite.
-
-## Database and connection
+The P9 persistence, isolation, concurrency, transaction, API, authentication, RBAC, audit, and fixture contracts were revalidated against an isolated PostgreSQL test database. The suite is fail-closed and does not fall back to SQLite.
 
 ```text
+currentHead=912a8af2eb97361c66acfd3f7df8ebb33e8c355c
+runtimeRunId=p9pg-20260808075913-92f38005
+runtimeSummarySha256=c35e7a87c38570038b8f3423d6c1aa7e3589df567ee09d55c05a765433c45e59
+sourceManifestSha256=6081e6ed8db7533b14b7ee09c8a713ffb43383260be1ab92ed14ab1983c47755
+protectedSourceManifestSha256=9a4e854ed81ec1806f72f4824a46f8eba76d7b6b5b748b8612830a1cdcc51f76
+runtimeHeadMatchesCurrentHead=true
+protectedSourceDriftDetected=false
 testDatabaseDriver=postgresql
 testDatabasePurpose=test
-testDatabaseHostCategory=local
 testDatabaseNameSafe=true
 testDatabaseUrlRecorded=false
 productionDatabaseRejected=true
-postgresServerVersion=17.9
-postgresConnectionPassed=true
 sqliteFallbackUsed=false
-```
-
-No database password, user password, authorization value, token, cookie, or complete connection string is recorded in this evidence.
-
-## Verified contracts
-
-- Full repository migration and repeated migration on PostgreSQL.
-- Foreign keys, check constraints, partial unique indexes, JSONB columns, and immutable-history triggers.
-- Snapshot uniqueness, current confirmed-binding uniqueness, and pending manual-request uniqueness.
-- Repository create/get/list behavior, tenant isolation, transaction rollback, idempotency, optimistic revision checks, and real concurrent connections.
-- Stable keyset pagination without duplicate or missing rows, with cursor tenant/endpoint/filter scope protection.
-- Bearer authentication, RBAC, safe DTO/error behavior, fixture sync, audit persistence, and zero inventory mutation.
-- PostgreSQL-tagged race tests completed with no detected data races.
-- `GET /api/v1/product-skus/search` now fails closed without trusted Tenant context and enforces `products.tenant_id` for default, keyword, `productId`, ordering, and limited result windows.
-- Cross-tenant `selectedLocalSkuId` confirmation remains atomically rejected without binding, request resolution, decision history, or success audit creation.
-
-## Runtime evidence
-
-```text
-runtimeRunId=p9pg-20260808051205-17241dd1
-runtimeSummaryPath=artifacts/p9-postgres-runtime.json
-runtimeSummarySha256=825bad39bf77ba2d6c197c253eb22c722bea344754dfa623c38a62c13a9a197d
-sourceManifestSha256=3876d13710db47b968e796aed263dc72c145340076196c0fa7477a2add144dc9
-runtimeFinishedAt=2026-08-08T05:13:11.078Z
-currentHead=7ba7c32be083ad802ed60798bd2c4e936cfbba93
-runtimeHeadMatchesCurrentHead=true
-sourceManifestHeadMatchesCurrentHead=true
 racePassed=true
 dataRaces=0
-historicalGateFailureCount=0
-```
-
-## Historical evidence
-
-Batch 1–5 documents retain their original `postgresIntegrationStatus=not_run` observations. Each now includes a separate **PostgreSQL Revalidation** section pointing to this closure evidence.
-
-The initial closure remains recorded as run `p9pg-20260804120930-89396c44` on HEAD `05239617130a7685ee4aba54176fcf0062e531ff`, with runtime SHA-256 `8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454`. The current authoritative reclosure is the fresh run above; the historical run is not represented as current-HEAD evidence.
-
-## Repository quality baseline
-
-```text
-qualityBackendStatus=blocked_by_existing_baseline
-repositoryUnformattedGoFileCount=450
-newPostgresClosureFormattingViolationCount=0
-architectureAffectedStatus=blocked_by_existing_test_baseline
-directArchitectureCheckPassed=true
-newArchitectureViolationCount=0
-```
-
-`quality:backend` remains blocked by pre-existing repository-wide Go formatting debt. `architecture:affected` remains blocked by the existing Vitest `.mjs` loading baseline; the direct architecture boundary check passed with zero new or increased violations.
-
-## Boundary
-
-```text
-fixtureProviderNetworkCalls=0
 realPlatformNetworkCalls=0
 realCredentialsUsed=false
 inventoryMutationCalls=0
-adminUiImplemented=false
-backgroundSyncWorkerImplemented=false
-automaticRetryWorkerImplemented=false
-realDouyinProviderImplemented=false
-oauthImplemented=false
 productionReady=false
-p10BoundaryPreserved=true
-p9Complete=false
 ```
 
-P9 remains in progress. Product Batch 6 is ready to start but was not started or implemented by this closure. Tag and final production acceptance remain deferred.
+No database password, authorization value, token, cookie, or complete connection string is recorded in this evidence.
+
+## Boundary
+
+Real provider, OAuth, platform read/write, inventory mutation, background worker, automatic retry, tag, release, and production acceptance remain disabled or deferred.

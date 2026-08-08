@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "manifestType": "p9_protected_scope",
+  "phase": "P9",
+  "sourceBasis": [
+    "docs/p9-execution-plan.json",
+    "docs/p9-final-development-closure.json",
+    "docs/p9-task-batch-7-integration-development-closure.json",
+    "artifacts/p9-batch7-source-manifest.json"
+  ],
+  "blockingCategories": {
+    "P9_PRODUCT_SOURCE": {
+      "paths": [
+        "backend/internal/modules/inventorysyncp9/**",
+        "backend/internal/modules/product/handler.go",
+        "backend/internal/modules/product/service.go",
+        "backend/internal/modules/product/sku_search.go",
+        "backend/internal/modules/product/sku_search_test.go",
+        "backend/internal/modules/idempotency/service.go"
+      ]
+    },
+    "P9_SECURITY_AND_PERSISTENCE_CONTRACT": {
+      "paths": [
+        "backend/internal/config/validate.go",
+        "backend/internal/config/validate_test.go",
+        "backend/internal/database/migrate.go",
+        "backend/internal/modules/operationlog/service.go",
+        "backend/internal/pkg/adminperm/matrix.go",
+        "backend/internal/pkg/adminperm/perm_test.go",
+        "backend/internal/pkg/httpapi/strict_json.go",
+        "backend/internal/pkg/httpapi/strict_json_test.go",
+        "backend/internal/testing/integration/database_migration_test.go",
+        "backend/internal/testing/integration/p9_postgres_integration_test.go",
+        "backend/internal/testing/postgrestest/**",
+        "backend/internal/testing/safeenv/**"
+      ]
+    },
+    "P9_RUNTIME_CONTRACT": {
+      "paths": [
+        ".github/workflows/project-tests.yml",
+        "scripts/p9-postgres-contract.mjs",
+        "scripts/p9-postgres-runtime.mjs",
+        "scripts/p9-postgres-test-db-ensure.mjs",
+        "scripts/p9-task-batch-7-runtime.mjs",
+        "scripts/p9-protected-source-freeze.mjs",
+        "scripts/p9-current-head-reclosure.mjs"
+      ]
+    },
+    "P9_GATE_SEMANTICS": {
+      "paths": [
+        "scripts/p9-entry-gate.mjs",
+        "scripts/p9-final-development-closure-gate.mjs",
+        "scripts/p9-plan-final-gate.mjs",
+        "scripts/p9-postgres-integration-gate.mjs",
+        "scripts/p9-task-batch-1-domain-persistence-gate.mjs",
+        "scripts/p9-task-batch-1-scope-gate.mjs",
+        "scripts/p9-task-batch-2-sku-calibration-gate.mjs",
+        "scripts/p9-task-batch-3-sync-orchestration-gate.mjs",
+        "scripts/p9-task-batch-4-permissions-audit-safety-gate.mjs",
+        "scripts/p9-task-batch-5-backend-apis-gate.mjs",
+        "scripts/p9-task-batch-6-admin-inventory-center-gate.mjs",
+        "scripts/p9-task-batch-7-e2e-gate.mjs",
+        "docs/p9-protected-scope-manifest.json",
+        "tests/gates/p9/**"
+      ]
+    },
+    "P9_ADMIN_PRODUCT_SOURCE": {
+      "paths": [
+        "admin/config/routes.ts",
+        "admin/e2e/mocks/inventory-sync-p9.ts",
+        "admin/e2e/specs/p9-inventory-sync.spec.ts",
+        "admin/e2e/utils/routes.ts",
+        "admin/src/pages/Ops/InventorySync/**",
+        "admin/src/services/inventorySyncP9.ts",
+        "admin/src/services/__tests__/inventorySyncP9.test.ts"
+      ]
+    },
+    "P9_API_CONTRACT": {
+      "paths": [
+        "docs/api.md",
+        "backend/internal/api/router.go",
+        "backend/internal/modules/inventorysyncp9/api_*.go",
+        "admin/src/services/inventorySyncP9.ts",
+        "admin/src/services/__tests__/inventorySyncP9.test.ts"
+      ]
+    },
+    "P9_SCOPE_AND_ACCEPTANCE": {
+      "paths": [
+        "docs/P9_EXECUTION_PLAN.md",
+        "docs/p9-execution-plan.json",
+        "docs/P9_OWNER_SCOPE_DECISION.md",
+        "docs/p9-owner-scope-decision.json"
+      ]
+    }
+  },
+  "semanticRules": [
+    {
+      "id": "p9-package-scripts",
+      "path": "package.json",
+      "category": "P9_RUNTIME_CONTRACT",
+      "kind": "package_script_prefixes",
+      "includePrefixes": [
+        "p9:",
+        "test:p9"
+      ],
+      "excludeKeys": [
+        "p9:p10-transition-gate",
+        "test:p9-to-p10-transition"
+      ]
+    },
+    {
+      "id": "final-closure-semantics",
+      "path": "docs/p9-final-development-closure.json",
+      "category": "P9_SCOPE_AND_ACCEPTANCE",
+      "kind": "json_fields",
+      "fields": [
+        "p9Complete",
+        "developmentClosurePassed",
+        "formalTaskTotal",
+        "formalTaskCompletedCount",
+        "acceptanceCriteriaTotal",
+        "acceptanceCriteriaPassedCount",
+        "productionReady",
+        "productionAcceptancePassed",
+        "p10BoundaryPreserved"
+      ]
+    },
+    {
+      "id": "final-gate-report-semantics",
+      "path": "docs/p9-final-development-closure-gate.json",
+      "category": "P9_SCOPE_AND_ACCEPTANCE",
+      "kind": "json_fields",
+      "fields": [
+        "productTaskTotal",
+        "productCompletedTaskCount",
+        "acceptanceCriteriaTotal",
+        "acceptanceCriteriaPassedCount",
+        "p9Complete",
+        "developmentClosurePassed",
+        "productionReady",
+        "productionAcceptancePassed",
+        "p10BoundaryPreserved"
+      ]
+    }
+  ],
+  "nonBlockingGeneratedEvidence": {
+    "paths": [
+      "docs/P9_*_GATE.md",
+      "docs/p9-*-gate.json",
+      "docs/P9_ENTRY_GATE_REPORT.md",
+      "docs/p9-entry-gate-report.json",
+      "docs/P9_FINAL_DEVELOPMENT_CLOSURE.md",
+      "docs/p9-final-development-closure.json",
+      "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE.md",
+      "docs/p9-postgresql-integration-closure.json",
+      "docs/P9_TASK_BATCH_7_INTEGRATION_DEVELOPMENT_CLOSURE.md",
+      "docs/p9-task-batch-7-integration-development-closure.json"
+    ],
+    "rule": "File-level changes are report output. Protected semantic fields remain checked by semanticRules and closure integrity validation."
+  }
+}
