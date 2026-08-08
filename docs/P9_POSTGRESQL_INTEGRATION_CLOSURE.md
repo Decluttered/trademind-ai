@@ -35,12 +35,14 @@ No database password, user password, authorization value, token, cookie, or comp
 ## Runtime evidence
 
 ```text
-runtimeRunId=p9pg-20260804120930-89396c44
+runtimeRunId=p9pg-20260808051205-17241dd1
 runtimeSummaryPath=artifacts/p9-postgres-runtime.json
-runtimeSummarySha256=8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454
-sourceManifestSha256=b58427e39405c256386a57512a0c6431f6dbc6b9765a0798110e27f6a920c1bc
-runtimeFinishedAt=2026-08-04T12:10:34.567Z
-currentHead=05239617130a7685ee4aba54176fcf0062e531ff
+runtimeSummarySha256=825bad39bf77ba2d6c197c253eb22c722bea344754dfa623c38a62c13a9a197d
+sourceManifestSha256=3876d13710db47b968e796aed263dc72c145340076196c0fa7477a2add144dc9
+runtimeFinishedAt=2026-08-08T05:13:11.078Z
+currentHead=7ba7c32be083ad802ed60798bd2c4e936cfbba93
+runtimeHeadMatchesCurrentHead=true
+sourceManifestHeadMatchesCurrentHead=true
 racePassed=true
 dataRaces=0
 historicalGateFailureCount=0
@@ -49,6 +51,8 @@ historicalGateFailureCount=0
 ## Historical evidence
 
 Batch 1–5 documents retain their original `postgresIntegrationStatus=not_run` observations. Each now includes a separate **PostgreSQL Revalidation** section pointing to this closure evidence.
+
+The initial closure remains recorded as run `p9pg-20260804120930-89396c44` on HEAD `05239617130a7685ee4aba54176fcf0062e531ff`, with runtime SHA-256 `8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454`. The current authoritative reclosure is the fresh run above; the historical run is not represented as current-HEAD evidence.
 
 ## Repository quality baseline
 

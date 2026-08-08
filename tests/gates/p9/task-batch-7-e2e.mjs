@@ -4,13 +4,15 @@ import { validateP9Batch7IntegrationBundle } from '../../../scripts/p9-task-batc
 const tasks = Object.fromEntries(['P9-1101', 'P9-1102', 'P9-1103', 'P9-1104', 'P9-1105'].map((id) => [id, { status: 'completed' }]));
 const evidence = {
   batchId: 'P9-TASK-BATCH-7',
+  currentBranch: 'dev',
+  currentHead: 'abc123',
   status: 'completed',
   integrationStatus: 'passed',
   formalTaskTotal: 5,
   formalTaskCompletedCount: 5,
   tasks,
   acceptanceCriteriaPassedIds: ['AC-P9-09', 'AC-P9-10', 'AC-P9-11', 'AC-P9-12', 'AC-P9-13', 'AC-P9-14', 'AC-P9-15'],
-  runtimeEvidence: { runId: 'p9b7-run', runtimeSummarySha256: '', sourceManifestSha256: 'manifest-sha' },
+  runtimeEvidence: { runId: 'p9b7-run', runtimeSummarySha256: 'runtime-sha', sourceManifestSha256: 'manifest-sha', runtimeJsonlSha256: 'runtime-jsonl-sha', e2eArtifactSha256: 'e2e-sha', raceArtifactSha256: 'race-sha', finishedAt: '2026-08-08T00:00:00.000Z' },
   postgresRuntimeEvidence: { runId: 'pg-run' },
   integrationDefectFixes: [],
   p10BoundaryPreserved: true,
@@ -29,7 +31,13 @@ const runtime = {
   runId: 'p9b7-run',
   status: 'passed',
   completed: true,
+  currentBranch: 'dev',
+  currentHead: 'abc123',
+  finishedAt: '2026-08-08T00:00:00.000Z',
   sourceManifestSha256: 'manifest-sha',
+  runtimeJsonlSha256: 'runtime-jsonl-sha',
+  e2eArtifactSha256: 'e2e-sha',
+  raceArtifactSha256: 'race-sha',
   authenticatedPostgresE2E: true,
   tenantIsolationPassed: true,
   rbacMatrixPassed: true,
@@ -46,16 +54,17 @@ const runtime = {
 };
 const postgresRuntime = {
   runId: 'pg-run',
+  git: { endHead: 'abc123' },
   contracts: { postgresIntegrationPassed: true, postgresFixtureGoldenPathPassed: true },
 };
-const postgresGate = { status: 'passed' };
+const postgresGate = { status: 'passed', currentHead: 'abc123' };
 const batch6Gate = { status: 'passed' };
 const sources = {
   e2e: '@p9-batch7 viewports writeGuard.allow',
   mocks: 'success_single_page',
   service: 'nextCursor',
   backendIntegration: 'TestP9PGBearerAuthAndFixtureGoldenPath',
-  packageJSON: 'test:p9-task-batch-7-e2e p9:task-batch-7-e2e-gate',
+  packageJSON: 'test:p9-task-batch-7-e2e test:p9-task-batch-7-runtime p9:task-batch-7-e2e-gate',
 };
 const gitState = { currentBranch: 'dev', currentHead: 'abc123', headDetached: false, stagedFileCount: 0 };
 const validFiles = true;
@@ -70,8 +79,12 @@ function validate(overrides = {}) {
     sources: { ...sources, ...(overrides.sources || {}) },
     gitState: { ...gitState, ...(overrides.gitState || {}) },
     requiredFilesPresent: validFiles,
-    sourceManifest: overrides.sourceManifest || { sha256: 'manifest-sha' },
-    runtimeArtifactSha: overrides.runtimeArtifactSha ?? '',
+    sourceManifest: overrides.sourceManifest || { sha256: 'manifest-sha', currentBranch: 'dev', currentHead: 'abc123' },
+    liveSourceManifest: overrides.liveSourceManifest || { sha256: 'manifest-sha' },
+    runtimeArtifactSha: overrides.runtimeArtifactSha ?? 'runtime-sha',
+    runtimeJsonlSha: overrides.runtimeJsonlSha ?? 'runtime-jsonl-sha',
+    e2eArtifactSha: overrides.e2eArtifactSha ?? 'e2e-sha',
+    raceArtifactSha: overrides.raceArtifactSha ?? 'race-sha',
   });
 }
 
@@ -86,6 +99,10 @@ expectFailed('P9-1102 status', { evidence: { tasks: { ...tasks, 'P9-1102': { sta
 expectFailed('acceptanceCoverage', { evidence: { acceptanceCriteriaPassedIds: ['AC-P9-09'] } });
 expectFailed('postgresContracts', { postgresRuntime: { contracts: { postgresIntegrationPassed: false, postgresFixtureGoldenPathPassed: true } } });
 expectFailed('authenticatedE2E', { runtime: { authenticatedPostgresE2E: false } });
+expectFailed('runtimeHeadBinding', { runtime: { currentHead: 'stale-head' } });
+expectFailed('sourceManifestBinding', { liveSourceManifest: { sha256: 'changed-manifest' } });
+expectFailed('artifactHashBinding', { e2eArtifactSha: 'changed-e2e' });
+expectFailed('postgresRuntimeBinding', { postgresRuntime: { git: { endHead: 'stale-head' } } });
 expectFailed('tenantRbacIsolation', { runtime: { rbacMatrixPassed: false } });
 expectFailed('idempotencyAndConflict', { runtime: { revisionConflictPassed: false } });
 expectFailed('keysetPagination', { sources: { service: 'nextCursor offset' } });

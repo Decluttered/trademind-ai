@@ -26,6 +26,7 @@ const PRODUCT_TASK_IDS = [
 ];
 const ACCEPTANCE_IDS = Array.from({ length: 15 }, (_, i) => `AC-P9-${String(i + 1).padStart(2, '0')}`);
 const HISTORICAL_GATE_PATHS = [
+  'docs/p9-entry-gate-report.json',
   'docs/p9-plan-final-gate.json',
   'docs/p9-task-batch-1-scope-gate.json',
   'docs/p9-task-batch-1-domain-persistence-gate.json',
@@ -56,7 +57,8 @@ function read(rel) { try { return fs.readFileSync(rootPath(rel), 'utf8'); } catc
 function readJSON(rel) { try { return JSON.parse(read(rel)); } catch { return null; } }
 function write(rel, value) {
   fs.mkdirSync(path.dirname(rootPath(rel)), { recursive: true });
-  fs.writeFileSync(rootPath(rel), `${typeof value === 'string' ? value : JSON.stringify(value, null, 2)}\n`, 'utf8');
+  const content = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  fs.writeFileSync(rootPath(rel), content.endsWith('\n') ? content : `${content}\n`, 'utf8');
 }
 function git(args) {
   try { return execFileSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' }).trim(); } catch { return ''; }
@@ -73,8 +75,11 @@ function sameSet(actual, expected) {
 function secretLeakFree(values) {
   return values.every((value) => !/(authorization|cookie|access_token|refresh_token|client_secret|idempotency-key\s*[:=]\s*[a-z0-9_-]{12,}|postgres(?:ql)?:\/\/[^\s"']+)/i.test(String(value || '')));
 }
+function gateStatusPassed(gatePath, report) {
+  return report.status === 'passed' || (gatePath === 'docs/p9-entry-gate-report.json' && report.status === 'allowed');
+}
 
-export function validateP9FinalDevelopmentClosureBundle({ closure = {}, plan = {}, batch7Evidence = {}, batch7Runtime = {}, gateReports = {}, gitState = {}, requiredFilesPresent } = {}) {
+export function validateP9FinalDevelopmentClosureBundle({ closure = {}, plan = {}, batch7Evidence = {}, batch7Runtime = {}, postgresRuntime: injectedPostgresRuntime, gateReports = {}, gitState = {}, requiredFilesPresent } = {}) {
   const branch = gitState.currentBranch ?? git(['branch', '--show-current']);
   const head = gitState.currentHead ?? git(['rev-parse', 'HEAD']);
   const detached = gitState.headDetached ?? git(['rev-parse', '--abbrev-ref', 'HEAD']) === 'HEAD';
@@ -85,6 +90,7 @@ export function validateP9FinalDevelopmentClosureBundle({ closure = {}, plan = {
   const productCompletedIds = productTasks.filter((task) => task.status === 'completed').map((task) => task.taskId);
   const planAcceptanceIds = unique(productTasks.flatMap((task) => task.acceptanceCriteriaIds || []));
   const historicalGateRows = HISTORICAL_GATE_PATHS.map((gatePath) => ({ path: gatePath, report: gateReports[gatePath] || readJSON(gatePath) || {} }));
+  const postgresRuntime = injectedPostgresRuntime || readJSON('artifacts/p9-postgres-runtime.json') || {};
   const batch7Validation = gateReports.batch7Validation || validateP9Batch7IntegrationBundle({
     evidence: batch7Evidence,
     runtime: batch7Runtime,
@@ -115,12 +121,15 @@ export function validateP9FinalDevelopmentClosureBundle({ closure = {}, plan = {
     ['headDetached', detached === false],
     ['stagedFileCount', staged === 0],
     ['closureStatus', closure.status === 'passed' && closure.developmentClosureStatus === 'passed' && closure.p9Complete === true && closure.developmentClosurePassed === true],
+    ['closureHeadBinding', closure.currentBranch === branch && closure.currentHead === head && closure.currentClosureHead === head && closure.currentHeadClosureVerified === true],
+    ['previousClosurePreserved', closure.previousClosureHead === closure.initialClosure?.head && closure.previousClosureHead !== head && closure.initialClosure?.status === 'passed'],
     ['planStatus', plan.phaseStatus === 'Development Complete' && plan.executionStatus === 'development_complete' && plan.p9Complete === true && plan.p9DevelopmentClosurePassed === true],
     ['productTaskIdsPreserved', sameSet(productTaskIds, PRODUCT_TASK_IDS)],
     ['productTasksCompleted', sameSet(productCompletedIds, PRODUCT_TASK_IDS) && plan.productCompletedTaskCount === 38],
     ['batch7Completed', plan.batch7Completed === true && batch7Evidence.status === 'completed' && batch7Validation.status === 'passed'],
+    ['runtimeHeadBindings', closure.postgresRuntimeRunId === postgresRuntime.runId && closure.postgresRuntimeHead === head && postgresRuntime.git?.endHead === head && closure.batch7RuntimeRunId === batch7Runtime.runId && closure.batch7RuntimeHead === head && batch7Runtime.currentHead === head && batch7Evidence.currentHead === head],
     ['acceptanceCriteriaPassed', sameSet(planAcceptanceIds, ACCEPTANCE_IDS) && sameSet(closure.acceptanceCriteriaPassedIds || [], ACCEPTANCE_IDS) && closure.acceptanceCriteriaPassedCount === 15],
-    ['historicalGatesPassed', historicalGateRows.every(({ report }) => report.status === 'passed')],
+    ['historicalGatesPassed', historicalGateRows.every(({ path: gatePath, report }) => gateStatusPassed(gatePath, report))],
     ['postgresIntegrationPassed', plan.postgresIntegrationPassed === true && closure.postgresIntegrationPassed === true],
     ['adminE2EPassed', closure.adminE2EPassed === true && closure.adminResponsiveE2EPassed === true],
     ['qualityGateEvidenceRecorded', Array.isArray(closure.validationCommands) && closure.validationCommands.length > 0],
@@ -145,7 +154,8 @@ export function validateP9FinalDevelopmentClosureBundle({ closure = {}, plan = {
     productCompletedTaskCount: productCompletedIds.length,
     acceptanceCriteriaTotal: planAcceptanceIds.length,
     acceptanceCriteriaPassedCount: closure.acceptanceCriteriaPassedCount || 0,
-    historicalGateFailureCount: historicalGateRows.filter(({ report }) => report.status !== 'passed').length,
+    historicalGateFailureCount: historicalGateRows.filter(({ path: gatePath, report }) => !gateStatusPassed(gatePath, report)).length,
+    currentHeadClosureVerified: closure.currentHeadClosureVerified === true,
     p9Complete: closure.p9Complete === true,
     developmentClosurePassed: closure.developmentClosurePassed === true,
     productionReady: closure.productionReady === true,
@@ -183,6 +193,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
     plan: readJSON('docs/p9-execution-plan.json') || {},
     batch7Evidence: readJSON(P9_BATCH_7_JSON) || {},
     batch7Runtime: readJSON(P9_BATCH_7_RUNTIME_JSON) || {},
+    postgresRuntime: readJSON('artifacts/p9-postgres-runtime.json') || {},
   });
   write(P9_FINAL_CLOSURE_GATE_JSON, report);
   write(P9_FINAL_CLOSURE_GATE_MD, renderP9FinalDevelopmentClosureGateMarkdown(report));

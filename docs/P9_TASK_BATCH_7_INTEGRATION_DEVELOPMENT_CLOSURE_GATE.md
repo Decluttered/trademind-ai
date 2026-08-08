@@ -2,12 +2,12 @@
 
 Status: **passed**
 
-- Runtime run ID: p9b7-20260804122024-89396c44
-- Runtime summary SHA-256: 8e62454ebdced2ee5e01f27669c8a7c6459d32e6db09beded9f3f2d28b477211
-- Source manifest SHA-256: 39763934c179a9f9dc27f49b500d4cd53d388790c61766d572d41717a324c5b2
-- PostgreSQL runtime run ID: p9pg-20260804120930-89396c44
+- Runtime run ID: p9b7-20260808052115-bfb32c57
+- Runtime summary SHA-256: 92879bc2be4a4f21549a3aaab4d2f620b95c256fc6b3d30f9645f3923fbba9b9
+- Source manifest SHA-256: 7cb0fc8a1c6b28672cae7d0fea703f2253632af85bc569e8724c29a15349e1a8
+- PostgreSQL runtime run ID: p9pg-20260808051205-17241dd1
 - Current branch: dev
-- Current HEAD: 05239617130a7685ee4aba54176fcf0062e531ff
+- Current HEAD: 7ba7c32be083ad802ed60798bd2c4e936cfbba93
 - Staged files: 0
 - Production ready: false
 - Production acceptance passed: false
@@ -22,6 +22,7 @@ Status: **passed**
 - PASS `stagedFileCount`
 - PASS `batchId`
 - PASS `status`
+- PASS `runtimeHeadBinding`
 - PASS `P9-1101 status`
 - PASS `P9-1102 status`
 - PASS `P9-1103 status`
@@ -31,6 +32,7 @@ Status: **passed**
 - PASS `acceptanceCoverage`
 - PASS `runtimeBinding`
 - PASS `sourceManifestBinding`
+- PASS `artifactHashBinding`
 - PASS `postgresRuntimeBinding`
 - PASS `postgresContracts`
 - PASS `authenticatedE2E`

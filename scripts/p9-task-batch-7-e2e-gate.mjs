@@ -38,6 +38,7 @@ const REQUIRED_FILES = [
   'backend/internal/testing/integration/p9_postgres_integration_test.go',
   'backend/internal/modules/inventorysyncp9/postgres_integration_test.go',
   'backend/internal/modules/inventorysyncp9/postgres_contract_test.go',
+  'scripts/p9-task-batch-7-runtime.mjs',
   'scripts/p9-task-batch-7-e2e-gate.mjs',
   'tests/gates/p9/task-batch-7-e2e.mjs',
   'package.json',
@@ -48,7 +49,8 @@ function read(rel) { try { return fs.readFileSync(rootPath(rel), 'utf8'); } catc
 function readJSON(rel) { try { return JSON.parse(read(rel)); } catch { return null; } }
 function write(rel, value) {
   fs.mkdirSync(path.dirname(rootPath(rel)), { recursive: true });
-  fs.writeFileSync(rootPath(rel), `${typeof value === 'string' ? value : JSON.stringify(value, null, 2)}\n`, 'utf8');
+  const content = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  fs.writeFileSync(rootPath(rel), content.endsWith('\n') ? content : `${content}\n`, 'utf8');
 }
 function sha256Buffer(value) { return crypto.createHash('sha256').update(value).digest('hex'); }
 function sha256File(rel) { return fs.existsSync(rootPath(rel)) ? sha256Buffer(fs.readFileSync(rootPath(rel))) : ''; }
@@ -61,6 +63,8 @@ function secretLeakFree(values) {
 }
 
 export function p9Batch7SourceManifest() {
+  const currentBranch = git(['branch', '--show-current']);
+  const currentHead = git(['rev-parse', 'HEAD']);
   const files = REQUIRED_FILES
     .filter((file) => !file.startsWith('artifacts/') && !file.endsWith('-gate.json') && !file.endsWith('_GATE.md'))
     .filter((file) => file !== P9_BATCH_7_JSON && file !== P9_BATCH_7_MD)
@@ -75,10 +79,10 @@ export function p9Batch7SourceManifest() {
     hash.update('\n');
     return { path: file, sha256 };
   });
-  return { schemaVersion: 1, phase: 'P9', batchId: 'P9-TASK-BATCH-7', generatedAt: new Date().toISOString(), sha256: hash.digest('hex'), fileCount: entries.length, entries };
+  return { schemaVersion: 1, phase: 'P9', batchId: 'P9-TASK-BATCH-7', generatedAt: new Date().toISOString(), currentBranch, currentHead, sha256: hash.digest('hex'), fileCount: entries.length, entries };
 }
 
-export function validateP9Batch7IntegrationBundle({ evidence = {}, runtime = {}, postgresRuntime = {}, postgresGate = {}, batch6Gate = {}, sources = {}, gitState = {}, requiredFilesPresent, sourceManifest: injectedSourceManifest, runtimeArtifactSha: injectedRuntimeArtifactSha } = {}) {
+export function validateP9Batch7IntegrationBundle({ evidence = {}, runtime = {}, postgresRuntime = {}, postgresGate = {}, batch6Gate = {}, sources = {}, gitState = {}, requiredFilesPresent, sourceManifest: injectedSourceManifest, liveSourceManifest: injectedLiveSourceManifest, runtimeArtifactSha: injectedRuntimeArtifactSha, e2eArtifactSha: injectedE2EArtifactSha, runtimeJsonlSha: injectedRuntimeJsonlSha, raceArtifactSha: injectedRaceArtifactSha } = {}) {
   const branch = gitState.currentBranch ?? git(['branch', '--show-current']);
   const head = gitState.currentHead ?? git(['rev-parse', 'HEAD']);
   const detached = gitState.headDetached ?? git(['rev-parse', '--abbrev-ref', 'HEAD']) === 'HEAD';
@@ -93,21 +97,27 @@ export function validateP9Batch7IntegrationBundle({ evidence = {}, runtime = {},
   ].join('\n');
   const packageJSON = sources.packageJSON ?? read('package.json');
   const sourceManifest = injectedSourceManifest || readJSON(P9_BATCH_7_SOURCE_MANIFEST_JSON) || {};
+  const liveSourceManifest = injectedLiveSourceManifest || p9Batch7SourceManifest();
   const runtimeArtifactSha = injectedRuntimeArtifactSha ?? sha256File(P9_BATCH_7_RUNTIME_JSON);
+  const e2eArtifactSha = injectedE2EArtifactSha ?? sha256File(P9_BATCH_7_E2E_JSONL);
+  const runtimeJsonlSha = injectedRuntimeJsonlSha ?? sha256File(P9_BATCH_7_RUNTIME_JSONL);
+  const raceArtifactSha = injectedRaceArtifactSha ?? sha256File(P9_BATCH_7_RACE_JSONL);
   const checks = [
     ['requiredFilesPresent', requiredFilesPresent ?? REQUIRED_FILES.every((file) => fs.existsSync(rootPath(file)))],
-    ['packageScriptsPresent', hasAll(packageJSON, ['test:p9-task-batch-7-e2e', 'p9:task-batch-7-e2e-gate'])],
+    ['packageScriptsPresent', hasAll(packageJSON, ['test:p9-task-batch-7-e2e', 'test:p9-task-batch-7-runtime', 'p9:task-batch-7-e2e-gate'])],
     ['currentBranch', branch === 'dev'],
     ['headDetached', detached === false],
     ['stagedFileCount', staged === 0],
     ['batchId', evidence.batchId === 'P9-TASK-BATCH-7' && runtime.batchId === 'P9-TASK-BATCH-7'],
     ['status', evidence.status === 'completed' && evidence.integrationStatus === 'passed' && runtime.status === 'passed' && runtime.completed === true],
+    ['runtimeHeadBinding', evidence.currentBranch === branch && evidence.currentHead === head && runtime.currentBranch === branch && runtime.currentHead === head],
     ...TASK_IDS.map((id) => [`${id} status`, evidence.tasks?.[id]?.status === 'completed']),
     ['formalTaskCount', evidence.formalTaskTotal === 5 && evidence.formalTaskCompletedCount === 5],
     ['acceptanceCoverage', ACCEPTANCE_IDS.every((id) => evidence.acceptanceCriteriaPassedIds?.includes(id))],
-    ['runtimeBinding', evidence.runtimeEvidence?.runId === runtime.runId && evidence.runtimeEvidence?.runtimeSummarySha256 === runtimeArtifactSha],
-    ['sourceManifestBinding', evidence.runtimeEvidence?.sourceManifestSha256 === sourceManifest.sha256 && runtime.sourceManifestSha256 === sourceManifest.sha256],
-    ['postgresRuntimeBinding', evidence.postgresRuntimeEvidence?.runId === postgresRuntime.runId && postgresGate.status === 'passed'],
+    ['runtimeBinding', evidence.runtimeEvidence?.runId === runtime.runId && evidence.runtimeEvidence?.finishedAt === runtime.finishedAt && evidence.runtimeEvidence?.runtimeSummarySha256 === runtimeArtifactSha],
+    ['sourceManifestBinding', evidence.runtimeEvidence?.sourceManifestSha256 === sourceManifest.sha256 && runtime.sourceManifestSha256 === sourceManifest.sha256 && sourceManifest.currentBranch === branch && sourceManifest.currentHead === head && liveSourceManifest.sha256 === sourceManifest.sha256],
+    ['artifactHashBinding', evidence.runtimeEvidence?.e2eArtifactSha256 === e2eArtifactSha && runtime.e2eArtifactSha256 === e2eArtifactSha && evidence.runtimeEvidence?.runtimeJsonlSha256 === runtimeJsonlSha && runtime.runtimeJsonlSha256 === runtimeJsonlSha && evidence.runtimeEvidence?.raceArtifactSha256 === raceArtifactSha && runtime.raceArtifactSha256 === raceArtifactSha],
+    ['postgresRuntimeBinding', evidence.postgresRuntimeEvidence?.runId === postgresRuntime.runId && postgresRuntime.git?.endHead === head && postgresGate.status === 'passed' && postgresGate.currentHead === head],
     ['postgresContracts', postgresRuntime.contracts?.postgresIntegrationPassed === true && postgresRuntime.contracts?.postgresFixtureGoldenPathPassed === true],
     ['authenticatedE2E', runtime.authenticatedPostgresE2E === true && backendIntegration.includes('TestP9PGBearerAuthAndFixtureGoldenPath')],
     ['tenantRbacIsolation', runtime.tenantIsolationPassed === true && runtime.rbacMatrixPassed === true && runtime.crossTenantWriteDenied === true],

@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "phase": "P9",
   "batchId": "P9-TASK-BATCH-7",
   "batchName": "Integration, Final Gates and Development Closure",
   "status": "completed",
   "integrationStatus": "passed",
   "currentBranch": "dev",
-  "currentHead": "05239617130a7685ee4aba54176fcf0062e531ff",
+  "currentHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
   "changesCommitted": false,
   "stagedFileCount": 0,
   "formalTaskTotal": 5,
@@ -55,16 +55,24 @@
     "inventoryMutationCalls": 0
   },
   "runtimeEvidence": {
-    "runId": "p9b7-20260804122024-89396c44",
+    "runId": "p9b7-20260808052115-bfb32c57",
     "summaryPath": "artifacts/p9-batch7-runtime.json",
-    "runtimeSummarySha256": "8e62454ebdced2ee5e01f27669c8a7c6459d32e6db09beded9f3f2d28b477211",
-    "sourceManifestSha256": "39763934c179a9f9dc27f49b500d4cd53d388790c61766d572d41717a324c5b2",
-    "finishedAt": "2026-08-04T12:21:32.660Z"
+    "runtimeSummarySha256": "92879bc2be4a4f21549a3aaab4d2f620b95c256fc6b3d30f9645f3923fbba9b9",
+    "runtimeHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+    "runtimeHeadMatchesCurrentHead": true,
+    "sourceManifestSha256": "7cb0fc8a1c6b28672cae7d0fea703f2253632af85bc569e8724c29a15349e1a8",
+    "sourceManifestHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+    "sourceManifestHeadMatchesCurrentHead": true,
+    "runtimeJsonlSha256": "a3bf203c06dc708789ea7cf8284b6c516d4be2231d66a1e4f1a06bbf87508ee6",
+    "e2eArtifactSha256": "e461148a167b52b3e25f0f900d83dd34277b446d8e3ab8801b6a15ba4d7cfad9",
+    "raceArtifactSha256": "067b31f807ea47b5eef7125f84ba808050dd289b6593621918b7a74469815ade",
+    "finishedAt": "2026-08-08T05:21:43.932Z"
   },
   "postgresRuntimeEvidence": {
-    "runId": "p9pg-20260804120930-89396c44",
+    "runId": "p9pg-20260808051205-17241dd1",
     "summaryPath": "artifacts/p9-postgres-runtime.json",
-    "runtimeSummarySha256": "8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454",
+    "runtimeSummarySha256": "825bad39bf77ba2d6c197c253eb22c722bea344754dfa623c38a62c13a9a197d",
+    "runtimeHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
     "gateReportPath": "docs/P9_POSTGRESQL_INTEGRATION_CLOSURE_GATE.md"
   },
   "integrationDefectFixes": [],
@@ -79,5 +87,71 @@
   "automaticRetryWorkerImplemented": false,
   "p10BoundaryPreserved": true,
   "p9Complete": false,
-  "verifiedAt": "2026-08-04T12:21:32.660Z"
+  "verifiedAt": "2026-08-08T05:21:43.932Z",
+  "initialClosure": {
+    "status": "passed",
+    "head": "05239617130a7685ee4aba54176fcf0062e531ff",
+    "runtimeRunId": "p9b7-20260804122024-89396c44",
+    "runtimeSummarySha256": "8e62454ebdced2ee5e01f27669c8a7c6459d32e6db09beded9f3f2d28b477211",
+    "sourceManifestSha256": "39763934c179a9f9dc27f49b500d4cd53d388790c61766d572d41717a324c5b2",
+    "verifiedAt": "2026-08-04T12:21:32.660Z"
+  },
+  "currentHeadReclosure": {
+    "status": "passed",
+    "reason": "current_head_changed_after_previous_closure",
+    "head": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+    "runtimeRunId": "p9b7-20260808052115-bfb32c57",
+    "runtimeSummarySha256": "92879bc2be4a4f21549a3aaab4d2f620b95c256fc6b3d30f9645f3923fbba9b9",
+    "sourceManifestSha256": "7cb0fc8a1c6b28672cae7d0fea703f2253632af85bc569e8724c29a15349e1a8",
+    "e2eArtifactSha256": "e461148a167b52b3e25f0f900d83dd34277b446d8e3ab8801b6a15ba4d7cfad9",
+    "initialColdStartAttempt": "not_applicable",
+    "finalAuthenticatedE2EResult": "passed",
+    "verifiedAt": "2026-08-08T05:21:43.932Z"
+  },
+  "reclosureAttempts": [
+    {
+      "status": "failed",
+      "reason": "current_head_changed_after_previous_closure",
+      "head": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+      "runtimeRunId": "p9b7-20260808050457-e040a231",
+      "runtimeSummarySha256": "d728f3be2d69496f4a10adae263f0bf7c5c5e865f63e2f9a2f486edd963bb8c6",
+      "sourceManifestSha256": "f69ead0fcbbe73d0616f9f1ed3d023d5273331592f3d624e5db37719098f5dc8",
+      "e2eArtifactSha256": "b14a3c28b5a5fe2f3316f2df52de851c744d82d928114be07d6b8d4bb708ff4c",
+      "verifiedAt": "2026-08-08T05:04:57.831Z"
+    },
+    {
+      "status": "failed",
+      "reason": "current_head_changed_after_previous_closure",
+      "head": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+      "runtimeRunId": "p9b7-20260808050619-5c97ac70",
+      "runtimeSummarySha256": "28681ce16ce0fe99cc59dc422eb4d3050d9d6b7bccf3324f2a44a5291df02504",
+      "sourceManifestSha256": "fb0b7d972394a9bb857a49ad6a84f508ee332155b483e6b7a48e20cb94abddd2",
+      "e2eArtifactSha256": "f4b6ac6d30a83cea7a3c45a5b34563d91d380821d28cca85131112d52c753653",
+      "verifiedAt": "2026-08-08T05:07:20.192Z"
+    },
+    {
+      "status": "passed",
+      "reason": "current_head_changed_after_previous_closure",
+      "head": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+      "runtimeRunId": "p9b7-20260808050903-88ba7a3a",
+      "runtimeSummarySha256": "11f40deecccdf446f2a8221be9beb03087886c44c6220df3e55e62b8a1a2e69a",
+      "sourceManifestSha256": "3e988e04143dd30daf2abefc05752b3814c27c321e1639aa1925055c20f33e17",
+      "e2eArtifactSha256": "6388a03c1d595c870eadd3a3d8f590c6f81de9462ca72c2a4dd17cbd9ba69a16",
+      "initialColdStartAttempt": "failed",
+      "finalAuthenticatedE2EResult": "passed",
+      "verifiedAt": "2026-08-08T05:09:32.872Z"
+    },
+    {
+      "status": "passed",
+      "reason": "current_head_changed_after_previous_closure",
+      "head": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+      "runtimeRunId": "p9b7-20260808051553-7f65a241",
+      "runtimeSummarySha256": "fbb82d8a2f37815fdf3e2252b1b3422c4e5fe643e464c67a5aa5ae4a568acc67",
+      "sourceManifestSha256": "bd6e2367b8391d18b8ac3fc503e5ecf10167a3bba5cc3a73b4488b32a8916b0f",
+      "e2eArtifactSha256": "515d49ed2180c4353a6321cb31b1204f9f24f3796af7bc7af4844760d6e31378",
+      "initialColdStartAttempt": "not_applicable",
+      "finalAuthenticatedE2EResult": "passed",
+      "verifiedAt": "2026-08-08T05:16:21.927Z"
+    }
+  ]
 }

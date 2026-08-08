@@ -1,11 +1,24 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "phase": "P9",
   "closureType": "final_development_closure",
   "status": "passed",
   "developmentClosureStatus": "passed",
   "currentBranch": "dev",
-  "currentHead": "05239617130a7685ee4aba54176fcf0062e531ff",
+  "currentHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+  "previousClosureHead": "05239617130a7685ee4aba54176fcf0062e531ff",
+  "currentClosureHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+  "currentHeadClosureVerified": true,
+  "reclosureReason": "current_head_changed_after_previous_closure",
+  "initialClosure": {
+    "status": "passed",
+    "head": "05239617130a7685ee4aba54176fcf0062e531ff",
+    "postgresRuntimeRunId": "p9pg-20260804120930-89396c44",
+    "postgresRuntimeSummarySha256": "8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454",
+    "batch7RuntimeRunId": "p9b7-20260804122024-89396c44",
+    "batch7RuntimeSummarySha256": "8e62454ebdced2ee5e01f27669c8a7c6459d32e6db09beded9f3f2d28b477211",
+    "verifiedAt": "2026-08-04T12:32:24.173Z"
+  },
   "stagedFileCount": 0,
   "changesCommitted": false,
   "checkpointCreated": false,
@@ -13,8 +26,11 @@
   "productCompletedTaskCount": 38,
   "formalTaskTotal": 38,
   "formalTaskCompletedCount": 38,
+  "formalTaskFailedCount": 0,
+  "formalTaskDeferredCount": 0,
   "acceptanceCriteriaTotal": 15,
   "acceptanceCriteriaPassedCount": 15,
+  "acceptanceCriteriaFailedCount": 0,
   "acceptanceCriteriaPassedIds": [
     "AC-P9-01",
     "AC-P9-02",
@@ -34,11 +50,15 @@
   ],
   "batch7Completed": true,
   "batch7GatePassed": true,
-  "batch7RuntimeRunId": "p9b7-20260804122024-89396c44",
-  "batch7RuntimeSummarySha256": "8e62454ebdced2ee5e01f27669c8a7c6459d32e6db09beded9f3f2d28b477211",
+  "batch7RuntimeRunId": "p9b7-20260808052115-bfb32c57",
+  "batch7RuntimeHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+  "batch7RuntimeHeadMatchesCurrentHead": true,
+  "batch7RuntimeSummarySha256": "92879bc2be4a4f21549a3aaab4d2f620b95c256fc6b3d30f9645f3923fbba9b9",
   "postgresIntegrationPassed": true,
-  "postgresRuntimeRunId": "p9pg-20260804120930-89396c44",
-  "postgresRuntimeSummarySha256": "8537d13c1b0f7ea611afe8f25082da7bcdfdd37090def6f4dcce641d96b42454",
+  "postgresRuntimeRunId": "p9pg-20260808051205-17241dd1",
+  "postgresRuntimeHead": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+  "postgresRuntimeHeadMatchesCurrentHead": true,
+  "postgresRuntimeSummarySha256": "825bad39bf77ba2d6c197c253eb22c722bea344754dfa623c38a62c13a9a197d",
   "adminE2EPassed": true,
   "adminResponsiveE2EPassed": true,
   "adminE2ESelector": "@p9-batch7",
@@ -138,6 +158,10 @@
     },
     {
       "command": "pnpm test:p9-task-batch-7-e2e",
+      "status": "passed"
+    },
+    {
+      "command": "pnpm test:p9-task-batch-7-runtime",
       "status": "passed"
     },
     {
@@ -256,6 +280,14 @@
     }
   ],
   "integrationDefectFixes": [],
+  "testInfrastructureFixes": [
+    {
+      "path": "backend/internal/testing/integration/database_migration_test.go",
+      "reason": "run AutoMigrate in the existing isolated PostgreSQL schema harness for the least-privilege test role",
+      "productBehaviorChanged": false
+    }
+  ],
+  "productCodeChangedForCredentialRepair": false,
   "p10BoundaryPreserved": true,
   "p9Complete": true,
   "developmentClosurePassed": true,
@@ -279,13 +311,26 @@
     "publish/listing automation",
     "production tag/release/acceptance"
   ],
-  "verifiedAt": "2026-08-04T12:32:24.173Z",
+  "verifiedAt": "2026-08-08T05:22:18.793Z",
   "qualityBackendStatus": "blocked_by_existing_gofmt_baseline",
   "architectureAffectedStatus": "blocked_by_existing_test_baseline",
   "qualityAffectedStatus": "blocked_by_existing_quality_backend_baseline",
+  "repositoryUnformattedGoFileCount": 446,
   "directArchitectureCheckPassed": true,
   "newArchitectureViolationCount": 0,
+  "growthP9ArchitectureViolationCount": 0,
+  "newP9FormattingViolationCount": 0,
   "sensitiveScanFindings": 0,
-  "playwrightBatch7Status": "passed_after_cold_compile_rerun",
-  "playwrightSmokeStatus": "passed_after_quoted_rerun"
+  "historicalGateFailureCount": 0,
+  "playwrightBatch7Status": "passed_current_head_reclosure_with_historical_cold_compile_rerun",
+  "playwrightSmokeStatus": "passed_after_quoted_rerun",
+  "p10PlanningStarted": false,
+  "p10ImplementationStarted": false,
+  "currentHeadReclosure": {
+    "status": "passed",
+    "head": "7ba7c32be083ad802ed60798bd2c4e936cfbba93",
+    "postgresRuntimeRunId": "p9pg-20260808051205-17241dd1",
+    "batch7RuntimeRunId": "p9b7-20260808052115-bfb32c57",
+    "verifiedAt": "2026-08-08T05:22:18.793Z"
+  }
 }

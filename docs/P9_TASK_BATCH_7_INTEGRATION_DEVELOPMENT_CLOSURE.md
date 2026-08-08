@@ -2,7 +2,7 @@
 
 Status: **Completed Locally**
 
-Batch 7 closes the P9 development stream by binding the existing PostgreSQL runtime, Admin fixture E2E suite, final platform-boundary counters, and formal task evidence. It does not add a new product capability.
+Batch 7 closes the P9 development stream by binding a current-HEAD PostgreSQL authenticated runtime, Admin fixture E2E suite, final platform-boundary counters, and formal task evidence. It does not add a new product capability.
 
 ```text
 batchId=P9-TASK-BATCH-7
@@ -10,8 +10,11 @@ batch7Completed=true
 formalTaskTotal=5
 formalTaskCompletedCount=5
 integrationStatus=passed
-postgresRuntimeRunId=p9pg-20260804120930-89396c44
-batch7RuntimeRunId=p9b7-20260804122024-89396c44
+currentHead=7ba7c32be083ad802ed60798bd2c4e936cfbba93
+postgresRuntimeRunId=p9pg-20260808051205-17241dd1
+batch7RuntimeRunId=p9b7-20260808052115-bfb32c57
+batch7RuntimeHeadMatchesCurrentHead=true
+batch7SourceManifestHeadMatchesCurrentHead=true
 adminE2ESelector=@p9-batch7
 adminResponsiveViewports=5
 realPlatformNetworkCalls=0
@@ -40,6 +43,10 @@ p9Complete=false
 - E2E JSONL: `artifacts/p9-batch7-e2e.jsonl`
 - Race JSONL: `artifacts/p9-batch7-race.jsonl`
 - Source manifest: `artifacts/p9-batch7-source-manifest.json`
+
+## Reclosure History
+
+The initial closure remains recorded as run `p9b7-20260804122024-89396c44` on HEAD `05239617130a7685ee4aba54176fcf0062e531ff`. The current authoritative reclosure is run `p9b7-20260808052115-bfb32c57` on HEAD `7ba7c32be083ad802ed60798bd2c4e936cfbba93`; the historical run is not represented as current-HEAD evidence.
 
 ## Boundary
 

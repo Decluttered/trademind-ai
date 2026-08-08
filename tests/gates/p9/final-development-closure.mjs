@@ -45,9 +45,19 @@ const closure = {
   developmentClosureStatus: 'passed',
   p9Complete: true,
   developmentClosurePassed: true,
+  currentBranch: 'dev',
+  currentHead: 'abc123',
+  currentClosureHead: 'abc123',
+  previousClosureHead: 'old123',
+  currentHeadClosureVerified: true,
+  initialClosure: { status: 'passed', head: 'old123' },
   acceptanceCriteriaPassedIds: acceptanceIds,
   acceptanceCriteriaPassedCount: 15,
   postgresIntegrationPassed: true,
+  postgresRuntimeRunId: 'pg-run',
+  postgresRuntimeHead: 'abc123',
+  batch7RuntimeRunId: 'p9b7-run',
+  batch7RuntimeHead: 'abc123',
   adminE2EPassed: true,
   adminResponsiveE2EPassed: true,
   validationCommands: [{ command: 'pnpm p9:final-development-closure-gate', status: 'passed' }],
@@ -66,9 +76,11 @@ const closure = {
   releaseCreated: false,
   integrationDefectFixes: [],
 };
-const batch7Evidence = { status: 'completed' };
-const batch7Runtime = {};
+const batch7Evidence = { status: 'completed', currentHead: 'abc123' };
+const batch7Runtime = { runId: 'p9b7-run', currentHead: 'abc123' };
+const postgresRuntime = { runId: 'pg-run', git: { endHead: 'abc123' } };
 const gateReports = Object.fromEntries([
+  'docs/p9-entry-gate-report.json',
   'docs/p9-plan-final-gate.json',
   'docs/p9-task-batch-1-scope-gate.json',
   'docs/p9-task-batch-1-domain-persistence-gate.json',
@@ -80,6 +92,7 @@ const gateReports = Object.fromEntries([
   'docs/p9-task-batch-6-admin-inventory-center-gate.json',
   'docs/p9-task-batch-7-integration-development-closure-gate.json',
 ].map((path) => [path, { status: 'passed' }]));
+gateReports['docs/p9-entry-gate-report.json'] = { status: 'allowed' };
 gateReports.batch7Validation = { status: 'passed' };
 const gitState = { currentBranch: 'dev', currentHead: 'abc123', headDetached: false, stagedFileCount: 0 };
 
@@ -89,6 +102,7 @@ function validate(overrides = {}) {
     plan: { ...plan, ...(overrides.plan || {}) },
     batch7Evidence: { ...batch7Evidence, ...(overrides.batch7Evidence || {}) },
     batch7Runtime: { ...batch7Runtime, ...(overrides.batch7Runtime || {}) },
+    postgresRuntime: { ...postgresRuntime, ...(overrides.postgresRuntime || {}) },
     gateReports: { ...gateReports, ...(overrides.gateReports || {}) },
     gitState: { ...gitState, ...(overrides.gitState || {}) },
     requiredFilesPresent: true,
@@ -103,10 +117,13 @@ function expectFailed(check, overrides = {}) {
 
 assert.equal(validate().status, 'passed');
 expectFailed('closureStatus', { closure: { p9Complete: false } });
+expectFailed('closureHeadBinding', { closure: { currentHead: 'stale-head' } });
+expectFailed('previousClosurePreserved', { closure: { previousClosureHead: 'abc123' } });
 expectFailed('planStatus', { plan: { phaseStatus: 'In Progress' } });
 expectFailed('productTaskIdsPreserved', { plan: { workstreams: [{ ...workstreams[0], tasks: workstreams[0].tasks.slice(1) }] } });
 expectFailed('productTasksCompleted', { plan: { productCompletedTaskCount: 37, workstreams: [{ ...workstreams[0], tasks: workstreams[0].tasks.map((task, index) => index === 0 ? { ...task, status: 'planned' } : task) }] } });
 expectFailed('batch7Completed', { plan: { batch7Completed: false } });
+expectFailed('runtimeHeadBindings', { batch7Runtime: { currentHead: 'stale-head' } });
 expectFailed('acceptanceCriteriaPassed', { closure: { acceptanceCriteriaPassedIds: acceptanceIds.slice(0, 14), acceptanceCriteriaPassedCount: 14 } });
 expectFailed('historicalGatesPassed', { gateReports: { ...gateReports, 'docs/p9-task-batch-4-permissions-audit-safety-gate.json': { status: 'failed' } } });
 expectFailed('postgresIntegrationPassed', { closure: { postgresIntegrationPassed: false } });

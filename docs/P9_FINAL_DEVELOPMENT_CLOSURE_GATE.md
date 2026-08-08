@@ -3,7 +3,7 @@
 Status: **passed**
 
 - Current branch: dev
-- Current HEAD: 05239617130a7685ee4aba54176fcf0062e531ff
+- Current HEAD: 7ba7c32be083ad802ed60798bd2c4e936cfbba93
 - Staged files: 0
 - Product tasks: 38/38
 - Acceptance criteria: 15/15
@@ -20,10 +20,13 @@ Status: **passed**
 - PASS `headDetached`
 - PASS `stagedFileCount`
 - PASS `closureStatus`
+- PASS `closureHeadBinding`
+- PASS `previousClosurePreserved`
 - PASS `planStatus`
 - PASS `productTaskIdsPreserved`
 - PASS `productTasksCompleted`
 - PASS `batch7Completed`
+- PASS `runtimeHeadBindings`
 - PASS `acceptanceCriteriaPassed`
 - PASS `historicalGatesPassed`
 - PASS `postgresIntegrationPassed`
