@@ -2,7 +2,7 @@
   "phase": "P10",
   "gate": "P10-OWNER-DECISION",
   "status": "passed",
-  "checkedAt": "2026-08-08T10:07:31.625Z",
+  "checkedAt": "2026-08-08T13:16:33.110Z",
   "failed": [],
   "failedCount": 0,
   "ownerDecisionCount": 15,
@@ -40,6 +40,12 @@
   "realSecretCount": 0,
   "credentialValueRecorded": false,
   "currentBranch": "dev",
+  "currentPlanningValidationHead": "ec32b6afe9b5fc31f87236d279573ec33ce58de6",
+  "planningSemanticRevalidationPassed": true,
+  "planningPackCurrentHeadValid": true,
+  "planningSemanticManifestSha256": "499a6fc0556f67a2b98754a236206984ba49ce4b86ea5f64fcd6526b208338dd",
+  "planningSemanticManifestMatches": true,
+  "changesCommittedDuringCurrentRun": false,
   "changesCommitted": false,
   "stagedFileCount": 0,
   "checks": [
@@ -217,6 +223,22 @@
     },
     {
       "id": "currentBranch",
+      "status": "passed"
+    },
+    {
+      "id": "planningSemanticRevalidationPassed",
+      "status": "passed"
+    },
+    {
+      "id": "planningPackCurrentHeadValid",
+      "status": "passed"
+    },
+    {
+      "id": "planningSemanticManifest",
+      "status": "passed"
+    },
+    {
+      "id": "changesCommittedDuringCurrentRun",
       "status": "passed"
     },
     {

@@ -189,3 +189,7 @@ TradeMind 是一个聚焦 `AI 商品运营工具` 与 `多平台跨境 ERP MVP` 
 | [DOUYIN_WEBHOOK_TENANT_ISOLATION.md](DOUYIN_WEBHOOK_TENANT_ISOLATION.md) | Tenant/shop scoped event persistence and order upsert rules. |
 | [DOUYIN_WEBHOOK_APP_SECRET_BINDING.md](DOUYIN_WEBHOOK_APP_SECRET_BINDING.md) | App key / binding validation notes. |
 | [P3_2_RACE_TEST_REPORT.md](P3_2_RACE_TEST_REPORT.md) | Race verification status. Do not mark passed without a real Linux/WSL2/Docker Linux run. |
+# P10 Pre-production
+
+- [P10 pre-production architecture](P10_PREPRODUCTION_ARCHITECTURE.md)
+- [P10 Planning Pack current-HEAD revalidation](P10_PLANNING_PACK_REVALIDATION.md)

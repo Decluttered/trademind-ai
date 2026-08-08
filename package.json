@@ -141,6 +141,8 @@
     "p10:planning-pack-gate": "node scripts/p10-planning-pack-gate.mjs",
     "test:p10-owner-decision": "node tests/gates/p10/owner-decision.mjs",
     "p10:owner-decision-gate": "node scripts/p10-owner-decision-gate.mjs",
+    "test:p10-task-batch-1": "node tests/gates/p10/task-batch-1.mjs",
+    "p10:task-batch-1-gate": "node scripts/p10-task-batch-1-gate.mjs",
     "test:p9:sqlite": "cd backend && go test -count=1 ./internal/modules/inventorysyncp9/...",
     "test:p9-postgres-gate-fixtures": "node tests/gates/p9/postgres-integration.mjs",
     "p9:postgres-test-db:ensure": "node scripts/p9-postgres-test-db-ensure.mjs",

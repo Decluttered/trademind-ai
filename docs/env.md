@@ -179,3 +179,16 @@ docker compose -f docker-compose.full.yml up -d --build
 - `docs/docker-deployment.md`
 - `README.md` / `README.en.md` 中的启动说明
 - 相关代码默认值与安全校验
+# P10 Pre-production Contract
+
+P10 reuses `APP_ENV=staging` as the only pre-production profile. Do not introduce a second `preproduction` runtime value. The canonical non-secret template is `.env.staging.example`; `deploy/preproduction/compose.yml` consumes it while database, Redis, application-key, JWT, and immutable-image values are injected externally.
+
+The P10 preflight requires explicit, pairwise-distinct identities for development/test, pre-production, and production database and Redis resources. It also requires a distinct session namespace, non-overlapping cookie domains, distinct Admin/API endpoints, a non-local staging storage mode, a matching credentialed CORS origin, explicit migration/backup/restore targets, previous immutable images, and external secret references. Inline secret values, missing or unknown environments, and production targets fail closed.
+
+`P10_PRODUCTION_RESTORE_ENABLED` must remain `false`. All real Provider/network/read/write, mutation, queue/worker, and automatic business retry flags remain disabled at L0. Run the non-secret contract check with:
+
+```bash
+node scripts/p10-preproduction-preflight.mjs --mode config --env-file .env.staging.example
+```
+
+Operational values must be supplied by the target host or managed secret system and must never be committed or printed in evidence.

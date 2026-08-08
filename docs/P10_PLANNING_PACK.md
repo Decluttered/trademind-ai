@@ -1,5 +1,7 @@
 # P10 Planning Pack
 
+Current-HEAD reuse is governed by [P10_PLANNING_PACK_REVALIDATION.md](P10_PLANNING_PACK_REVALIDATION.md). The original `baseCheckpoint` remains historical evidence; a descendant HEAD is accepted only when ancestry, the live planning semantic manifest, and the current-run HEAD boundary all validate.
+
 Status: **Prepared for Owner Review**
 
 P9 has a valid current-HEAD closure and the P9-to-P10 Transition Gate passed. This planning pack was prepared without changing P9 protected source.

@@ -4,16 +4,12 @@
   "operation": "current_head_reclosure",
   "reason": "protected_p9_scope_changed",
   "reclosureReason": "p9_runtime_and_gate_semantics_changed",
-  "closureHead": "c3e06988c128ca72b308d093729fdc304eba49fa",
+  "closureHead": "ec32b6afe9b5fc31f87236d279573ec33ce58de6",
   "protectedSourceManifestSha256": "0d37268513e6520a333d233cf2fba61ee510a73c60bf0f2917401404e1903e24",
-  "dirtyProtectedChangedFileCount": 3,
-  "dirtyProtectedFilesAtFreeze": [
-    "scripts/p9-current-head-reclosure.mjs",
-    "scripts/p9-postgres-runtime.mjs",
-    "scripts/p9-task-batch-7-runtime.mjs"
-  ],
-  "postgresRuntimeRunId": "p9pg-20260808090639-b80bf4f2",
-  "batch7RuntimeRunId": "p9b7-20260808090929-9da721eb",
+  "dirtyProtectedChangedFileCount": 0,
+  "dirtyProtectedFilesAtFreeze": [],
+  "postgresRuntimeRunId": "p9pg-20260808105920-452b1bc6",
+  "batch7RuntimeRunId": "p9b7-20260808110156-fbc2d8ad",
   "postgresIntegrationPassed": true,
   "authenticatedE2EPassed": true,
   "historicalGateFailureCount": 0,
@@ -27,9 +23,15 @@
   "protectedSourceDriftDetected": false,
   "currentHeadClosureVerified": true,
   "transitionGatePassed": true,
+  "p9RuntimeContractFrozenForP10": true,
+  "frozenRuntimeContractFiles": [
+    "scripts/p9-current-head-reclosure.mjs",
+    "scripts/p9-postgres-runtime.mjs",
+    "scripts/p9-task-batch-7-runtime.mjs"
+  ],
   "p9ClosureReuseEligible": true,
   "p10PlanningEntryAllowed": true,
   "productionReady": false,
   "productionAcceptancePassed": false,
-  "verifiedAt": "2026-08-08T09:18:04.484Z"
+  "verifiedAt": "2026-08-08T11:15:34.439Z"
 }

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { computeLiveProtectedSourceManifest } from './p9-protected-source-freeze.mjs';
+import { computeP10PlanningSemanticManifest } from './p10-planning-semantic-manifest.mjs';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OWNER_JSON = 'docs/p10-owner-scope-decision.json';
@@ -10,6 +11,7 @@ const BOUNDARY_JSON = 'docs/p10-production-boundary.json';
 const PLAN_JSON = 'docs/p10-execution-plan.json';
 const CRITERIA_JSON = 'docs/p10-acceptance-criteria.json';
 const PACK_JSON = 'docs/p10-planning-pack.json';
+const REVALIDATION_JSON = 'docs/p10-planning-pack-revalidation.json';
 const TRANSITION_JSON = 'docs/p9-to-p10-transition-gate.json';
 const FREEZE_JSON = 'artifacts/p9-protected-source-freeze.json';
 export const P10_OWNER_DECISION_GATE_JSON = 'docs/p10-owner-decision-gate.json';
@@ -20,6 +22,7 @@ const REQUIRED_FILES = [
   'docs/P10_PRODUCTION_BOUNDARY.md', BOUNDARY_JSON,
   'docs/P10_EXECUTION_PLAN.md', PLAN_JSON,
   'docs/P10_ACCEPTANCE_CRITERIA.md', CRITERIA_JSON,
+  'docs/P10_PLANNING_PACK_REVALIDATION.md', REVALIDATION_JSON,
 ];
 const EXPECTED_DECISION_IDS = Array.from({ length: 15 }, (_, index) => `D${String(index + 1).padStart(2, '0')}`);
 const EXPECTED_WORKSTREAM_IDS = Array.from({ length: 11 }, (_, index) => `P10-W${index + 1}`);
@@ -65,7 +68,8 @@ export function scanOwnerDecisionContent(documents = [], rawText = '') {
 
 export function validateP10OwnerDecisionBundle({
   owner = {}, boundary = {}, plan = {}, criteria = {}, pack = {}, transition = {}, freeze = {},
-  liveProtectedSourceManifest = {}, gitState = {}, requiredFilesPresent = true, credentialScan = {},
+  revalidation = {}, planningSemanticManifest = {}, liveProtectedSourceManifest = {}, gitState = {},
+  requiredFilesPresent = true, credentialScan = {},
 } = {}) {
   const decisions = owner.decisions || [];
   const implementation = owner.implementationApprovals || {};
@@ -97,6 +101,10 @@ export function validateP10OwnerDecisionBundle({
     || p9ProtectedSourceDriftDetected;
   const realSecretCount = Number(credentialScan.realSecretCount ?? -1);
   const credentialValueRecorded = credentialScan.credentialValueRecorded !== false;
+  const changesCommittedDuringCurrentRun = gitState.currentHead !== revalidation.currentRunBaseHead;
+  const planningSemanticManifestMatches = Boolean(planningSemanticManifest.sha256)
+    && planningSemanticManifest.sha256 === revalidation.planningSemanticManifestSha256
+    && planningSemanticManifest.fileCount === revalidation.planningSemanticFileCount;
 
   const checks = [
     ['requiredFilesPresent', requiredFilesPresent],
@@ -143,7 +151,14 @@ export function validateP10OwnerDecisionBundle({
     ['realSecretCount', realSecretCount === 0],
     ['credentialValueRecorded', credentialValueRecorded === false && owner.credentialValueRecorded === false],
     ['currentBranch', gitState.currentBranch === 'dev'],
-    ['changesCommitted', gitState.currentHead === pack.baseCheckpoint],
+    ['planningSemanticRevalidationPassed', revalidation.status === 'passed'
+      && revalidation.planningSemanticRevalidationPassed === true],
+    ['planningPackCurrentHeadValid', revalidation.planningPackCurrentHeadValid === true
+      && revalidation.currentPlanningValidationHead === gitState.currentHead],
+    ['planningSemanticManifest', planningSemanticManifestMatches],
+    ['changesCommittedDuringCurrentRun', revalidation.changesCommittedDuringCurrentRun === false
+      && changesCommittedDuringCurrentRun === false],
+    ['changesCommitted', changesCommittedDuringCurrentRun === false],
     ['stagedFileCount', gitState.stagedFileCount === 0],
   ];
   const failed = checks.filter(([, passed]) => !passed).map(([id]) => id);
@@ -184,7 +199,14 @@ export function validateP10OwnerDecisionBundle({
     realSecretCount,
     credentialValueRecorded,
     currentBranch: gitState.currentBranch,
-    changesCommitted: gitState.currentHead !== pack.baseCheckpoint,
+    currentPlanningValidationHead: revalidation.currentPlanningValidationHead || '',
+    planningSemanticRevalidationPassed: revalidation.planningSemanticRevalidationPassed === true,
+    planningPackCurrentHeadValid: revalidation.planningPackCurrentHeadValid === true
+      && revalidation.currentPlanningValidationHead === gitState.currentHead,
+    planningSemanticManifestSha256: planningSemanticManifest.sha256 || '',
+    planningSemanticManifestMatches,
+    changesCommittedDuringCurrentRun,
+    changesCommitted: changesCommittedDuringCurrentRun,
     stagedFileCount: gitState.stagedFileCount,
     checks: checks.map(([id, passed]) => ({ id, status: passed ? 'passed' : 'failed' })),
     nextAction: owner.nextAction,
@@ -192,17 +214,18 @@ export function validateP10OwnerDecisionBundle({
 }
 
 function renderMarkdown(report) {
-  return `# P10 Owner Decision Gate\n\nStatus: **${report.status}**\n\n\`\`\`text\nownerDecisionCount=${report.ownerDecisionCount}\nownerApprovedDecisionCount=${report.ownerApprovedDecisionCount}\nownerApprovalPending=${report.ownerApprovalPending}\np10PlanningPackPrepared=${report.p10PlanningPackPrepared}\np10OwnerDecisionApproved=${report.p10OwnerDecisionApproved}\np10ExecutionPlanFinalized=${report.p10ExecutionPlanFinalized}\np10ImplementationStarted=${report.p10ImplementationStarted}\ncurrentAllowedLevel=${report.currentAllowedLevel}\nrealProviderApprovedForImplementation=${report.realProviderApprovedForImplementation}\nrealReadApprovedForImplementation=${report.realReadApprovedForImplementation}\nrealInventoryWriteApproved=${report.realInventoryWriteApproved}\nbackgroundWorkerApproved=${report.backgroundWorkerApproved}\nautomaticRetryApproved=${report.automaticRetryApproved}\ninitialGrayTenantLimit=${report.initialGrayTenantLimit}\ninitialGrayShopLimit=${report.initialGrayShopLimit}\ninitialGraySkuLimit=${report.initialGraySkuLimit}\nindependentPreproductionRequired=${report.independentPreproductionRequired}\nrpoMinutesMax=${report.rpoMinutesMax}\nrtoMinutesMax=${report.rtoMinutesMax}\nrepositoryBaselineDisposition=${report.repositoryBaselineDisposition}\ngrayApprovalMode=${report.grayApprovalMode}\nproductionFinalApprover=${report.productionFinalApprover}\np9ClosureReuseEligible=${report.p9ClosureReuseEligible}\np10PlanningEntryAllowed=${report.p10PlanningEntryAllowed}\np9ProtectedSourceModified=${report.p9ProtectedSourceModified}\nproductionReady=${report.productionReady}\nproductionAcceptancePassed=${report.productionAcceptancePassed}\nrealPlatformNetworkEnabled=${report.realPlatformNetworkEnabled}\nrealCredentialsEnabled=${report.realCredentialsEnabled}\ninventoryMutationEnabled=${report.inventoryMutationEnabled}\ntagCreated=${report.tagCreated}\nreleaseCreated=${report.releaseCreated}\nrealSecretCount=${report.realSecretCount}\ncredentialValueRecorded=${report.credentialValueRecorded}\ncurrentBranch=${report.currentBranch}\nchangesCommitted=${report.changesCommitted}\nstagedFileCount=${report.stagedFileCount}\nfailedCount=${report.failedCount}\n\`\`\`\n\n## Failed Checks\n\n${report.failed.length ? report.failed.map((item) => `- ${item}`).join('\n') : '- None'}\n\n## Boundary\n\nThis gate approves the P10 implementation plan only. It does not start implementation or enable OAuth, credentials, a real Provider, platform network access, inventory reads or writes, Worker, automatic retry, gray, Tag, Release, or Production Ready.\n\nNext: **${report.nextAction}**.\n`;
+  return `# P10 Owner Decision Gate\n\nStatus: **${report.status}**\n\n\`\`\`text\nownerDecisionCount=${report.ownerDecisionCount}\nownerApprovedDecisionCount=${report.ownerApprovedDecisionCount}\nownerApprovalPending=${report.ownerApprovalPending}\np10PlanningPackPrepared=${report.p10PlanningPackPrepared}\np10OwnerDecisionApproved=${report.p10OwnerDecisionApproved}\np10ExecutionPlanFinalized=${report.p10ExecutionPlanFinalized}\np10ImplementationStarted=${report.p10ImplementationStarted}\ncurrentAllowedLevel=${report.currentAllowedLevel}\nrealProviderApprovedForImplementation=${report.realProviderApprovedForImplementation}\nrealReadApprovedForImplementation=${report.realReadApprovedForImplementation}\nrealInventoryWriteApproved=${report.realInventoryWriteApproved}\nbackgroundWorkerApproved=${report.backgroundWorkerApproved}\nautomaticRetryApproved=${report.automaticRetryApproved}\ninitialGrayTenantLimit=${report.initialGrayTenantLimit}\ninitialGrayShopLimit=${report.initialGrayShopLimit}\ninitialGraySkuLimit=${report.initialGraySkuLimit}\nindependentPreproductionRequired=${report.independentPreproductionRequired}\nrpoMinutesMax=${report.rpoMinutesMax}\nrtoMinutesMax=${report.rtoMinutesMax}\nrepositoryBaselineDisposition=${report.repositoryBaselineDisposition}\ngrayApprovalMode=${report.grayApprovalMode}\nproductionFinalApprover=${report.productionFinalApprover}\np9ClosureReuseEligible=${report.p9ClosureReuseEligible}\np10PlanningEntryAllowed=${report.p10PlanningEntryAllowed}\np9ProtectedSourceModified=${report.p9ProtectedSourceModified}\ncurrentPlanningValidationHead=${report.currentPlanningValidationHead}\nplanningSemanticRevalidationPassed=${report.planningSemanticRevalidationPassed}\nplanningPackCurrentHeadValid=${report.planningPackCurrentHeadValid}\nplanningSemanticManifestSha256=${report.planningSemanticManifestSha256}\nplanningSemanticManifestMatches=${report.planningSemanticManifestMatches}\nchangesCommittedDuringCurrentRun=${report.changesCommittedDuringCurrentRun}\nproductionReady=${report.productionReady}\nproductionAcceptancePassed=${report.productionAcceptancePassed}\nrealPlatformNetworkEnabled=${report.realPlatformNetworkEnabled}\nrealCredentialsEnabled=${report.realCredentialsEnabled}\ninventoryMutationEnabled=${report.inventoryMutationEnabled}\ntagCreated=${report.tagCreated}\nreleaseCreated=${report.releaseCreated}\nrealSecretCount=${report.realSecretCount}\ncredentialValueRecorded=${report.credentialValueRecorded}\ncurrentBranch=${report.currentBranch}\nchangesCommitted=${report.changesCommitted}\nstagedFileCount=${report.stagedFileCount}\nfailedCount=${report.failedCount}\n\`\`\`\n\n## Failed Checks\n\n${report.failed.length ? report.failed.map((item) => `- ${item}`).join('\n') : '- None'}\n\n## Boundary\n\nThis gate approves the P10 implementation plan only. It does not start implementation or enable OAuth, credentials, a real Provider, platform network access, inventory reads or writes, Worker, automatic retry, gray, Tag, Release, or Production Ready.\n\nNext: **${report.nextAction}**.\n`;
 }
 
 function collectActualBundle() {
-  const documents = [OWNER_JSON, BOUNDARY_JSON, PLAN_JSON, CRITERIA_JSON, PACK_JSON].map(readJSON);
+  const documents = [OWNER_JSON, BOUNDARY_JSON, PLAN_JSON, CRITERIA_JSON, PACK_JSON, REVALIDATION_JSON].map(readJSON);
   const rawText = REQUIRED_FILES.map(read).join('\n');
   const currentHead = git(['rev-parse', 'HEAD']);
   const stagedFiles = git(['diff', '--cached', '--name-only']).split(/\r?\n/).filter(Boolean);
   const tagNames = git(['tag', '--points-at', 'HEAD']).split(/\r?\n/).filter(Boolean);
   return {
     owner: documents[0] || {}, boundary: documents[1] || {}, plan: documents[2] || {}, criteria: documents[3] || {}, pack: documents[4] || {},
+    revalidation: documents[5] || {}, planningSemanticManifest: computeP10PlanningSemanticManifest(),
     transition: readJSON(TRANSITION_JSON) || {}, freeze: readJSON(FREEZE_JSON) || {}, liveProtectedSourceManifest: computeLiveProtectedSourceManifest(),
     gitState: { currentBranch: git(['branch', '--show-current']), currentHead, stagedFileCount: stagedFiles.length, tagCreated: tagNames.length > 0 },
     requiredFilesPresent: REQUIRED_FILES.every((file) => fs.existsSync(rootPath(file))),

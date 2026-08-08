@@ -5,10 +5,10 @@ Status: **Passed**
 The P9 persistence, isolation, concurrency, transaction, API, authentication, RBAC, audit, and fixture contracts were revalidated against an isolated PostgreSQL test database. The suite is fail-closed and does not fall back to SQLite.
 
 ```text
-currentHead=c3e06988c128ca72b308d093729fdc304eba49fa
-runtimeRunId=p9pg-20260808090639-b80bf4f2
-runtimeSummarySha256=4b490bc1fecacdcaa4116b7ef6f5f86a6d67b6c03b3edf0a29875f5d6072481d
-sourceManifestSha256=f8131d8efc09d7b5c1c1ef8994528627f1835d9187ffe02e41a3e8987d7cf15c
+currentHead=ec32b6afe9b5fc31f87236d279573ec33ce58de6
+runtimeRunId=p9pg-20260808105920-452b1bc6
+runtimeSummarySha256=b1e8ffb18767af1d242ea9d8039e05a24e05a2b79f2116dc2414391a6a5ee8e0
+sourceManifestSha256=b020ed22dcb9d1a161b3f8c9463ac34bed5ec78cb7942062bb0b64715cbc9875
 protectedSourceManifestSha256=0d37268513e6520a333d233cf2fba61ee510a73c60bf0f2917401404e1903e24
 runtimeHeadMatchesCurrentHead=true
 protectedSourceDriftDetected=false

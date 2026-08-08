@@ -6,7 +6,7 @@ Status: **passed**
 - Batch name: Inventory Sync, SKU Binding Calibration and Manual Fallback
 - Base checkpoint: 1ac652ac4797eee636bf615f1e9ed272f2b82f84
 - Current branch: dev
-- Current head: c3e06988c128ca72b308d093729fdc304eba49fa
+- Current head: ec32b6afe9b5fc31f87236d279573ec33ce58de6
 - Staged files: 0
 - Working tree dirty: true
 - Tasks: P9-501, P9-502, P9-503, P9-504, P9-505, P9-506

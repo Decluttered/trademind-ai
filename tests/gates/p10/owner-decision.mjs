@@ -82,9 +82,16 @@ function validBundle() {
     },
     pack: { p10PlanningPackPrepared: true, p10ImplementationStarted: false, baseCheckpoint: 'base-head' },
     transition: { status: 'passed', failedCount: 0, p9ClosureReuseEligible: true, p10PlanningEntryAllowed: true, p9ProtectedChangedFileCount: 0, dirtyProtectedSourceDriftDetected: false },
-    freeze: { sha256: 'protected', gitHead: 'base-head' },
+    freeze: { sha256: 'protected', gitHead: 'current-head' },
     liveProtectedSourceManifest: { sha256: 'protected' },
-    gitState: { currentBranch: 'dev', currentHead: 'base-head', stagedFileCount: 0, tagCreated: false },
+    revalidation: {
+      status: 'passed', currentPlanningValidationHead: 'current-head', currentRunBaseHead: 'current-head',
+      planningSemanticRevalidationPassed: true, planningPackCurrentHeadValid: true,
+      planningSemanticManifestSha256: 'planning-manifest', planningSemanticFileCount: 12,
+      changesCommittedDuringCurrentRun: false,
+    },
+    planningSemanticManifest: { sha256: 'planning-manifest', fileCount: 12 },
+    gitState: { currentBranch: 'dev', currentHead: 'current-head', stagedFileCount: 0, tagCreated: false },
     requiredFilesPresent: true,
     credentialScan: { realSecretCount: 0, credentialValueRecorded: false },
   };
@@ -114,10 +121,12 @@ const fixtures = [
   { id: 'OD-21', name: 'Release created fails', check: 'releaseCreated', mutate(bundle) { bundle.owner.releaseCreated = true; } },
   { id: 'OD-22', name: 'real platform network already enabled fails', check: 'runtimeCapabilitiesDisabled', mutate(bundle) { bundle.owner.runtimeBoundary.realPlatformNetworkEnabled = true; } },
   { id: 'OD-23', name: 'secret detected fails', check: 'realSecretCount', mutate(bundle) { bundle.credentialScan = { realSecretCount: 1, credentialValueRecorded: true }; } },
+  { id: 'OD-24', name: 'planning semantic manifest mismatch fails', check: 'planningSemanticManifest', mutate(bundle) { bundle.planningSemanticManifest.sha256 = 'changed'; } },
+  { id: 'OD-25', name: 'current run HEAD change fails', check: 'changesCommittedDuringCurrentRun', mutate(bundle) { bundle.gitState.currentHead = 'unexpected-head'; bundle.freeze.gitHead = 'unexpected-head'; } },
 ];
 
-assert.equal(fixtures.length, 23);
-assert.deepEqual(fixtures.map((item) => item.id), Array.from({ length: 23 }, (_, index) => `OD-${String(index + 1).padStart(2, '0')}`));
+assert.equal(fixtures.length, 25);
+assert.deepEqual(fixtures.map((item) => item.id), Array.from({ length: 25 }, (_, index) => `OD-${String(index + 1).padStart(2, '0')}`));
 
 for (const fixture of fixtures) {
   const bundle = validBundle();

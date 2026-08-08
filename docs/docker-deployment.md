@@ -132,3 +132,18 @@ docker compose -f docker-compose.full.yml config
 ```
 
 本地修改 Dockerfile、Compose 或 `.env.docker.example` 后，建议先执行同样命令确认语法和变量引用正确。
+# P10 Independent Pre-production
+
+P10 maps pre-production to the existing `staging` profile and uses the separate `trademind-preproduction` Compose project. It does not reuse `docker-compose.yml`, `docker-compose.full.yml`, or production resources.
+
+```bash
+cp .env.staging.example .env.staging
+node scripts/p10-preproduction-preflight.mjs --mode config --env-file .env.staging
+P10_PREPRODUCTION_ENV_FILE=.env.staging deploy/scripts/deploy-preproduction.sh
+```
+
+Inject `PREPRODUCTION_DB_PASSWORD`, `PREPRODUCTION_REDIS_PASSWORD`, `PREPRODUCTION_APP_MASTER_KEY`, `PREPRODUCTION_JWT_SECRET`, `P10_API_IMAGE`, and `P10_ADMIN_IMAGE` from the target host or managed secret source. The repository contains references and placeholders only.
+
+The deployment waits for PostgreSQL and Redis health, starts the backend migration path with its advisory lock, and accepts the deployment only after `/health/ready` reports database, Redis, migrations, and `staging` as ready. Backup, isolated restore, application rollback, and non-destructive teardown entry points are under `deploy/scripts/*-preproduction.sh`.
+
+Current external infrastructure status is recorded in `docs/p10-task-batch-1-external-infrastructure.json`. Until host, PostgreSQL, Redis, domain, credential availability, deployment rehearsal, and teardown rehearsal are all proven, P10 Batch 1 remains incomplete.

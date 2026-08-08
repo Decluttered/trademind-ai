@@ -2,12 +2,23 @@
   "phase": "P10",
   "gate": "P10-PLANNING-PACK",
   "status": "passed",
-  "checkedAt": "2026-08-08T10:04:20.697Z",
+  "checkedAt": "2026-08-08T13:16:13.906Z",
   "failed": [],
   "failedCount": 0,
   "currentBranch": "dev",
-  "currentHead": "c3e06988c128ca72b308d093729fdc304eba49fa",
+  "currentHead": "ec32b6afe9b5fc31f87236d279573ec33ce58de6",
   "stagedFileCount": 0,
+  "historicalPlanningCheckpoint": "c3e06988c128ca72b308d093729fdc304eba49fa",
+  "historicalPlanningPackHeadIsAncestor": true,
+  "currentPlanningValidationHead": "ec32b6afe9b5fc31f87236d279573ec33ce58de6",
+  "currentRunBaseHead": "ec32b6afe9b5fc31f87236d279573ec33ce58de6",
+  "planningCheckpointAdvanced": true,
+  "planningSemanticsUnchanged": false,
+  "planningSemanticRevalidationPassed": true,
+  "planningPackCurrentHeadValid": true,
+  "planningSemanticManifestSha256": "499a6fc0556f67a2b98754a236206984ba49ce4b86ea5f64fcd6526b208338dd",
+  "planningSemanticManifestMatches": true,
+  "changesCommittedDuringCurrentRun": false,
   "changesCommitted": false,
   "p9ToP10TransitionPassed": true,
   "p9ClosureReuseEligible": true,
@@ -173,6 +184,30 @@
     },
     {
       "id": "currentBranch",
+      "status": "passed"
+    },
+    {
+      "id": "historicalPlanningPackValid",
+      "status": "passed"
+    },
+    {
+      "id": "historicalPlanningPackHeadIsAncestor",
+      "status": "passed"
+    },
+    {
+      "id": "planningSemanticRevalidationPassed",
+      "status": "passed"
+    },
+    {
+      "id": "planningPackCurrentHeadValid",
+      "status": "passed"
+    },
+    {
+      "id": "planningSemanticManifest",
+      "status": "passed"
+    },
+    {
+      "id": "changesCommittedDuringCurrentRun",
       "status": "passed"
     },
     {

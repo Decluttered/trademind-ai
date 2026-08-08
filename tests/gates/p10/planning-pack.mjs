@@ -27,7 +27,7 @@ function validBundle() {
       p9ProtectedChangedFileCount: 0,
       dirtyProtectedSourceDriftDetected: false,
     },
-    freeze: { sha256: 'frozen-source', gitHead: 'base-head' },
+    freeze: { sha256: 'frozen-source', gitHead: 'current-head' },
     liveProtectedSourceManifest: { sha256: 'frozen-source' },
     proposal: {
       ownerDecisionCount: 15,
@@ -115,7 +115,23 @@ function validBundle() {
       changesCommitted: false,
       stagedFileCount: 0,
     },
-    gitState: { currentBranch: 'dev', currentHead: 'base-head', stagedFileCount: 0, tagCreated: false },
+    revalidation: {
+      status: 'passed',
+      initialPlanningCheckpoint: 'base-head',
+      currentPlanningValidationHead: 'current-head',
+      currentRunBaseHead: 'current-head',
+      planningSemanticsUnchanged: false,
+      planningSemanticRevalidationPassed: true,
+      planningPackCurrentHeadValid: true,
+      planningSemanticManifestSha256: 'planning-manifest',
+      planningSemanticFileCount: 12,
+      changesCommittedDuringCurrentRun: false,
+    },
+    planningSemanticManifest: { sha256: 'planning-manifest', fileCount: 12 },
+    gitState: {
+      currentBranch: 'dev', currentHead: 'current-head', stagedFileCount: 0, tagCreated: false,
+      historicalPlanningPackHeadIsAncestor: true,
+    },
     requiredFilesPresent: true,
     credentialScan: { realSecretCount: 0, credentialValueRecorded: false },
   };
@@ -144,7 +160,16 @@ const fixtures = [
   { id: 'P10P-20', name: 'release created fails', expectedCheck: 'releaseCreated', mutate(bundle) { bundle.pack.releaseCreated = true; } },
   { id: 'P10P-21', name: 'secret detected fails', expectedCheck: 'realSecretCount', mutate(bundle) { bundle.credentialScan = { realSecretCount: 1, credentialValueRecorded: true }; } },
   { id: 'P10P-22', name: 'staged files fails', expectedCheck: 'stagedFileCount', mutate(bundle) { bundle.gitState.stagedFileCount = 1; } },
+  { id: 'P10P-23', name: 'ancestor head with valid semantic revalidation passes', expected: 'passed', mutate() {} },
+  { id: 'P10P-24', name: 'owner decision semantic change fails', expectedCheck: 'planningSemanticManifest', mutate(bundle) { bundle.planningSemanticManifest.sha256 = 'owner-decision-changed'; } },
+  { id: 'P10P-25', name: 'execution plan change without revalidation fails', expectedCheck: 'planningSemanticRevalidationPassed', mutate(bundle) { bundle.revalidation.planningSemanticRevalidationPassed = false; } },
+  { id: 'P10P-26', name: 'current run HEAD change fails', expectedCheck: 'changesCommittedDuringCurrentRun', mutate(bundle) { bundle.gitState.currentHead = 'unexpected-head'; bundle.freeze.gitHead = 'unexpected-head'; } },
+  { id: 'P10P-27', name: 'planning semantic manifest mismatch fails', expectedCheck: 'planningSemanticManifest', mutate(bundle) { bundle.revalidation.planningSemanticManifestSha256 = 'mismatch'; } },
+  { id: 'P10P-28', name: 'generated evidence only change does not invalidate semantics', expected: 'passed', mutate(bundle) { bundle.generatedEvidenceChanged = true; } },
 ];
+
+assert.equal(fixtures.length, 28);
+assert.deepEqual(fixtures.map((item) => item.id), Array.from({ length: 28 }, (_, index) => `P10P-${String(index + 1).padStart(2, '0')}`));
 
 for (const fixture of fixtures) {
   const bundle = validBundle();

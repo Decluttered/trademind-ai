@@ -55,3 +55,6 @@
 - 细节放入 `docs/`，并在 `docs/README.md` 增加入口。
 - 新增 AI 规则或关联说明时，同步 `AGENTS.md`、`docs/ai-workflow.md` 和 `.cursor/rules/README.md`。
 - 重复出现的坑、质量门槛或工具协作经验，应写回对应 pitfalls、模块文档、`docs/PROGRESS.md` 或 AI 规则，避免只停留在单次对话。
+# P10 Pre-production Foundation
+
+Changes to `.env.staging.example`, `deploy/preproduction/**`, `deploy/scripts/*preproduction*`, or `scripts/p10-preproduction-*` must be checked together with `docs/P10_PREPRODUCTION_ARCHITECTURE.md`, `docs/env.md`, `docs/docker-deployment.md`, the P10 Batch 1 fixture/gate, the planning semantic manifest, the P9 transition gate, and sensitive-diff checks. Production resources, credentials, and P9 protected source are outside this module's writable scope.

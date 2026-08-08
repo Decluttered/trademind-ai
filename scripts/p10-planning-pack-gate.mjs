@@ -3,6 +3,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { computeLiveProtectedSourceManifest } from './p9-protected-source-freeze.mjs';
+import { computeP10PlanningSemanticManifest } from './p10-planning-semantic-manifest.mjs';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TRANSITION_JSON = 'docs/p9-to-p10-transition-gate.json';
@@ -13,6 +14,7 @@ const PLAN_JSON = 'docs/p10-execution-plan-draft.json';
 const CRITERIA_JSON = 'docs/p10-acceptance-criteria-draft.json';
 const RISK_JSON = 'docs/p10-risk-register.json';
 const PACK_JSON = 'docs/p10-planning-pack.json';
+const REVALIDATION_JSON = 'docs/p10-planning-pack-revalidation.json';
 export const P10_PLANNING_PACK_GATE_JSON = 'docs/p10-planning-pack-gate.json';
 export const P10_PLANNING_PACK_GATE_MD = 'docs/P10_PLANNING_PACK_GATE.md';
 
@@ -29,6 +31,8 @@ const REQUIRED_FILES = [
   RISK_JSON,
   'docs/P10_PLANNING_PACK.md',
   PACK_JSON,
+  'docs/P10_PLANNING_PACK_REVALIDATION.md',
+  REVALIDATION_JSON,
 ];
 
 function rootPath(relativePath) { return path.join(REPO_ROOT, relativePath); }
@@ -41,6 +45,9 @@ function write(relativePath, value) {
 }
 function git(args) {
   try { return execFileSync('git', args, { cwd: REPO_ROOT, encoding: 'utf8' }).trim(); } catch { return ''; }
+}
+function gitExitZero(args) {
+  try { execFileSync('git', args, { cwd: REPO_ROOT, stdio: 'ignore' }); return true; } catch { return false; }
 }
 function allFalse(values) { return values.every((value) => value === false); }
 function includesAll(values = [], required = []) { return required.every((value) => values.includes(value)); }
@@ -78,6 +85,8 @@ export function validateP10PlanningPackBundle({
   criteria = {},
   risks = {},
   pack = {},
+  revalidation = {},
+  planningSemanticManifest = {},
   gitState = {},
   requiredFilesPresent = true,
   credentialScan = {},
@@ -120,6 +129,12 @@ export function validateP10PlanningPackBundle({
     || p9ProtectedSourceDriftDetected;
   const realSecretCount = Number(credentialScan.realSecretCount ?? -1);
   const credentialValueRecorded = credentialScan.credentialValueRecorded !== false;
+  const historicalPlanningCheckpoint = revalidation.initialPlanningCheckpoint || pack.baseCheckpoint || '';
+  const currentRunBaseHead = revalidation.currentRunBaseHead || '';
+  const changesCommittedDuringCurrentRun = gitState.currentHead !== currentRunBaseHead;
+  const planningSemanticManifestMatches = Boolean(planningSemanticManifest.sha256)
+    && planningSemanticManifest.sha256 === revalidation.planningSemanticManifestSha256
+    && planningSemanticManifest.fileCount === revalidation.planningSemanticFileCount;
 
   const checks = [
     ['requiredFilesPresent', requiredFilesPresent],
@@ -162,7 +177,17 @@ export function validateP10PlanningPackBundle({
     ['realSecretCount', realSecretCount === 0],
     ['credentialValueRecorded', credentialValueRecorded === false && pack.credentialValueRecorded === false],
     ['currentBranch', gitState.currentBranch === 'dev' && pack.baseBranch === 'dev'],
-    ['changesCommitted', pack.changesCommitted === false && gitState.currentHead === pack.baseCheckpoint],
+    ['historicalPlanningPackValid', pack.changesCommitted === false && historicalPlanningCheckpoint === pack.baseCheckpoint],
+    ['historicalPlanningPackHeadIsAncestor', gitState.historicalPlanningPackHeadIsAncestor === true],
+    ['planningSemanticRevalidationPassed', revalidation.status === 'passed'
+      && revalidation.planningSemanticRevalidationPassed === true
+      && typeof revalidation.planningSemanticsUnchanged === 'boolean'],
+    ['planningPackCurrentHeadValid', revalidation.planningPackCurrentHeadValid === true
+      && revalidation.currentPlanningValidationHead === gitState.currentHead],
+    ['planningSemanticManifest', planningSemanticManifestMatches],
+    ['changesCommittedDuringCurrentRun', revalidation.changesCommittedDuringCurrentRun === false
+      && changesCommittedDuringCurrentRun === false],
+    ['changesCommitted', pack.changesCommitted === false && changesCommittedDuringCurrentRun === false],
     ['stagedFileCount', gitState.stagedFileCount === 0 && pack.stagedFileCount === 0],
   ];
   const failed = checks.filter(([, passed]) => !passed).map(([id]) => id);
@@ -176,7 +201,19 @@ export function validateP10PlanningPackBundle({
     currentBranch: gitState.currentBranch,
     currentHead: gitState.currentHead,
     stagedFileCount: gitState.stagedFileCount,
-    changesCommitted: gitState.currentHead !== pack.baseCheckpoint,
+    historicalPlanningCheckpoint,
+    historicalPlanningPackHeadIsAncestor: gitState.historicalPlanningPackHeadIsAncestor === true,
+    currentPlanningValidationHead: revalidation.currentPlanningValidationHead || '',
+    currentRunBaseHead,
+    planningCheckpointAdvanced: gitState.currentHead !== pack.baseCheckpoint,
+    planningSemanticsUnchanged: revalidation.planningSemanticsUnchanged === true,
+    planningSemanticRevalidationPassed: revalidation.planningSemanticRevalidationPassed === true,
+    planningPackCurrentHeadValid: revalidation.planningPackCurrentHeadValid === true
+      && revalidation.currentPlanningValidationHead === gitState.currentHead,
+    planningSemanticManifestSha256: planningSemanticManifest.sha256 || '',
+    planningSemanticManifestMatches,
+    changesCommittedDuringCurrentRun,
+    changesCommitted: changesCommittedDuringCurrentRun,
     p9ToP10TransitionPassed: transition.status === 'passed' && transition.failedCount === 0,
     p9ClosureReuseEligible: transition.p9ClosureReuseEligible === true,
     p10PlanningEntryAllowed: transition.p10PlanningEntryAllowed === true,
@@ -211,11 +248,11 @@ export function validateP10PlanningPackBundle({
 }
 
 function renderMarkdown(report) {
-  return `# P10 Planning Pack Gate\n\nStatus: **${report.status}**\n\n\`\`\`text\nphase=P10\np10PlanningPackPrepared=${report.p10PlanningPackPrepared}\np10ImplementationStarted=${report.p10ImplementationStarted}\np9ToP10TransitionPassed=${report.p9ToP10TransitionPassed}\np9ClosureReuseEligible=${report.p9ClosureReuseEligible}\np10PlanningEntryAllowed=${report.p10PlanningEntryAllowed}\np9ProtectedSourceModified=${report.p9ProtectedSourceModified}\np9ProtectedSourceDriftDetected=${report.p9ProtectedSourceDriftDetected}\nownerDecisionCount=${report.ownerDecisionCount}\nownerApprovalPending=${report.ownerApprovalPending}\nrepositoryBaselineDisposition=${report.repositoryBaselineDisposition}\nproductionReady=${report.productionReady}\nproductionAcceptancePassed=${report.productionAcceptancePassed}\nrealSecretCount=${report.realSecretCount}\ncredentialValueRecorded=${report.credentialValueRecorded}\nfailedCount=${report.failedCount}\n\`\`\`\n\n## Failed Checks\n\n${report.failed.length ? report.failed.map((item) => `- ${item}`).join('\n') : '- None'}\n\n## Boundary\n\nThis gate validates planning evidence only. It does not approve or enable a real Provider, OAuth, platform network access, inventory reads or writes, Worker, automatic retry, gray release, Tag, Release, or Production Ready.\n`;
+  return `# P10 Planning Pack Gate\n\nStatus: **${report.status}**\n\n\`\`\`text\nphase=P10\np10PlanningPackPrepared=${report.p10PlanningPackPrepared}\np10ImplementationStarted=${report.p10ImplementationStarted}\np9ToP10TransitionPassed=${report.p9ToP10TransitionPassed}\np9ClosureReuseEligible=${report.p9ClosureReuseEligible}\np10PlanningEntryAllowed=${report.p10PlanningEntryAllowed}\np9ProtectedSourceModified=${report.p9ProtectedSourceModified}\np9ProtectedSourceDriftDetected=${report.p9ProtectedSourceDriftDetected}\nhistoricalPlanningCheckpoint=${report.historicalPlanningCheckpoint}\nhistoricalPlanningPackHeadIsAncestor=${report.historicalPlanningPackHeadIsAncestor}\ncurrentPlanningValidationHead=${report.currentPlanningValidationHead}\nplanningCheckpointAdvanced=${report.planningCheckpointAdvanced}\nplanningSemanticsUnchanged=${report.planningSemanticsUnchanged}\nplanningSemanticRevalidationPassed=${report.planningSemanticRevalidationPassed}\nplanningPackCurrentHeadValid=${report.planningPackCurrentHeadValid}\nplanningSemanticManifestSha256=${report.planningSemanticManifestSha256}\nplanningSemanticManifestMatches=${report.planningSemanticManifestMatches}\nchangesCommittedDuringCurrentRun=${report.changesCommittedDuringCurrentRun}\nownerDecisionCount=${report.ownerDecisionCount}\nownerApprovalPending=${report.ownerApprovalPending}\nrepositoryBaselineDisposition=${report.repositoryBaselineDisposition}\nproductionReady=${report.productionReady}\nproductionAcceptancePassed=${report.productionAcceptancePassed}\nrealSecretCount=${report.realSecretCount}\ncredentialValueRecorded=${report.credentialValueRecorded}\nfailedCount=${report.failedCount}\n\`\`\`\n\n## Failed Checks\n\n${report.failed.length ? report.failed.map((item) => `- ${item}`).join('\n') : '- None'}\n\n## Boundary\n\nThis gate validates planning evidence only. It does not approve or enable a real Provider, OAuth, platform network access, inventory reads or writes, Worker, automatic retry, gray release, Tag, Release, or Production Ready.\n`;
 }
 
 function collectActualBundle() {
-  const documents = [PROPOSAL_JSON, BOUNDARY_JSON, PLAN_JSON, CRITERIA_JSON, RISK_JSON, PACK_JSON].map(readJSON);
+  const documents = [PROPOSAL_JSON, BOUNDARY_JSON, PLAN_JSON, CRITERIA_JSON, RISK_JSON, PACK_JSON, REVALIDATION_JSON].map(readJSON);
   const rawText = REQUIRED_FILES.map(read).join('\n');
   const currentHead = git(['rev-parse', 'HEAD']);
   const stagedFiles = git(['diff', '--cached', '--name-only']).split(/\r?\n/).filter(Boolean);
@@ -230,11 +267,15 @@ function collectActualBundle() {
     criteria: documents[3] || {},
     risks: documents[4] || {},
     pack: documents[5] || {},
+    revalidation: documents[6] || {},
+    planningSemanticManifest: computeP10PlanningSemanticManifest(),
     gitState: {
       currentBranch: git(['branch', '--show-current']),
       currentHead,
       stagedFileCount: stagedFiles.length,
       tagCreated: tagNames.length > 0,
+      historicalPlanningPackHeadIsAncestor: Boolean(documents[5]?.baseCheckpoint)
+        && gitExitZero(['merge-base', '--is-ancestor', documents[5].baseCheckpoint, currentHead]),
     },
     requiredFilesPresent: REQUIRED_FILES.every((file) => fs.existsSync(rootPath(file))),
     credentialScan: scanPlanningContent(documents, rawText),
