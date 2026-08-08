@@ -37,7 +37,7 @@ func (h *Handler) actor(c *gin.Context, shopID uuid.UUID) (int64, uuid.UUID, boo
 		return 0, uuid.Nil, false
 	}
 	principal, err := adminperm.LoadPrincipal(c, h.Service.DB)
-	if err != nil || principal == nil || principal.Disabled || !principal.Can(adminperm.PermInventorySyncRun) || !principal.Can(adminperm.PermP10Read) || !principal.CanOperateStore(shopID) {
+	if err != nil || principal == nil || principal.Disabled || !principal.Can(adminperm.PermInventorySyncRun) || !principal.CanOperateStore(shopID) {
 		response.Fail(c, http.StatusForbidden, response.CodeForbidden, "无权发起该店铺的只读库存同步")
 		return 0, uuid.Nil, false
 	}

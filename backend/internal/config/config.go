@@ -377,6 +377,9 @@ func Load() (*Config, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
+	if err := cfg.P10.Validate(cfg.AppEnv); err != nil {
+		return nil, err
+	}
 
 	return cfg, nil
 }

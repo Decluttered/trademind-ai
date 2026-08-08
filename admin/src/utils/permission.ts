@@ -46,9 +46,9 @@ export const PERMISSIONS = {
   RELEASE_ROLLBACK: 'release.rollback',
   DR_READ: 'dr.read',
   DR_EXECUTE: 'dr.execute',
-  P10_READ: 'p10.read',
-  P10_CREDENTIAL_MANAGE: 'p10.credential.manage',
-  P10_CONTROL_MANAGE: 'p10.control.manage',
+  CONFIG_MANAGE: 'config.manage',
+  INVENTORY_SYNC_READ: 'inventory_sync.read',
+  INVENTORY_SYNC_RUN: 'inventory_sync.run',
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -79,14 +79,15 @@ const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     PERMISSIONS.RESTORE_READ,
     PERMISSIONS.RELEASE_READ,
     PERMISSIONS.DR_READ,
-    PERMISSIONS.P10_READ,
+    PERMISSIONS.INVENTORY_SYNC_READ,
+    PERMISSIONS.INVENTORY_SYNC_RUN,
   ],
   reviewer: [
     PERMISSIONS.OPERATION_TASK_AUDIT_READ,
     PERMISSIONS.OPERATION_TASK_REVIEW,
     PERMISSIONS.OPERATION_TASK_EXECUTE,
     PERMISSIONS.OPERATION_TASK_RETRY,
-    PERMISSIONS.P10_READ,
+    PERMISSIONS.INVENTORY_SYNC_READ,
   ],
   readonly: [
     PERMISSIONS.PRODUCT_VIEW,
@@ -101,7 +102,7 @@ const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     PERMISSIONS.RESTORE_READ,
     PERMISSIONS.RELEASE_READ,
     PERMISSIONS.DR_READ,
-    PERMISSIONS.P10_READ,
+    PERMISSIONS.INVENTORY_SYNC_READ,
   ],
 };
 

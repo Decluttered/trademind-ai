@@ -64,7 +64,11 @@ func loadP10Config(appEnv string) P10Config {
 }
 
 func (c P10Config) Validate(appEnv string) error {
-	if c.CurrentAllowedLevel != "L0" {
+	level := strings.ToUpper(strings.TrimSpace(c.CurrentAllowedLevel))
+	if level == "" {
+		level = "L0"
+	}
+	if level != "L0" {
 		return fmt.Errorf("%s: only L0 is allowed before manual and external acceptance", ErrCodeP10BoundaryViolation)
 	}
 	if c.RealProviderEnabled || c.RealPlatformNetworkEnabled || c.RealCredentialsEnabled || c.RealInventoryReadEnabled || c.InventoryMutationEnabled || c.BackgroundWorkerEnabled || c.AutomaticRetryEnabled {
@@ -76,13 +80,45 @@ func (c P10Config) Validate(appEnv string) error {
 	if c.LocalCredentialKey != "" && IsStagingOrProduction(appEnv) {
 		return fmt.Errorf("%s: local credential keys are forbidden in staging/production", ErrCodeP10BoundaryViolation)
 	}
-	if c.OAuthStateTTL < time.Minute || c.OAuthStateTTL > 30*time.Minute {
+	oauthStateTTL := c.OAuthStateTTL
+	if oauthStateTTL == 0 {
+		oauthStateTTL = 10 * time.Minute
+	}
+	if oauthStateTTL < time.Minute || oauthStateTTL > 30*time.Minute {
 		return fmt.Errorf("%s: OAuth state TTL must be between 60 and 1800 seconds", ErrCodeP10BoundaryViolation)
 	}
-	if c.ProviderRequestTimeout < time.Second || c.ProviderRequestTimeout > 2*time.Minute || c.ProviderConnectTimeout <= 0 || c.ProviderResponseHeaderTime <= 0 {
+	requestTimeout := c.ProviderRequestTimeout
+	if requestTimeout == 0 {
+		requestTimeout = 30 * time.Second
+	}
+	connectTimeout := c.ProviderConnectTimeout
+	if connectTimeout == 0 {
+		connectTimeout = 5 * time.Second
+	}
+	responseHeaderTimeout := c.ProviderResponseHeaderTime
+	if responseHeaderTimeout == 0 {
+		responseHeaderTimeout = 15 * time.Second
+	}
+	if requestTimeout < time.Second || requestTimeout > 2*time.Minute || connectTimeout <= 0 || responseHeaderTimeout <= 0 {
 		return fmt.Errorf("%s: provider timeout configuration is invalid", ErrCodeP10BoundaryViolation)
 	}
-	if c.ProviderMaxResponseBytes < 64*1024 || c.ProviderMaxResponseBytes > 10*1024*1024 || c.ProviderConcurrency < 1 || c.ProviderConcurrency > 10 || c.SKUPageSize < 1 || c.SKUPageSize > 100 || c.PaginationLimit < 1 || c.PaginationLimit > 100 {
+	maxResponseBytes := c.ProviderMaxResponseBytes
+	if maxResponseBytes == 0 {
+		maxResponseBytes = 2 * 1024 * 1024
+	}
+	providerConcurrency := c.ProviderConcurrency
+	if providerConcurrency == 0 {
+		providerConcurrency = 2
+	}
+	pageSize := c.SKUPageSize
+	if pageSize == 0 {
+		pageSize = 50
+	}
+	paginationLimit := c.PaginationLimit
+	if paginationLimit == 0 {
+		paginationLimit = 100
+	}
+	if maxResponseBytes < 64*1024 || maxResponseBytes > 10*1024*1024 || providerConcurrency < 1 || providerConcurrency > 10 || pageSize < 1 || pageSize > 100 || paginationLimit < 1 || paginationLimit > 100 {
 		return fmt.Errorf("%s: provider capacity configuration exceeds the approved limits", ErrCodeP10BoundaryViolation)
 	}
 	if c.DouyinAPIBaseURL != "" {

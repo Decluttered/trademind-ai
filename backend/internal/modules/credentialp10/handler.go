@@ -77,7 +77,7 @@ func bindStrictJSON(c *gin.Context, target any) error {
 }
 
 func (h *Handler) List(c *gin.Context) {
-	actor, principal, ok := h.actor(c, adminperm.PermP10Read, uuid.Nil)
+	actor, principal, ok := h.actor(c, adminperm.PermInventorySyncRead, uuid.Nil)
 	if !ok {
 		return
 	}
@@ -95,7 +95,7 @@ func (h *Handler) CreateOffline(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "请求参数无效")
 		return
 	}
-	actor, _, ok := h.actor(c, adminperm.PermP10CredentialManage, req.ShopID)
+	actor, _, ok := h.actor(c, adminperm.PermConfigManage, req.ShopID)
 	if !ok {
 		return
 	}
@@ -118,7 +118,7 @@ func (h *Handler) Rotate(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "请求参数无效")
 		return
 	}
-	actor, _, ok := h.actor(c, adminperm.PermP10CredentialManage, uuid.Nil)
+	actor, _, ok := h.actor(c, adminperm.PermConfigManage, uuid.Nil)
 	if !ok {
 		return
 	}
@@ -141,7 +141,7 @@ func (h *Handler) Revoke(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "请求参数无效")
 		return
 	}
-	actor, _, ok := h.actor(c, adminperm.PermP10CredentialManage, uuid.Nil)
+	actor, _, ok := h.actor(c, adminperm.PermConfigManage, uuid.Nil)
 	if !ok {
 		return
 	}
@@ -159,7 +159,7 @@ func (h *Handler) StartOfflineOAuth(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "请求参数无效")
 		return
 	}
-	actor, _, ok := h.actor(c, adminperm.PermP10CredentialManage, req.ShopID)
+	actor, _, ok := h.actor(c, adminperm.PermConfigManage, req.ShopID)
 	if !ok {
 		return
 	}
@@ -177,7 +177,7 @@ func (h *Handler) CompleteOfflineOAuth(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "请求参数无效")
 		return
 	}
-	actor, _, ok := h.actor(c, adminperm.PermP10CredentialManage, uuid.Nil)
+	actor, _, ok := h.actor(c, adminperm.PermConfigManage, uuid.Nil)
 	if !ok {
 		return
 	}

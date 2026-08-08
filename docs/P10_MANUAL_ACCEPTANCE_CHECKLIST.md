@@ -4,7 +4,7 @@ Status: **Prepared / Pending Manual Acceptance**
 
 This checklist validates repository-side P10 development without contacting Douyin or promoting runtime beyond L0. Record the operator, date, environment, source HEAD, tenant, fixture shop, observed result and redacted evidence for every item. Do not record credential values, OAuth state values, Authorization/Cookie headers, database/Redis URLs or raw Provider responses.
 
-Automated tests, Gates, PostgreSQL runtime, Playwright, Vitest, Jest, `go test` and `go test -race` were deferred by the Owner for this development round. No item below is pre-marked as passed.
+Repository checks were executed while repairing CI, including Go tests/vet, frontend and contract tests, strict UI-copy checks, architecture ratchet, sensitive-diff scan, Admin production build and CI-mode Playwright smoke. These checks do not complete the manual checklist, real PostgreSQL/runtime acceptance, performance acceptance or `go test -race`. No item below is pre-marked as passed.
 
 ## A. Credential
 
@@ -56,7 +56,7 @@ Automated tests, Gates, PostgreSQL runtime, Playwright, Vitest, Jest, `go test` 
 - [ ] Save allowlist and Gray draft with revision checks; verify Owner/Technical Lead approvals reset and cannot be self-generated.
 - [ ] Verify pause and stop immediately produce a blocked Gray state.
 - [ ] Verify Admin never displays access token, refresh token, ciphertext, app secret or client secret.
-- [ ] Verify `p10.read`, `p10.credential.manage` and `p10.control.manage` RBAC for admin/operator/reviewer/readonly.
+- [ ] Verify `inventory_sync.read`, `inventory_sync.run` and `config.manage` RBAC for admin/operator/reviewer/readonly.
 - [ ] Manually inspect normal/loading/empty/error/readonly/disabled/submitting states.
 - [ ] Inspect 1440x900, 1280x800, 1024x768, 768x900 and 375x812; verify root horizontal overflow is absent and tables scroll only internally.
 - [ ] Intercept every non-GET request during UI acceptance; confirm cancel=0, confirm=1, rapid repeat=1 and no extra write request.

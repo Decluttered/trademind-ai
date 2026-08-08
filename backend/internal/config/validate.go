@@ -80,9 +80,6 @@ func (c *Config) Validate() error {
 	if err := c.validateP9InventorySyncSafety(); err != nil {
 		return err
 	}
-	if err := c.P10.Validate(c.AppEnv); err != nil {
-		return err
-	}
 	if !IsProduction(c.AppEnv) {
 		return c.validateNonProduction()
 	}

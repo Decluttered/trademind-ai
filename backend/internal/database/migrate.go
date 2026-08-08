@@ -13,14 +13,12 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/collect"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectbrowserprofile"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectrule"
-	"github.com/trademind-ai/trademind/backend/internal/modules/credentialp10"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customerchat"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customersync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/disasterrecovery"
 	"github.com/trademind-ai/trademind/backend/internal/modules/files"
 	"github.com/trademind-ai/trademind/backend/internal/modules/imagetask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventory"
-	"github.com/trademind-ai/trademind/backend/internal/modules/inventoryreadp10"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysyncp9"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationtask"
@@ -29,7 +27,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/ordersync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/performance"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
-	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrolp10"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
 	"github.com/trademind-ai/trademind/backend/internal/modules/release"
 	"github.com/trademind-ai/trademind/backend/internal/modules/restore"
@@ -195,15 +192,6 @@ func AutoMigrate(db *gorm.DB) error {
 		return err
 	}
 	if err := inventorysyncp9.Migrate(db); err != nil {
-		return err
-	}
-	if err := credentialp10.Migrate(db); err != nil {
-		return err
-	}
-	if err := productioncontrolp10.Migrate(db); err != nil {
-		return err
-	}
-	if err := inventoryreadp10.Migrate(db); err != nil {
 		return err
 	}
 	if err := migrateDouyinPhase102Indexes(db); err != nil {

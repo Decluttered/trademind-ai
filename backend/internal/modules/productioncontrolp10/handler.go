@@ -71,7 +71,7 @@ func bindJSON(c *gin.Context, target any) error {
 }
 
 func (h *Handler) Status(c *gin.Context) {
-	actor, principal, ok := h.actor(c, adminperm.PermP10Read, uuid.Nil)
+	actor, principal, ok := h.actor(c, adminperm.PermInventorySyncRead, uuid.Nil)
 	if !ok {
 		return
 	}
@@ -89,7 +89,7 @@ func (h *Handler) UpdateSwitches(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "请求参数无效")
 		return
 	}
-	actor, _, ok := h.actor(c, adminperm.PermP10ControlManage, uuid.Nil)
+	actor, _, ok := h.actor(c, adminperm.PermConfigManage, uuid.Nil)
 	if !ok {
 		return
 	}
@@ -107,7 +107,7 @@ func (h *Handler) SetAllowlist(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "请求参数无效")
 		return
 	}
-	actor, _, ok := h.actor(c, adminperm.PermP10ControlManage, req.ShopID)
+	actor, _, ok := h.actor(c, adminperm.PermConfigManage, req.ShopID)
 	if !ok {
 		return
 	}
@@ -125,7 +125,7 @@ func (h *Handler) SaveGrayDraft(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "请求参数无效")
 		return
 	}
-	actor, _, ok := h.actor(c, adminperm.PermP10ControlManage, req.ShopID)
+	actor, _, ok := h.actor(c, adminperm.PermConfigManage, req.ShopID)
 	if !ok {
 		return
 	}
@@ -146,7 +146,7 @@ func (h *Handler) grayAction(c *gin.Context, action string) {
 		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "请求参数无效")
 		return
 	}
-	actor, _, ok := h.actor(c, adminperm.PermP10ControlManage, uuid.Nil)
+	actor, _, ok := h.actor(c, adminperm.PermConfigManage, uuid.Nil)
 	if !ok {
 		return
 	}

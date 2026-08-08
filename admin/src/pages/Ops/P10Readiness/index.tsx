@@ -89,8 +89,9 @@ function actionError(error: unknown) {
 
 export default function P10ReadinessPage() {
   const { can } = usePermission();
-  const canManageCredential = can(PERMISSIONS.P10_CREDENTIAL_MANAGE);
-  const canManageControl = can(PERMISSIONS.P10_CONTROL_MANAGE);
+  const canManageCredential = can(PERMISSIONS.CONFIG_MANAGE);
+  const canManageControl = can(PERMISSIONS.CONFIG_MANAGE);
+  const canRunRead = can(PERMISSIONS.INVENTORY_SYNC_RUN);
   const [killForm] = Form.useForm<KillSwitchValues>();
   const [allowlistForm] = Form.useForm<ShopScopeValues>();
   const [grayForm] = Form.useForm<GrayValues>();
@@ -111,21 +112,21 @@ export default function P10ReadinessPage() {
     setLoading(true);
     setError('');
     try {
-      const [runtime, credentialItems] = await Promise.all([getP10Status(), listP10Credentials()]);
+      const [readiness, credentialItems] = await Promise.all([getP10Status(), listP10Credentials()]);
       if (requestSequence.current !== sequence) return;
-      setStatus(runtime);
+      setStatus(readiness);
       setCredentials(credentialItems);
       killForm.setFieldsValue({
-        providerKillActive: runtime.control.providerKillActive,
-        tenantKillActive: runtime.control.tenantKillActive,
-        shopKillActive: runtime.control.shopKillActive,
-        readKillActive: runtime.control.readKillActive,
+        providerKillActive: readiness.control.providerKillActive,
+        tenantKillActive: readiness.control.tenantKillActive,
+        shopKillActive: readiness.control.shopKillActive,
+        readKillActive: readiness.control.readKillActive,
       });
       allowlistForm.setFieldsValue({
-        shopId: runtime.allowlist?.shopId,
-        enabled: runtime.allowlist?.enabled ?? false,
+        shopId: readiness.allowlist?.shopId,
+        enabled: readiness.allowlist?.enabled ?? false,
       });
-      grayForm.setFieldsValue({ shopId: runtime.gray?.shopId, maxSku: runtime.gray?.maxSku ?? 100 });
+      grayForm.setFieldsValue({ shopId: readiness.gray?.shopId, maxSku: readiness.gray?.maxSku ?? 100 });
     } catch (nextError) {
       if (requestSequence.current !== sequence) return;
       setError(actionError(nextError));
@@ -243,7 +244,7 @@ export default function P10ReadinessPage() {
     );
   };
 
-  const realReadBlocked = !status || status.currentAllowedLevel === 'L0' || !status.realInventoryReadEnabled;
+  const realReadBlocked = !canRunRead || !status || status.currentAllowedLevel === 'L0' || !status.realInventoryReadEnabled;
   const offlineUnavailable = !status?.offlineCredentialAvailable;
 
   return (
@@ -262,16 +263,16 @@ export default function P10ReadinessPage() {
             showIcon
             type="warning"
             message="外部激活已阻断"
-            description="未配置独立预生产基础设施和真实抖店凭据；真实 OAuth、真实读取、Gray、库存写入、Worker 与自动重试均不可用。"
+            description="未配置独立预生产基础设施和真实抖店凭据；真实店铺授权、真实读取、灰度运行、库存写入、后台任务进程与自动重试均不可用。"
           />
           {error ? <Alert showIcon type="error" message="P10 操作失败" description={error} /> : null}
 
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} lg={6}>
-              <MetricCard title="允许级别" value={status?.currentAllowedLevel ?? '-'} description="仅 Fixture / Mock" intent="warning" icon={<SafetyCertificateOutlined />} />
+              <MetricCard title="允许级别" value={status?.currentAllowedLevel ?? '-'} description="仅离线样例和模拟数据" intent="warning" icon={<SafetyCertificateOutlined />} />
             </Col>
             <Col xs={24} sm={12} lg={6}>
-              <MetricCard title="Provider" value={status?.realProviderEnabled ? '已启用' : '已阻断'} description={status?.providerProtocolMappingStatus ?? '-'} intent="data" icon={<ApiOutlined />} />
+              <MetricCard title="抖店读取接入" value={status?.realProviderEnabled ? '已启用' : '已阻断'} description={status?.providerProtocolMappingStatus ?? '-'} intent="data" icon={<ApiOutlined />} />
             </Col>
             <Col xs={24} sm={12} lg={6}>
               <MetricCard title="有效凭据" value={credentials.filter((item) => item.status === 'active').length} description="仅 metadata 计数" intent="primary" icon={<KeyOutlined />} />
@@ -293,7 +294,7 @@ export default function P10ReadinessPage() {
               <Descriptions.Item label="真实凭据">{yesNo(status?.realCredentialsEnabled ?? false)}</Descriptions.Item>
               <Descriptions.Item label="真实库存读取">{yesNo(status?.realInventoryReadEnabled ?? false)}</Descriptions.Item>
               <Descriptions.Item label="真实库存写入">{yesNo(status?.realInventoryWriteEnabled ?? false)}</Descriptions.Item>
-              <Descriptions.Item label="后台 Worker">{yesNo(status?.backgroundWorkerEnabled ?? false)}</Descriptions.Item>
+              <Descriptions.Item label="后台任务进程">{yesNo(status?.backgroundWorkerEnabled ?? false)}</Descriptions.Item>
               <Descriptions.Item label="自动重试">{yesNo(status?.automaticRetryEnabled ?? false)}</Descriptions.Item>
               <Descriptions.Item label="租户">{status?.control.tenantId ?? '-'}</Descriptions.Item>
               <Descriptions.Item label="Allowlist 店铺">{status?.allowlist?.shopId ?? '未配置'}</Descriptions.Item>
@@ -303,7 +304,7 @@ export default function P10ReadinessPage() {
               <Descriptions.Item label="最后错误">{status?.lastRead?.lastErrorCode || '无'}</Descriptions.Item>
               <Descriptions.Item label="限流状态">{status?.lastRead?.rateLimited ? `受限，${status.lastRead.retryAfterSeconds ?? 0}s` : '未记录限流'}</Descriptions.Item>
               <Descriptions.Item label="Request ID">{status?.lastRead?.requestId || '-'}</Descriptions.Item>
-              <Descriptions.Item label="Provider Request ID">{status?.lastRead?.providerRequestId || '-'}</Descriptions.Item>
+              <Descriptions.Item label="平台请求 ID">{status?.lastRead?.providerRequestId || '-'}</Descriptions.Item>
             </Descriptions>
           </SectionCard>
 
@@ -381,7 +382,7 @@ export default function P10ReadinessPage() {
             <Form<KillSwitchValues> form={killForm} layout="vertical" onFinish={confirmSwitches}>
               <Row gutter={[16, 0]}>
                 {[
-                  ['providerKillActive', 'Provider'],
+                  ['providerKillActive', '接入方式'],
                   ['tenantKillActive', 'Tenant'],
                   ['shopKillActive', 'Shop'],
                   ['readKillActive', 'Read'],
@@ -453,7 +454,7 @@ export default function P10ReadinessPage() {
                 </Space>
               </Form.Item>
             </Form>
-            {realReadBlocked ? <Typography.Text type="secondary">当前 L0 边界阻断真实 Provider 读取。</Typography.Text> : null}
+            {realReadBlocked ? <Typography.Text type="secondary">当前 L0 边界阻断真实平台读取。</Typography.Text> : null}
           </SectionCard>
         </Space>
       </Spin>

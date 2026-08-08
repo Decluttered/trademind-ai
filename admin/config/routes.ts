@@ -145,12 +145,6 @@ export default [
         component: './Ops/PlatformRuntime',
       },
       {
-        path: '/ops/p10-readiness',
-        name: 'P10 人工验收',
-        icon: 'SafetyCertificateOutlined',
-        component: './Ops/P10Readiness',
-      },
-      {
         path: '/ops/douyin/runtime',
         redirect: '/ops/platform-runtime?platform=douyin_shop',
         hideInMenu: true,

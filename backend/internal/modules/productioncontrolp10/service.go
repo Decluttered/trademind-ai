@@ -130,7 +130,7 @@ func (s *Service) Status(ctx context.Context, tenantID int64, allowedShopIDs []u
 	}
 	return &RuntimeStatus{
 		CurrentAllowedLevel: s.Config.P10.CurrentAllowedLevel, Environment: s.Config.AppEnv,
-		DevelopmentStatus: "completed", VerificationStatus: "deferred_by_owner_for_manual_acceptance", ManualAcceptanceStatus: "pending", ExternalActivationStatus: "blocked_by_external_infrastructure_and_credentials",
+		DevelopmentStatus: "completed", VerificationStatus: "repository_checks_passed_manual_acceptance_pending", ManualAcceptanceStatus: "pending", ExternalActivationStatus: "blocked_by_external_infrastructure_and_credentials",
 		ProviderProtocolMappingStatus: protocolStatus,
 		RealProviderEnabled:           s.Config.P10.RealProviderEnabled, RealPlatformNetworkEnabled: s.Config.P10.RealPlatformNetworkEnabled, RealCredentialsEnabled: s.Config.P10.RealCredentialsEnabled, RealInventoryReadEnabled: s.Config.P10.RealInventoryReadEnabled,
 		RealInventoryWriteEnabled: false, InventoryMutationEnabled: false, BackgroundWorkerEnabled: false, AutomaticRetryEnabled: false, ReadOnlyCapability: true,

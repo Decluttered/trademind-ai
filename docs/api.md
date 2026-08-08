@@ -363,29 +363,6 @@ Batch 5 的 fixture/mock-only 后端 API 使用 `/api/v1/inventory-sync`，复�
 
 List endpoints return `{items, nextCursor, hasMore, limit}` and never expose offset/page totals. DTOs intentionally omit raw provider cursors, checkpoints, payloads, credential fields, and idempotency hashes.
 
-### P10 Credential, Read-only Provider and Safety Control API
-
-P10 endpoints reuse the authenticated `/api/v1` group, tenant context, store scope and the standard `{code,message,data,traceId?}` envelope. Runtime is fixed at L0, so real Provider calls fail closed. Credential responses contain metadata only; they never contain access token, refresh token, ciphertext, app secret or client secret. All request bodies use strict JSON with size limits.
-
-| Method | Path | Permission | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/p10/status` | `p10.read` | L0 boundary and Provider flags; shop-scoped allowlist, Gray and last-read details are filtered by the principal's store grants |
-| `GET` | `/api/v1/p10/credentials` | `p10.read` | Tenant- and store-scoped credential metadata list |
-| `POST` | `/api/v1/p10/credentials/offline` | `p10.credential.manage` | Development/test-only fixture credential creation |
-| `POST` | `/api/v1/p10/credentials/:credentialId/rotate` | `p10.credential.manage` | Atomic offline credential rotation with `expectedRevision` |
-| `POST` | `/api/v1/p10/credentials/:credentialId/revoke` | `p10.credential.manage` | Local revocation with `expectedRevision` |
-| `POST` | `/api/v1/p10/credentials/oauth/offline/start` | `p10.credential.manage` | Create single-use fixture OAuth state for an exact allowlisted redirect |
-| `POST` | `/api/v1/p10/credentials/oauth/offline/complete` | `p10.credential.manage` | Consume fixture OAuth state once and create credential metadata |
-| `PUT` | `/api/v1/p10/controls/kill-switches` | `p10.control.manage` | Update Provider/Tenant/Shop/Read switches; Write always stays active |
-| `PUT` | `/api/v1/p10/controls/allowlist` | `p10.control.manage` | Save one-tenant/one-shop allowlist with revision control |
-| `PUT` | `/api/v1/p10/gray` | `p10.control.manage` | Save <=100 SKU Gray draft and reset approval fields |
-| `POST` | `/api/v1/p10/gray/pause` | `p10.control.manage` | Pause Gray by expected revision |
-| `POST` | `/api/v1/p10/gray/stop` | `p10.control.manage` | Stop Gray by expected revision |
-| `POST` | `/api/v1/p10/inventory-read/runs` | `inventory_sync.run` + `p10.read` | Manual read-only run; requires `Idempotency-Key` and an allowed store |
-| `POST` | `/api/v1/p10/inventory-read/runs/:runId/rerun` | `inventory_sync.run` + `p10.read` | Manual rerun of a tenant-scoped failed/cancelled run; requires revision and a new `Idempotency-Key` |
-
-The P10 read adapter paginates locally bound Douyin publications and calls only the repository-confirmed `product.detail` operation. The repository has no confirmed all-shop inventory endpoint, so no endpoint was invented. Historical `sku.syncStock` write paths remain separate and are not reachable through P10.
-
 通用刊登任务接口（含抖店）：
 
 | 方法 | 路径 | 说明 |

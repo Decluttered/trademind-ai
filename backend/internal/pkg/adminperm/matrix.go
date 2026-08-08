@@ -73,10 +73,6 @@ const (
 	PermSKUBindingManage        = "sku_binding.manage"
 	PermSKUBindingResolveManual = "sku_binding.resolve_manual"
 	PermInventorySyncAuditRead  = "inventory_sync.audit.read"
-	// P10 production-readiness permissions
-	PermP10Read             = "p10.read"
-	PermP10CredentialManage = "p10.credential.manage"
-	PermP10ControlManage    = "p10.control.manage"
 )
 
 var allPermissions = []string{
@@ -144,9 +140,6 @@ var allPermissions = []string{
 	PermSKUBindingManage,
 	PermSKUBindingResolveManual,
 	PermInventorySyncAuditRead,
-	PermP10Read,
-	PermP10CredentialManage,
-	PermP10ControlManage,
 }
 
 var adminPermissions = append([]string(nil), allPermissions...)
@@ -163,7 +156,6 @@ var reviewerPermissions = []string{
 	PermSKUBindingRead,
 	PermSKUBindingResolveManual,
 	PermInventorySyncAuditRead,
-	PermP10Read,
 }
 
 var operatorPermissions = []string{
@@ -202,7 +194,6 @@ var operatorPermissions = []string{
 	PermInventorySnapshotRead,
 	PermSKUBindingRead,
 	PermSKUBindingManage,
-	PermP10Read,
 }
 
 var readonlyPermissions = []string{
@@ -226,7 +217,6 @@ var readonlyPermissions = []string{
 	PermInventorySyncRead,
 	PermInventorySnapshotRead,
 	PermSKUBindingRead,
-	PermP10Read,
 }
 
 // PermissionsForRole returns granted permission keys for a role.

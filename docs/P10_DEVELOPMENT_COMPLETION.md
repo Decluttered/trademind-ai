@@ -7,14 +7,15 @@ Status: **Repository-side Development Complete / Manual Acceptance Ready / Not P
 ```text
 p10RepositoryDevelopmentComplete=true
 p10ManualAcceptanceReady=true
-automatedTestingExecuted=false
-automatedTestingStatus=deferred_by_owner_for_manual_acceptance
+automatedTestingExecuted=true
+automatedTestingStatus=repository_checks_passed_with_historical_p9_ci_blocker
+p10AutomatedAcceptancePassed=false
 currentAllowedLevel=L0
 productionReady=false
 productionAcceptancePassed=false
 ```
 
-The repository now contains the remaining P10 development for Task IDs `P10-201` through `P10-904`. Development completion does not mean any Gate or acceptance criterion passed. The Owner explicitly deferred automated tests, Gates, PostgreSQL runtime, Playwright, Vitest, Jest, `go test`, `go test -race`, real platform calls and production acceptance to the manual/external acceptance stage.
+The repository now contains the remaining P10 development for Task IDs `P10-201` through `P10-904`. Development completion does not mean any acceptance criterion passed. Repository checks were executed while repairing CI, but real platform calls, `go test -race`, dedicated PostgreSQL acceptance, production acceptance and all manual checklist items remain pending.
 
 ## Batch Summary
 
@@ -39,17 +40,26 @@ The repository now contains the remaining P10 development for Task IDs `P10-201`
 - Security/observability/config: strict config validation, trusted HTTPS Provider host, sensitive-key redaction, low-cardinality P10 metrics, request correlation, connection pool/timeouts/size/page bounds and fail-closed L0 flags.
 - Recovery: existing P6/P10 Batch 1 backup, isolated restore and immutable-image rollback code/scripts are the canonical implementation; no duplicate recovery subsystem was added.
 
-## Build Checks
+The P10 endpoint and permission contract is documented separately in [P10_API.md](P10_API.md) so the closed P9 API contract remains byte-for-byte frozen.
 
-The Owner allowed compile/build checks only. The final recorded commands are:
+## Repository Checks
+
+The final recorded passing checks are:
 
 ```text
-go build ./cmd/server/... ./cmd/p7load ./cmd/p7verify
+go test ./...
+go vet ./...
 pnpm build:admin
+pnpm check:ui-copy --strict
+pnpm test:frontend
+pnpm test:contracts
+pnpm architecture:check
+pnpm quality:sensitive
+CI=1 pnpm test:e2e:smoke
 git diff --check
 ```
 
-These checks establish buildability only. They are not Acceptance Gates. Test/Gate/Playwright/PostgreSQL/runtime/performance results remain `deferred_by_owner_for_manual_acceptance`.
+These checks do not constitute P10 automated or production acceptance. The Project Tests workflow already failed at `P9 PostgreSQL integration baseline` on the prior P10 foundation commit; that historical strict P9 runtime check remains outside this P10 source fix. Real PostgreSQL/runtime/performance acceptance remains pending.
 
 ## Deferred External Work
 

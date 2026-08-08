@@ -157,11 +157,11 @@ func main() {
 	migrateCtx, migrateCancel := context.WithTimeout(context.Background(), time.Duration(cfg.MigrationLockTimeoutSeconds)*time.Second)
 	defer migrateCancel()
 	if cfg.MigrationRunOnStartup {
-		if err := database.RunMigrateWithLock(migrateCtx, db, time.Duration(cfg.MigrationLockTimeoutSeconds)*time.Second, database.AutoMigrate); err != nil {
+		if err := database.RunMigrateWithLock(migrateCtx, db, time.Duration(cfg.MigrationLockTimeoutSeconds)*time.Second, database.AutoMigrateWithP10); err != nil {
 			log.Error("database_migrate_failed", "error", err)
 			os.Exit(1)
 		}
-	} else if err := database.AutoMigrate(db); err != nil {
+	} else if err := database.AutoMigrateWithP10(db); err != nil {
 		log.Error("database_migrate_failed", "error", err)
 		os.Exit(1)
 	}
@@ -320,6 +320,7 @@ func main() {
 		MigrationsReady: true,
 		Obs:             obs,
 	})
+	api.RegisterP10(engine, &api.Deps{Config: cfg, DB: db, Obs: obs})
 
 	workerReg := worker.NewRegistryFromConfig(db, opLogSvc, cfg, log)
 

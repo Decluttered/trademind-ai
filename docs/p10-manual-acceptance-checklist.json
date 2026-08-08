@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "phase": "P10",
   "status": "prepared_pending_manual_acceptance",
-  "automatedTestingStatus": "deferred_by_owner_for_manual_acceptance",
+  "automatedTestingStatus": "repository_checks_passed_manual_acceptance_pending",
   "currentAllowedLevel": "L0",
   "sections": [
     {"id":"credential","status":"pending_manual_acceptance","checks":["create_offline_credential","metadata_only","tenant_isolation","rotate_atomic_revision_checked","revoke_denies_use","expired_denies_use","admin_no_token"]},
