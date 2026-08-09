@@ -1,5 +1,6 @@
 /** 管理端统一布局与间距 token（与 global.less 保持一致） */
 export const layoutTokens = {
+  appHeaderHeight: 56,
   pagePaddingXMin: 16,
   pagePaddingX: 24,
   pagePaddingY: 20,

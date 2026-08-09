@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/admin.fixture';
-import { expectNoRootOverflow } from '../utils/assertions';
+import { expectAccountInTopNavbar, expectNoRootOverflow } from '../utils/assertions';
 
 const smokeRoutes = [
   { path: '/dashboard/product-operations', name: /运营总览|工作台/ },
@@ -18,8 +18,26 @@ test.describe('@smoke Admin route smoke', () => {
       await expect(page.locator('#root')).toBeVisible();
       await expect(page.getByText(route.name).first()).toBeVisible();
       await expect(page).not.toHaveURL(/\/user\/login/);
+      await expectAccountInTopNavbar(page);
       await expectNoRootOverflow(page);
       await admin.writeGuard.expectRequestCount('unexpected', 0);
     });
   }
+
+  test('opens logout from the account dropdown without triggering a write', async ({ admin, page }) => {
+    await admin.goto('/dashboard/product-operations');
+
+    const accountTrigger = page.getByRole('button', { name: /^当前用户 / });
+    await expect(accountTrigger).toHaveAttribute('aria-haspopup', 'menu');
+    await expect(accountTrigger).toHaveAttribute('aria-expanded', 'false');
+
+    await accountTrigger.click();
+    await expect(accountTrigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByRole('menuitem', { name: /退出登录/ })).toBeVisible();
+    await expect(page.getByText('返回登录页面')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(accountTrigger).toHaveAttribute('aria-expanded', 'false');
+    await admin.writeGuard.expectRequestCount('unexpected', 0);
+  });
 });

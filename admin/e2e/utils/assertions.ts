@@ -74,6 +74,129 @@ export async function expectPageContentGuttersWithin(page: Page, maxGutter: numb
   expect(value.rightGutter, `page right gutter ${JSON.stringify(value)}`).toBeLessThanOrEqual(maxGutter + 1);
 }
 
+export async function expectAccountInTopNavbar(page: Page) {
+  const navbar = page.getByRole('navigation', { name: '内容导航栏' });
+  const account = navbar.getByRole('button', { name: /^当前用户 / });
+
+  await expect(navbar).toBeVisible();
+  await expect(account).toBeVisible();
+  await expect(page.getByRole('button', { name: /^当前用户 / })).toHaveCount(1);
+  await expect(
+    page.locator('.ant-pro-sider').getByRole('button', { name: /^当前用户 / }),
+  ).toHaveCount(0);
+
+  const value = await page.evaluate(() => {
+    const navbarRect = document.querySelector('.tm-app-top-nav')?.getBoundingClientRect();
+    const accountRect = document.querySelector('.tm-app-top-nav__user')?.getBoundingClientRect();
+    const brandRect = Array.from(document.querySelectorAll<HTMLElement>('.ant-pro-sider-logo'))
+      .map((element) => element.getBoundingClientRect())
+      .find(
+        (rect) =>
+          rect.width > 0 &&
+          rect.height > 0 &&
+          rect.right > 0 &&
+          rect.left < window.innerWidth &&
+          rect.bottom > 0,
+      );
+    const mobileHeaderRect = document
+      .querySelector<HTMLElement>('.ant-pro-layout-header')
+      ?.getBoundingClientRect();
+    const referenceRect = brandRect ?? mobileHeaderRect;
+    if (!navbarRect || !accountRect) return null;
+    return {
+      navbarLeft: navbarRect.left,
+      navbarRight: navbarRect.right,
+      navbarHeight: navbarRect.height,
+      accountLeft: accountRect.left,
+      accountRight: accountRect.right,
+      referenceHeight: referenceRect?.height ?? null,
+    };
+  });
+
+  expect(value, 'top navbar account metrics').not.toBeNull();
+  if (!value) return;
+  expect(value.accountLeft, `account inside navbar ${JSON.stringify(value)}`).toBeGreaterThanOrEqual(
+    value.navbarLeft,
+  );
+  expect(value.accountRight, `account inside navbar ${JSON.stringify(value)}`).toBeLessThanOrEqual(
+    value.navbarRight + 1,
+  );
+  expect(value.referenceHeight, `brand/header height ${JSON.stringify(value)}`).not.toBeNull();
+  if (value.referenceHeight === null) return;
+  expect(
+    Math.abs(value.navbarHeight - value.referenceHeight),
+    `navbar matches brand/header height ${JSON.stringify(value)}`,
+  ).toBeLessThanOrEqual(1);
+}
+
+export async function expectTopNavbarScrollBehavior(page: Page) {
+  const navbar = page.getByRole('navigation', { name: '内容导航栏' });
+
+  await expect(navbar).toHaveCSS('position', 'sticky');
+  await expect(navbar).not.toHaveClass(/tm-app-top-nav--scrolled/);
+
+  const maxScroll = await page.evaluate(() => {
+    const scroller = document.scrollingElement as HTMLElement | null;
+    return scroller ? scroller.scrollHeight - scroller.clientHeight : 0;
+  });
+  expect(maxScroll, 'page has enough content to exercise sticky navigation').toBeGreaterThan(0);
+
+  await page.evaluate(() => {
+    const scroller = document.scrollingElement as HTMLElement | null;
+    if (scroller) scroller.scrollTop = Math.min(120, scroller.scrollHeight - scroller.clientHeight);
+  });
+
+  await expect(navbar).toHaveClass(/tm-app-top-nav--scrolled/);
+  await expect
+    .poll(async () => {
+      const backgroundColor = await navbar.evaluate(
+        (element) => window.getComputedStyle(element).backgroundColor,
+      );
+      const alphaMatch = backgroundColor.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
+      return alphaMatch ? Number.parseFloat(alphaMatch[1]) : 1;
+    })
+    .toBeLessThan(1);
+  await expect
+    .poll(async () => {
+      const backdropFilter = await navbar.evaluate(
+        (element) => window.getComputedStyle(element).backdropFilter,
+      );
+      const blurMatch = backdropFilter.match(/blur\(([\d.]+)px\)/);
+      return blurMatch ? Number.parseFloat(blurMatch[1]) : 0;
+    })
+    .toBeGreaterThan(0);
+
+  const value = await navbar.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    const alphaMatch = style.backgroundColor.match(
+      /^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/,
+    );
+
+    return {
+      actualTop: rect.top,
+      stickyTop: Number.parseFloat(style.top || '0'),
+      backdropFilter: style.backdropFilter,
+      backgroundColor: style.backgroundColor,
+      backgroundAlpha: alphaMatch ? Number.parseFloat(alphaMatch[1]) : 1,
+    };
+  });
+
+  expect(
+    Math.abs(value.actualTop - value.stickyTop),
+    `sticky navbar top ${JSON.stringify(value)}`,
+  ).toBeLessThanOrEqual(1);
+  expect(value.backdropFilter, `frosted navbar ${JSON.stringify(value)}`).toContain('blur(');
+  expect(value.backgroundAlpha, `translucent navbar ${JSON.stringify(value)}`).toBeGreaterThan(0);
+  expect(value.backgroundAlpha, `translucent navbar ${JSON.stringify(value)}`).toBeLessThan(1);
+
+  await page.evaluate(() => {
+    const scroller = document.scrollingElement as HTMLElement | null;
+    if (scroller) scroller.scrollTop = 0;
+  });
+  await expect(navbar).not.toHaveClass(/tm-app-top-nav--scrolled/);
+}
+
 export async function expectPageChromeScrollbarsHidden(page: Page) {
   const value = await page.evaluate(() => {
     const layout = document.querySelector('.tm-app-layout');
