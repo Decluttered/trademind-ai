@@ -294,26 +294,10 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: P9 PostgreSQL gate fixtures
-        run: pnpm test:p9-postgres-gate-fixtures
-
-      - name: P9 PostgreSQL integration baseline
+      - name: PostgreSQL inventory integration tests
         env:
-          APP_ENV: test
           TEST_DATABASE_URL: postgres://trademind:trademind@127.0.0.1:5432/trademind_test?sslmode=disable
-        run: pnpm test:p9-postgres-integration
-
-      - name: Upload sanitized P9 PostgreSQL runtime evidence
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: p9-postgres-runtime
-          path: |
-            artifacts/p9-postgres-runtime.json
-            artifacts/p9-postgres-runtime.jsonl
-            artifacts/p9-postgres-race.jsonl
-          if-no-files-found: warn
-          retention-days: 7
+        run: pnpm test:db:inventory && pnpm test:db:inventory:race
 
       - name: Redis queue tests
         env:

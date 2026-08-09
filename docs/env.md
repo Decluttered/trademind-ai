@@ -41,7 +41,7 @@ docker compose -f docker-compose.full.yml up -d --build
 | `P7_V2_API_HOST` | `127.0.0.1` | P7-V2 harness | 否 | 仅 P7-V2 性能环境的 loopback API host；禁止公网或 WSL 非 loopback 地址。 |
 | `P7_V2_API_PORT` | `8080` | P7-V2 harness | 否 | 仅 P7-V2 性能环境 API 端口；可迁移至 `18080`、`28080` 或 `38080`。 |
 | `P7_BASE_URL` | 派生自前两项 | P7-V2 harness | 否 | 必须等于 `http://${P7_V2_API_HOST}:${P7_V2_API_PORT}`，供 k6 与探针统一使用。 |
-| `P7_DIAGNOSTICS_*` | `P7_DIAGNOSTICS_ENABLED=false` | P7-V2 diagnostics | 否 | R3B local diagnostics switch and metadata (`P7_DIAGNOSTIC_RUN_ID` / `ROLE` / `DIR` / buffer / runtime + PG sample intervals). When explicitly enabled, writes bounded JSONL diagnostics to ignored `artifacts/p7-v2-diagnostics/` (or an external `/tmp/...` dir); diagnostic runs are non-formal and invalid for closure. |
+| `P7_DIAGNOSTICS_*` | `P7_DIAGNOSTICS_ENABLED=false` | legacy diagnostics compatibility | 否 | 默认关闭；如临时诊断必须写入仓库外临时目录，完成后删除，不得创建或提交 `artifacts/`。 |
 | `APP_MASTER_KEY` | 空 / 64 位 hex | backend | 是 | AES-GCM 主密钥，用于 settings 敏感配置加密。 |
 | `ADMIN_BOOTSTRAP_EMAIL` | 空 / `admin@example.com` | backend | 否 | 初始管理员邮箱。 |
 | `ADMIN_BOOTSTRAP_PHONE` | 空 | backend | 否 | 初始管理员手机号。 |
@@ -194,11 +194,18 @@ node scripts/p10-preproduction-preflight.mjs --mode config
 
 Operational values must be supplied by the target host or managed secret system and must never be committed or printed in evidence.
 
-Historical phase reports and frozen evidence may still mention the ENV filenames that existed when those artifacts were produced. Those references are historical facts, not current runtime instructions; current code and deployment documentation use only `.env` and `.env.example`.
+历史阶段报告与冻结证据已从当前工作树清理；需要追溯时使用 Git 历史。当前运行说明只以 `.env`、`.env.example` 和本文件为准。
 
-## P10 Repository-side Runtime Controls
+## 测试资源
 
-P10 repository development is manual-acceptance ready, but runtime remains fail closed at `L0`. The following variables are present in `.env.example` and the backend service in `docker-compose.full.yml`:
+- `TEST_DATABASE_URL` 与 `TEST_REDIS_URL` 只用于显式隔离的测试资源或 CI service container，不属于生产运行配置。
+- 本地测试数据库可不存在；项目不会自动创建或重建 `trademind_test`。
+- GitHub Actions 可以在作业内临时创建同名数据库，作业结束后随 service container 销毁。
+- 未提供安全隔离 URL 时，不在本地运行对应集成测试，且绝不回退到开发库或生产资源。
+
+## Repository-side Runtime Controls
+
+The project is in production maintenance, while repository runtime controls remain fail closed at `L0` unless separately approved and activated externally. The following variables are present in `.env.example` and the backend service in `docker-compose.full.yml`:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |

@@ -85,6 +85,6 @@ Baseline/Current comparison and must not be changed after results are known.
 
 ## Source
 
-- Harness defaults: `scripts/p7-v2-lib.mjs` (`DEFAULT_SLO`, `REGRESSION_THRESHOLDS`)
-- k6 thresholds: `tests/load/lib/thresholds.js`
-- Regression gate: `scripts/p7-v2-performance-regression.mjs`
+- Runtime metrics and alert configuration are the current operational source.
+- Historical load harnesses and phase regression gates are no longer kept in the production-maintenance working tree.
+- Capacity changes require an externally planned benchmark and human approval; they must not create persistent local evidence directories.

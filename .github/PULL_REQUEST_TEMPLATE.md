@@ -1,62 +1,55 @@
 ## 变更内容
 
-请简要说明本 PR 做了什么。
+请简要说明本 PR 做了什么、影响哪些模块以及主要风险。
 
 ## 变更类型
 
 - [ ] Bug 修复
 - [ ] 新功能
-- [ ] 文档改进
+- [ ] 文档
 - [ ] 重构
-- [ ] 测试
+- [ ] 测试 / CI
 - [ ] 工程维护
 
-## 测试方式
+## 本地检查
 
-请说明你执行过的验证方式，例如：
+只勾选实际执行成功的项目：
 
-- [ ] `pnpm check:dev`
-- [ ] `pnpm dev`
-- [ ] `go test ./...`
+- [ ] 静态检查 / 格式检查
 - [ ] `pnpm check:ui-copy --strict`
 - [ ] `pnpm build:admin`
 - [ ] `pnpm build:collector`
-- [ ] Docker Compose 启动验证
-- [ ] 未执行，原因：
+- [ ] `gofmt`
+- [ ] Docker Compose 配置检查
+- [ ] 未执行本地检查，原因：
 
-## 影响范围
+## GitHub Actions
 
-请说明可能受影响的模块、页面、API、环境变量或部署方式。
+- [ ] 受影响的核心自动化回归仍由工作流覆盖
+- [ ] PostgreSQL / Redis 测试使用 CI service container
+- [ ] 未删除工作流依赖的测试、fixture、Mock 或配置
+- [ ] 没有用 skip、弱化断言或扩大 baseline 掩盖失败
 
-## 关联内容同步
+## 人工验收
 
-请按 [docs/module-map.md](docs/module-map.md) 检查本次改动的关联内容：
+请写明验收步骤和结果：
 
-- [ ] AI 工作流 / Agent 规则变化已同步 `AGENTS.md`、`docs/ai-workflow.md`、`docs/ai-coding-rules.md`、`.cursorrules`、`.cursor/rules/README.md` 和 `docs/cursor-rules-usage.md`。
-- [ ] 环境变量变化已同步唯一模板 `.env.example`、`docs/env.md` 和 Docker / 部署文档。
-- [ ] API / DTO 变化已同步 `docs/api.md`、前端 `services`、前端 `types` 和相关页面。
-- [ ] Provider 变化已按 `docs/provider-template.md` 检查配置、超时、错误处理、安全和文档。
-- [ ] 用户可见版本或较大能力变化已同步 `CHANGELOG.md` 或 `docs/PROGRESS.md`。
-- [ ] 本 PR 不涉及上述关联内容。
+- [ ] 功能 / 业务流程
+- [ ] UI 五档视口、状态与 overflow（如适用）
+- [ ] 写请求安全与请求次数（如适用）
+- [ ] 不适用，原因：
+
+## 文档与安全
+
+- [ ] 已按 `docs/module-map.md` 同步关联内容
+- [ ] 环境变量、API、Provider、Docker、部署或 CI 变更已同步文档
+- [ ] 没有提交 `.env`、密钥、Token、Cookie、真实凭据或生产数据
+- [ ] 没有提交 Playwright 报告、测试结果、截图报告、临时日志或阶段证据
+- [ ] 已按 `docs/task-checklist.md` 完成自查
 
 ## 目标分支
 
-请确认本 PR 符合 [分支管理与 PR 规则](docs/branching.md)：
-
 - [ ] `feat/*` → `dev`
 - [ ] `fix/*` → `dev`
-- [ ] 紧急修复：`fix/*` → `main`，并计划回合到 `dev`
+- [ ] 紧急修复 `fix/*` → `main`，并计划回合 `dev`
 - [ ] `release/*` → `main`
-
-## Checklist
-
-- [ ] 我已确认没有提交 `.env`、密钥、Token、Cookie 或真实平台凭证。
-- [ ] 涉及 Go 代码时已在 `backend` 目录执行 `go fmt ./...`。
-- [ ] 我已阅读并遵守 `docs/ai-coding-rules.md`。
-- [ ] 使用 AI 工具协作时，我已参考 `docs/ai-workflow.md` 控制上下文并沉淀可复用经验。
-- [ ] 我已按 `docs/task-checklist.md` 完成收尾自查。
-- [ ] 涉及接口、环境变量、配置文件、部署或 Provider 机制时已更新文档。
-- [ ] 新增或修改环境变量时已同步 `.env.example`；Docker 部署需要时也已同步 `docker-compose.full.yml`。
-- [ ] 涉及用户可见行为时已补充截图、录屏或说明。
-- [ ] 我已阅读并遵守 `CONTRIBUTING.md`。
-- [ ] 如涉及 P9 PostgreSQL CI，我没有提交临时 freeze artifact，也没有绕过闭包祖先、受保护范围零漂移和 L0 预检。

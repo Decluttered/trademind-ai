@@ -75,7 +75,7 @@ Claim 时递增 `lock_version` 并分配新 `execution_id`。终态更新必须�
 - [ ] 成功/失败是否调用 `Complete` / `Fail`？
 - [ ] 异步任务是否 `TryClaim` + `StartRenewal` + 条件 finish？
 - [ ] 是否有领域 unique 作为兜底？
-- [ ] 是否运行 `node scripts/p2-1-domain-idempotency-check.mjs`？
+- [ ] 是否由现有 Go/契约测试与 GitHub Actions 覆盖幂等、租约和条件写回？
 
 ## 测试
 
@@ -84,7 +84,7 @@ Claim 时递增 `lock_version` 并分配新 `execution_id`。终态更新必须�
 
 ## 已知 partial 区域
 
-- `collect` / `image` / `customer_message_sync`：DB 列已备，Worker 仍部分 legacy lease（见 [`P2_1_IDEMPOTENCY_ADOPTION_MATRIX.md`](P2_1_IDEMPOTENCY_ADOPTION_MATRIX.md)）。
+- `collect` / `image` / `customer_message_sync`：DB 列与租约行为以当前代码和 CI 回归为准；历史接入矩阵可从 Git 历史追溯。
 - AI 应用（apply）路径：键已预留，幂等待后续阶段。
 
 ## 相关文档

@@ -25,7 +25,7 @@
 | Storage Provider | Provider 接口、文件上传 API、settings.storage、本地/对象存储文档、`docs/provider.md` |
 | Image Provider | 图片任务、队列、settings.image、任务页面、`docs/provider.md` |
 | Platform Provider | 店铺授权、Token 加密、平台配置、订单/库存/客服调用方、`docs/provider.md`、`SECURITY.md` |
-| 多平台 / 批量刊登 | `backend/internal/modules/productpublish`、`docs/MULTI_PLATFORM_PUBLISHING_DESIGN.md`、`docs/PUBLISH_BATCH_MIGRATION.md`、`docs/api.md`（batch-targets / batches）、`admin/src/pages/Product/PublishBatch*`、`admin/src/pages/Product/PublishTasks`、`admin/src/constants/publishLabels.ts`、`admin/src/constants/publishLimits.ts`、`scripts/publish-batch-perf.ps1` |
+| 多平台 / 批量刊登 | `backend/internal/modules/productpublish`、`docs/MULTI_PLATFORM_PUBLISHING_DESIGN.md`、`docs/PUBLISH_BATCH_MIGRATION.md`、`docs/api.md`（batch-targets / batches）、`admin/src/pages/Product/PublishBatch*`、`admin/src/pages/Product/PublishTasks`、`admin/src/constants/publishLabels.ts`、`admin/src/constants/publishLimits.ts`、相关 CI 测试 |
 | Collector Provider | `collector/`、采集任务 API、队列、raw 原始数据、`docs/provider.md`、**1688 改解析时必读 [`docs/collector-1688-pitfalls.md`](collector-1688-pitfalls.md)** |
 | 安全 / 密钥 / Token | 加密、脱敏、日志、环境模板、`SECURITY.md`、相关 settings 文档 |
 | CI / 分支 / PR 流程 | `.github/workflows`、`docs/branching.md`、`CONTRIBUTING.md`、`.github/PULL_REQUEST_TEMPLATE.md` |
@@ -55,10 +55,10 @@
 - 细节放入 `docs/`，并在 `docs/README.md` 增加入口。
 - 新增 AI 规则或关联说明时，同步 `AGENTS.md`、`docs/ai-workflow.md` 和 `.cursor/rules/README.md`。
 - 重复出现的坑、质量门槛或工具协作经验，应写回对应 pitfalls、模块文档、`docs/PROGRESS.md` 或 AI 规则，避免只停留在单次对话。
-# P10 Pre-production Foundation
+# 预生产基础设施
 
-Changes to `.env.example`, `deploy/preproduction/**`, `deploy/scripts/*preproduction*`, or `scripts/p10-preproduction-*` must be checked together with `docs/P10_PREPRODUCTION_ARCHITECTURE.md`, `docs/env.md`, `docs/docker-deployment.md`, the P10 Batch 1 fixture/gate, the planning semantic manifest, the P9 transition gate, and sensitive-diff checks. Production resources, credentials, and P9 protected source are outside this module's writable scope.
+Changes to `.env.example`, `deploy/preproduction/**`, or `deploy/scripts/*preproduction*` must be checked together with `docs/P10_PREPRODUCTION_ARCHITECTURE.md`, `docs/env.md`, `docs/docker-deployment.md`, workflow configuration, sensitive-diff checks, and the manual acceptance checklist. Production resources and credentials are outside the default writable scope.
 
 ## P10 Credential / Read-only / Control Modules
 
-Changes under `backend/internal/modules/credentialp10`, `inventoryreadp10`, or `productioncontrolp10` must be checked with backend routing, migration, `adminperm`, metrics/redaction, P10 config validation, Admin `/ops/p10-readiness`, `admin/src/services/p10Readiness.ts`, API/provider/security docs, environment templates, and the P10 manual-acceptance/completion evidence. `inventoryreadp10` may depend on the exported P9 inventory Provider/calibration/audit contracts, but P9 source and gates are frozen and must not be modified. Its P10-owned additive migration extends the existing PostgreSQL run `provider_mode` CHECK with `real_readonly`; the original three P9 modes remain unchanged. No P10 production code may expose `sku.syncStock`, a Worker, scheduler, queue consumer, or automatic business retry.
+Changes under `backend/internal/modules/credentialp10`, `inventoryreadp10`, or `productioncontrolp10` must be checked with backend routing, migration, `adminperm`, metrics/redaction, config validation, Admin `/ops/p10-readiness`, `admin/src/services/p10Readiness.ts`, API/provider/security docs, environment templates, CI regression, and `P10_MANUAL_ACCEPTANCE_CHECKLIST.md`. `inventoryreadp10` may depend on exported inventory Provider/calibration/audit contracts. No production code may expose `sku.syncStock`, a Worker, scheduler, queue consumer, or automatic business retry without separate approval.

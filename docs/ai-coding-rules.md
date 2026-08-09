@@ -11,6 +11,14 @@
 - 修改代码时同步考虑测试、构建、部署、文档和示例配置。
 - 对任何跨模块改动，先查 [module-map.md](module-map.md)，再决定需要同步哪些文件。
 
+## 生产维护测试规则
+
+- GitHub Actions 是自动化回归的唯一持续执行入口；必须保留工作流依赖的核心测试、fixture、Mock 和配置。
+- 本地默认执行相关静态检查、配置验证和必要构建，完整自动化回归交由 CI；未本地执行的测试不得声称已通过。
+- 产品、页面与业务流程由维护者人工验收并记录结果。
+- 本地测试数据库可不存在；数据库和 Redis 集成测试只能使用显式隔离资源或 CI service container。
+- 不创建阶段/批次 gate、长期运行证据、一次性报告或 `artifacts/`；本地 Playwright/测试产物完成诊断后清理。
+
 ## 必须同步更新文档的场景
 
 以下任一变更发生时，必须同步更新相关文档：
@@ -24,7 +32,7 @@
 | 新增 Provider | `docs/provider.md`、`docs/provider-template.md`、README 功能表、设置页面说明、示例配置 |
 | 新增后台页面或路由 | README 能力描述、相关 `docs/`、菜单 / 路由说明 |
 | 新增异步任务或队列 | `.env.example`、健康检查说明、任务中心 / Worker 相关文档 |
-| 新增数据库表或关键字段 | `docs/PROGRESS.md`、架构 / 模块文档、必要时补迁移说明 |
+| 新增数据库表或关键字段 | `docs/PROGRESS.md`、架构 / 模块文档、必要时补迁移说明和 CI 回归 |
 | 修改分支、CI、PR 流程 | `docs/branching.md`、`CONTRIBUTING.md`、PR 模板 |
 | 修改安全、密钥、授权逻辑 | `SECURITY.md`、`.env.example`、相关设置文档 |
 
@@ -63,7 +71,7 @@ AI Agent 修改代码时应遵循：
 7. 涉及 AI、存储、图片、平台、采集能力时，优先通过 Provider 接口扩展。
 8. 涉及耗时任务时，使用任务状态和队列，不在请求中长时间同步阻塞。
 9. 涉及密钥时，走加密、脱敏和日志保护。
-10. 完成后按 [task-checklist.md](task-checklist.md) 执行与改动匹配的检查，并说明未执行的原因。
+10. 完成后按 [task-checklist.md](task-checklist.md) 执行与改动匹配的本地检查，列出交由 CI 的回归和人工验收结果。
 11. 对重复问题、架构决策、工具约定、Prompt 模板或质量门槛，按 [ai-workflow.md](ai-workflow.md) 写回对应文档，让后续 AI 工具可复用。
 
 ## 提交前检查清单
@@ -82,4 +90,4 @@ AI Agent 修改代码时应遵循：
 - [ ] 涉及 admin 时已执行或说明 `pnpm build:admin`。
 - [ ] 涉及用户可见文案时已执行或说明 `pnpm check:ui-copy --strict`。
 - [ ] 涉及 collector 时已执行或说明 `pnpm build:collector`。
-- [ ] 较大模块或阶段性变更已更新 `docs/PROGRESS.md`。
+- [ ] 较大模块或维护策略变更已更新 `docs/PROGRESS.md`。

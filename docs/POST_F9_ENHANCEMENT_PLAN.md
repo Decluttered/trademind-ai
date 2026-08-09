@@ -66,7 +66,7 @@ Third batch (**completed**):
 | --- | --- |
 | Browser/API spot-check on all H1.1 + H1.2 pages | passed_with_warning |
 | P0/P1 fixes | Dashboard `productSource` split, mount URL hydration, drawer reset on three pages, drafts source sync |
-| Reports | [`H1_2_URL_STATE_BROWSER_CHECK.md`](H1_2_URL_STATE_BROWSER_CHECK.md), [`h1-2-url-state-browser-check.json`](h1-2-url-state-browser-check.json) |
+| Historical reports | Removed from the production-maintenance working tree; available from Git history |
 
 ## H1.3 AI 图片 Warning 收敛 + 抖店 E2E 前置提示（Completed）
 
@@ -90,7 +90,7 @@ Third batch (**completed**):
 | Keyword UX | max 80 chars, sensitive hint, clear → URL cleanup |
 | Browser back/forward | passed_with_warning (real browser manual review) |
 | Responsive 1366/1024 | passed / passed_with_warning |
-| Reports | [`H1_4_URL_KEYWORD_RESPONSIVE_CHECK.md`](H1_4_URL_KEYWORD_RESPONSIVE_CHECK.md), [`h1-4-url-keyword-responsive-check.json`](h1-4-url-keyword-responsive-check.json) |
+| Historical reports | Removed from the production-maintenance working tree; available from Git history |
 
 **未执行**：真实抖店 E2E、预发、灰度、打 tag、Production Ready。
 
@@ -105,7 +105,7 @@ Third batch (**completed**):
 | source 扩展 | `ai_workbench`, `config_status`, `publish_batch`, `order_sync`, `customer_sync` |
 | 浏览器后退/前进 | Chrome full + Edge sampled — **passed_with_warning** |
 | 1366/1024 响应式 | **passed** / **passed_with_warning** |
-| Reports | [`H1_5_SECONDARY_URL_BROWSER_CHECK.md`](H1_5_SECONDARY_URL_BROWSER_CHECK.md), [`h1-5-secondary-url-browser-check.json`](h1-5-secondary-url-browser-check.json) |
+| Historical reports | Removed from the production-maintenance working tree; available from Git history |
 
 **未执行**：真实抖店 E2E、预发、灰度、打 tag、Production Ready。
 
@@ -120,7 +120,7 @@ Third batch (**completed**):
 | RBAC | admin / operator / readonly — **passed** |
 | AI 图片基线 | **stable_range_14_to_15_of_16**（本轮 14/16 `passed_with_warning`） |
 | URL 修复 | ProTable `params` 种子化；AI 工作台 compare-before-write |
-| Reports | [`H1_5_LIVE_BROWSER_ACCEPTANCE.md`](H1_5_LIVE_BROWSER_ACCEPTANCE.md), [`H1_5_AI_IMAGE_BASELINE_CONFIRMATION.md`](H1_5_AI_IMAGE_BASELINE_CONFIRMATION.md) |
+| Historical reports | Removed from the production-maintenance working tree; available from Git history |
 
 **未执行**：真实抖店 E2E、预发、灰度、打 tag、Production Ready。
 

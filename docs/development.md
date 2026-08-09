@@ -1,37 +1,25 @@
 # 本地开发说明
 
-本文说明贸灵 TradeMind 的本地开发启动方式。完整项目由 Go backend、React admin、Node collector、PostgreSQL 与 Redis 组成。
+TradeMind 由 Go backend、React Admin、Node collector、PostgreSQL 与 Redis 组成。
 
 ## 环境要求
 
-- Node.js
-- pnpm `9.15+`
-- Go `1.25+`
-- **二选一**（基础设施）：
-  - Docker / Docker Compose（默认，`pnpm dev` 会自动 `docker compose up` 拉起 PostgreSQL / Redis）
-  - 或本机已安装并运行 **PostgreSQL**（默认 `127.0.0.1:5432`）与 **Redis**（默认 `127.0.0.1:6379`），账号密码与 `.env` 一致
+- Node.js 20+
+- pnpm 9.15+
+- Go 1.25+
+- Docker / Docker Compose，或与 `.env` 匹配的本机 PostgreSQL 和 Redis
 
-## 安装依赖
+## 安装与启动
 
 ```bash
 pnpm install
 pnpm install:collector:browsers
-```
-
-## 一键开发启动
-
-```bash
 pnpm dev
 ```
 
-`pnpm dev` 会启动本地基础设施与三个开发服务：
+`pnpm dev` 启动 PostgreSQL/Redis、backend、Admin 和 collector。若 Docker 不可用，会检查 `.env` 指定的本机 PostgreSQL/Redis。
 
-- PostgreSQL / Redis：优先使用 Docker Compose（`docker-compose.yml`）；若未检测到可用 Docker，则检测本机 `.env` 配置的 PostgreSQL / Redis 端口是否可连接，两者都可用则跳过 Compose
-- backend Go 服务
-- admin 管理端
-- collector 采集服务
-
-## 常用命令
+常用命令：
 
 ```bash
 pnpm check:dev
@@ -39,26 +27,13 @@ pnpm dev:infra
 pnpm dev:backend
 pnpm dev:admin
 pnpm dev:collector
-pnpm p7:dataset -- --profile small
-pnpm check:p7
-pnpm check:p7:regression
 pnpm dev:stop
 pnpm dev:reset
+pnpm build:admin
+pnpm build:collector
 ```
 
-说明：
-
-- `pnpm check:dev`：检查 Node、pnpm、Go、Docker 或本机 PostgreSQL / Redis、环境变量等。
-- `pnpm dev:infra`：仅启动 PostgreSQL 与 Redis。
-- `pnpm p7:dataset -- --profile small`：运行 P7 数据集生成器 dry-run；写入隔离数据库需额外传 `--write` 并满足 performance 环境守卫。
-- `pnpm check:p7` / `pnpm check:p7:regression`：生成 P7 性能容量与回归门闸报告；真实负载 / Soak / Race 证据未齐时会失败。
-- `pnpm p7-v2:r3b:lpf-audit`：仅从冻结 Recovery3 evidence 导出并校验 Load Profile V2；不会启动 k6 或修改 Raw Artifact。
-- `pnpm p7-v2:r3b:lpf-comparability`：使用版本化 V2 sidecar 执行 Recovery3 comparability；V1 报告保持不变。
-- `pnpm p7-v2:r3b:regression`：仅在 Comparability V2 通过后评估冻结 Raw Artifact；不重新执行性能负载。
-- `pnpm p7-v2:r3b:lpf-gate`：执行 LPF-V2 scoped gate；Soak、Demo、最终 Gate 不属于该命令范围。
-- `pnpm dev`：启动前会自动释放本机 backend / admin（8000–8010）/ collector 端口上残留的上一进程，避免端口占用导致 backend 启动失败。
-- `pnpm dev:stop`：停止默认 `docker-compose.yml` 服务，不删除 volume。
-- `pnpm dev:reset`：重置默认 Compose 数据卷，可能清空本地数据库。
+`pnpm dev:reset` 会重置默认 Compose 数据卷，可能清空本地数据，执行前必须确认目标。
 
 ## 默认端口
 
@@ -66,15 +41,12 @@ pnpm dev:reset
 | --- | --- |
 | backend | `http://127.0.0.1:8080` |
 | backend health | `http://127.0.0.1:8080/health` |
-| admin | 通常为 `http://127.0.0.1:8000`，以终端输出为准 |
+| Admin | 通常为 `http://127.0.0.1:8000`，以终端输出为准 |
 | collector | `http://127.0.0.1:3100` |
-| collector health | `http://127.0.0.1:3100/health` |
 | PostgreSQL | `127.0.0.1:5432` |
 | Redis | `127.0.0.1:6379` |
 
 ## 环境变量
-
-本地开发使用 `.env.example` 作为模板：
 
 ```bash
 cp .env.example .env
@@ -86,70 +58,58 @@ Windows PowerShell：
 Copy-Item .env.example .env
 ```
 
-关键配置：
+不要提交 `.env`、真实密钥、Token、Cookie 或平台凭据。完整说明见 [env.md](env.md)。
 
-- `DB_DRIVER=postgres`
-- `DB_PORT=5432`
-- `REDIS_ADDR=127.0.0.1:6379`
-- `APP_HTTP_ADDR=:8080`
-- `COLLECTOR_HTTP_ADDR=:3100`
-- `COLLECTOR_BASE_URL=http://127.0.0.1:3100`
-- `OTEL_EXPORTER_OTLP_PROTOCOL=http/json`（P5-V 标准 OTLP/HTTP JSON；真实 backend 未配置时 `TRACING_ENABLED=false`）
+## 测试与验收
 
-完整变量说明见 [env.md](env.md)。新增或修改变量时，还要按 [module-map.md](module-map.md) 检查 Docker、README、部署文档和代码默认值。
+- GitHub Actions 是自动化回归入口，持续运行前端、Collector、后端、契约、架构、PostgreSQL、Redis 和 Admin E2E 测试。
+- 本地默认运行与改动相关的静态检查、配置检查和必要构建；完整自动化回归交由 CI。
+- 功能、页面、文案、响应式和业务流程最终由维护者人工验收。
+- 本地不要求存在 `trademind_test`，也不会自动重建。数据库集成测试由 CI service container 提供隔离数据库。
+- 若明确要在本地运行数据库测试，必须显式提供指向隔离测试库的 `TEST_DATABASE_URL`；严禁连接开发库或生产库。
 
-不要提交 `.env` 或任何真实密钥。
+核心 CI 命令包括：
+
+```bash
+pnpm test:frontend
+pnpm test:collector
+pnpm test:contracts
+pnpm test:backend
+pnpm test:db:inventory
+pnpm test:redis
+pnpm architecture:test
+pnpm workflow:test
+```
+
+Admin E2E 使用 Mock API，不访问真实平台；详情见 `.agents/skills/admin-e2e-testing/SKILL.md`。
 
 ## 分服务调试
 
-基础设施：
-
-```bash
-pnpm dev:infra
-```
-
-后端：
+### Backend
 
 ```bash
 pnpm dev:backend
 ```
 
-管理端：
+### Admin
 
 ```bash
 pnpm dev:admin
 ```
 
-采集服务：
+### Collector
 
 ```bash
 pnpm dev:collector
+pnpm collect:test
 ```
 
-## 后端格式化
+`collect:test` 仅用于采集器测试模式，不等同于生产平台验收。
 
-修改或新增 `backend/**/*.go` 后，在 `backend` 目录执行：
+## 本地产物
 
-```bash
-go fmt ./...
-```
+`.playwright-mcp/`、`playwright-report/`、`test-results/`、截图和临时日志只用于当前排障，完成后清理，不提交 Git。不要新增阶段 gate 或长期运行证据目录。
 
-### P10 本地人工验收配置
+## 生产能力边界
 
-P10 默认保持 L0。仅在本地 development/test 环境进行离线凭据与 OAuth 人工验收时，才可临时设置 `P10_OFFLINE_OAUTH_ENABLED=true`、未提交的 `P10_LOCAL_CREDENTIAL_KEY` 和精确的 `P10_OAUTH_REDIRECT_ALLOWLIST`。不得配置真实抖店凭据或打开任何 `P10_REAL_*`、mutation、Worker、automatic retry 开关。
-
-Admin 入口为 `/ops/p10-readiness`。本轮 Owner 将自动测试、Gate、PostgreSQL runtime 和 Playwright 验收延后到人工验收阶段；允许的开发检查仅为 Go/Admin build、语法检查和 `git diff --check`。
-
-## 采集服务调试
-
-```bash
-pnpm collect:test -- --url "https://detail.1688.com/offer/..."
-pnpm collect:test -- --source aliexpress --url "https://www.aliexpress.com/item/..."
-```
-
-## 故障排查
-
-- Docker 未安装或未启动：可安装 Docker Desktop，或在本机启动 PostgreSQL / Redis（端口与 `.env` 中 `DB_HOST`/`DB_PORT`、`REDIS_ADDR` 一致）。
-- 端口冲突：修改 `.env` 或停止占用端口的进程。
-- 后端连不上数据库：使用 Docker 时确认 `docker compose ps` 中 PostgreSQL 为 healthy；使用本机服务时确认对应端口可连接。
-- Collector 无法打开浏览器：重新执行 `pnpm install:collector:browsers`。
+进入生产维护阶段不等于自动启用真实平台能力。真实凭据、真实网络、平台写入、Worker、自动业务重试和灰度仍由现有 fail-closed 配置与外部审批控制。

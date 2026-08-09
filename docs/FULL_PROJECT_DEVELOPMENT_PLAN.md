@@ -156,7 +156,7 @@ H1  Post-F9 Enhancement / URL 状态保持 ← 当前
 | --- | --- |
 | **目标** | 人工完整走查；真实预发；真实 Storage；抖店真实 E2E；灰度观察；Production Ready 决策 |
 | **输入** | F8 冻结版、真实凭证、预发环境 |
-| **输出** | [`F9_FINAL_ACCEPTANCE_REPORT.md`](F9_FINAL_ACCEPTANCE_REPORT.md)；[`f9-final-acceptance.json`](f9-final-acceptance.json)；demo tag 决策；Production Ready 判定 |
+| **历史输出** | 阶段验收报告与 JSON 已从生产维护工作树清理，可从 Git 历史追溯 |
 | **完成结果** | `final_acceptance_passed_ready_for_demo_tag`；P0/P1 = 0；`pnpm demo:auto-acceptance` passed |
 | **环境阻塞** | 真实预发、Storage 公网、抖店真实凭证 E2E、灰度实跑仍需外部环境 |
 

@@ -1,11 +1,21 @@
 ---
 name: project-testing
-description: TradeMind 全项目自动化测试分层、测试选择、CI 门禁和回归测试要求的唯一总控规范
+description: TradeMind 生产维护阶段的自动化回归分层、CI 测试选择、隔离环境和人工验收总控规范
 ---
 
 # TradeMind 全项目自动化测试总控规范
 
 本 Skill 是全项目测试策略和自动测试选择的唯一总控来源。Admin E2E、前端单元、后端、API 契约等专项 Skill 保持独立，本文件只负责引用和编排。测试实现本身和生产代码质量检查由 `.agents/skills/code-quality/SKILL.md` 统一定义。
+
+## 生产维护策略（优先级最高）
+
+- GitHub Actions 是唯一持续保留的自动化测试执行入口；工作流依赖的核心测试、fixture、Mock 和配置必须保留。
+- 产品、功能、页面和业务流程最终由人工验收；自动化回归用于防止回退，不替代人工签收。
+- AI Agent 本地默认只运行与改动直接相关的静态检查、配置验证和必要构建；完整自动化回归交由 CI，用户明确要求本地运行时除外。
+- 本 Skill 后续出现的“必须运行”或“运行测试”，在未明确要求本地执行时表示必须纳入或保持 CI 覆盖。未本地执行的测试必须报告为“交由 CI”，不得声称 passed。
+- 本地测试数据库可不存在且不要求重建。PostgreSQL/Redis 集成测试只使用显式隔离 URL 或 CI service container，严禁回退到开发库或生产资源。
+- 禁止新增阶段/批次 gate、冻结清单、一次性 fixture 报告、截图报告、运行证据或 `artifacts/`；可复用保护直接加入现有测试套件和工作流。
+- `.playwright-mcp/`、`playwright-report/`、`test-results/`、截图和临时日志完成诊断后清理，不提交 Git。
 
 ## 1. 自动适用规则
 

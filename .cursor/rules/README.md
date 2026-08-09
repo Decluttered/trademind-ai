@@ -17,12 +17,13 @@
 | `00-project-overview.mdc` | 项目定位、MVP 范围、长期方向、禁止事项 |
 | `01-architecture.mdc` | 总体架构、分层边界、Provider 抽象、目录结构 |
 | `08-api-db-security.mdc` | API 规划、数据库约定、settings、加密、日志安全 |
-| `09-dev-workflow.mdc` | 开发优先级、阶段规划、Cursor 实现行为、文档要求 |
-| `10-progress-sync.mdc` | 阶段、模块或较大修改后更新 `docs/PROGRESS.md` |
+| `09-dev-workflow.mdc` | 生产维护优先级、实现流程、验证和禁止事项 |
+| `10-progress-sync.mdc` | 较大维护变更后更新精简的当前状态 |
 | `11-local-dev-postgres.mdc` | 本地与默认数据库统一采用 PostgreSQL |
 | `12-ai-coding-doc-sync.mdc` | AI 编程规则、配置与文档同步要求 |
 | `13-ai-workflow.mdc` | AI vibe coding 工作流、提示词优化、上下文节约和经验沉淀入口 |
-| `15-external-docs-no-phase-status.mdc` | 阶段状态不写 README 等对外主文档；进度写入 `docs/PROGRESS.md` 等内部文档 |
+| `15-external-docs-no-phase-status.mdc` | 对外文档保留稳定生命周期/能力边界，不写临时 gate 或运行证据 |
+| `project-testing.mdc` | 生产维护阶段的 CI 自动化回归、隔离测试资源与人工验收总控入口 |
 
 ## 领域规则
 
@@ -35,6 +36,7 @@
 | `06-storage-provider.mdc` | Storage 后端与存储设置页面 | Storage Provider、本地存储、云存储扩展 |
 | `07-collector-node-playwright.mdc` | `collector/**/*.{ts,tsx,js,json}` | Node / Playwright 采集服务规则 |
 | `14-ui-copywriting.mdc` | `admin/src/**`、后端用户可见 message/label | 用户可见文案中文化；见 `docs/ui-copywriting.md` |
+| `admin-e2e-testing.mdc` | `admin/**/*.{ts,tsx,less,css,scss}` | Admin Playwright CI、五档响应式、写请求安全与人工签收 |
 
 ## 新增规则 Checklist
 

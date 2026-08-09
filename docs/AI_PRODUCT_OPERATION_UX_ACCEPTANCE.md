@@ -44,7 +44,7 @@
 | 19 | 抖店可创建草稿 | `29f59f10-f03a-4294-9e1f-499c05eaef4c` | manual | 25% | collect_review | 真实 create-draft：**blocked_by_real_credentials**（不阻塞 A2） |
 | 20 | 多平台多店铺 | `29f59f10-f03a-4294-9e1f-499c05eaef4c` | manual | 25% | collect_review | publish-targets 12 平台 |
 
-> 自动化扫描详情：[`docs/a1-acceptance-run.json`](a1-acceptance-run.json)
+> 历史自动化扫描产物已从生产维护工作树清理；需要追溯时查询 Git 历史。
 
 ---
 
@@ -136,7 +136,7 @@
 
 - 列表附加进度：`attachOperationProgressSummaries` 批量 images + skus + image_tasks（**非逐行 readiness**）
 - 新增单测：`TestListAttachOperationProgressUsesFixedBatchQueries`
-- 种子脚本：[`scripts/seed-product-list-perf.ps1`](../scripts/seed-product-list-perf.ps1)
+- 历史性能种子脚本已清理；当前验收使用 CI 回归与人工步骤。
 
 ---
 
@@ -185,11 +185,7 @@
 - `admin/src/pages/Product/DraftDetail/index.tsx`
 - `admin/src/components/MultiPlatformPublishCenter.tsx`
 - `backend/internal/modules/product/operation_progress_test.go`
-- `scripts/a1-acceptance-run.ps1`（新增）
-- `scripts/a1-prepare-samples.ps1`（新增）
-- `scripts/seed-product-list-perf.ps1`（新增）
-- `docs/a1-sample-matrix.json`（生成）
-- `docs/a1-acceptance-run.json`（生成）
+- 历史验收脚本、样本矩阵和运行 JSON 已从当前工作树清理，可从 Git 历史追溯。
 - `docs/AI_PRODUCT_OPERATION_UX_ACCEPTANCE.md`（本文件）
 - `DEMO_CHECKLIST.md`（勾选 A1.1 / A1.2）
 

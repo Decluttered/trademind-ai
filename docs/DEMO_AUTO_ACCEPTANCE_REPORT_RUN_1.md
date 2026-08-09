@@ -53,7 +53,7 @@
 - [ai-operation-workbench-perf.auto.json](ai-operation-workbench-perf.auto.json)
 - [COPYWRITING_AUDIT.auto.md](COPYWRITING_AUDIT.auto.md)
 - [SECURITY_RELEASE_CHECK.auto.md](SECURITY_RELEASE_CHECK.auto.md)
-- [DOCS_CONSISTENCY_CHECK.md](DOCS_CONSISTENCY_CHECK.md)
+- 文档一致性现由 `scripts/check-doc-links.ps1` 直接输出，不再生成持久化报告。
 
 ## Manual test checklist (out of scope for automation)
 

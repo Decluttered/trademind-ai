@@ -12,7 +12,7 @@
 | P1 open | 14 | 0 | **0** |
 | 主链路 Demo | 部分 | 16 步 | **16 步 + edge-case seed** |
 
-**结论**：F9 已通过，P0/P1 仍为 0；抖店真实 E2E / 真实预发 / Storage 公网 / 灰度仍为环境项；tag 当前 deferred。详见 [`F9_FINAL_ACCEPTANCE_REPORT.md`](F9_FINAL_ACCEPTANCE_REPORT.md)。
+**历史结论**：原阶段报告已从生产维护工作树清理，可从 Git 历史追溯；当前状态以 `docs/PROGRESS.md` 和运行配置为准。
 
 ## F7 后审计摘要
 

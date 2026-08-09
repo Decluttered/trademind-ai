@@ -41,15 +41,11 @@ The project currently serves two priorities: `AI product operations` and a `ligh
 
 | Item | Status |
 | --- | --- |
-| Development Status | Manual Acceptance Ready |
-| Demo | MVP Demo Ready |
-| Observability | Standard OTLP/HTTP Export Code Ready; P5 Closure Verification Incomplete |
-| Backup / Release / DR | P6 fully closed; real production verification deferred |
-| Performance / Capacity | P7 Conditionally Closed; functional/development scope completed; capacity and repeatability deferred to P10 |
-| Tag | Tag deferred |
-| Production Status | Not Production Ready |
-| Douyin | Douyin Release Candidate |
-| P10 | Repository-side Development Complete; Manual Acceptance Pending |
+| Lifecycle | Production Maintenance |
+| Automated Regression | GitHub Actions |
+| Product Acceptance | Human Sign-off |
+| Runtime Activation | Managed externally; repository defaults remain fail closed |
+| Local Test Database | Optional; CI provisions isolated services |
 
 
 ## Positioning
@@ -148,10 +144,9 @@ pnpm build:admin
 pnpm build:collector
 pnpm seed:demo-data
 pnpm seed:demo-permissions
-pnpm verify:demo-data
-pnpm verify:demo-permissions
-pnpm check:p4-r
 ```
+
+GitHub Actions runs automated regression. Maintainers sign off product and business behavior manually. A local `trademind_test` database is not required.
 
 ### Docker Deployment
 

@@ -112,9 +112,10 @@ return s.Idempotency.Complete(ctx, rec.ID, owner, idempotency.CompleteResult{
 - 提交前运行：
 
 ```bash
-node scripts/p2-1-domain-idempotency-check.mjs
 go test ./internal/modules/idempotency/... ./internal/pkg/tasklease/...
 ```
+
+完整自动化回归由 GitHub Actions 执行，不再维护阶段性静态 gate。
 
 ## P2.1 已接入路径索引
 
@@ -130,7 +131,7 @@ go test ./internal/modules/idempotency/... ./internal/pkg/tasklease/...
 | AI 图片批次 | `aiproductimage/service.go` (`acquireImageBatch`) |
 | Webhook | `webhook/service.go` |
 
-完整矩阵见 [`P2_1_IDEMPOTENCY_ADOPTION_MATRIX.md`](P2_1_IDEMPOTENCY_ADOPTION_MATRIX.md)。
+当前接入范围以代码和 GitHub Actions 回归为准；历史矩阵可从 Git 历史追溯。
 
 ## 常见错误
 

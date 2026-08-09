@@ -1,7 +1,7 @@
 # 统一幂等设计（P2 / P2.1）
 
 > Phase P2 引入跨模块幂等基础设施，避免重复执行产生副作用。实现位于 `backend/internal/modules/idempotency`。
-> **Phase P2.1**：关键生产写路径已通过共享 `idempotency.Service` 完成接入（订单同步/导入、库存扣减/推送、刊登、客服外发、AI 批次、Webhook）；接入矩阵见 [`P2_1_IDEMPOTENCY_ADOPTION_MATRIX.md`](P2_1_IDEMPOTENCY_ADOPTION_MATRIX.md)，集成指南见 [`DOMAIN_IDEMPOTENCY_INTEGRATION.md`](DOMAIN_IDEMPOTENCY_INTEGRATION.md)。
+> 关键生产写路径通过共享 `idempotency.Service` 接入（订单同步/导入、库存扣减/推送、刊登、客服外发、AI 批次、Webhook）；当前范围以代码、CI 回归和 [`DOMAIN_IDEMPOTENCY_INTEGRATION.md`](DOMAIN_IDEMPOTENCY_INTEGRATION.md) 为准。
 > **Phase P2.2**：AI 文案/图片 **apply + undo** 与 Webhook **HTTP 接收 / process** 键已接入；见 [`AI_RESULT_APPLY_IDEMPOTENCY.md`](AI_RESULT_APPLY_IDEMPOTENCY.md)、[`AI_RESULT_UNDO_DESIGN.md`](AI_RESULT_UNDO_DESIGN.md)、[`WEBHOOK_HTTP_RECEIVER_DESIGN.md`](WEBHOOK_HTTP_RECEIVER_DESIGN.md)。
 
 ## 数据模型：`idempotency_records`
@@ -46,7 +46,7 @@ processing（租约过期）→ expired（ReleaseExpired 清扫）
 | --- | --- |
 | **已接入** | 订单同步任务、订单导入、库存扣减/推送、刊登批次/入队、客服外发、AI 文案/图片批次创建、AI 文案/图片 **apply/undo**、Webhook 入站 ACK + `webhook-process` 异步处理 |
 | **预留** | 库存补偿（`inventory-compensate`） |
-| **验证** | `node scripts/p2-1-domain-idempotency-check.mjs`；`node scripts/p2-2-reliability-closure-check.mjs` → [`P2_2_RELIABILITY_CLOSURE_REPORT.md`](P2_2_RELIABILITY_CLOSURE_REPORT.md) |
+| **验证** | 现有 Go 单元/集成测试、API 契约测试与 GitHub Actions；最终业务流程由人工验收 |
 
 `router.go` 将同一 `idempotencySvc` 注入 `ordersync`、`order`、`inventory`、`productpublish`、`customerchat`、`aiproducttext`、`aiproductimage`。
 

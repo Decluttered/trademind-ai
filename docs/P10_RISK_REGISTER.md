@@ -6,4 +6,4 @@ The register tracks OAuth and credential leakage, refresh failure, Provider API 
 
 All 18 risks are production-blocking until their planned controls and evidence are accepted. No risk is accepted by this planning pack.
 
-The authoritative risks, impacts, and mitigations are in [`p10-risk-register.json`](p10-risk-register.json).
+This Markdown file is the retained operational risk reference. The historical machine-generated JSON was removed from the production-maintenance working tree and remains available in Git history.
