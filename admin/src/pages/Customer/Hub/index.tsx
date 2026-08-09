@@ -110,7 +110,7 @@ export default function CustomerHubPage() {
               </Col>
               <Col xs={24} sm={12} md={8} lg={6}>
                 <Card hoverable onClick={() => history.push(buildConversationLink('sendStatus=failed'))}>
-                  <Statistic title="发送失败" value={data.sendFailureCount} valueStyle={{ color: data.sendFailureCount ? '#cf1322' : undefined }} />
+                  <Statistic title="发送失败" value={data.sendFailureCount} valueStyle={{ color: data.sendFailureCount ? 'var(--ant-color-error)' : undefined }} />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={8} lg={6}>

@@ -356,7 +356,7 @@ export function CustomCollectModal({ open, onClose }: Props) {
         <Button loading={testing} disabled={submitBlocked} onClick={() => void runAccessTest()}>
           测试采集效果
         </Button>
-        <span style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>
+        <span style={{ color: 'var(--ant-color-text-secondary)', fontSize: 12 }}>
           不提交采集任务，仅检测页面能否打开、商品信息能否识别
         </span>
       </Space>

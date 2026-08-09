@@ -46,6 +46,14 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
 
 .ant-pro-layout .ant-pro-sider {
   border-inline-end: 1px solid var(--ant-color-border-secondary);
+  background: var(--ant-color-bg-container);
+}
+
+/* ProLayout's mobile sider defaults to transparent. Keep the whole drawer
+   opaque so scrolled page content can never show through the navigation. */
+.tm-app-layout .ant-pro-drawer-sider .ant-drawer-content,
+.tm-app-layout .ant-pro-drawer-sider .ant-drawer-body {
+  background: var(--ant-color-bg-container);
 }
 
 .tm-app-layout .ant-pro-sider-logo {
@@ -54,9 +62,28 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   padding: 0;
 }
 
-.ant-pro-layout .ant-layout-header {
+/* ProLayout retains a 40px title-wrapper minimum even when a nested collapsed
+   item is narrower. Let the wrapper follow the item so its icon and selected
+   background share the same horizontal center line. */
+.tm-app-layout
+  .ant-pro-sider-collapsed
+  .ant-pro-base-menu-vertical-collapsed
+  .ant-pro-base-menu-vertical-item-title-collapsed {
+  min-width: 0;
+  width: 100%;
+}
+
+.tm-app-layout.ant-pro-layout-header.ant-layout-header,
+.tm-app-layout .ant-pro-layout-header.ant-layout-header {
+  background: var(--tm-app-header-bg);
   border-bottom: 1px solid var(--ant-color-border-secondary);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  box-shadow: var(--tm-shadow-card);
+}
+
+@media (max-width: 767px) {
+  .tm-app-layout .ant-pro-global-header .tm-app-brand-header > span:last-child {
+    display: none;
+  }
 }
 
 .ant-pro-layout .ant-pro-layout-content {
@@ -105,6 +132,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
 @tm-task-track-muted: #cbd5e1;
 
 :root {
+  --tm-app-header-bg: #fff;
   --tm-ai-accent: @{tm-ai-accent};
   --tm-data-accent: @{tm-data-accent};
   --tm-task-track-muted: @{tm-task-track-muted};
@@ -112,6 +140,27 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   --tm-shadow-elevated: @{tm-shadow-elevated};
   --tm-shadow-sticky: @{tm-shadow-sticky};
   --tm-radius-card: @{tm-radius};
+}
+
+html[data-theme="dark"] {
+  --tm-app-header-bg: #171a21;
+  --tm-ai-accent: #9d8cff;
+  --tm-data-accent: #22d3ee;
+  --tm-task-track-muted: #475569;
+  --tm-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --tm-shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.36);
+  --tm-shadow-sticky: 0 -4px 16px rgba(0, 0, 0, 0.32);
+}
+
+/* Theme tokens and the root semantic palette are committed in one render.
+   Suppress component interpolation for those two paint frames so users never
+   see a temporary light/dark mixture while cssinjs replaces its scope. */
+html.tm-theme-switching,
+html.tm-theme-switching body #root,
+html.tm-theme-switching body #root *,
+html.tm-theme-switching body #root *::before,
+html.tm-theme-switching body #root *::after {
+  transition: none;
 }
 
 .tm-page-container {
@@ -210,7 +259,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
 
 .tm-section-card {
   border-radius: @tm-radius !important;
-  box-shadow: @tm-shadow-card;
+  box-shadow: var(--tm-shadow-card);
 
   &.ant-pro-card {
     margin-block-end: @tm-card-gap;
@@ -309,7 +358,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
     z-index: 10;
     padding: 12px 0;
     background: var(--ant-color-bg-container);
-    box-shadow: @tm-shadow-sticky;
+    box-shadow: var(--tm-shadow-sticky);
   }
 }
 
@@ -360,16 +409,19 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   height: 100%;
   min-height: 105px;
   border-radius: @tm-radius !important;
-  box-shadow: @tm-shadow-card;
+  box-shadow: var(--tm-shadow-card);
   cursor: default;
 
   &--clickable {
     cursor: pointer;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      transform 0.15s ease;
 
     &:hover {
       border-color: var(--ant-color-primary);
-      box-shadow: @tm-shadow-elevated;
+      box-shadow: var(--tm-shadow-elevated);
       transform: translateY(-1px);
     }
   }
@@ -571,7 +623,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
 
 .ant-card {
   border-radius: @tm-radius;
-  box-shadow: @tm-shadow-card;
+  box-shadow: var(--tm-shadow-card);
 }
 
 .ant-pro-card {
@@ -582,7 +634,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   min-height: 100vh;
   display: flex;
   align-items: stretch;
-  background: #f4f6f9;
+  background: var(--ant-color-bg-layout);
 }
 
 .tm-login__brand {
@@ -629,8 +681,8 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   .tm-login__panel {
     flex: 0 0 480px;
     max-width: 480px;
-    background: #fff;
-    box-shadow: -24px 0 48px rgba(15, 23, 42, 0.06);
+    background: var(--ant-color-bg-container);
+    box-shadow: var(--tm-shadow-elevated);
   }
 }
 
@@ -666,7 +718,10 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   border: 1px solid var(--ant-color-border-secondary);
   border-radius: 12px;
   background: var(--ant-color-bg-container);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .tm-storage-kind-group .tm-storage-kind-radio.ant-radio-wrapper-checked {
@@ -675,7 +730,10 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
 }
 
-.tm-storage-kind-group .tm-storage-kind-radio.ant-radio-wrapper:hover:not(.ant-radio-wrapper-disabled) {
+.tm-storage-kind-group
+  .tm-storage-kind-radio.ant-radio-wrapper:hover:not(
+    .ant-radio-wrapper-disabled
+  ) {
   border-color: var(--ant-color-primary-hover);
 }
 
@@ -748,7 +806,12 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
 }
 
 .tm-ai-settings__hero {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(99, 102, 241, 0.06) 48%, rgba(14, 165, 233, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.08) 0%,
+    rgba(99, 102, 241, 0.06) 48%,
+    rgba(14, 165, 233, 0.05) 100%
+  );
   border-color: rgba(37, 99, 235, 0.18) !important;
 }
 
@@ -848,7 +911,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   bottom: 0;
   z-index: 10;
   margin-bottom: 8px;
-  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--tm-shadow-sticky);
 }
 
 /* 图片 AI 设置页 */
@@ -865,7 +928,12 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
 }
 
 .tm-image-settings__hero {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(37, 99, 235, 0.06) 48%, rgba(14, 165, 233, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.08) 0%,
+    rgba(37, 99, 235, 0.06) 48%,
+    rgba(14, 165, 233, 0.05) 100%
+  );
   border-color: rgba(124, 58, 237, 0.2) !important;
 }
 
@@ -884,7 +952,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   height: 48px;
   border-radius: 12px;
   font-size: 24px;
-  color: #7c3aed;
+  color: var(--tm-ai-accent);
   background: rgba(124, 58, 237, 0.12);
 }
 
@@ -938,7 +1006,10 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   border-radius: 12px;
   background: var(--ant-color-bg-container);
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 
   &:hover {
     border-color: var(--ant-color-primary-hover);
@@ -1056,7 +1127,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   bottom: 0;
   z-index: 10;
   margin-bottom: 8px;
-  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--tm-shadow-sticky);
 }
 
 /* 系统设置页（及复用该样式的设置子页） */
@@ -1073,7 +1144,11 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
 }
 
 .tm-system-settings__hero {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.07) 0%, rgba(14, 165, 233, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.07) 0%,
+    rgba(14, 165, 233, 0.05) 100%
+  );
   border-color: rgba(37, 99, 235, 0.16) !important;
 }
 
@@ -1141,7 +1216,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   bottom: 0;
   z-index: 10;
   margin-bottom: 8px;
-  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--tm-shadow-sticky);
 }
 
 .tm-platform-publish__section + .tm-platform-publish__section {
@@ -1198,7 +1273,10 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   border: 1px solid var(--ant-color-border-secondary);
   border-radius: 12px;
   background: var(--ant-color-bg-container);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .tm-ai-provider-group .tm-ai-provider-radio.ant-radio-wrapper-checked {
@@ -1207,7 +1285,10 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
 }
 
-.tm-ai-provider-group .tm-ai-provider-radio.ant-radio-wrapper:hover:not(.ant-radio-wrapper-disabled) {
+.tm-ai-provider-group
+  .tm-ai-provider-radio.ant-radio-wrapper:hover:not(
+    .ant-radio-wrapper-disabled
+  ) {
   border-color: var(--ant-color-primary-hover);
 }
 
@@ -1278,7 +1359,11 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
 .tm-ai-rule-modal__hero {
   padding: 10px 14px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.07) 0%, rgba(99, 102, 241, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.07) 0%,
+    rgba(99, 102, 241, 0.05) 100%
+  );
   border: 1px solid rgba(37, 99, 235, 0.14);
 }
 
@@ -1468,7 +1553,8 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
 }
 
 .tm-ai-rule-modal__json textarea {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
   font-size: 12px !important;
 }
 
@@ -1507,7 +1593,10 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   border-radius: 10px;
   background: var(--ant-color-bg-container);
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .tm-ai-rule-field-card:hover {
@@ -1636,7 +1725,10 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
     border-radius: 12px;
     background: var(--ant-color-bg-container);
     cursor: pointer;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      background 0.15s ease;
 
     &:hover {
       border-color: var(--ant-color-primary-hover);

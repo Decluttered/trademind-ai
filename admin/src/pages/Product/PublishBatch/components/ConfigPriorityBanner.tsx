@@ -21,7 +21,7 @@ export default function ConfigPriorityBanner() {
       description={
         <>
           <div style={{ marginBottom: 4 }}>{PRIORITY_CHAIN.join(' → ')}</div>
-          <span style={{ color: 'rgba(0,0,0,0.45)' }}>
+          <span style={{ color: 'var(--ant-color-text-secondary)' }}>
             越靠后的配置优先级越高。单个商品在单个店铺的配置，会覆盖前面的统一配置。
           </span>
         </>

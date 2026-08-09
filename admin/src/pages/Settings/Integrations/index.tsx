@@ -43,8 +43,8 @@ function IntegrationHubCard({ title, desc, configured, to, Icon, extra }: HubCar
         height: '100%',
         padding: '20px 20px 16px',
         borderRadius: 8,
-        border: '1px solid rgba(0,0,0,0.06)',
-        background: '#fff',
+        border: '1px solid var(--ant-color-border-secondary)',
+        background: 'var(--ant-color-bg-container)',
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -55,14 +55,14 @@ function IntegrationHubCard({ title, desc, configured, to, Icon, extra }: HubCar
             width: 40,
             height: 40,
             borderRadius: 8,
-            background: 'linear-gradient(135deg, #e6f4ff 0%, #f0f5ff 100%)',
+            background: 'linear-gradient(135deg, var(--ant-color-primary-bg) 0%, var(--ant-color-info-bg) 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}
         >
-          <Icon style={{ fontSize: 20, color: '#1677ff' }} />
+          <Icon style={{ fontSize: 20, color: 'var(--ant-color-primary)' }} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <Space wrap size={[8, 4]}>
@@ -99,8 +99,8 @@ function PlatformIntegrationCard({ name, appConfigured, status }: PlatformCardPr
         height: '100%',
         padding: '16px 16px 14px',
         borderRadius: 8,
-        border: '1px solid rgba(0,0,0,0.06)',
-        background: '#fff',
+        border: '1px solid var(--ant-color-border-secondary)',
+        background: 'var(--ant-color-bg-container)',
       }}
     >
       <Space wrap size={[8, 4]} style={{ marginBottom: 8 }}>

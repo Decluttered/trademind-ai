@@ -33,6 +33,7 @@ export async function routeAdminApi(page: Page) {
     const path = url.pathname;
     const response =
       (path === '/api/v1/auth/profile' ? ok(e2eUser) : null) ??
+      (path === '/api/v1/settings' ? ok({ items: [] }) : null) ??
       (path === '/api/v1/image/providers' ? ok(imageProviderCapabilities) : null) ??
       inventorySyncP9Response(path) ??
       productsResponse(path) ??

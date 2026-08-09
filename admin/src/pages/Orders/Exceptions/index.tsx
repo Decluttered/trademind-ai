@@ -791,7 +791,7 @@ export default function OrderExceptionsPage() {
               onRow={(r) => ({
                 style:
                   candRows.length > 1 && r.confidence === maxCandConf
-                    ? { background: '#f6ffed' }
+                    ? { background: 'var(--ant-color-success-bg)' }
                     : undefined,
               })}
               columns={[

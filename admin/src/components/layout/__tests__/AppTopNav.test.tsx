@@ -1,19 +1,25 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AppTopNav, { resolveUserLabels } from '../AppTopNav';
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { useAntdConfigSetter } from "@umijs/max";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { THEME_MODE_STORAGE_KEY } from "@/theme";
+import AppTopNav, { resolveUserLabels } from "../AppTopNav";
 
 const user: API.CurrentUser = {
-  id: 'test-user',
-  username: 'operator@example.test',
-  email: 'operator@example.test',
-  displayName: '运营账号',
+  id: "test-user",
+  username: "operator@example.test",
+  email: "operator@example.test",
+  displayName: "运营账号",
 };
 
 beforeEach(() => {
+  window.localStorage.removeItem(THEME_MODE_STORAGE_KEY);
+  delete document.documentElement.dataset.theme;
+  document.documentElement.style.removeProperty("color-scheme");
+  document.documentElement.classList.remove("tm-theme-switching");
   document.documentElement.scrollTop = 0;
   document.body.scrollTop = 0;
-  Object.defineProperty(window, 'matchMedia', {
+  Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: (query: string) => ({
       matches: false,
@@ -28,52 +34,103 @@ beforeEach(() => {
   });
 });
 
-describe('AppTopNav', () => {
-  it('shows the current account in the content navigation', () => {
+describe("AppTopNav", () => {
+  it("shows the current account in the content navigation", () => {
     render(<AppTopNav user={user} onLogout={vi.fn()} />);
 
-    const navigation = screen.getByRole('navigation', { name: '内容导航栏' });
+    const navigation = screen.getByRole("navigation", { name: "内容导航栏" });
     expect(navigation).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '当前用户 运营账号' })).toBeInTheDocument();
-    expect(screen.getByText('operator@example.test')).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "当前用户 运营账号" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("operator@example.test")).toBeInTheDocument();
   });
 
-  it('keeps logout available from the account menu', async () => {
+  it("keeps logout available from the account menu", async () => {
     const onLogout = vi.fn();
     const interaction = userEvent.setup();
     render(<AppTopNav user={user} onLogout={onLogout} />);
 
-    const accountTrigger = screen.getByRole('button', { name: '当前用户 运营账号' });
-    expect(accountTrigger).toHaveAttribute('aria-expanded', 'false');
+    const accountTrigger = screen.getByRole("button", {
+      name: "当前用户 运营账号",
+    });
+    expect(accountTrigger).toHaveAttribute("aria-expanded", "false");
 
     await interaction.click(accountTrigger);
-    expect(accountTrigger).toHaveAttribute('aria-expanded', 'true');
-    await interaction.click(await screen.findByRole('menuitem', { name: /退出登录/ }));
+    expect(accountTrigger).toHaveAttribute("aria-expanded", "true");
+    await interaction.click(
+      await screen.findByRole("menuitem", { name: /退出登录/ }),
+    );
 
     expect(onLogout).toHaveBeenCalledTimes(1);
-    expect(accountTrigger).toHaveAttribute('aria-expanded', 'false');
+    expect(accountTrigger).toHaveAttribute("aria-expanded", "false");
   });
 
-  it('switches to the frosted navigation state after the page scrolls', async () => {
+  it("shows the theme action as an icon with an accessible tooltip", async () => {
+    const interaction = userEvent.setup();
     render(<AppTopNav user={user} onLogout={vi.fn()} />);
 
-    const navigation = screen.getByRole('navigation', { name: '内容导航栏' });
-    expect(navigation).not.toHaveClass('tm-app-top-nav--scrolled');
+    const themeAction = screen.getByRole("button", {
+      name: "切换到深色模式",
+    });
+    expect(themeAction.textContent).toBe("");
 
-    document.documentElement.scrollTop = 24;
-    fireEvent.scroll(window);
-    await waitFor(() => expect(navigation).toHaveClass('tm-app-top-nav--scrolled'));
-
-    document.documentElement.scrollTop = 0;
-    fireEvent.scroll(window);
-    await waitFor(() => expect(navigation).not.toHaveClass('tm-app-top-nav--scrolled'));
+    await interaction.hover(themeAction);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "切换到深色模式",
+    );
   });
 
-  it('shortens an email display name while retaining the full account', () => {
-    expect(resolveUserLabels({ ...user, displayName: 'operator@example.test' })).toEqual({
-      primary: 'operator',
-      secondary: 'operator@example.test',
-      initial: 'O',
+  it("defaults to light mode and persists theme changes", async () => {
+    const setAntdConfig = vi.fn();
+    vi.mocked(useAntdConfigSetter).mockReturnValue(setAntdConfig);
+    const interaction = userEvent.setup();
+    render(<AppTopNav user={user} onLogout={vi.fn()} />);
+
+    const darkModeButton = screen.getByRole("button", {
+      name: "切换到深色模式",
+    });
+    expect(darkModeButton).toHaveAttribute("aria-pressed", "false");
+    expect(document.documentElement.dataset.theme).toBe("light");
+
+    await interaction.click(darkModeButton);
+
+    expect(
+      screen.getByRole("button", { name: "切换到浅色模式" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(window.localStorage.getItem(THEME_MODE_STORAGE_KEY)).toBe("dark");
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(document.documentElement.style.colorScheme).toBe("dark");
+    expect(setAntdConfig).toHaveBeenCalledTimes(1);
+
+    await interaction.click(
+      screen.getByRole("button", { name: "切换到浅色模式" }),
+    );
+
+    expect(
+      screen.getByRole("button", { name: "切换到深色模式" }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(window.localStorage.getItem(THEME_MODE_STORAGE_KEY)).toBe("light");
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(document.documentElement.style.colorScheme).toBe("light");
+    expect(setAntdConfig).toHaveBeenCalledTimes(2);
+    expect(setAntdConfig).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        theme: expect.objectContaining({
+          cssVar: { key: "trademind-admin-light" },
+          token: expect.objectContaining({ colorBgElevated: "#ffffff" }),
+        }),
+      }),
+    );
+  });
+
+  it("shortens an email display name while retaining the full account", () => {
+    expect(
+      resolveUserLabels({ ...user, displayName: "operator@example.test" }),
+    ).toEqual({
+      primary: "operator",
+      secondary: "operator@example.test",
+      initial: "O",
     });
   });
 });

@@ -9,6 +9,7 @@ import {
   expectTopNavbarScrollBehavior,
 } from '../utils/assertions';
 import { layoutTokens } from '../../src/constants/layoutTokens';
+import { THEME_MODE_STORAGE_KEY } from '../../src/theme/themeMode';
 
 const viewports = [
   { width: 1440, height: 900 },
@@ -44,6 +45,26 @@ test.describe('@product-draft @responsive 五档响应式', () => {
         await expect(page.locator('#root')).toBeVisible();
       });
     }
+  }
+
+  for (const viewport of viewports) {
+    test(`dark theme keeps the shared layout usable at ${viewport.width}x${viewport.height}`, async ({
+      admin,
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(
+        ({ storageKey }) => window.localStorage.setItem(storageKey, 'dark'),
+        { storageKey: THEME_MODE_STORAGE_KEY },
+      );
+      await admin.goto('/dashboard/product-operations');
+
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+      await expect(page.getByRole('button', { name: '切换到浅色模式' })).toBeVisible();
+      await expectAccountInTopNavbar(page);
+      await expectNoRootOverflow(page);
+      await expectHeaderContentAligned(page);
+    });
   }
 
   test('global content track keeps wide-screen gutters compact', async ({ admin, page }) => {

@@ -102,13 +102,17 @@ export async function expectAccountInTopNavbar(page: Page) {
       .querySelector<HTMLElement>('.ant-pro-layout-header')
       ?.getBoundingClientRect();
     const referenceRect = brandRect ?? mobileHeaderRect;
-    if (!navbarRect || !accountRect) return null;
+    if (!navbarRect || !accountRect || !mobileHeaderRect) return null;
     return {
       navbarLeft: navbarRect.left,
       navbarRight: navbarRect.right,
+      navbarTop: navbarRect.top,
+      navbarBottom: navbarRect.bottom,
       navbarHeight: navbarRect.height,
       accountLeft: accountRect.left,
       accountRight: accountRect.right,
+      headerTop: mobileHeaderRect.top,
+      headerBottom: mobileHeaderRect.bottom,
       referenceHeight: referenceRect?.height ?? null,
     };
   });
@@ -121,6 +125,13 @@ export async function expectAccountInTopNavbar(page: Page) {
   expect(value.accountRight, `account inside navbar ${JSON.stringify(value)}`).toBeLessThanOrEqual(
     value.navbarRight + 1,
   );
+  expect(value.navbarTop, `navbar inside header ${JSON.stringify(value)}`).toBeGreaterThanOrEqual(
+    value.headerTop - 1,
+  );
+  expect(
+    value.navbarBottom,
+    `navbar inside header ${JSON.stringify(value)}`,
+  ).toBeLessThanOrEqual(value.headerBottom + 1);
   expect(value.referenceHeight, `brand/header height ${JSON.stringify(value)}`).not.toBeNull();
   if (value.referenceHeight === null) return;
   expect(
@@ -131,9 +142,19 @@ export async function expectAccountInTopNavbar(page: Page) {
 
 export async function expectTopNavbarScrollBehavior(page: Page) {
   const navbar = page.getByRole('navigation', { name: '内容导航栏' });
+  const layoutHeader = page.locator('.ant-pro-layout-header').first();
 
-  await expect(navbar).toHaveCSS('position', 'sticky');
-  await expect(navbar).not.toHaveClass(/tm-app-top-nav--scrolled/);
+  await expect(layoutHeader).toHaveCSS('position', 'fixed');
+  const before = await page.evaluate(() => {
+    const header = document.querySelector<HTMLElement>('.ant-pro-layout-header');
+    const navigation = document.querySelector<HTMLElement>('.tm-app-top-nav');
+    if (!header || !navigation) return null;
+    return {
+      headerTop: header.getBoundingClientRect().top,
+      navigationTop: navigation.getBoundingClientRect().top,
+    };
+  });
+  expect(before, 'fixed header/navigation positions before scroll').not.toBeNull();
 
   const maxScroll = await page.evaluate(() => {
     const scroller = document.scrollingElement as HTMLElement | null;
@@ -146,55 +167,41 @@ export async function expectTopNavbarScrollBehavior(page: Page) {
     if (scroller) scroller.scrollTop = Math.min(120, scroller.scrollHeight - scroller.clientHeight);
   });
 
-  await expect(navbar).toHaveClass(/tm-app-top-nav--scrolled/);
   await expect
-    .poll(async () => {
-      const backgroundColor = await navbar.evaluate(
-        (element) => window.getComputedStyle(element).backgroundColor,
-      );
-      const alphaMatch = backgroundColor.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
-      return alphaMatch ? Number.parseFloat(alphaMatch[1]) : 1;
-    })
-    .toBeLessThan(1);
-  await expect
-    .poll(async () => {
-      const backdropFilter = await navbar.evaluate(
-        (element) => window.getComputedStyle(element).backdropFilter,
-      );
-      const blurMatch = backdropFilter.match(/blur\(([\d.]+)px\)/);
-      return blurMatch ? Number.parseFloat(blurMatch[1]) : 0;
-    })
+    .poll(() =>
+      page.evaluate(() => {
+        const scroller = document.scrollingElement as HTMLElement | null;
+        return scroller?.scrollTop ?? 0;
+      }),
+    )
     .toBeGreaterThan(0);
 
-  const value = await navbar.evaluate((element) => {
-    const rect = element.getBoundingClientRect();
-    const style = window.getComputedStyle(element);
-    const alphaMatch = style.backgroundColor.match(
-      /^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/,
-    );
-
+  const positions = await page.evaluate(() => {
+    const header = document.querySelector<HTMLElement>('.ant-pro-layout-header');
+    const navigation = document.querySelector<HTMLElement>('.tm-app-top-nav');
+    if (!header || !navigation) return null;
     return {
-      actualTop: rect.top,
-      stickyTop: Number.parseFloat(style.top || '0'),
-      backdropFilter: style.backdropFilter,
-      backgroundColor: style.backgroundColor,
-      backgroundAlpha: alphaMatch ? Number.parseFloat(alphaMatch[1]) : 1,
+      headerTop: header.getBoundingClientRect().top,
+      navigationTop: navigation.getBoundingClientRect().top,
     };
   });
-
-  expect(
-    Math.abs(value.actualTop - value.stickyTop),
-    `sticky navbar top ${JSON.stringify(value)}`,
-  ).toBeLessThanOrEqual(1);
-  expect(value.backdropFilter, `frosted navbar ${JSON.stringify(value)}`).toContain('blur(');
-  expect(value.backgroundAlpha, `translucent navbar ${JSON.stringify(value)}`).toBeGreaterThan(0);
-  expect(value.backgroundAlpha, `translucent navbar ${JSON.stringify(value)}`).toBeLessThan(1);
+  expect(positions, 'fixed header/navigation positions after scroll').not.toBeNull();
+  if (before && positions) {
+    expect(
+      Math.abs(positions.headerTop - before.headerTop),
+      `fixed header after scroll ${JSON.stringify({ before, positions })}`,
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(positions.navigationTop - before.navigationTop),
+      `navbar remains in fixed header ${JSON.stringify({ before, positions })}`,
+    ).toBeLessThanOrEqual(1);
+  }
 
   await page.evaluate(() => {
     const scroller = document.scrollingElement as HTMLElement | null;
     if (scroller) scroller.scrollTop = 0;
   });
-  await expect(navbar).not.toHaveClass(/tm-app-top-nav--scrolled/);
+  await expect(navbar).toBeVisible();
 }
 
 export async function expectPageChromeScrollbarsHidden(page: Page) {

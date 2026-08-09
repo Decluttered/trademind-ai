@@ -1,34 +1,46 @@
 .tm-app-top-nav {
-  position: sticky;
-  inset-block-start: 0;
-  z-index: 18;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   flex: none;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   min-width: 0;
-  height: var(--tm-app-header-height);
-  min-height: var(--tm-app-header-height);
-  padding-inline: clamp(16px, 1.5vw, 24px);
+  height: 100%;
+  min-height: 0;
   box-sizing: border-box;
-  border-bottom: 1px solid var(--ant-color-border-secondary);
-  background: var(--ant-color-bg-container);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-  -webkit-backdrop-filter: saturate(100%) blur(0);
-  backdrop-filter: saturate(100%) blur(0);
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    backdrop-filter 0.2s ease;
 
-  &--scrolled {
-    border-bottom-color: rgba(148, 163, 184, 0.28);
-    background: rgba(255, 255, 255, 0.78);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-    -webkit-backdrop-filter: saturate(160%) blur(16px);
-    backdrop-filter: saturate(160%) blur(16px);
+  &__theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: var(--ant-color-text-secondary);
+    background: transparent;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease;
+
+    &:hover {
+      color: var(--ant-color-primary);
+      background: var(--ant-color-fill-tertiary);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--ant-color-primary-border);
+      outline-offset: 1px;
+    }
   }
 
   &__user {
@@ -56,6 +68,10 @@
       outline: 2px solid var(--ant-color-primary-border);
       outline-offset: 1px;
     }
+  }
+
+  &__avatar {
+    flex: none;
   }
 
   &__user-chevron {
@@ -138,29 +154,21 @@
   }
 }
 
-@media (max-width: 767px) {
-  .tm-app-top-nav {
-    inset-block-start: var(--tm-app-header-height);
-  }
-}
-
 @media (max-width: 576px) {
   .tm-app-top-nav {
-    padding-inline: 12px;
-
     &__user {
       max-width: 100%;
       padding-inline: 6px;
     }
 
     &__user-meta {
-      max-width: min(56vw, 180px);
+      max-width: min(28vw, 120px);
     }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tm-app-top-nav,
+  .tm-app-top-nav__theme-toggle,
   .tm-app-top-nav__user-chevron {
     transition: none;
   }

@@ -240,7 +240,7 @@ export default function AITextBatchDetailPage() {
             scroll={{ x: 1100 }}
             dataSource={detail.items}
             onRow={(row) => ({
-              style: row.id === focusItemId ? { background: '#fffbe6' } : undefined,
+              style: row.id === focusItemId ? { background: 'var(--ant-color-warning-bg)' } : undefined,
             })}
             rowSelection={{
               selectedRowKeys: selectedKeys,

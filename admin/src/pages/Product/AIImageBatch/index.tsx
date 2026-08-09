@@ -230,7 +230,7 @@ export default function AIImageBatchWizardPage() {
                       key={img.id}
                       size="small"
                       hoverable
-                      style={{ width: 160, borderColor: selected ? '#1677ff' : undefined }}
+                      style={{ width: 160, borderColor: selected ? 'var(--ant-color-primary)' : undefined }}
                       onClick={() => toggleImage(img.id)}
                     >
                       <Image src={img.publicUrl || img.originUrl} height={100} style={{ objectFit: 'cover' }} fallback="/placeholder.png" />

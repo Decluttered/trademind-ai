@@ -282,7 +282,7 @@ export default function AIImageBatchDetailPage() {
             size="small"
             scroll={{ x: 1200 }}
             dataSource={detail.items}
-            onRow={(row) => ({ style: row.id === focusItemId ? { background: '#fffbe6' } : undefined })}
+            onRow={(row) => ({ style: row.id === focusItemId ? { background: 'var(--ant-color-warning-bg)' } : undefined })}
             rowSelection={{
               selectedRowKeys: selectedKeys,
               onChange: (keys) => setSelectedKeys(keys as string[]),

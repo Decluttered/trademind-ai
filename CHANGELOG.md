@@ -4,6 +4,13 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Admin theme (2026-08-09)
+
+- Added an icon-only, tooltip-labelled top-navigation light/dark theme switch with light mode as the default and local preference persistence.
+- Applied Ant Design theme tokens across shared Admin chrome, login, dashboard, status surfaces, and responsive regression coverage.
+- Consolidated mobile brand, theme, and account actions into one fixed header, kept the full desktop brand in the sidebar only, and made the navigation drawer opaque above scrolled content.
+- Made theme switching atomic and fully reversible for header, elevated, and portal surfaces, and safely centered mobile login and registration layouts.
+
 ### Production maintenance cleanup (2026-08-09)
 
 - Removed historical phase gates, load-test harnesses, generated evidence, one-off acceptance scripts, and local Playwright/test outputs from the working tree.

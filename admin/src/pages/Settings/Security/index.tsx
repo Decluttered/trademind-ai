@@ -580,7 +580,7 @@ export default function SecuritySettingsPage() {
             renderItem={(item) => (
               <List.Item>
                 <List.Item.Meta
-                  avatar={<CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} />}
+                  avatar={<CheckCircleOutlined style={{ color: 'var(--ant-color-success)', fontSize: 18 }} />}
                   title={
                     <Space>
                       <span>{item.title}</span>
@@ -712,7 +712,7 @@ export default function SecuritySettingsPage() {
                       <Statistic
                         title={FILE_SECURITY_STATUS_LABEL[status] || status}
                         value={count}
-                        valueStyle={status === 'quarantined' || status === 'rejected' ? { color: '#cf1322' } : undefined}
+                        valueStyle={status === 'quarantined' || status === 'rejected' ? { color: 'var(--ant-color-error)' } : undefined}
                       />
                     </Col>
                   ))}
