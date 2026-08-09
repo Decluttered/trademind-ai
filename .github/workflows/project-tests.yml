@@ -296,6 +296,7 @@ jobs:
 
       - name: PostgreSQL inventory integration tests
         env:
+          APP_ENV: test
           TEST_DATABASE_URL: postgres://trademind:trademind@127.0.0.1:5432/trademind_test?sslmode=disable
         run: pnpm test:db:inventory && pnpm test:db:inventory:race
 
