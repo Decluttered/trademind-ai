@@ -226,6 +226,7 @@ function RightActions() {
 }
 
 export const layout: RunTimeLayoutConfig = ({ initialState }) => ({
+  className: 'tm-app-layout',
   title: false,
   logo: TM_BRAND_MARK,
   /** ProLayout 在侧栏会把 avatar 区域与（未定义 actionsRender 时的）rightContentRender 各渲染一遍，导致两行相同账号 */

@@ -5,6 +5,24 @@ body,
   margin: 0;
 }
 
+/* 登录后页面保留滚动能力，但隐藏页面与侧栏的浏览器滚动条。 */
+html:has(.tm-app-layout),
+body:has(.tm-app-layout),
+.tm-app-layout .ant-pro-sider,
+.tm-app-layout .ant-pro-sider * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html:has(.tm-app-layout)::-webkit-scrollbar,
+body:has(.tm-app-layout)::-webkit-scrollbar,
+.tm-app-layout .ant-pro-sider::-webkit-scrollbar,
+.tm-app-layout .ant-pro-sider *::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* 全局抽屉宽度兼容：无显式 width 时给 50% 桌面宽；业务传入的内联 width 保持优先。 */
 .ant-drawer .ant-drawer-content-wrapper {
   width: min(50vw, 960px);
@@ -63,8 +81,10 @@ body,
 
 /* ── TradeMind 统一页面布局 token ── */
 @tm-page-px: 24px;
+@tm-page-px-min: 16px;
 @tm-page-py: 20px;
 @tm-page-pb: 32px;
+@tm-page-max-outer-gap: 32px;
 @tm-section-gap: 24px;
 @tm-card-gap: 16px;
 @tm-form-row-gap: 20px;
@@ -90,6 +110,7 @@ body,
 
 .tm-page-container {
   --tm-page-content-max-width: 1680px;
+  --tm-page-inline-padding: clamp(@tm-page-px-min, 1.5vw, @tm-page-px);
 
   .ant-pro-page-container-warp-page-header {
     padding: 0;
@@ -102,7 +123,7 @@ body,
     width: 100%;
     max-width: var(--tm-page-content-max-width);
     margin-inline: auto;
-    padding: @tm-page-py @tm-page-px 0;
+    padding: @tm-page-py var(--tm-page-inline-padding) 0;
   }
 
   .ant-pro-page-container-children-container {
@@ -115,7 +136,17 @@ body,
     max-width: var(--tm-page-content-max-width);
     min-width: 0;
     margin-inline: auto;
-    padding: @tm-page-py @tm-page-px @tm-page-pb;
+    padding: @tm-page-py var(--tm-page-inline-padding) @tm-page-pb;
+  }
+
+  &--fluid {
+    .ant-page-header,
+    .tm-page-container__content {
+      max-width: max(
+        var(--tm-page-content-max-width),
+        calc(100% - (2 * @tm-page-max-outer-gap))
+      );
+    }
   }
 
   &__content--unpadded {
@@ -138,11 +169,11 @@ body,
 @media (max-width: 576px) {
   .tm-page-container {
     .ant-page-header {
-      padding-inline: 16px;
+      padding-inline: var(--tm-page-inline-padding);
     }
 
     &__content {
-      padding: 16px 16px 28px;
+      padding: 16px var(--tm-page-inline-padding) 28px;
     }
 
     &__content--unpadded {

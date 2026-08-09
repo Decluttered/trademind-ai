@@ -1,6 +1,12 @@
 import { test, expect } from '../fixtures/admin.fixture';
 import { E2E_PRODUCT_ID } from '../mocks/product.fixture';
-import { expectHeaderContentAligned, expectNoRootOverflow } from '../utils/assertions';
+import {
+  expectHeaderContentAligned,
+  expectNoRootOverflow,
+  expectPageChromeScrollbarsHidden,
+  expectPageContentGuttersWithin,
+} from '../utils/assertions';
+import { layoutTokens } from '../../src/constants/layoutTokens';
 
 const viewports = [
   { width: 1440, height: 900 },
@@ -29,4 +35,17 @@ test.describe('@product-draft @responsive 五档响应式', () => {
       });
     }
   }
+
+  test('global content track keeps wide-screen gutters compact', async ({ admin, page }) => {
+    await page.setViewportSize({ width: 2048, height: 1024 });
+    await admin.goto('/dashboard/product-operations');
+    await expect(page.getByText(/运营总览|工作台/).first()).toBeVisible();
+    await expectNoRootOverflow(page);
+    await expectHeaderContentAligned(page);
+    await expectPageChromeScrollbarsHidden(page);
+    await expectPageContentGuttersWithin(
+      page,
+      layoutTokens.pageMaxOuterGap + layoutTokens.pagePaddingX,
+    );
+  });
 });

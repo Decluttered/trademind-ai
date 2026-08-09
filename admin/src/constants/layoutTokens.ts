@@ -1,9 +1,11 @@
 /** 管理端统一布局与间距 token（与 global.less 保持一致） */
 export const layoutTokens = {
+  pagePaddingXMin: 16,
   pagePaddingX: 24,
   pagePaddingY: 20,
   pagePaddingBottom: 32,
   pageMaxWidth: 1680,
+  pageMaxOuterGap: 32,
   settingsMaxWidth: 1440,
   dashboardMaxWidth: 1680,
   formMaxWidth: 1440,
