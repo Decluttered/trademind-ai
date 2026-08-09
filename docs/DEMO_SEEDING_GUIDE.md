@@ -93,5 +93,4 @@ Authorization: Bearer <admin token>
 ## 相关文档
 
 - [`DEMO_DATASET.md`](DEMO_DATASET.md) — slot 与样本明细
-- [`FULL_PROJECT_DEMO_DATASET.md`](FULL_PROJECT_DEMO_DATASET.md) — 全项目数据集索引
 - [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md) — 人工验收清单

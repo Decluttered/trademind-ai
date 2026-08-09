@@ -264,32 +264,11 @@ AI 不应把“成长”理解成在本地偷偷保存私有记忆；TradeMind �
 - 已按 `docs/task-checklist.md` 执行或说明验证。
 - 新增长期经验已写到合适文档，而不是只留在聊天里。
 
-## Phase F1 全项目功能规划（2026-06-29）
+## 生产维护阶段
 
-**策略调整**：当前不进入最终人工验收 / 真实预发 / 抖店 E2E / 生产灰度；先按规划补齐全项目功能（F2–F8），再 Phase F9 统一总体验收。
+历史 F1–F9 规划、冻结审计和增强计划已从当前工作树移除，必要时从 Git 历史查询。当前任务按以下入口执行：
 
-开始 F2+ 功能开发前，Agent 应先读：
-
-| 文档 | 用途 |
-| --- | --- |
-| [FULL_PROJECT_FUNCTION_MAP.md](FULL_PROJECT_FUNCTION_MAP.md) | 34 模块完成度、页面/API/表、缺口 |
-| [FULL_PROJECT_MVP_MAIN_FLOW.md](FULL_PROJECT_MVP_MAIN_FLOW.md) | 16 步主链路：入口、兜底、跳转 |
-| [FULL_PROJECT_DEVELOPMENT_PLAN.md](FULL_PROJECT_DEVELOPMENT_PLAN.md) | F2–F9 阶段目标与边界 |
-| [FULL_PROJECT_MVP_GAP_AUDIT.md](FULL_PROJECT_MVP_GAP_AUDIT.md) | P0–P3 缺口优先级 |
-
-**F 阶段任务分流**：
-
-| 阶段 | 优先模块 | 禁止 |
-| --- | --- | --- |
-| F2 | 订单、异常工作台、SKU 匹配 | 售后/退款/财务 |
-| F3 | 库存预警、扣减、平台同步 | 多仓 WMS / 自动补货 |
-| F4 | 客服、AI 回复建议、人工发送 | 自动发送 |
-| F5 | 配置状态中心、RBAC | 多租户 SSO |
-| F6 | 总 Dashboard、全局体验 | 复杂 BI |
-| F7 | Demo 数据全链路样本 | 真实平台数据 |
-| F8 | 只修 P0/P1 | 新功能 |
-| F9 | 人工走查、预发、抖店 E2E、灰度 | —（F8 后启动） |
-
-**生产维护说明（2026-08-09）**：需要 Demo 数据时按 [`DEMO_SEEDING_GUIDE.md`](DEMO_SEEDING_GUIDE.md) 临时生成；自动化回归由 GitHub Actions 执行，产品流程按人工验收清单签收，不再保存一次性 Demo 自动验收报告。
-
-缺口分级沿用 [FULL_PROJECT_MVP_GAP_AUDIT.md](FULL_PROJECT_MVP_GAP_AUDIT.md)：**P0** 主链路断点 → **P1** 影响试用 → **P2** 体验 → **P3** 后续增强。
+- 从 [文档中心](README.md)、[模块关联索引](module-map.md) 和 [当前维护状态](PROGRESS.md) 确认范围。
+- 自动化回归由 GitHub Actions 执行，产品流程按 [P10 人工验收清单](P10_MANUAL_ACCEPTANCE_CHECKLIST.md) 签收。
+- 需要 Demo 数据时按 [Demo 数据种子指南](DEMO_SEEDING_GUIDE.md) 临时生成，不提交运行输出。
+- 维护优先处理稳定性、安全问题和必要功能修复，不恢复阶段 gate、一次性报告或冻结证据。
