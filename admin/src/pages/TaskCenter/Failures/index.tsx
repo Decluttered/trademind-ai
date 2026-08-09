@@ -884,7 +884,7 @@ export default function TaskCenterFailuresPage() {
           scroll={{ x: 1680 }}
           tableAlertRender={false}
           locale={emptyLocale}
-          request={async (params, sort, filter) => {
+          request={async (params) => {
             const kw = prepareKeyword(params.keyword) ?? '';
             try {
               const qp: Record<string, string | number | undefined> = {

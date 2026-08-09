@@ -11,7 +11,7 @@ import { themeTokens, tmSemanticTokens } from '@/constants/layoutTokens';
 import { postJSON } from '@/services/request';
 import { filterMenuByPermission } from '@/utils/menuAccess';
 import { useInitialStateModel } from '@/hooks/useInitialStateModel';
-import type { InitialState, InitialStateModel } from '@/typings/umi-runtime';
+import type { InitialStateModel } from '@/typings/umi-runtime';
 
 /** ProLayout 侧栏菜单头部 / 头像区回调的常用 props */
 type SiderMenuLayoutProps = {

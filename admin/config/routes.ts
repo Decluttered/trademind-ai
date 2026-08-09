@@ -381,6 +381,10 @@ export default [
     routes: [
       {
         path: '/inventory',
+        component: './Inventory',
+      },
+      {
+        path: '/inventory/overview',
         name: '库存中心',
         component: './Inventory',
       },

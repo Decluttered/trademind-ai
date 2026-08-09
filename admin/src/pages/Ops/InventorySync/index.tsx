@@ -1,7 +1,7 @@
 import { EyeOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import { history } from '@umijs/max';
-import { Button, Card, Col, Form, Input, Modal, Row, Select, Space, Statistic, Typography, message } from 'antd';
+import { Button, Card, Col, Form, Input, Modal, Row, Select, Space, Typography, message } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MetricCard, TmPageContainer, TmProTable } from '@/components/ui';
 import { useUrlQueryState } from '@/hooks/useUrlState';

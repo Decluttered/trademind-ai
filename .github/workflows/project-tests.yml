@@ -60,6 +60,9 @@ jobs:
       - name: Workflow trigger tests
         run: pnpm workflow:test
 
+      - name: Documentation consistency
+        run: bash scripts/check-doc-links.sh
+
       - name: Resolve architecture diff base
         id: architecture-base
         shell: bash

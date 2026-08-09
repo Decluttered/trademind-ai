@@ -35,10 +35,7 @@ const ALERT_QUERY_KEYS = [
   'shopId',
   'source',
 ] as const;
-import {
-  INVENTORY_SKU_AMBIGUOUS_MESSAGE,
-  INVENTORY_SKU_NOT_BOUND_MESSAGE,
-} from '@/constants/inventoryLabels';
+import { INVENTORY_SKU_NOT_BOUND_MESSAGE } from '@/constants/inventoryLabels';
 import {
   INVENTORY_SYNC_BATCHES_LABEL,
   INVENTORY_SYNC_TASKS_LABEL,

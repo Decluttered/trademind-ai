@@ -99,7 +99,6 @@ export function TranslateImageTextModal({
 }: Props) {
   const [form] = Form.useForm<FormValues>();
   const { optionsForTask } = useImageProviders();
-  const renderMode = Form.useWatch('renderMode', form) ?? 'pure_text_replace';
   const [ocrChecking, setOcrChecking] = useState(false);
   const [ocrReady, setOcrReady] = useState(false);
   const [ocrMessage, setOcrMessage] = useState('');

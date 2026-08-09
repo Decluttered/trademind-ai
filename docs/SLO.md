@@ -67,9 +67,10 @@ always fails.
 | p99 latency | 3 ms |
 
 `max` is recorded for investigation and is not a primary materiality-gated
-regression metric. The frozen policy is
-`docs/p7-v2-regression-policy-v2.json`; it must be selected before a
-Baseline/Current comparison and must not be changed after results are known.
+regression metric. These thresholds are retained as engineering guidance only;
+the phase-specific comparison policy and harness were removed during production
+maintenance. Any future CI regression gate must select a versioned policy before
+measurement and must not change it after results are known.
 
 ## Soak Test
 

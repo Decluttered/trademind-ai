@@ -82,6 +82,6 @@ func (s *Service) p32RaceVerificationItem(_ context.Context) Item {
 		Title:       "Linux Race 验证",
 		SettingsURL: "/settings/config-status",
 		Status:      StatusCodeReady,
-		Summary:     "P3.2 race 已在 WSL2 Ubuntu 22.04 通过；见 docs/P3_2_RACE_TEST_REPORT.md；不等于真实抖店 E2E 或 Production Ready",
+		Summary:     "P3.2 历史 race 记录已从工作树清理，可从 Git 历史查询；当前并发回归交由 GitHub Actions；不等于真实抖店 E2E 或 Production Ready",
 	}
 }

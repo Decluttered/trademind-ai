@@ -456,7 +456,7 @@ export async function extractAndAssemblePinduoduo(
   urlType?: PinduoduoUrlType,
 ): Promise<PinduoduoParseResult> {
   if (urlType === 'wholesale_detail') {
-    return extractAndAssemblePifaWholesale(page, sourceUrl);
+    return extractAndAssemblePifaWholesale(page);
   }
   await scrollForDetailImages(page);
   const payload = await extractPinduoduoPayload(page);

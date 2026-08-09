@@ -19,7 +19,6 @@ import {
   Typography,
   Alert,
 } from 'antd';
-import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CUSTOMER_CONVERSATION_STATUS,

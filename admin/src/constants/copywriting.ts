@@ -287,7 +287,7 @@ export const LIST_EMPTY_COPY = {
     title: '暂无库存预警',
     description: '当 SKU 库存低于预警线或缺货时，会在此显示预警记录。',
     action: '查看库存中心',
-    actionPath: '/inventory',
+    actionPath: '/inventory/overview',
     permissionHint: PERM_HINT,
   },
   inventoryDeductions: {

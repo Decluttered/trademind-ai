@@ -5,6 +5,15 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $passed = 0
 $failed = 0
 
+function Get-TrackedPaths {
+    param([string[]]$Pathspecs)
+    $paths = @(& git -C $repoRoot ls-files -- $Pathspecs)
+    if ($LASTEXITCODE -ne 0) {
+        throw "git ls-files failed while collecting documentation inputs"
+    }
+    return @($paths | Where-Object { $_ -and (Test-Path -LiteralPath (Join-Path $repoRoot $_)) })
+}
+
 function Add-Check {
     param([string]$Name, [bool]$Ok, [string]$Detail)
     if ($Ok) { $script:passed++ } else { $script:failed++ }
@@ -22,14 +31,17 @@ Add-Check "README human acceptance" ($readme -match 'Human Sign-off' -and $readm
 Add-Check "README has no deleted commands" ($readme -notmatch 'verify:demo|check:p4-r|test:p[789]|tests/gates|tests/load') "current pnpm commands only"
 
 $wrongRouteHits = @()
-Get-ChildItem -Path $repoRoot -Recurse -Include *.md,*.tsx,*.ts -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch '\\node_modules\\|\\\.umi|\\dist\\|\\backend\\' } |
+$trackedRouteInputs = Get-TrackedPaths -Pathspecs @('*.md', '*.tsx', '*.ts')
+$trackedRouteInputs |
+    Where-Object { $_ -notmatch '^backend/' } |
     ForEach-Object {
-        $lines = Get-Content $_.FullName -ErrorAction SilentlyContinue -Encoding UTF8
+        $relativePath = $_
+        $fullPath = Join-Path $repoRoot $relativePath
+        $lines = Get-Content -LiteralPath $fullPath -ErrorAction SilentlyContinue -Encoding UTF8
         for ($i = 0; $i -lt $lines.Count; $i++) {
             $line = $lines[$i]
             if ($line -match '`/task-center/failures`|"/task-center/failures"|''/task-center/failures''' -and $line -notmatch '/ops/task-center/failures|/api/v1/task-center') {
-                $wrongRouteHits += "$($_.FullName):$($i + 1)"
+                $wrongRouteHits += "${relativePath}:$($i + 1)"
             }
         }
     }
@@ -37,20 +49,46 @@ Add-Check "Admin failure route" ($wrongRouteHits.Count -eq 0) $(if ($wrongRouteH
 
 $missingScriptReferences = @()
 $scriptReferencePattern = '(?<![A-Za-z0-9_./-])(?:deploy/)?scripts/[A-Za-z0-9._/-]+\.(?:ps1|sh|mjs|ts|py)'
-Get-ChildItem -Path $repoRoot -Recurse -Filter *.md -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch '\\node_modules\\|\\\.git\\|\\\.umi\\|\\dist\\' } |
+$trackedMarkdown = Get-TrackedPaths -Pathspecs @('*.md')
+$trackedMarkdown |
     ForEach-Object {
-        $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue -Encoding UTF8
+        $relativeDocument = $_
+        $content = Get-Content -LiteralPath (Join-Path $repoRoot $relativeDocument) -Raw -ErrorAction SilentlyContinue -Encoding UTF8
         foreach ($match in [regex]::Matches($content, $scriptReferencePattern)) {
             $relativePath = $match.Value.Replace('/', [IO.Path]::DirectorySeparatorChar)
             if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $relativePath))) {
-                $relativeDocument = [IO.Path]::GetRelativePath($repoRoot, $_.FullName)
                 $missingScriptReferences += "$relativeDocument -> $($match.Value)"
             }
         }
     }
 $missingScriptReferences = @($missingScriptReferences | Sort-Object -Unique)
 Add-Check "Documented script paths" ($missingScriptReferences.Count -eq 0) $(if ($missingScriptReferences.Count -eq 0) { "all present" } else { ($missingScriptReferences | Select-Object -First 5) -join ", " })
+
+$generatedDocReferencePatterns = @(
+    '^docs/demo-[A-Za-z0-9._/-]+\.json$',
+    '^docs/COPYWRITING_AUDIT\.auto\.md$'
+)
+$missingDocReferences = @()
+$docReferencePattern = '(?<![A-Za-z0-9_./-])docs/[A-Za-z0-9._/-]+\.(?:md|json)'
+$trackedReferenceInputs = Get-TrackedPaths -Pathspecs @('*.md', '*.go', '*.ts', '*.tsx', '*.mjs', '*.json', '*.yml', '*.yaml', '*.ps1', '*.sh')
+foreach ($relativeDocument in $trackedReferenceInputs) {
+    $content = Get-Content -LiteralPath (Join-Path $repoRoot $relativeDocument) -Raw -ErrorAction SilentlyContinue -Encoding UTF8
+    foreach ($match in [regex]::Matches($content, $docReferencePattern)) {
+        $isGeneratedOutput = $false
+        foreach ($pattern in $generatedDocReferencePatterns) {
+            if ($match.Value -match $pattern) {
+                $isGeneratedOutput = $true
+                break
+            }
+        }
+        if ($isGeneratedOutput) { continue }
+        if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $match.Value))) {
+            $missingDocReferences += "$relativeDocument -> $($match.Value)"
+        }
+    }
+}
+$missingDocReferences = @($missingDocReferences | Sort-Object -Unique)
+Add-Check "Documented docs paths" ($missingDocReferences.Count -eq 0) $(if ($missingDocReferences.Count -eq 0) { "all stable references present" } else { ($missingDocReferences | Select-Object -First 5) -join ", " })
 
 $apiContent = Get-Content (Join-Path $repoRoot "docs/api.md") -Raw -Encoding UTF8
 Add-Check "Task-center API docs" ($apiContent -match '/api/v1/task-center/failures') "api.md"

@@ -51,13 +51,6 @@ function parseProductIds(search: string): string[] {
   }
 }
 
-function checkStatusColor(status: string) {
-  if (status === 'ready') return 'green';
-  if (status === 'warning') return 'orange';
-  if (status === 'blocked') return 'red';
-  return 'default';
-}
-
 export default function AIImageBatchWizardPage() {
   const location = useLocation();
   const initialIds = useMemo(() => parseProductIds(location.search), [location.search]);

@@ -83,7 +83,6 @@ function builtinTitleSelectors(pageUrl: string): string[] {
 
 async function extractFieldText(
   page: Page,
-  pageUrl: string,
   field: CustomFieldRule | undefined,
 ): Promise<{ values: string[]; fb?: string; hitSelector?: string }> {
   if (!field) return { values: [] };
@@ -225,21 +224,19 @@ export async function parseCustomProduct(
   const docTitle =
     (await evaluateInPageVoid(page, () => document.title?.trim() || ''))?.trim() ?? '';
 
-  const titleSel = await extractFieldText(page, pageUrl, rule.title);
+  const titleSel = await extractFieldText(page, rule.title);
   let titleSelValues = titleSel.values;
-  let titleHitSelector = titleSel.hitSelector;
   if (titleSelValues.length === 0) {
     const builtinTitle: CustomFieldRule = {
       selectors: builtinTitleSelectors(pageUrl),
       attr: 'text',
       multiple: false,
     };
-    const fallbackTitle = await extractFieldText(page, pageUrl, builtinTitle);
+    const fallbackTitle = await extractFieldText(page, builtinTitle);
     titleSelValues = fallbackTitle.values;
-    titleHitSelector = fallbackTitle.hitSelector;
   }
-  const currencySel = await extractFieldText(page, pageUrl, rule.currency);
-  const priceSel = await extractFieldText(page, pageUrl, rule.price);
+  const currencySel = await extractFieldText(page, rule.currency);
+  const priceSel = await extractFieldText(page, rule.price);
 
   const titleCandidates: TitleCandidate[] = [];
   for (const [i, val] of titleSelValues.entries()) {

@@ -484,11 +484,11 @@ All P6 write operations require Bearer authentication and backend RBAC. The fron
 | `GET` | `/api/v1/ops/dr/status` | `dr.read` | 灾备状态与 Deferred 项。 |
 | `POST` | `/api/v1/ops/dr/drills` | `dr.execute` | 记录隔离演练；必须确认隔离环境。 |
 
-P6-VR closure evidence is recorded in `docs/P6_VR_FINAL_CLOSURE_REPORT.md`: isolated restore, isolated release rollback, Linux race, and final gates passed. P6 still does not mark Production Ready and does not perform real production restore, PITR drill or traffic switch.
+Historical P6-VR closure evidence is available from Git history. The current working tree keeps the reusable backup, isolated restore and application rollback paths only; this still does not mark Production Ready or perform a real production restore, PITR drill or traffic switch.
 
 ## P7 Performance / Capacity API Status
 
-P7 currently adds backend configuration, database tables, local rate-limit middleware, guarded dataset / load / soak / race scripts and validation gates, but does **not** expose public management APIs yet. P7-V has real isolated Medium dataset evidence (`insertedRows=1,900,150`, `failedRows=0`), while load, soak, regression and final closure remain incomplete and must not be described as production performance verification.
+The reusable P7 runtime work remains in backend configuration, database tables, pagination guards and local rate-limit middleware, but it does **not** expose public management APIs. Historical dataset/load/soak/race harnesses and generated evidence were removed from the production-maintenance working tree; no current result may be described as production performance verification.
 
 Planned ops routes remain design-only until implemented with RBAC, re-authentication for writes and audit logging:
 

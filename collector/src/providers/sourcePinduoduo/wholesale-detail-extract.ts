@@ -158,7 +158,7 @@ export function extractPifaWholesaleDetailInPage(): PifaWholesaleDomPayload {
   const unknownImageCandidates: PifaImageCandidate[] = [];
   const mainUrlKeys = new Set<string>();
 
-  const pushMainImage = (url: string, el: Element, rect: DOMRect, source: 'main_gallery' | 'thumbnail_gallery') => {
+  const pushMainImage = (url: string, rect: DOMRect, source: 'main_gallery' | 'thumbnail_gallery') => {
     if (!url) return;
     const item: PifaImageCandidate = {
       url,
@@ -171,7 +171,7 @@ export function extractPifaWholesaleDetailInPage(): PifaWholesaleDomPayload {
     mainUrlKeys.add(url.split('?')[0] ?? url);
   };
 
-  const pushUnknownImage = (url: string, el: Element, rect: DOMRect, source: PifaImageCandidate['source'] = 'unknown') => {
+  const pushUnknownImage = (url: string, rect: DOMRect, source: PifaImageCandidate['source'] = 'unknown') => {
     if (!url) return;
     const base = url.split('?')[0] ?? url;
     if (mainUrlKeys.has(base)) return;
@@ -184,7 +184,7 @@ export function extractPifaWholesaleDetailInPage(): PifaWholesaleDomPayload {
     });
   };
 
-  const pushDetailImage = (url: string, el: Element, rect: DOMRect) => {
+  const pushDetailImage = (url: string, rect: DOMRect) => {
     if (!url) return;
     detailImageCandidates.push({
       url,
@@ -213,9 +213,9 @@ export function extractPifaWholesaleDetailInPage(): PifaWholesaleDomPayload {
       if (sink === 'main') {
         const source: 'main_gallery' | 'thumbnail_gallery' =
           rect.width >= 120 || rect.height >= 120 ? 'main_gallery' : 'thumbnail_gallery';
-        pushMainImage(url, img, rect, source);
+        pushMainImage(url, rect, source);
       } else {
-        pushDetailImage(url, img, rect);
+        pushDetailImage(url, rect);
       }
     });
     root.querySelectorAll('[style*="background"]').forEach((el) => {
@@ -227,9 +227,9 @@ export function extractPifaWholesaleDetailInPage(): PifaWholesaleDomPayload {
       if (!url) return;
       if (sink === 'main') {
         if (rect.left > leftMax) return;
-        pushMainImage(url, el, rect, 'main_gallery');
+        pushMainImage(url, rect, 'main_gallery');
       } else {
-        pushDetailImage(url, el, rect);
+        pushDetailImage(url, rect);
       }
     });
   };
@@ -292,7 +292,7 @@ export function extractPifaWholesaleDetailInPage(): PifaWholesaleDomPayload {
       if (!url) return;
       const source: 'main_gallery' | 'thumbnail_gallery' =
         rect.width >= 100 || rect.height >= 100 ? 'main_gallery' : 'thumbnail_gallery';
-      pushMainImage(url, img, rect, source);
+      pushMainImage(url, rect, source);
     });
   }
 
@@ -308,7 +308,7 @@ export function extractPifaWholesaleDetailInPage(): PifaWholesaleDomPayload {
     if (!url) return;
     if (rect.left < vw * 0.5 && rect.top < vh * 0.82) {
       if (rect.width >= 48 || rect.height >= 48 || rect.width === 0) {
-        pushUnknownImage(url, img, rect, rect.left < vw * 0.44 ? 'main_gallery' : 'unknown');
+        pushUnknownImage(url, rect, rect.left < vw * 0.44 ? 'main_gallery' : 'unknown');
       }
     }
   });
@@ -435,7 +435,7 @@ export function extractPifaWholesaleDetailInPage(): PifaWholesaleDomPayload {
       const rect = img.getBoundingClientRect();
       imageUrl = pickImgUrl(img);
       if (imageUrl) {
-        pushUnknownImage(imageUrl, img, rect, 'sku_image');
+        pushUnknownImage(imageUrl, rect, 'sku_image');
       }
     }
     skuRows.push({ ...parsed, imageUrl: imageUrl || undefined });

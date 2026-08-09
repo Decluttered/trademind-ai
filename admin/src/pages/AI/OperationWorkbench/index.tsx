@@ -204,7 +204,7 @@ export default function AIOperationWorkbenchPage() {
       tablePageSize,
     });
     if (sameWorkbenchUrlPatch(next, urlState)) return;
-    const { value, truncated } = normalizeSearchKeyword(filterKeyword);
+    const { truncated } = normalizeSearchKeyword(filterKeyword);
     if (truncated) message.warning(KEYWORD_TOO_LONG_MESSAGE);
     setUrlState(
       {

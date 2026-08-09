@@ -21,12 +21,6 @@
       "count": 1
     },
     {
-      "file": "admin/src/components/BrandLogo/index.tsx",
-      "code": "TS2307",
-      "message": "Cannot find module \"@/assets/logo.png\" or its corresponding type declarations.",
-      "count": 1
-    },
-    {
       "file": "admin/src/components/CreateImageTaskModal/index.tsx",
       "code": "TS2339",
       "message": "Property \"loading\" does not exist on type \"false | (ButtonProps & { preventDefault?: boolean | undefined; })\". Property \"loading\" does not exist on type \"false\".",
@@ -61,12 +55,6 @@
       "code": "TS2339",
       "message": "Property \"createdAt\" does not exist on type \"OrderSkuMatchListRow\".",
       "count": 1
-    },
-    {
-      "file": "admin/src/pages/Orders/SkuMatchTab.tsx",
-      "code": "TS2552",
-      "message": "Cannot find name \"Popconfirm\". Did you mean \"confirm\"?",
-      "count": 6
     },
     {
       "file": "admin/src/services/collectRules.ts",

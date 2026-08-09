@@ -6,6 +6,7 @@ const smokeRoutes = [
   { path: '/collect/hub', name: /采集中心/ },
   { path: '/ai/operation-workbench', name: /商品运营工作台/ },
   { path: '/product/drafts', name: /商品草稿|E2E 商品草稿/ },
+  { path: '/inventory/overview', name: /库存中心/ },
   { path: '/ops/task-center/alerts', name: /告警中心/ },
   { path: '/files', name: /文件管理/ },
 ];
