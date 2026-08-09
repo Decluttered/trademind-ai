@@ -59,3 +59,4 @@
 - [ ] 新增或修改环境变量时已同步 `.env.example`；Docker 部署需要时也已同步 `.env.docker.example` 与 `docker-compose.full.yml`。
 - [ ] 涉及用户可见行为时已补充截图、录屏或说明。
 - [ ] 我已阅读并遵守 `CONTRIBUTING.md`。
+- [ ] 如涉及 P9 PostgreSQL CI，我没有提交临时 freeze artifact，也没有绕过闭包祖先、受保护范围零漂移和 L0 预检。

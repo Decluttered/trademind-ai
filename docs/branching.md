@@ -94,6 +94,10 @@ pnpm build:collector
 - 涉及 Docker、环境变量、Provider、接口或部署流程时，需要同步更新文档。
 - 不允许提交 `.env`、真实密钥、Token、Cookie、平台凭证或生产数据。
 
+### P9 PostgreSQL CI 临时冻结文件
+
+`pnpm test:p9-postgres-integration` 的 pretest 钩子只会在 P9 闭包是当前 `dev` HEAD 的祖先、受保护 Git 路径和语义规则均无漂移、工作区无受保护改动且 P10 仍保持 L0 时，生成被忽略的 `artifacts/p9-protected-source-freeze.json`。该文件只服务当前 checkout，不得强制加入 Git，也不得通过直接执行无条件写入命令绕过预检。
+
 ## 发版流程
 
 从 `dev` 创建发版分支：

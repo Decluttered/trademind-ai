@@ -71,6 +71,7 @@ chore: update issue templates
 - 涉及前端或 Collector 时已执行相关构建或说明未执行原因。
 - 涉及接口、部署、环境变量、配置文件或 Provider 机制时同步更新文档。
 - 不提交 `.env`、密钥、Token、Cookie、真实平台凭证。
+- P9 PostgreSQL CI 的受保护源码 freeze 由 pretest 预检按当前 checkout 临时生成；不得提交该 artifact，也不得绕过闭包祖先、零漂移和 L0 检查。
 
 ## Issue 模板说明
 

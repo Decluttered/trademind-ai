@@ -146,6 +146,8 @@
     "test:p9:sqlite": "cd backend && go test -count=1 ./internal/modules/inventorysyncp9/...",
     "test:p9-postgres-gate-fixtures": "node tests/gates/p9/postgres-integration.mjs",
     "p9:postgres-test-db:ensure": "node scripts/p9-postgres-test-db-ensure.mjs",
+    "test:ci-p9-protected-freeze-preparation": "node tests/ci/prepare-p9-protected-freeze.mjs",
+    "pretest:p9-postgres-integration": "node scripts/ci/prepare-p9-protected-freeze.mjs",
     "test:p9-postgres-integration": "node scripts/p9-postgres-runtime.mjs",
     "p9:postgres-integration-gate": "node scripts/p9-postgres-integration-gate.mjs",
     "p9:postgres-integration-closure": "pnpm test:p9-postgres-gate-fixtures && pnpm test:p9-postgres-integration && pnpm p9:postgres-integration-gate",
