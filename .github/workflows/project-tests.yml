@@ -60,6 +60,9 @@ jobs:
       - name: Workflow trigger tests
         run: pnpm workflow:test
 
+      - name: Documentation consistency
+        run: bash scripts/check-doc-links.sh
+
       - name: Resolve architecture diff base
         id: architecture-base
         shell: bash
@@ -287,6 +290,18 @@ jobs:
         env:
           TEST_DATABASE_URL: postgres://trademind:trademind@127.0.0.1:5432/trademind_test?sslmode=disable
         run: pnpm test:db
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: PostgreSQL inventory integration tests
+        env:
+          APP_ENV: test
+          TEST_DATABASE_URL: postgres://trademind:trademind@127.0.0.1:5432/trademind_test?sslmode=disable
+        run: pnpm test:db:inventory && pnpm test:db:inventory:race
 
       - name: Redis queue tests
         env:

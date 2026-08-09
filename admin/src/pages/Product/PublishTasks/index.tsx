@@ -3,7 +3,7 @@ import { type ActionType, type ProColumns, type ProFormInstance } from '@ant-des
 import { Alert, Button, Drawer, Popconfirm, Space, Tabs, Tag, Typography, message } from 'antd';
 import { formatDateTime } from '@/utils/formatTime';
 import dayjs from 'dayjs';
-import { Link, useSearchParams } from '@umijs/max';
+import { Link } from '@umijs/max';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { COLLECT_TASK_STATUS } from '@/constants/status';
 import { useListEmptyLocale } from '@/hooks/useListEmptyLocale';

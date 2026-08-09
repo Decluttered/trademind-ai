@@ -4,6 +4,9 @@
  */
 export {};
 
+import type { ConfigProviderProps } from 'antd';
+import type { Dispatch, SetStateAction } from 'react';
+
 type UmiLocation = {
   pathname: string;
   search: string;
@@ -52,6 +55,8 @@ declare module '@umijs/max' {
   ];
 
   export function useModel<T = unknown>(namespace: string): T;
+
+  export function useAntdConfigSetter(): Dispatch<SetStateAction<ConfigProviderProps>>;
 
   export const Link: (props: {
     to: string | { pathname?: string; search?: string; hash?: string };

@@ -1,5 +1,5 @@
 import type { ProductSku } from '../../types/product.js';
-import { coerceInt, coerceNumber, dedupeStrings, isLikelyJunkImage, normalizeImageUrl, trimStr } from './utils.js';
+import { coerceNumber, dedupeStrings, isLikelyJunkImage, normalizeImageUrl, trimStr } from './utils.js';
 import type { DimRow } from './sku-helpers.js';
 import {
   extractSkuBucketPrice,

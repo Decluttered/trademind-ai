@@ -34,13 +34,12 @@ Linux / macOS：
 3. 创建 **F2 订单**、**F3 库存**、**F4 客服** 样本
 4. 探测 **F6/F7 Dashboard** KPI API
 5. 汇总 AI / 刊登 / 失败任务 / 工作台待办
-6. 写入：
+6. 在本地写入以下临时输出（不纳入版本控制）：
    - `docs/demo-dataset.json`
    - `docs/demo-dataset.orders.json`
    - `docs/demo-dataset.inventory.json`
    - `docs/demo-dataset.customer.json`
    - `docs/demo-dataset.dashboard.json`
-   - `docs/demo-dataset.full-project.json`
 
 ### seed-demo-permissions
 
@@ -52,7 +51,7 @@ Linux / macOS：
 | `demo_operator@trademind.local` | operator | 店铺隔离演示 |
 | `demo_readonly@trademind.local` | readonly | 只读阻断演示 |
 
-默认密码见脚本输出或 `demo-dataset.permissions.json`（开发环境）。
+默认密码见脚本输出或本地生成的 `demo-dataset.permissions.json`（仅限开发环境）。
 
 ## 验证
 
@@ -63,13 +62,7 @@ Get-Content docs/demo-dataset.json | ConvertFrom-Json | Select-Object -ExpandPro
 
 期望 `passed: true`（至少 20 slot、7 task samples、订单/库存/客服各 ≥3）。
 
-专项 smoke（需 API 在线）：
-
-```powershell
-.\scripts\demo-dashboard-smoke.ps1
-.\scripts\demo-order-inventory-customer-smoke.ps1
-.\scripts\demo-rbac-smoke.ps1
-```
+自动化回归由 GitHub Actions 执行；产品页面和业务流程按人工验收清单检查。
 
 ## F8 dev-only edge-case 样本
 
@@ -100,6 +93,4 @@ Authorization: Bearer <admin token>
 ## 相关文档
 
 - [`DEMO_DATASET.md`](DEMO_DATASET.md) — slot 与样本明细
-- [`FULL_PROJECT_DEMO_DATASET.md`](FULL_PROJECT_DEMO_DATASET.md) — 全项目数据集索引
-- [`DEMO_AUTO_ACCEPTANCE_GUIDE.md`](DEMO_AUTO_ACCEPTANCE_GUIDE.md) — 自动化回归
-- [`../DEMO_CHECKLIST.md`](../DEMO_CHECKLIST.md) — 验收勾选
+- [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md) — 人工验收清单

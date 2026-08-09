@@ -41,15 +41,11 @@ The project currently serves two priorities: `AI product operations` and a `ligh
 
 | Item | Status |
 | --- | --- |
-| Phase | Production Capability Development In Progress |
-| Demo | MVP Demo Ready |
-| Observability | Standard OTLP/HTTP Export Code Ready; P5 Closure Verification Incomplete |
-| Backup / Release / DR | P6 fully closed; real production verification deferred |
-| Performance / Capacity | P7 Conditionally Closed; functional/development scope completed; capacity and repeatability deferred to P10 |
-| Tag | Tag deferred |
-| Production | Not Production Ready |
-| Douyin | Douyin Release Candidate |
-| Final acceptance | Final Production Acceptance Deferred to P10 |
+| Lifecycle | Production Maintenance |
+| Automated Regression | GitHub Actions |
+| Product Acceptance | Human Sign-off |
+| Runtime Activation | Managed externally; repository defaults remain fail closed |
+| Local Test Database | Optional; CI provisions isolated services |
 
 
 ## Positioning
@@ -148,22 +144,21 @@ pnpm build:admin
 pnpm build:collector
 pnpm seed:demo-data
 pnpm seed:demo-permissions
-pnpm verify:demo-data
-pnpm verify:demo-permissions
-pnpm check:p4-r
 ```
+
+GitHub Actions runs automated regression. Maintainers sign off product and business behavior manually. A local `trademind_test` database is not required.
 
 ### Docker Deployment
 
 ```bash
-cp .env.docker.example .env
+cp .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
 Windows PowerShell:
 
 ```powershell
-Copy-Item .env.docker.example .env
+Copy-Item .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 

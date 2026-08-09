@@ -15,14 +15,14 @@
 ## 快速启动
 
 ```bash
-cp .env.docker.example .env
+cp .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
 Windows PowerShell：
 
 ```powershell
-Copy-Item .env.docker.example .env
+Copy-Item .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
@@ -46,7 +46,7 @@ POSTGRES_PUBLISH_PORT=5432
 REDIS_PUBLISH_PORT=6379
 ```
 
-完整环境变量说明见 [env.md](env.md)。修改 Docker 变量时必须同步 `.env.docker.example`、`docker-compose.full.yml`、本文档和 `docs/env.md`。
+完整环境变量说明见 [env.md](env.md)。修改 Docker 变量时必须同步唯一模板 `.env.example`、`docker-compose.full.yml`、本文档和 `docs/env.md`。
 
 P5-V 可观测性默认使用 `OTEL_EXPORTER_OTLP_PROTOCOL=http/json`。Docker 本地试用不配置真实 telemetry backend 时，`OTEL_EXPORTER_OTLP_ENDPOINT` 保持为空并视为 Deferred；不要把 Mock Collector 验证写成生产 collector 已上线。
 
@@ -131,4 +131,24 @@ CI 会执行轻量 Docker 配置检查：
 docker compose -f docker-compose.full.yml config
 ```
 
-本地修改 Dockerfile、Compose 或 `.env.docker.example` 后，建议先执行同样命令确认语法和变量引用正确。
+本地修改 Dockerfile、Compose 或 `.env.example` 后，建议先执行同样命令确认语法和变量引用正确。
+# P10 Independent Pre-production
+
+P10 maps pre-production to the existing `staging` profile and uses the separate `trademind-preproduction` Compose project. It does not reuse `docker-compose.yml`, `docker-compose.full.yml`, or production resources.
+
+```bash
+cp .env.example .env
+# edit .env: APP_ENV=staging and fill this host's non-secret identifiers
+node scripts/p10-preproduction-preflight.mjs --mode config
+deploy/scripts/deploy-preproduction.sh
+```
+
+Inject `PREPRODUCTION_DB_PASSWORD`, `PREPRODUCTION_REDIS_PASSWORD`, `PREPRODUCTION_APP_MASTER_KEY`, `PREPRODUCTION_JWT_SECRET`, `P10_API_IMAGE`, and `P10_ADMIN_IMAGE` from the target host or managed secret source. The repository contains references and placeholders only.
+
+The deployment waits for PostgreSQL and Redis health, starts the backend migration path with its advisory lock, and accepts the deployment only after `/health/ready` reports database, Redis, migrations, and `staging` as ready. Backup, isolated restore, application rollback, and non-destructive teardown entry points are under `deploy/scripts/*-preproduction.sh`.
+
+External infrastructure status must be supplied at runtime to `node scripts/p10-preproduction-preflight.mjs --mode external`; generated evidence JSON is not retained in the working tree. Until host, PostgreSQL, Redis, domain, credential availability, deployment rehearsal, and teardown rehearsal are all proven, pre-production remains blocked.
+
+The full-stack development Compose explicitly passes the P10 L0 variables listed in [`env.md`](env.md). It rejects non-L0 and all real Provider/network/credential/read, mutation, Worker, and automatic-retry flags. It is only suitable for repository-side/manual fixture checks and must not be treated as the independent pre-production environment.
+
+P10 reuses the existing recovery foundations instead of creating parallel mechanisms: `deploy/scripts/backup-preproduction.sh` creates a PostgreSQL custom-format artifact, SHA-256 checksum and metadata; `restore-preproduction.sh` restores only into an explicit isolated database identity; `rollback-preproduction.sh` restores previous immutable application images and performs readiness checks without an implicit database restore. Production restore remains disabled by default.

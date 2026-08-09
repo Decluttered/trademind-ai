@@ -92,17 +92,10 @@ Phase A3.1 **不改造** A2.2 `commonConfig` / `overrides`。应用后的 `ai_ti
 - `/ai/batches`：菜单隐藏，页面保留 + 旧版提示，链到 `/ai/text-batches`
 - 禁止删除旧页（历史 `ai_operation_batches` 可查）
 
-### 真实 Provider 试跑
+### 生产维护验收
 
-- 见 [`BATCH_AI_TEXT_UX_ACCEPTANCE.md`](BATCH_AI_TEXT_UX_ACCEPTANCE.md)
-- A3.1.2：**passed**（Qwen；16 子项；脚本 `scripts/ai-text-trial-run.ps1`）
-
-## Phase A3.1.2 补充（2026-06-19）
-
-### 路由 smoke
-
-- `scripts/ai-text-route-smoke.ps1` / `.sh`：health + 12 条 ai-text 路由不得 404
-- 结果：`docs/ai-text-route-smoke.json`
+- 路由、契约和批量任务回归由 GitHub Actions 中的现有测试套件持续执行。
+- 真实 Provider、页面交互和应用/撤销行为由维护者在隔离环境人工验收，不保存一次性试跑报告。
 
 ### 真实试跑与 P1 修复
 
@@ -110,7 +103,4 @@ Phase A3.1 **不改造** A2.2 `commonConfig` / `overrides`。应用后的 `ai_ti
 - **retry-failed**：同时重试 `failed` / `pending` / `running`（服务重启孤儿项）
 - **试跑规模**：5 标题 + 5 描述 + 3 商品×双类型 = 16 子项；全部 `pending_review`，无自动覆盖
 
-### 验收脚本
-
-- `scripts/ai-text-route-smoke.ps1`
-- `scripts/ai-text-trial-run.ps1`（从 `.env` 读取登录，不写密钥到输出）
+历史试跑脚本和运行输出已从当前工作树移除，必要时从 Git 历史查询。

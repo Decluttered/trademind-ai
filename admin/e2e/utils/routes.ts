@@ -5,6 +5,7 @@ import { productsResponse } from '../mocks/products';
 import { readinessResponse } from '../mocks/readiness';
 import { publishResponse, skuBindingsResponse } from '../mocks/publish';
 import { inventoryResponse } from '../mocks/inventory';
+import { inventorySyncP9Response } from '../mocks/inventory-sync-p9';
 import { imageProviderCapabilities } from '../mocks/image-providers';
 
 export async function seedAdminAuth(page: Page) {
@@ -32,7 +33,9 @@ export async function routeAdminApi(page: Page) {
     const path = url.pathname;
     const response =
       (path === '/api/v1/auth/profile' ? ok(e2eUser) : null) ??
+      (path === '/api/v1/settings' ? ok({ items: [] }) : null) ??
       (path === '/api/v1/image/providers' ? ok(imageProviderCapabilities) : null) ??
+      inventorySyncP9Response(path) ??
       productsResponse(path) ??
       readinessResponse(path) ??
       publishResponse(path) ??

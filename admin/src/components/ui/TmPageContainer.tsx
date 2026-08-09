@@ -3,8 +3,10 @@ import { PageContainer, type PageContainerProps } from '@ant-design/pro-componen
 import { layoutTokens } from '@/constants/layoutTokens';
 
 export type TmPageContainerProps = PageContainerProps & {
-  /** 页面内容最大宽度，默认 settings 1440 */
+  /** 页面内容首选最大宽度；流式布局会在更宽视口继续扩展，避免两侧留白过大。 */
   contentMaxWidth?: number;
+  /** 是否限制超宽视口的外层留白；窄表单等固定内容轨道可显式关闭。 */
+  fluid?: boolean;
   /** 关闭内容区左右 padding，仅用于嵌入式特殊场景。 */
   padded?: boolean;
   /** 页面内容包裹层样式。 */
@@ -18,6 +20,7 @@ export default function TmPageContainer({
   title,
   subTitle,
   contentMaxWidth = layoutTokens.pageMaxWidth,
+  fluid = true,
   padded = true,
   contentWrapperStyle,
   children,
@@ -32,7 +35,9 @@ export default function TmPageContainer({
   return (
     <PageContainer
       {...rest}
-      className={['tm-page-container', className].filter(Boolean).join(' ')}
+      className={['tm-page-container', fluid ? 'tm-page-container--fluid' : '', className]
+        .filter(Boolean)
+        .join(' ')}
       style={{
         '--tm-page-content-max-width': `${contentMaxWidth}px`,
         ...rest.style,

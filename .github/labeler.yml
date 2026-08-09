@@ -40,13 +40,12 @@
           - ".dockerignore"
           - "**/.dockerignore"
           - "docker-compose*.yml"
-          - ".env.docker.example"
+          - ".env.example"
 
 "area: config":
   - changed-files:
       - any-glob-to-any-file:
           - ".env.example"
-          - ".env.docker.example"
           - "package.json"
           - "pnpm-workspace.yaml"
           - "pnpm-lock.yaml"
@@ -56,7 +55,6 @@
   - changed-files:
       - any-glob-to-any-file:
           - ".env.example"
-          - ".env.docker.example"
           - "docker-compose.yml"
           - "docker-compose.full.yml"
 

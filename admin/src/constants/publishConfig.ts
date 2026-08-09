@@ -158,7 +158,7 @@ export function countConfigFields(config: Record<string, unknown> | undefined): 
   if (!config) return 0;
   let n = 0;
   const walk = (obj: Record<string, unknown>) => {
-    for (const [k, v] of Object.entries(obj)) {
+    for (const v of Object.values(obj)) {
       if (v === undefined || v === null || v === '') continue;
       if (typeof v === 'object' && !Array.isArray(v)) {
         walk(v as Record<string, unknown>);

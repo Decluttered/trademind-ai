@@ -1,16 +1,8 @@
 # Local environment
 .env
-.env.local
-.env.*.local
-.env.production
-.env.staging
-.env.demo
-.env.development
-.env.docker
+.env.*
 .envrc
 !.env.example
-!.env.production.example
-!.env.*.example
 
 # Runtime data
 tools/k6/
@@ -90,10 +82,25 @@ __debug_bin*
 .idea/
 .fleet/
 .vscode/
+.claude/
 *.swp
 *.swo
 *~
 .DS_Store
+
+# Local validation outputs (CI results stay in GitHub Actions)
+/docs/*.auto.json
+/docs/*.auto.md
+/docs/*.run[0-9]*.json
+/docs/demo-auto-acceptance*.json
+/docs/a1-sample-matrix.json
+/docs/ai-*-trial-run*.json
+/docs/codex-manual-simulation.json
+/docs/demo-dataset*.json
+/docs/demo-route-smoke*.json
+/docs/global-status-copywriting-scan.json
+/docs/.demo-*.txt
+/docs/.p4v-*.txt
 
 # OS
 Thumbs.db

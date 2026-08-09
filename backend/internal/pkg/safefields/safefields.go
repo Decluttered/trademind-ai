@@ -11,7 +11,8 @@ var DefaultSensitiveKeys = []string{
 	"encrypt_post_receiver", "encrypt_post_tel", "encrypt_post_addr",
 	"mobile", "phone", "email", "address", "receiver",
 	"accesstoken", "refreshtoken", "appsecret", "client_secret", "clientsecret",
-	"password", "passwd", "api_key", "apikey",
+	"password", "passwd", "api_key", "apikey", "cookie", "set-cookie",
+	"db_url", "database_url", "redis_url", "connection_url",
 }
 
 // RedactValue returns a masked copy of v with sensitive keys replaced recursively.

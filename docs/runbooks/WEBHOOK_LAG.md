@@ -1,7 +1,7 @@
 # WEBHOOK LAG
 
 ## 告警含义
-参见 docs/P5_ALERT_RULES.md 中对应规则。
+当前告警阈值以 `backend/internal/modules/alerting/rules.go` 中对应规则为准。
 
 ## 影响
 可能影响 API 可用性、任务处理或安全状态；按严重级别评估。
@@ -13,7 +13,7 @@
 ## 排查步骤
 1. 打开可观测性中心 /ops/observability
 2. 查看相关 Dashboard（deploy/observability/dashboards/）
-3. 按 request_id / trace_id 关联日志（JSON 字段见 docs/P5_LOG_FIELD_STANDARD.md）
+3. 按 request_id / trace_id 关联结构化日志（字段约定见 `docs/P5_OBSERVABILITY_ARCHITECTURE.md`）
 
 ## 相关 Dashboard
 application-overview / workers-and-tasks / security
@@ -33,4 +33,4 @@ request_id, trace_id, module, operation, error_code, duration_ms
 Critical 持续 15 分钟或影响核心 API SLO 时升级 on-call。
 
 ## 恢复确认
-告警 resolved；相关 SLI 回到阈值内；demo:auto-acceptance 非 AI failed=0。
+告警 resolved；相关 SLI 回到阈值内；关联健康检查恢复，必要回归由 GitHub Actions 执行并由维护者人工确认。

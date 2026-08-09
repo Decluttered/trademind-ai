@@ -541,7 +541,7 @@ function ManualTranslateEditor({
                       width: `${(b.bbox.width / imageWidth) * 100}%`,
                       minHeight: `${(b.bbox.height / imageHeight) * 100}%`,
                       boxSizing: 'border-box',
-                      border: '1px dashed #1677ff',
+                      border: '1px dashed var(--ant-color-primary)',
                       color: b.color || '#111111',
                       fontSize: Math.max(10, Math.round((b.fontSize || 18) * scale)),
                       fontWeight: b.fontWeight || undefined,

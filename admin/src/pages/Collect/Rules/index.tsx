@@ -168,7 +168,7 @@ export default function CollectRulesPage() {
             </Popconfirm>
           )}
           <Popconfirm key="del" title="确定删除？" onConfirm={() => void remove(row.id)}>
-            <a style={{ color: '#cf1322' }}>删除</a>
+            <a style={{ color: 'var(--ant-color-error)' }}>删除</a>
           </Popconfirm>
         </Space>
       ),

@@ -1,6 +1,6 @@
 # 环境变量说明
 
-本文件是 `.env.example` 与 `.env.docker.example` 的说明索引。新增、删除或重命名环境变量时，必须同步更新本文件，并检查 `docs/module-map.md` 中的关联项。
+本文件是唯一配置模板 `.env.example` 的说明索引。`.env` 是唯一运行配置并保持 Git ignored；新增、删除或重命名环境变量时，必须同步更新本文件，并检查 `docs/module-map.md` 中的关联项。
 
 ## 使用方式
 
@@ -16,12 +16,14 @@ Windows PowerShell：
 Copy-Item .env.example .env
 ```
 
-Docker 完整部署：
+Docker 完整部署也使用同一模板：
 
 ```bash
-cp .env.docker.example .env
+cp .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
+
+环境由 `APP_ENV` 选择。进程环境变量优先于 `.env`，CI、容器平台和 Secret Store 可安全覆盖模板值；禁止创建 `.env.local`、`.env.test.local`、`.env.staging`、`.env.production` 等变体。
 
 ## 安全规则
 
@@ -34,12 +36,12 @@ docker compose -f docker-compose.full.yml up -d --build
 
 | 变量 | 示例 / 默认 | 服务 | 敏感 | 说明 |
 | --- | --- | --- | --- | --- |
-| `APP_ENV` | `development` | backend | 否 | 应用环境，生产建议设为 `production`。 |
+| `APP_ENV` | `development` | backend | 否 | 主运行环境使用 `development` / `test` / `staging` / `production`；既有 `demo` / `performance` 仅用于受控演示和隔离压测。 |
 | `APP_HTTP_ADDR` | `:8080` | backend | 否 | Go API 监听地址。 |
 | `P7_V2_API_HOST` | `127.0.0.1` | P7-V2 harness | 否 | 仅 P7-V2 性能环境的 loopback API host；禁止公网或 WSL 非 loopback 地址。 |
 | `P7_V2_API_PORT` | `8080` | P7-V2 harness | 否 | 仅 P7-V2 性能环境 API 端口；可迁移至 `18080`、`28080` 或 `38080`。 |
 | `P7_BASE_URL` | 派生自前两项 | P7-V2 harness | 否 | 必须等于 `http://${P7_V2_API_HOST}:${P7_V2_API_PORT}`，供 k6 与探针统一使用。 |
-| `P7_DIAGNOSTICS_*` | `P7_DIAGNOSTICS_ENABLED=false` | P7-V2 diagnostics | 否 | R3B local diagnostics switch and metadata (`P7_DIAGNOSTIC_RUN_ID` / `ROLE` / `DIR` / buffer / runtime + PG sample intervals). When explicitly enabled, writes bounded JSONL diagnostics to ignored `artifacts/p7-v2-diagnostics/` (or an external `/tmp/...` dir); diagnostic runs are non-formal and invalid for closure. |
+| `P7_DIAGNOSTICS_*` | `P7_DIAGNOSTICS_ENABLED=false` | legacy diagnostics compatibility | 否 | 默认关闭；如临时诊断必须写入仓库外临时目录，完成后删除，不得创建或提交 `artifacts/`。 |
 | `APP_MASTER_KEY` | 空 / 64 位 hex | backend | 是 | AES-GCM 主密钥，用于 settings 敏感配置加密。 |
 | `ADMIN_BOOTSTRAP_EMAIL` | 空 / `admin@example.com` | backend | 否 | 初始管理员邮箱。 |
 | `ADMIN_BOOTSTRAP_PHONE` | 空 | backend | 否 | 初始管理员手机号。 |
@@ -87,7 +89,7 @@ docker compose -f docker-compose.full.yml up -d --build
 | `DB_HOST` | `127.0.0.1` / `postgres` | backend | 否 | 数据库地址。 |
 | `DB_PORT` | `5432` | backend | 否 | PostgreSQL 默认 5432。 |
 | `DB_USER` | `trademind` | backend | 否 | 数据库用户。 |
-| `DB_PASSWORD` | `trademind` | backend | 是 | 数据库密码。 |
+| `DB_PASSWORD` | 明显占位值 | backend | 是 | 数据库密码；真实值只写入 `.env` 或 Secret Store。 |
 | `DB_NAME` | `trademind` | backend | 否 | 数据库名。 |
 | `DB_TIMEZONE` | `UTC` | backend | 否 | 数据库时区。 |
 | `DB_MAX_OPEN_CONNECTIONS` | `100` | backend | 否 | P7 数据库连接池最大打开连接数；生产非法配置 fail-fast。 |
@@ -150,7 +152,7 @@ docker compose -f docker-compose.full.yml up -d --build
 
 ## Docker 端口覆盖
 
-`.env.docker.example` 支持以下宿主机端口覆盖：
+`.env.example` 支持以下宿主机端口覆盖：
 
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
@@ -171,7 +173,6 @@ docker compose -f docker-compose.full.yml up -d --build
 新增或修改环境变量时必须检查：
 
 - `.env.example`
-- `.env.docker.example`
 - `docker-compose.yml`
 - `docker-compose.full.yml`
 - `docs/env.md`
@@ -179,3 +180,55 @@ docker compose -f docker-compose.full.yml up -d --build
 - `docs/docker-deployment.md`
 - `README.md` / `README.en.md` 中的启动说明
 - 相关代码默认值与安全校验
+# P10 Pre-production Contract
+
+P10 reuses `APP_ENV=staging` as the only pre-production profile. Do not introduce a second `preproduction` runtime value. `.env.example` is the canonical non-secret contract; the target host copies it to `.env`, while database, Redis, application-key, JWT, and immutable-image values are injected externally.
+
+For pre-production, copy `.env.example` to `.env`, set `APP_ENV=staging`, and fill the target host's non-secret identities. The P10 preflight requires explicit, pairwise-distinct identities for development/test, pre-production, and production database and Redis resources. It also requires a distinct session namespace, non-overlapping cookie domains, distinct Admin/API endpoints, a non-local staging storage mode, a matching credentialed CORS origin, explicit migration/backup/restore targets, previous immutable images, and external secret references. Inline secret values, missing or unknown environments, and production targets fail closed.
+
+`P10_PRODUCTION_RESTORE_ENABLED` must remain `false`. All real Provider/network/read/write, mutation, queue/worker, and automatic business retry flags remain disabled at L0. Run the non-secret contract check with:
+
+```bash
+node scripts/p10-preproduction-preflight.mjs --mode config
+```
+
+Operational values must be supplied by the target host or managed secret system and must never be committed or printed in evidence.
+
+历史阶段报告与冻结证据已从当前工作树清理；需要追溯时使用 Git 历史。当前运行说明只以 `.env`、`.env.example` 和本文件为准。
+
+## 测试资源
+
+- `TEST_DATABASE_URL` 与 `TEST_REDIS_URL` 只用于显式隔离的测试资源或 CI service container，不属于生产运行配置。
+- 本地测试数据库可不存在；项目不会自动创建或重建 `trademind_test`。
+- GitHub Actions 可以在作业内临时创建同名数据库，作业结束后随 service container 销毁。
+- 未提供安全隔离 URL 时，不在本地运行对应集成测试，且绝不回退到开发库或生产资源。
+
+## Repository-side Runtime Controls
+
+The project is in production maintenance, while repository runtime controls remain fail closed at `L0` unless separately approved and activated externally. The following variables are present in `.env.example` and the backend service in `docker-compose.full.yml`:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `P10_CURRENT_ALLOWED_LEVEL` | `L0` | Only accepted level in this development round. |
+| `P10_OFFLINE_OAUTH_ENABLED` | `false` | Enables development/test-only offline OAuth fixtures. Forbidden in staging/production. |
+| `P10_LOCAL_CREDENTIAL_KEY` | empty | Development/test-only local key material. Never commit a value; forbidden in staging/production. |
+| `P10_LOCAL_CREDENTIAL_KEY_REF` | `local-development-v1` | Non-secret local key reference. |
+| `P10_OAUTH_STATE_TTL_SECONDS` | `600` | Single-use OAuth state lifetime; valid range 60-1800 seconds. |
+| `P10_OAUTH_REDIRECT_ALLOWLIST` | empty | Comma-separated exact redirect URI allowlist. |
+| `P10_DOUYIN_API_BASE_URL` | empty | Trusted config only; when present it must be official HTTPS host `openapi-fxg.jinritemai.com`. |
+| `P10_PROVIDER_REQUEST_TIMEOUT_SECONDS` | `30` | Whole provider request timeout. |
+| `P10_PROVIDER_CONNECT_TIMEOUT_SECONDS` | `5` | Provider connection/TLS timeout foundation. |
+| `P10_PROVIDER_RESPONSE_HEADER_TIMEOUT_SECONDS` | `15` | Provider response-header timeout. |
+| `P10_PROVIDER_MAX_RESPONSE_BYTES` | `2097152` | Strict response body limit. |
+| `P10_PROVIDER_CONCURRENCY` | `2` | Per-host connection/concurrency bound. |
+| `P10_SKU_PAGE_SIZE` | `50` | Local publication page size, capped at 100. |
+| `P10_PAGINATION_LIMIT` | `100` | Maximum pages per manual read run. |
+| `P10_REAL_PROVIDER_ENABLED` | `false` | Real Provider feature flag; rejected when true at L0. |
+| `P10_REAL_PLATFORM_NETWORK_ENABLED` | `false` | Real network feature flag; rejected when true at L0. |
+| `P10_REAL_CREDENTIALS_ENABLED` | `false` | Real credential feature flag; rejected when true at L0. |
+| `P10_REAL_INVENTORY_READ_ENABLED` | `false` | Real read feature flag; rejected when true at L0. |
+| `P10_INVENTORY_MUTATION_ENABLED` | `false` | Inventory mutation guard; must remain false. |
+| `P10_BACKGROUND_WORKER_ENABLED` | `false` | P10 Worker guard; must remain false. |
+| `P10_AUTOMATIC_RETRY_ENABLED` | `false` | Automatic business retry guard; must remain false. |
+
+No current configuration can promote the application beyond L0. Promotion requires later code/config review plus manual and external acceptance; setting any real capability flag now makes startup validation fail.

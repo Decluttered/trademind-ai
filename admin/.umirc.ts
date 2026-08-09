@@ -1,6 +1,25 @@
 import { defineConfig } from '@umijs/max';
-import { elevationTokens, layoutTokens, themeTokens } from './src/constants/layoutTokens';
+import { createStaticLightThemeConfig } from './src/theme/themeConfig';
 import routes from './config/routes';
+
+const lightTheme = createStaticLightThemeConfig();
+
+const appRoutes = routes.map((route) =>
+  route.path === '/ops'
+    ? {
+        ...route,
+        routes: [
+          ...(route.routes || []),
+          {
+            path: '/ops/p10-readiness',
+            name: 'P10 人工验收',
+            icon: 'SafetyCertificateOutlined',
+            component: './Ops/P10Readiness',
+          },
+        ],
+      }
+    : route,
+);
 
 export default defineConfig({
   title: '贸灵 TradeMind',
@@ -8,53 +27,7 @@ export default defineConfig({
   antd: {
     appConfig: {},
     configProvider: {
-      theme: {
-        cssVar: true,
-        token: {
-          colorPrimary: themeTokens.colorPrimary,
-          colorSuccess: themeTokens.colorSuccess,
-          colorWarning: themeTokens.colorWarning,
-          colorError: themeTokens.colorError,
-          colorInfo: themeTokens.colorInfo,
-          colorText: themeTokens.colorText,
-          colorTextSecondary: themeTokens.colorTextSecondary,
-          colorBorderSecondary: themeTokens.colorBorderSecondary,
-          colorBgLayout: themeTokens.colorBgLayout,
-          colorBgContainer: themeTokens.colorBgContainer,
-          borderRadius: layoutTokens.borderRadius,
-          borderRadiusLG: layoutTokens.borderRadiusLg,
-          controlHeight: layoutTokens.controlHeight,
-          boxShadowTertiary: elevationTokens.cardShadow,
-          fontFamily: themeTokens.fontFamily,
-        },
-        components: {
-          Layout: {
-            bodyBg: themeTokens.colorBgLayout,
-            headerBg: themeTokens.colorBgContainer,
-            footerBg: themeTokens.colorBgLayout,
-            siderBg: themeTokens.colorBgContainer,
-          },
-          Menu: {
-            itemBorderRadius: layoutTokens.borderRadius,
-            itemHeight: 40,
-            itemMarginBlock: 4,
-            itemMarginInline: 8,
-            iconSize: 16,
-            collapsedIconSize: 16,
-          },
-          Card: {
-            headerFontSize: layoutTokens.pageDescSize + 1,
-            borderRadiusLG: layoutTokens.borderRadius,
-          },
-          Button: {
-            borderRadius: layoutTokens.borderRadius,
-          },
-          Table: {
-            headerBg: '#f8fafc',
-            cellFontSize: 14,
-          },
-        },
-      },
+      theme: lightTheme,
     },
   },
   access: {},
@@ -71,7 +44,7 @@ export default defineConfig({
     fixSiderbar: true,
     contentWidth: 'Fluid',
   },
-  routes,
+  routes: appRoutes,
   devtool: process.env.NODE_ENV === 'production' ? false : 'source-map',
   proxy: {
     '/api': {

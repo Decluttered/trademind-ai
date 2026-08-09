@@ -1,0 +1,205 @@
+import { EyeOutlined, ReloadOutlined } from '@ant-design/icons';
+import type { ProColumns } from '@ant-design/pro-components';
+import { history } from '@umijs/max';
+import { Button, Card, Col, Form, Input, Row, Select, Space } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { TmPageContainer, TmProTable } from '@/components/ui';
+import { useUrlQueryState } from '@/hooks/useUrlState';
+import {
+  extractInventorySyncAPIError,
+  listInventoryBindings,
+  type InventorySyncAPIError,
+  type SKUBinding,
+} from '@/services/inventorySyncP9';
+import { formatDateTime } from '@/utils/formatTime';
+import {
+  ActionSourceHint,
+  BINDING_STATUS_LABELS,
+  ConfidenceText,
+  CursorPager,
+  FixtureBoundary,
+  StatusTag,
+  copyableText,
+  renderInventorySyncError,
+} from './components/InventorySyncShared';
+
+const QUERY_KEYS = ['shopConnectionId', 'bindingStatus', 'bindingSource', 'cursor'] as const;
+const LIMIT = 20;
+
+type QueryState = Record<(typeof QUERY_KEYS)[number], string | undefined>;
+
+const bindingStatusOptions = [
+  { value: 'proposed', label: '待确认' },
+  { value: 'confirmed', label: '已确认' },
+  { value: 'rejected', label: '已拒绝' },
+  { value: 'stale', label: '已过期' },
+  { value: 'conflict', label: '冲突' },
+];
+
+const bindingSourceOptions = [
+  { value: 'automatic', label: '自动校准' },
+  { value: 'manual', label: '人工确认' },
+];
+
+export default function InventorySyncBindingsPage() {
+  const { state, setState, clearState } = useUrlQueryState<QueryState>(QUERY_KEYS);
+  const [form] = Form.useForm();
+  const [items, setItems] = useState<SKUBinding[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<InventorySyncAPIError | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | undefined>();
+  const [hasMore, setHasMore] = useState(false);
+  const [cursorStack, setCursorStack] = useState<string[]>([]);
+  const requestSeq = useRef(0);
+
+  useEffect(() => {
+    form.setFieldsValue({
+      shopConnectionId: state.shopConnectionId,
+      bindingStatus: state.bindingStatus,
+      bindingSource: state.bindingSource,
+    });
+  }, [form, state.bindingSource, state.bindingStatus, state.shopConnectionId]);
+
+  const load = useCallback(async () => {
+    const seq = requestSeq.current + 1;
+    requestSeq.current = seq;
+    setLoading(true);
+    setError(null);
+    try {
+      const page = await listInventoryBindings({
+        shopConnectionId: state.shopConnectionId,
+        bindingStatus: state.bindingStatus,
+        bindingSource: state.bindingSource,
+        cursor: state.cursor,
+        limit: LIMIT,
+      });
+      if (requestSeq.current !== seq) return;
+      setItems(page.items || []);
+      setNextCursor(page.nextCursor);
+      setHasMore(page.hasMore);
+    } catch (e) {
+      if (requestSeq.current !== seq) return;
+      setError(extractInventorySyncAPIError(e));
+      setItems([]);
+      setNextCursor(undefined);
+      setHasMore(false);
+    } finally {
+      if (requestSeq.current === seq) setLoading(false);
+    }
+  }, [state.bindingSource, state.bindingStatus, state.cursor, state.shopConnectionId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const columns = useMemo<ProColumns<SKUBinding>[]>(() => [
+    { title: '绑定 ID', dataIndex: 'id', width: 170, render: (v) => copyableText(String(v || ''), 14) },
+    { title: '店铺连接', dataIndex: 'shopConnectionId', width: 150, render: (v) => copyableText(String(v || ''), 12) },
+    { title: '外部规格', dataIndex: 'externalSkuId', width: 170, render: (v) => copyableText(String(v || ''), 14) },
+    { title: '外部规格编码', dataIndex: 'externalSkuCode', width: 140 },
+    { title: '本地规格', dataIndex: 'localSkuId', width: 170, render: (v) => copyableText(String(v || ''), 14) },
+    { title: '来源', dataIndex: 'bindingSource', width: 110 },
+    { title: '状态', dataIndex: 'bindingStatus', width: 120, render: (v) => <StatusTag map={BINDING_STATUS_LABELS} value={String(v || '')} /> },
+    { title: '置信度', dataIndex: 'confidence', width: 100, render: (v) => <ConfidenceText value={typeof v === 'number' ? v : undefined} /> },
+    { title: '版本', dataIndex: 'calibrationVersion', width: 90 },
+    { title: '更新时间', dataIndex: 'updatedAt', width: 170, render: (v) => formatDateTime(String(v || '')) },
+    {
+      title: '操作',
+      valueType: 'option',
+      width: 130,
+      render: (_, row) => [
+        <Button
+          key="history"
+          type="link"
+          icon={<EyeOutlined />}
+          disabled={!row.allowedActions.canViewHistory}
+          onClick={() => history.push(`/ops/inventory-sync/bindings/${encodeURIComponent(row.id)}`)}
+        >
+          历史
+        </Button>,
+      ],
+    },
+  ], []);
+
+  return (
+    <TmPageContainer
+      title="SKU 绑定列表"
+      subTitle="查看 P9 fixture 绑定记录并进入历史"
+      extra={<Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>刷新</Button>}
+    >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <FixtureBoundary />
+        {renderInventorySyncError(error)}
+        <Card>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={(values) => {
+              setCursorStack([]);
+              setState({ ...values, cursor: undefined }, { replace: true });
+            }}
+          >
+            <Row gutter={[16, 8]}>
+              <Col xs={24} md={8} lg={6}>
+                <Form.Item name="shopConnectionId" label="店铺连接 ID">
+                  <Input allowClear placeholder="仅传 shopConnectionId" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8} lg={6}>
+                <Form.Item name="bindingStatus" label="绑定状态">
+                  <Select allowClear options={bindingStatusOptions} placeholder="全部状态" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8} lg={6}>
+                <Form.Item name="bindingSource" label="绑定来源">
+                  <Select allowClear options={bindingSourceOptions} placeholder="全部来源" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} lg={6}>
+                <Form.Item label="操作">
+                  <Space wrap>
+                    <Button type="primary" htmlType="submit">应用筛选</Button>
+                    <Button onClick={() => { setCursorStack([]); form.resetFields(); clearState(QUERY_KEYS, { replace: true }); }}>清除</Button>
+                  </Space>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+          <ActionSourceHint />
+        </Card>
+        <TmProTable<SKUBinding>
+          rowKey="id"
+          search={false}
+          columns={columns}
+          dataSource={items}
+          loading={loading}
+          pagination={false}
+          scroll={{ x: 1450 }}
+          options={false}
+          toolBarRender={false}
+        />
+        <Card size="small">
+          <CursorPager
+            count={items.length}
+            hasMore={hasMore && !!nextCursor}
+            canPrev={cursorStack.length > 0}
+            loading={loading}
+            onNext={() => {
+              if (!nextCursor) return;
+              setCursorStack((prev) => [...prev, state.cursor || '']);
+              setState({ cursor: nextCursor }, { replace: true });
+            }}
+            onPrev={() => {
+              setCursorStack((prev) => {
+                const next = [...prev];
+                const prevCursor = next.pop();
+                setState({ cursor: prevCursor || undefined }, { replace: true });
+                return next;
+              });
+            }}
+          />
+        </Card>
+      </Space>
+    </TmPageContainer>
+  );
+}

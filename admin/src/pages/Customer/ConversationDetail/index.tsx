@@ -19,7 +19,6 @@ import {
   Typography,
   Alert,
 } from 'antd';
-import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CUSTOMER_CONVERSATION_STATUS,
@@ -550,7 +549,7 @@ export default function CustomerConversationDetailPage() {
                             size="small"
                             style={{
                               maxWidth: '92%',
-                              background: isCustomer ? 'var(--ant-color-fill-quaternary, #fafafa)' : '#e6f4ff',
+                              background: isCustomer ? 'var(--ant-color-fill-quaternary)' : 'var(--ant-color-primary-bg)',
                             }}
                             title={
                               <Space size={8}>

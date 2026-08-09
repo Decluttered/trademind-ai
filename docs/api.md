@@ -102,10 +102,21 @@
 | `GET` | `/api/v1/products/:id/operation-progress` | 商品运营进度摘要；只读聚合商品、图片、SKU 与既有发布前检查，不调用平台 API、不创建任务、不修改商品。 |
 | `PUT` | `/api/v1/products/:id` | 更新商品草稿。 |
 | `DELETE` | `/api/v1/products/:id` | 删除或归档商品。 |
+| `GET` | `/api/v1/product-skus/search` | 已认证的本地 SKU 搜索；仅返回可信认证上下文所属 Tenant 的 SKU。Query 保持 `keyword`、`productId`、`limit`（默认 20、最大 50），响应保持 `data.list`。 |
 | `POST` | `/api/v1/products/:id/apply-ai-title` | 应用 AI 标题；body 支持 `aiTitle`、`taskId`、`expectedUpdatedAt`、`sourceSnapshotHash`，冲突时返回 `AI_CONTENT_APPLY_CONFLICT`，不会静默覆盖人工修改。 |
 | `POST` | `/api/v1/products/:id/undo-ai-title` | 安全撤销最近一次 AI 标题应用；若应用后字段又被人工修改，返回 `AI_CONTENT_UNDO_CONFLICT`。 |
 | `POST` | `/api/v1/products/:id/apply-ai-description` | 应用 AI 描述；body 支持 `aiDescription`、`taskId`、`expectedUpdatedAt`、`sourceSnapshotHash`，冲突时返回 `AI_CONTENT_APPLY_CONFLICT`。 |
 | `POST` | `/api/v1/products/:id/undo-ai-description` | 安全撤销最近一次 AI 描述应用；若应用后字段又被人工修改，返回 `AI_CONTENT_UNDO_CONFLICT`。 |
+
+### 本地 SKU 搜索安全合同
+
+`GET /api/v1/product-skus/search` 必须经过认证，并从可信认证上下文取得正数 `TenantID` 与有效、启用的 Tenant Membership。普通列表、关键词、`productId`、排序和 `limit` 窗口均强制按 `products.tenant_id` 隔离；缺少认证/可信 Tenant 时返回 `401 authentication_required`，Membership 无效或不匹配时返回 `403 permission_denied`，且不会执行 SKU 搜索 SQL。
+
+- `keyword` 仅搜索 SKU Code、SKU Name 和 Product Title；`productId` 只在当前 Tenant 内匹配。
+- 跨 Tenant `productId` 返回相同成功 Envelope 下的空 `list`，不泄露 Product 是否存在。
+- `tenantId`、`tenant_id` 及其他客户端 Tenant 选择字段在当前 Query 解析方式下被忽略（若未来改为严格绑定也可拒绝），绝不参与数据范围。
+- 现有 API 不包含 Barcode/Status 搜索、Count、Offset/Keyset Pagination 或分页元数据；本次安全修复不扩展这些合同。
+- 响应 DTO、字段名、字段类型、`data.list` 结构及 Request ID/Trace ID 行为保持不变。
 
 **批量 AI 文案（Phase A3.1）**
 
@@ -327,6 +338,31 @@
 
 Provider 调用官方 `sku.syncStock`（`incremental=false` 全量更新）；受 `inventory_sync_enabled` 开关控制（默认关闭）。缺失平台 SKU ID 或 `bindStatus=unmatched/failed` 返回 `DOUYIN_SKU_BINDING_REQUIRED`；`bindStatus=ambiguous` 返回 `DOUYIN_SKU_BINDING_AMBIGUOUS`；绑定冲突返回 `DOUYIN_SKU_BINDING_CONFLICT`；不猜测同步。库存同步前须全部 SKU 处于可同步绑定状态（bound / skipped 且已有 `external_sku_id`）。
 
+### P9 Inventory Sync Backend API（Batch 5）
+
+Batch 5 的 fixture/mock-only 后端 API 使用 `/api/v1/inventory-sync`，复用现有认证、租户上下文、RBAC、审计和签名 keyset cursor。所有写请求必须带 `Idempotency-Key`；JSON body 必须为受限 `application/json`，拒绝未知字段和多余 JSON 值。该 API 不接收凭证、不调用真实 Douyin、不读写真实平台库存，也不启动 worker/cron/queue。
+
+| Method | Path | Permission | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/inventory-sync/runs` | `inventory_sync.run` | Create a fixture-backed sync run |
+| `GET` | `/api/v1/inventory-sync/runs` | `inventory_sync.read` | Signed keyset run history |
+| `GET` | `/api/v1/inventory-sync/runs/:runId` | `inventory_sync.read` | Safe run detail/statistics/error summary |
+| `POST` | `/api/v1/inventory-sync/runs/:runId/rerun` | `inventory_sync.rerun` | Guarded retry of a failed/cancelled retryable run |
+| `GET` | `/api/v1/inventory-sync/runs/:runId/snapshots` | `inventory_snapshot.read` | Immutable snapshot list and result filter |
+| `GET` | `/api/v1/inventory-sync/snapshots/:snapshotId` | `inventory_snapshot.read` | Immutable snapshot detail |
+| `GET` | `/api/v1/inventory-sync/bindings` | `sku_binding.read` | Tenant-scoped binding list |
+| `GET` | `/api/v1/inventory-sync/bindings/:bindingId` | `sku_binding.read` | Safe binding detail |
+| `GET` | `/api/v1/inventory-sync/bindings/:bindingId/history` | `sku_binding.read` | Calibration/manual decision history |
+| `GET` | `/api/v1/inventory-sync/snapshots/:snapshotId/calibrations` | `sku_binding.read` | Versioned calibration candidates |
+| `POST` | `/api/v1/inventory-sync/snapshots/:snapshotId/recalibrate` | `sku_binding.manage` | Idempotent controlled new calibration version |
+| `GET` | `/api/v1/inventory-sync/manual-binding-requests` | `sku_binding.read` | Pending/status manual request list |
+| `GET` | `/api/v1/inventory-sync/manual-binding-requests/:requestId` | `sku_binding.read` | Request and immutable decisions |
+| `POST` | `/api/v1/inventory-sync/manual-binding-requests/:requestId/confirm` | `sku_binding.resolve_manual` | Revision-checked manual confirmation |
+| `POST` | `/api/v1/inventory-sync/manual-binding-requests/:requestId/reject` | `sku_binding.resolve_manual` | Revision-checked manual rejection |
+| `GET` | `/api/v1/inventory-sync/runs/:runId/audit-events` | `inventory_sync.audit.read` | Allowlisted tenant-scoped audit timeline |
+
+List endpoints return `{items, nextCursor, hasMore, limit}` and never expose offset/page totals. DTOs intentionally omit raw provider cursors, checkpoints, payloads, credential fields, and idempotency hashes.
+
 通用刊登任务接口（含抖店）：
 
 | 方法 | 路径 | 说明 |
@@ -363,7 +399,7 @@ Provider 调用官方 `sku.syncStock`（`incremental=false` 全量更新）；�
 
 ## 抖店可观测性 / Health & Metrics（Phase 10.4）
 
-> **不** 提供 Prometheus `/metrics`。抖店生产监控复用进程健康、任务中心、操作日志与运营看板。E2E 脚本见 `scripts/douyin-e2e-*`；门禁见 [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md)。
+> **不** 提供 Prometheus `/metrics`。抖店生产监控复用进程健康、任务中心、操作日志与运营看板。真实平台行为按人工验收清单执行；门禁见 [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md)。
 
 ### 进程健康（含抖店相关队列）
 
@@ -448,11 +484,11 @@ All P6 write operations require Bearer authentication and backend RBAC. The fron
 | `GET` | `/api/v1/ops/dr/status` | `dr.read` | 灾备状态与 Deferred 项。 |
 | `POST` | `/api/v1/ops/dr/drills` | `dr.execute` | 记录隔离演练；必须确认隔离环境。 |
 
-P6-VR closure evidence is recorded in `docs/P6_VR_FINAL_CLOSURE_REPORT.md`: isolated restore, isolated release rollback, Linux race, and final gates passed. P6 still does not mark Production Ready and does not perform real production restore, PITR drill or traffic switch.
+Historical P6-VR closure evidence is available from Git history. The current working tree keeps the reusable backup, isolated restore and application rollback paths only; this still does not mark Production Ready or perform a real production restore, PITR drill or traffic switch.
 
 ## P7 Performance / Capacity API Status
 
-P7 currently adds backend configuration, database tables, local rate-limit middleware, guarded dataset / load / soak / race scripts and validation gates, but does **not** expose public management APIs yet. P7-V has real isolated Medium dataset evidence (`insertedRows=1,900,150`, `failedRows=0`), while load, soak, regression and final closure remain incomplete and must not be described as production performance verification.
+The reusable P7 runtime work remains in backend configuration, database tables, pagination guards and local rate-limit middleware, but it does **not** expose public management APIs. Historical dataset/load/soak/race harnesses and generated evidence were removed from the production-maintenance working tree; no current result may be described as production performance verification.
 
 Planned ops routes remain design-only until implemented with RBAC, re-authentication for writes and audit logging:
 

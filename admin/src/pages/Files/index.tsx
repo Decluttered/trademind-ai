@@ -31,7 +31,7 @@ export default function FilesPage() {
         isImage(row.contentType) ? (
           <Image src={row.url} width={56} height={56} style={{ objectFit: 'cover' }} />
         ) : (
-          <PictureOutlined style={{ fontSize: 28, color: '#bbb' }} />
+          <PictureOutlined style={{ fontSize: 28, color: 'var(--ant-color-text-quaternary)' }} />
         ),
     },
     {

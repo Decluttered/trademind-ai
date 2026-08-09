@@ -50,4 +50,4 @@ AI 图片试跑允许 `passed` 或 `passed_with_warning`，但每个 warning 必
 ## 相关文档
 
 - [`STORAGE_PUBLIC_URL_GUIDE.md`](STORAGE_PUBLIC_URL_GUIDE.md)
-- [`POST_F9_ENHANCEMENT_PLAN.md`](POST_F9_ENHANCEMENT_PLAN.md)
+- [`PROGRESS.md`](PROGRESS.md)

@@ -137,7 +137,6 @@ function skuRowsFromPayload(
 }
 
 export function assemblePifaWholesaleProduct(
-  sourceUrl: string,
   payload: PifaWholesaleDomPayload,
   galleryMeta?: {
     thumbnailClickedImages?: PifaWholesaleDomPayload['mainImageCandidates'];
@@ -282,7 +281,6 @@ export function assemblePifaWholesaleProduct(
 
 export async function extractAndAssemblePifaWholesale(
   page: Page,
-  sourceUrl: string,
 ): Promise<PinduoduoParseResult> {
   await waitForMainGalleryReady(page);
   const interactive = await collectInteractiveGalleryImages(page);
@@ -291,7 +289,7 @@ export async function extractAndAssemblePifaWholesale(
   const payload = await evaluateInPageVoid(page, extractPifaWholesaleDetailInPage);
   const merged = mergePayloadImages(payload, interactive, scrolledDetails);
 
-  return assemblePifaWholesaleProduct(sourceUrl, merged, {
+  return assemblePifaWholesaleProduct(merged, {
     thumbnailClickedImages: interactive.clickedMainImages,
     scriptGalleryUrls: interactive.scriptGalleryUrls,
   });

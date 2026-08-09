@@ -76,17 +76,17 @@ const SOURCE_OPTIONS = [
 ];
 
 const RECENT_TYPE_META: Record<string, { icon: ReactNode; color: string; bg: string }> = {
-  采集: { icon: <CloudUploadOutlined />, color: '#2563eb', bg: '#eff6ff' },
-  'AI 文本': { icon: <RobotOutlined />, color: '#7c3aed', bg: '#f5f3ff' },
-  'AI 批次': { icon: <FileTextOutlined />, color: '#6366f1', bg: '#eef2ff' },
-  'AI 图片': { icon: <PictureOutlined />, color: '#0891b2', bg: '#ecfeff' },
-  刊登: { icon: <ShopOutlined />, color: '#059669', bg: '#ecfdf5' },
-  库存: { icon: <WarningOutlined />, color: '#ea580c', bg: '#fff7ed' },
-  刊登失败: { icon: <ShopOutlined />, color: '#dc2626', bg: '#fef2f2' },
-  库存同步失败: { icon: <WarningOutlined />, color: '#dc2626', bg: '#fef2f2' },
-  采集失败: { icon: <CloudUploadOutlined />, color: '#dc2626', bg: '#fef2f2' },
-  告警: { icon: <NotificationOutlined />, color: '#b45309', bg: '#fffbeb' },
-  失败: { icon: <WarningOutlined />, color: '#dc2626', bg: '#fef2f2' },
+  采集: { icon: <CloudUploadOutlined />, color: 'var(--ant-color-primary)', bg: 'var(--ant-color-primary-bg)' },
+  'AI 文本': { icon: <RobotOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
+  'AI 批次': { icon: <FileTextOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
+  'AI 图片': { icon: <PictureOutlined />, color: 'var(--ant-color-info)', bg: 'var(--ant-color-info-bg)' },
+  刊登: { icon: <ShopOutlined />, color: 'var(--ant-color-success)', bg: 'var(--ant-color-success-bg)' },
+  库存: { icon: <WarningOutlined />, color: 'var(--ant-color-warning)', bg: 'var(--ant-color-warning-bg)' },
+  刊登失败: { icon: <ShopOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
+  库存同步失败: { icon: <WarningOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
+  采集失败: { icon: <CloudUploadOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
+  告警: { icon: <NotificationOutlined />, color: 'var(--ant-color-warning)', bg: 'var(--ant-color-warning-bg)' },
+  失败: { icon: <WarningOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
 };
 
 const ellipsizedText: React.CSSProperties = {
@@ -125,17 +125,17 @@ function RecentActivityRow({
         gap: 14,
         padding: '14px 16px',
         borderRadius: 10,
-        border: '1px solid var(--ant-color-border-secondary, #f0f0f0)',
-        background: '#fff',
+        border: '1px solid var(--ant-color-border-secondary)',
+        background: 'var(--ant-color-bg-container)',
         cursor: 'pointer',
         transition: 'border-color 0.2s, box-shadow 0.2s',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = meta.color;
-        e.currentTarget.style.boxShadow = `0 2px 8px ${meta.color}14`;
+        e.currentTarget.style.boxShadow = 'var(--tm-shadow-card)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--ant-color-border-secondary, #f0f0f0)';
+        e.currentTarget.style.borderColor = 'var(--ant-color-border-secondary)';
         e.currentTarget.style.boxShadow = 'none';
       }}
     >
@@ -281,7 +281,7 @@ function TodoCardItem({ item }: { item: DashboardTodo }) {
     <ProCard
       variant="outlined"
       bodyStyle={{ padding: '16px', height: '100%' }}
-      style={hasCount ? { borderColor: '#f97316' } : undefined}
+      style={hasCount ? { borderColor: 'var(--ant-color-warning)' } : undefined}
     >
       <Space direction="vertical" size={8} style={{ width: '100%' }}>
         <Space align="center" style={{ justifyContent: 'space-between', width: '100%' }}>
@@ -332,18 +332,18 @@ function ExceptionRow({ item }: { item: DashboardException }) {
 }
 
 const QUICK_LINK_META: Record<string, { icon: ReactNode; color: string; bg: string }> = {
-  '/collect/hub': { icon: <CloudUploadOutlined />, color: '#2563eb', bg: '#eff6ff' },
-  '/product/drafts': { icon: <FileTextOutlined />, color: '#4f46e5', bg: '#eef2ff' },
-  '/ai/batches': { icon: <RobotOutlined />, color: '#7c3aed', bg: '#f5f3ff' },
-  '/ai/image-tasks': { icon: <PictureOutlined />, color: '#0891b2', bg: '#ecfeff' },
-  '/product/drafts?readiness=blocked': { icon: <SafetyCertificateOutlined />, color: '#ea580c', bg: '#fff7ed' },
-  '/product/publish-tasks': { icon: <ShopOutlined />, color: '#059669', bg: '#ecfdf5' },
-  '/inventory/alerts': { icon: <WarningOutlined />, color: '#dc2626', bg: '#fef2f2' },
-  '/ops/task-center/failures': { icon: <CloseCircleOutlined />, color: '#b91c1c', bg: '#fef2f2' },
-  '/orders/exceptions': { icon: <UnorderedListOutlined />, color: '#c2410c', bg: '#fff7ed' },
-  '/settings/ai': { icon: <SettingOutlined />, color: '#6366f1', bg: '#eef2ff' },
-  '/settings/image': { icon: <PictureOutlined />, color: '#0d9488', bg: '#f0fdfa' },
-  '/settings/storage': { icon: <DatabaseOutlined />, color: '#64748b', bg: '#f8fafc' },
+  '/collect/hub': { icon: <CloudUploadOutlined />, color: 'var(--ant-color-primary)', bg: 'var(--ant-color-primary-bg)' },
+  '/product/drafts': { icon: <FileTextOutlined />, color: 'var(--ant-color-primary)', bg: 'var(--ant-color-primary-bg)' },
+  '/ai/batches': { icon: <RobotOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
+  '/ai/image-tasks': { icon: <PictureOutlined />, color: 'var(--ant-color-info)', bg: 'var(--ant-color-info-bg)' },
+  '/product/drafts?readiness=blocked': { icon: <SafetyCertificateOutlined />, color: 'var(--ant-color-warning)', bg: 'var(--ant-color-warning-bg)' },
+  '/product/publish-tasks': { icon: <ShopOutlined />, color: 'var(--ant-color-success)', bg: 'var(--ant-color-success-bg)' },
+  '/inventory/alerts': { icon: <WarningOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
+  '/ops/task-center/failures': { icon: <CloseCircleOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
+  '/orders/exceptions': { icon: <UnorderedListOutlined />, color: 'var(--ant-color-warning)', bg: 'var(--ant-color-warning-bg)' },
+  '/settings/ai': { icon: <SettingOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
+  '/settings/image': { icon: <PictureOutlined />, color: 'var(--ant-color-info)', bg: 'var(--ant-color-info-bg)' },
+  '/settings/storage': { icon: <DatabaseOutlined />, color: 'var(--ant-color-text-secondary)', bg: 'var(--ant-color-fill-quaternary)' },
 };
 
 const QUICK_LINK_GROUPS: { label: string; links: string[] }[] = [
@@ -376,8 +376,8 @@ const QUICK_LINK_GROUPS: { label: string; links: string[] }[] = [
 function QuickLinkCard(props: { title: string; link: string }) {
   const meta = QUICK_LINK_META[props.link] ?? {
     icon: <ArrowRightOutlined />,
-    color: '#64748b',
-    bg: '#f8fafc',
+    color: 'var(--ant-color-text-secondary)',
+    bg: 'var(--ant-color-fill-quaternary)',
   };
 
   return (
@@ -396,18 +396,18 @@ function QuickLinkCard(props: { title: string; link: string }) {
         minHeight: 56,
         padding: '12px 14px',
         borderRadius: 10,
-        border: '1px solid var(--ant-color-border-secondary, #f0f0f0)',
-        background: '#fff',
+        border: '1px solid var(--ant-color-border-secondary)',
+        background: 'var(--ant-color-bg-container)',
         cursor: 'pointer',
         transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = meta.color;
-        e.currentTarget.style.boxShadow = `0 4px 12px ${meta.color}18`;
+        e.currentTarget.style.boxShadow = 'var(--tm-shadow-elevated)';
         e.currentTarget.style.transform = 'translateY(-1px)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--ant-color-border-secondary, #f0f0f0)';
+        e.currentTarget.style.borderColor = 'var(--ant-color-border-secondary)';
         e.currentTarget.style.boxShadow = 'none';
         e.currentTarget.style.transform = 'none';
       }}
@@ -431,7 +431,7 @@ function QuickLinkCard(props: { title: string; link: string }) {
       <Typography.Text strong style={{ flex: 1, fontSize: 13, lineHeight: 1.4 }}>
         {props.title}
       </Typography.Text>
-      <ArrowRightOutlined style={{ color: '#cbd5e1', fontSize: 12, flexShrink: 0 }} />
+      <ArrowRightOutlined style={{ color: 'var(--ant-color-text-quaternary)', fontSize: 12, flexShrink: 0 }} />
     </div>
   );
 }
@@ -575,12 +575,12 @@ function mergeRecentItems(
 }
 
 const FUNNEL_STEP_META: Record<string, { icon: ReactNode; color: string; bg: string }> = {
-  collected: { icon: <CloudUploadOutlined />, color: '#2563eb', bg: '#eff6ff' },
-  draft: { icon: <FileTextOutlined />, color: '#4f46e5', bg: '#eef2ff' },
-  ai_text: { icon: <RobotOutlined />, color: '#7c3aed', bg: '#f5f3ff' },
-  ai_image: { icon: <PictureOutlined />, color: '#0891b2', bg: '#ecfeff' },
-  readiness_pass: { icon: <SafetyCertificateOutlined />, color: '#059669', bg: '#ecfdf5' },
-  published: { icon: <CheckCircleOutlined />, color: '#0d9488', bg: '#f0fdfa' },
+  collected: { icon: <CloudUploadOutlined />, color: 'var(--ant-color-primary)', bg: 'var(--ant-color-primary-bg)' },
+  draft: { icon: <FileTextOutlined />, color: 'var(--ant-color-primary)', bg: 'var(--ant-color-primary-bg)' },
+  ai_text: { icon: <RobotOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
+  ai_image: { icon: <PictureOutlined />, color: 'var(--ant-color-info)', bg: 'var(--ant-color-info-bg)' },
+  readiness_pass: { icon: <SafetyCertificateOutlined />, color: 'var(--ant-color-success)', bg: 'var(--ant-color-success-bg)' },
+  published: { icon: <CheckCircleOutlined />, color: 'var(--ant-color-success)', bg: 'var(--ant-color-success-bg)' },
 };
 
 function FunnelSteps({ steps }: { steps: DashboardFunnelStep[] }) {
@@ -619,7 +619,7 @@ function FunnelSteps({ steps }: { steps: DashboardFunnelStep[] }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 18,
-                  boxShadow: `0 0 0 1px ${meta.color}22`,
+                  boxShadow: '0 0 0 1px var(--ant-color-border-secondary)',
                 }}
               >
                 {meta.icon}
@@ -632,7 +632,7 @@ function FunnelSteps({ steps }: { steps: DashboardFunnelStep[] }) {
                     minHeight: 20,
                     margin: '6px 0',
                     borderRadius: 1,
-                    background: `linear-gradient(180deg, ${meta.color}66, #e5e7eb)`,
+                    background: `linear-gradient(180deg, ${meta.color}, var(--ant-color-border-secondary))`,
                   }}
                 />
               ) : null}
@@ -650,17 +650,17 @@ function FunnelSteps({ steps }: { steps: DashboardFunnelStep[] }) {
                 marginBottom: isLast ? 0 : 6,
                 padding: '14px 16px',
                 borderRadius: 10,
-                border: '1px solid var(--ant-color-border-secondary, #f0f0f0)',
-                background: count > 0 ? 'var(--ant-color-fill-quaternary, #fafafa)' : '#fff',
+                border: '1px solid var(--ant-color-border-secondary)',
+                background: count > 0 ? 'var(--ant-color-fill-quaternary)' : 'var(--ant-color-bg-container)',
                 cursor: 'pointer',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = meta.color;
-                e.currentTarget.style.boxShadow = `0 2px 8px ${meta.color}18`;
+                e.currentTarget.style.boxShadow = 'var(--tm-shadow-card)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--ant-color-border-secondary, #f0f0f0)';
+                e.currentTarget.style.borderColor = 'var(--ant-color-border-secondary)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
@@ -688,7 +688,7 @@ function FunnelSteps({ steps }: { steps: DashboardFunnelStep[] }) {
                       bordered={false}
                       style={{
                         margin: 0,
-                        background: `${meta.color}14`,
+                        background: meta.bg,
                         color: meta.color,
                         fontSize: 12,
                       }}
@@ -696,14 +696,14 @@ function FunnelSteps({ steps }: { steps: DashboardFunnelStep[] }) {
                       {convPct}%
                     </Tag>
                   ) : null}
-                  <ArrowRightOutlined style={{ color: '#9ca3af', fontSize: 12 }} />
+                  <ArrowRightOutlined style={{ color: 'var(--ant-color-text-tertiary)', fontSize: 12 }} />
                 </Space>
               </div>
               <div
                 style={{
                   height: 10,
                   borderRadius: 999,
-                  background: '#eef2f6',
+                  background: 'var(--ant-color-fill-secondary)',
                   overflow: 'hidden',
                 }}
               >
@@ -711,7 +711,7 @@ function FunnelSteps({ steps }: { steps: DashboardFunnelStep[] }) {
                   style={{
                     height: '100%',
                     width: `${barPct}%`,
-                    background: `linear-gradient(90deg, ${meta.color}, ${meta.color}99)`,
+                    background: meta.color,
                     borderRadius: 999,
                     transition: 'width 0.45s ease',
                   }}

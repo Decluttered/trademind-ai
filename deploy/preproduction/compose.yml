@@ -1,0 +1,86 @@
+name: trademind-preproduction
+
+services:
+  postgres:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:?preproduction DB_NAME is required}
+      POSTGRES_USER: ${DB_USER:?preproduction DB_USER is required}
+      POSTGRES_PASSWORD: ${PREPRODUCTION_DB_PASSWORD:?inject the preproduction database password at runtime}
+    volumes:
+      - preproduction_postgres_data:/var/lib/postgresql/data
+    networks: [preproduction]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${PREPRODUCTION_REDIS_PASSWORD:?inject the preproduction Redis password at runtime}
+    command: ["sh", "-ec", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    volumes:
+      - preproduction_redis_data:/data
+    networks: [preproduction]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -qx PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    image: ${P10_API_IMAGE:?an immutable preproduction API image is required}
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      APP_ENV: staging
+      P10_ENVIRONMENT_PURPOSE: preproduction
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_PASSWORD: ${PREPRODUCTION_DB_PASSWORD:?inject the preproduction database password at runtime}
+      REDIS_ADDR: redis:6379
+      REDIS_PASSWORD: ${PREPRODUCTION_REDIS_PASSWORD:?inject the preproduction Redis password at runtime}
+      APP_MASTER_KEY: ${PREPRODUCTION_APP_MASTER_KEY:?inject the preproduction master key at runtime}
+      JWT_SECRET: ${PREPRODUCTION_JWT_SECRET:?inject the preproduction JWT secret at runtime}
+    ports:
+      - "127.0.0.1:${P10_BACKEND_BIND_PORT:-18080}:8080"
+    volumes:
+      - preproduction_uploads:/app/data/uploads
+    networks: [preproduction]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  admin:
+    image: ${P10_ADMIN_IMAGE:?an immutable preproduction Admin image is required}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${P10_ADMIN_BIND_PORT:-18000}:80"
+    networks: [preproduction]
+    depends_on:
+      backend: { condition: service_healthy }
+
+networks:
+  preproduction:
+    name: trademind-preproduction
+    internal: true
+
+volumes:
+  preproduction_postgres_data:
+    name: trademind-preproduction-postgres
+  preproduction_redis_data:
+    name: trademind-preproduction-redis
+  preproduction_uploads:
+    name: trademind-preproduction-uploads

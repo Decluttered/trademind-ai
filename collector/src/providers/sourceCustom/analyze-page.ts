@@ -11,12 +11,6 @@ import type { AnalyzePageOptions, PageStructureDigest } from './analyze-page-typ
 const DEFAULT_MAX_CANDIDATES = 20;
 const SAMPLE_MAX_LEN = 120;
 
-function clampSample(s: string, max = SAMPLE_MAX_LEN): string {
-  const t = s.replace(/\s+/g, ' ').trim();
-  if (t.length <= max) return t;
-  return `${t.slice(0, max)}…`;
-}
-
 async function navigatePage(page: Page, urlStr: string): Promise<{ httpStatus?: number; navError?: string }> {
   const gotoTimeout = getDefaultNavigationTimeoutMs();
   let httpStatus: number | undefined;

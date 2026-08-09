@@ -9,15 +9,6 @@ export type TaobaoQualityReport = {
   errors: string[];
 };
 
-const FAILED_CODES = new Set([
-  'TITLE_NOT_FOUND',
-  'MAIN_IMAGES_EMPTY',
-  'ITEM_NOT_FOUND',
-  'LOGIN_REQUIRED',
-  'VERIFY_REQUIRED',
-  'PAGE_LOAD_TIMEOUT',
-]);
-
 const WARNING_CODES = new Set([
   'PRICE_NOT_FOUND',
   'SKU_INCOMPLETE',

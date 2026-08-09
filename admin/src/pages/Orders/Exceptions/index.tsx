@@ -42,7 +42,7 @@ import { useListEmptyLocale } from '@/hooks/useListEmptyLocale';
 import { useUrlQueryState } from '@/hooks/useUrlState';
 import { useKeywordSearchField } from '@/hooks/useKeywordSearchField';
 import KeywordSafetyHint from '@/components/common/KeywordSafetyHint';
-import { appendSourceToUrl, parsePositiveInt, queryTimeRange } from '@/utils/urlState';
+import { parsePositiveInt, queryTimeRange } from '@/utils/urlState';
 
 const EXCEPTION_QUERY_KEYS = [
   'page',
@@ -791,7 +791,7 @@ export default function OrderExceptionsPage() {
               onRow={(r) => ({
                 style:
                   candRows.length > 1 && r.confidence === maxCandConf
-                    ? { background: '#f6ffed' }
+                    ? { background: 'var(--ant-color-success-bg)' }
                     : undefined,
               })}
               columns={[

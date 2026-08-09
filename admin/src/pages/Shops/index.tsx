@@ -28,7 +28,6 @@ import {
   message,
   type MenuProps,
 } from 'antd';
-import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   PLATFORM_PROVIDER_STATUS,

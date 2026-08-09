@@ -131,7 +131,7 @@ export default function InventoryDeductionsPage() {
               <Link to={`/ops/task-center/failures?taskType=inventory_sync`}>失败任务</Link>
             ) : null}
             {r.productSkuId ? (
-              <Link to={`/inventory?skuId=${encodeURIComponent(r.productSkuId)}`}>库存中心</Link>
+              <Link to={`/inventory/overview?skuId=${encodeURIComponent(r.productSkuId)}`}>库存中心</Link>
             ) : null}
           </Space>
         ),

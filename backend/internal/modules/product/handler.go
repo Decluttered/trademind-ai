@@ -750,10 +750,26 @@ func (h *Handler) SyncImages(c *gin.Context) {
 	response.OK(c, out)
 }
 
+func failSKUSearch(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, errSKUSearchAuthenticationRequired):
+		response.JSON(c, 401, response.CodeUnauthorized, "authentication required", gin.H{"errorCode": "authentication_required"})
+	case errors.Is(err, errSKUSearchPermissionDenied):
+		response.JSON(c, 403, response.CodePermissionDenied, "permission denied", gin.H{"errorCode": "permission_denied"})
+	default:
+		response.HandleError(c, err)
+	}
+}
+
 // SearchSKUs GET /api/v1/product-skus/search
 func (h *Handler) SearchSKUs(c *gin.Context) {
 	if h == nil || h.Svc == nil {
 		response.Fail(c, 500, response.CodeInternalError, "products unavailable")
+		return
+	}
+	tenantID, err := h.Svc.RequireSKUSearchTenant(c)
+	if err != nil {
+		failSKUSearch(c, err)
 		return
 	}
 	q := SearchSKUsQuery{
@@ -763,9 +779,9 @@ func (h *Handler) SearchSKUs(c *gin.Context) {
 	if raw := strings.TrimSpace(c.Query("productId")); raw != "" {
 		q.ProductID = &raw
 	}
-	list, err := h.Svc.SearchSKUs(c, q)
+	list, err := h.Svc.SearchSKUs(c.Request.Context(), tenantID, q)
 	if err != nil {
-		response.HandleError(c, err)
+		failSKUSearch(c, err)
 		return
 	}
 	response.OK(c, gin.H{"list": list})

@@ -748,7 +748,6 @@ export default function CollectorSettingsPage() {
   const [providers, setProviders] = useState<CollectProviderRow[]>([]);
   const [authStatus, setAuthStatus] = useState<Provider1688AuthStatus | null>(null);
   const [authChecking, setAuthChecking] = useState(false);
-  const [authLoaded, setAuthLoaded] = useState(false);
   const [loginOpening, setLoginOpening] = useState(false);
   const [pddAuthStatus, setPddAuthStatus] = useState<ProviderPinduoduoAuthStatus | null>(null);
   const [pddAuthChecking, setPddAuthChecking] = useState(false);
@@ -783,7 +782,6 @@ export default function CollectorSettingsPage() {
       message.error((e as Error)?.message || '1688 登录态检测失败');
     } finally {
       setAuthChecking(false);
-      setAuthLoaded(true);
     }
   }, []);
 

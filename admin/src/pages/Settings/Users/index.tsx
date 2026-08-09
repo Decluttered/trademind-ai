@@ -243,7 +243,7 @@ export default function SettingsUsersPage() {
           open={createOpen}
           onCancel={() => setCreateOpen(false)}
           onOk={() => createForm.submit()}
-          destroyOnClose
+          destroyOnHidden
         >
           <Form
             form={createForm}
@@ -280,7 +280,7 @@ export default function SettingsUsersPage() {
             if (!editUser) return;
             confirmAssignStorePermissions(adminUserLabel(editUser), () => permForm.submit());
           }}
-          destroyOnClose
+          destroyOnHidden
         >
           <Form
             form={permForm}

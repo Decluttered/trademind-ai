@@ -87,4 +87,4 @@ Handlers map conflict statuses to HTTP conflict responses; item status may becom
 
 - Undo: [`AI_RESULT_UNDO_DESIGN.md`](AI_RESULT_UNDO_DESIGN.md)
 - Keys / scopes: [`IDEMPOTENCY_DESIGN.md`](IDEMPOTENCY_DESIGN.md)
-- Closure matrix: [`P2_2_RELIABILITY_CLOSURE_MATRIX.md`](P2_2_RELIABILITY_CLOSURE_MATRIX.md)
+- Regression: existing Go/API contract tests in GitHub Actions; historical closure matrices are available from Git history.

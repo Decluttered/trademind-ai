@@ -219,9 +219,9 @@ export const WORKER_STATUS_METRIC: Record<
   'running' | 'stale' | 'stopped',
   { text: string; valueStyle: string }
 > = {
-  running: { text: '运行中', valueStyle: '#52c41a' },
-  stale: { text: '心跳超时', valueStyle: '#faad14' },
-  stopped: { text: '已停止', valueStyle: 'rgba(0, 0, 0, 0.45)' },
+  running: { text: '运行中', valueStyle: 'var(--ant-color-success)' },
+  stale: { text: '心跳超时', valueStyle: 'var(--ant-color-warning)' },
+  stopped: { text: '已停止', valueStyle: 'var(--ant-color-text-secondary)' },
 };
 
 /** Worker 监控按类型分组（与后端 byType 键一致） */

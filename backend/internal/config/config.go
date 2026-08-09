@@ -172,6 +172,8 @@ type Config struct {
 	Release        ReleaseConfig
 	// P7 performance, capacity, pagination and limiting foundation.
 	P7 P7Config
+	// P10 read-only productionization foundation. Runtime remains L0 until a later approval changes code and configuration.
+	P10 P10Config
 }
 
 // DBConfig selects PostgreSQL (default) or MySQL via GORM.
@@ -192,7 +194,7 @@ type RedisConfig struct {
 	DB       int
 }
 
-// Load reads configuration from environment variables (after optional .env in main).
+// Load reads configuration from process variables after main applies root .env defaults.
 func Load() (*Config, error) {
 	appEnv := NormalizeEnv(firstNonEmpty(os.Getenv("APP_ENV"), EnvDevelopment))
 	cfg := &Config{
@@ -341,6 +343,7 @@ func Load() (*Config, error) {
 	cfg.PostgresBackup = loadPostgresBackupConfig()
 	cfg.Release = loadReleaseConfig(cfg.AppEnv)
 	cfg.P7 = loadP7Config(cfg.AppEnv)
+	cfg.P10 = loadP10Config(cfg.AppEnv)
 	// Test verifier must never run in production regardless of env flag.
 	if IsProduction(cfg.AppEnv) {
 		cfg.WebhookEnableTestVerifier = false
@@ -372,6 +375,9 @@ func Load() (*Config, error) {
 	}
 
 	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	if err := cfg.P10.Validate(cfg.AppEnv); err != nil {
 		return nil, err
 	}
 

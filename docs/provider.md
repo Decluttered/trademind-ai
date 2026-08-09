@@ -85,6 +85,14 @@ Douyin Shop Phase 8 adds order sync MVP via existing order sync orchestration (`
 
 **Phase 10.4 (Release Candidate observability)** does **not** add Prometheus. Production monitoring reuses `GET /health` queue blocks, task center failures/alerts (`sub:douyin_*`), operation logs, product operations dashboard, and Douyin runtime APIs: `GET /api/v1/platform/douyin/health`, `GET .../metrics-summary` (in-process 24h counters), `GET .../release-gate`, `POST .../run-health-check`, plus `production-preflight` / `runtime-status`. E2E scripts: `scripts/douyin-e2e-*` (exit `3` + `blocked_by_real_credentials` without credentials; write requires `ALLOW_DOUYIN_WRITE_TEST=true`). CI job `backend-race` in `.github/workflows/go.yml`. See [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md).
 
+### P10 read-only inventory adapter
+
+`backend/internal/modules/inventoryreadp10` adds `DouyinReadOnlyInventoryProvider`, which implements the exported P9 `InventoryProvider` contract without changing or registering through the frozen P9 fixture registry. The adapter has no write method. It obtains backend-only credentials from `credentialp10`, evaluates feature flags plus Provider/Tenant/Shop/Read/Write kill-switch priority through `productioncontrolp10`, and calls only the existing official-contract `product.detail` method.
+
+There is no confirmed all-shop inventory endpoint in the repository contract. P10 therefore paginates tenant/shop-scoped local `product_publications`, fetches `product.detail` for each bound external product, normalizes SKU stock into P9 snapshots, and reuses P9 calibration/manual-binding/audit services. Page count, SKU count (<=100), response bytes, connection pool and timeouts are bounded. HTTP 401/403/429/5xx, expiry, timeout, invalid request and protocol failures map to safe internal errors with request correlation; no automatic business retry occurs.
+
+This repository-side implementation is not activated. `currentAllowedLevel=L0`, every real capability flag is false, and configuration rejects attempts to enable them. The existing historical `sku.syncStock` code remains untouched and is not exposed by any P10 route or Admin control. Real OAuth, Provider read and Gray activation remain blocked by external infrastructure, credentials and later acceptance.
+
 当前重点平台：
 
 - Douyin Shop（抖店，真实平台闭环优先）

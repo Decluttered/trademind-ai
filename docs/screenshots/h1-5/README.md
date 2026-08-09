@@ -7,10 +7,4 @@ Directories:
 - `1366x768/` — primary laptop resolution
 - `1024x768/` — narrow layout spot-check
 
-PNG 文件**不纳入仓库**（体积大、可本地复现）。需要时运行：
-
-```bash
-node scripts/h1-5-live-browser-acceptance.mjs
-```
-
-签收结论以 [`H1_5_LIVE_BROWSER_ACCEPTANCE.md`](../H1_5_LIVE_BROWSER_ACCEPTANCE.md) 与 `h1-5-live-browser-acceptance.json` 为准。
+PNG 文件不纳入仓库。该目录仅说明历史截图尺寸，不再配套阶段性浏览器验收脚本或运行证据；当前 UI 以 GitHub Actions 中的 Admin E2E 与人工验收结果为准。

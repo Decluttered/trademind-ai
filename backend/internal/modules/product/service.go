@@ -36,6 +36,8 @@ type Service struct {
 	AIGateway   *aigate.Gateway
 	Idempotency *idempotency.Service
 
+	skuSearchRepo skuSearchRepository
+
 	Shops               DouyinShopClientFactory
 	DouyinImageUploader DouyinImageUploader
 	Readiness           func(context.Context, OperationReadinessRequest) (*OperationReadinessResult, error)

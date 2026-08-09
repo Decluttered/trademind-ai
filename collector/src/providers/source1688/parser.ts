@@ -150,31 +150,6 @@ function extractTitleFromRoots(roots: unknown[]): string | undefined {
   return best || undefined;
 }
 
-/** 递归收集可能是图片链接的字段 */
-function walkCollectImages(root: unknown, acc: Set<string>): void {
-  function walk(x: unknown, depth: number, keyHint: string): void {
-    if (depth > 22 || x === null || x === undefined) return;
-    const hint = keyHint.toLowerCase();
-    if (typeof x === 'string') {
-      const s = x.trim();
-      if (!/^https?:\/\//i.test(s) && !/^\/\//.test(s)) return;
-      if (!/\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(s)) return;
-      if (hint.includes('video') || hint.includes('coverurl')) return;
-      acc.add(s.startsWith('//') ? `https:${s}` : s);
-      return;
-    }
-    if (typeof x !== 'object') return;
-    if (Array.isArray(x)) {
-      for (const i of x) walk(i, depth + 1, keyHint);
-      return;
-    }
-    for (const [k, v] of Object.entries(x as Record<string, unknown>)) {
-      walk(v, depth + 1, `${keyHint}.${k}`);
-    }
-  }
-  walk(root, 0, '');
-}
-
 function flattenSkuPropLike(value: unknown): DimRow[] {
   const dims: DimRow[] = [];
   if (!Array.isArray(value)) return dims;

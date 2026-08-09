@@ -1,34 +1,41 @@
-@brand-blue: #2563eb;
-@brand-cyan: #0891b2;
+@brand-blue: var(--ant-color-primary);
+@brand-cyan: var(--ant-color-info);
 @brand-violet: #7c3aed;
-@brand-amber: #d97706;
-@text-primary: #0f172a;
-@text-secondary: #475569;
-@text-muted: #94a3b8;
-@border-color: #dbe3ee;
-@panel-bg: rgba(255, 255, 255, 0.9);
-@shadow-soft: 0 18px 48px rgba(15, 23, 42, 0.1);
-@shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.13);
+@brand-amber: var(--ant-color-warning);
+@text-primary: var(--ant-color-text);
+@text-secondary: var(--ant-color-text-secondary);
+@text-muted: var(--ant-color-text-tertiary);
+@border-color: var(--ant-color-border-secondary);
+@panel-bg: var(--ant-color-bg-elevated);
+@shadow-soft: var(--ant-box-shadow-secondary);
+@shadow-focus: 0 0 0 3px var(--ant-color-primary-border);
 
 .login-shell {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
   background:
     linear-gradient(120deg, rgba(37, 99, 235, 0.12), transparent 34%),
     linear-gradient(245deg, rgba(245, 158, 11, 0.12), transparent 36%),
-    linear-gradient(180deg, #f7f9fc 0%, #edf4f7 100%);
+    linear-gradient(
+      180deg,
+      var(--ant-color-bg-layout) 0%,
+      var(--ant-color-bg-container) 100%
+    );
   color: @text-primary;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
 }
 
 .login-container {
   display: flex;
   align-items: stretch;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 1240px;
   margin: 0 auto;
@@ -63,7 +70,12 @@
       left: 10%;
       right: 6%;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.28), transparent);
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(37, 99, 235, 0.28),
+        transparent
+      );
       opacity: 0.65;
       transform: rotate(-12deg);
       animation: tm-line-sweep 7s ease-in-out infinite;
@@ -82,8 +94,8 @@
       position: absolute;
       border-radius: 8px;
       border: 1px solid rgba(37, 99, 235, 0.09);
-      background: rgba(255, 255, 255, 0.45);
-      box-shadow: 0 18px 38px rgba(15, 23, 42, 0.06);
+      background: var(--ant-color-fill-quaternary);
+      box-shadow: var(--ant-box-shadow-tertiary);
       opacity: 0.42;
       animation: tm-float 8s ease-in-out infinite;
     }
@@ -161,7 +173,7 @@
         padding: 6px 10px;
         border: 1px solid rgba(37, 99, 235, 0.16);
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.72);
+        background: var(--ant-color-bg-container);
         color: @brand-blue;
         font-size: 13px;
         font-weight: 600;
@@ -208,7 +220,7 @@
         padding: 7px 12px;
         border: 1px solid transparent;
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.72);
+        background: var(--ant-color-bg-container);
         color: @text-secondary;
         font-size: 13px;
         font-weight: 600;
@@ -239,12 +251,12 @@
         }
 
         &.tag-indigo {
-          color: #4f46e5;
+          color: var(--ant-color-primary);
           border-color: rgba(79, 70, 229, 0.16);
         }
 
         &.tag-green {
-          color: #16a34a;
+          color: var(--ant-color-success);
           border-color: rgba(22, 163, 74, 0.16);
         }
 
@@ -258,10 +270,14 @@
     .hero-board {
       width: min(100%, 430px);
       padding: 18px;
-      border: 1px solid rgba(219, 227, 238, 0.92);
+      border: 1px solid var(--ant-color-border-secondary);
       border-radius: 8px;
       background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(249, 250, 251, 0.84)),
+        linear-gradient(
+          135deg,
+          var(--ant-color-bg-elevated),
+          var(--ant-color-bg-container)
+        ),
         repeating-linear-gradient(
           90deg,
           transparent 0,
@@ -300,8 +316,8 @@
         min-height: 28px;
         padding: 5px 9px;
         border-radius: 8px;
-        background: rgba(22, 163, 74, 0.1);
-        color: #15803d;
+        background: var(--ant-color-success-bg);
+        color: var(--ant-color-success);
         font-size: 12px;
         font-weight: 700;
       }
@@ -314,9 +330,9 @@
         height: 120px;
         margin-bottom: 16px;
         padding: 12px;
-        border: 1px solid rgba(219, 227, 238, 0.72);
+        border: 1px solid var(--ant-color-border-secondary);
         border-radius: 8px;
-        background: rgba(248, 250, 252, 0.78);
+        background: var(--ant-color-fill-quaternary);
       }
 
       .chart-bar {
@@ -364,9 +380,9 @@
         span {
           min-width: 0;
           padding: 8px 6px;
-          border: 1px solid rgba(219, 227, 238, 0.88);
+          border: 1px solid var(--ant-color-border-secondary);
           border-radius: 8px;
-          background: rgba(255, 255, 255, 0.82);
+          background: var(--ant-color-bg-container);
           color: @text-secondary;
           font-size: 12px;
           font-weight: 700;
@@ -431,7 +447,7 @@
       width: 100%;
       max-width: 430px;
       padding: 34px;
-      border: 1px solid rgba(219, 227, 238, 0.94);
+      border: 1px solid var(--ant-color-border-secondary);
       border-radius: 8px;
       background: @panel-bg;
       box-shadow: @shadow-soft;
@@ -527,7 +543,7 @@
       .ant-form-item-explain-error {
         min-height: 20px;
         margin-top: 4px;
-        color: #dc2626;
+        color: var(--ant-color-error);
         font-size: 12px;
         line-height: 1.4;
       }
@@ -542,21 +558,24 @@
       .ant-input-affix-wrapper {
         padding: 0 14px;
         border: 1px solid @border-color;
-        background: rgba(248, 250, 252, 0.92);
+        background: var(--ant-color-fill-quaternary);
         box-shadow: none;
-        transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease,
+        transition:
+          border-color 0.18s ease,
+          box-shadow 0.18s ease,
+          background 0.18s ease,
           transform 0.18s ease;
 
         &:hover {
-          border-color: #c5d1df;
-          background: #fff;
+          border-color: var(--ant-color-primary-border-hover);
+          background: var(--ant-color-bg-container);
           transform: translateY(-1px);
         }
 
         &:focus,
         &-focused {
           border-color: @brand-blue;
-          background: #fff;
+          background: var(--ant-color-bg-container);
           box-shadow: @shadow-focus;
           transform: translateY(-1px);
         }
@@ -586,14 +605,14 @@
 
       .ant-input:not(.ant-input-affix-wrapper .ant-input) {
         border: 1px solid @border-color;
-        background: rgba(248, 250, 252, 0.92);
+        background: var(--ant-color-fill-quaternary);
 
         &::placeholder {
           color: @text-muted;
         }
 
         &:hover {
-          border-color: #c5d1df;
+          border-color: var(--ant-color-primary-border-hover);
         }
 
         &:focus {
@@ -642,21 +661,38 @@
         border: none;
         border-radius: 8px;
         background:
-          linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.24) 45%, transparent 70%),
+          linear-gradient(
+            120deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.24) 45%,
+            transparent 70%
+          ),
           linear-gradient(135deg, @brand-blue 0%, @brand-cyan 100%);
-        background-size: 220% 100%, 100% 100%;
+        background-size:
+          220% 100%,
+          100% 100%;
         box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24);
         color: #fff;
         font-size: 16px;
         font-weight: 700;
-        transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+        transition:
+          transform 0.18s ease,
+          box-shadow 0.18s ease,
+          opacity 0.18s ease;
         animation: tm-button-shine 3.6s ease-in-out infinite;
 
         &:hover:not(:disabled) {
           background:
-            linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.24) 45%, transparent 70%),
+            linear-gradient(
+              120deg,
+              transparent 0%,
+              rgba(255, 255, 255, 0.24) 45%,
+              transparent 70%
+            ),
             linear-gradient(135deg, #1d4ed8 0%, @brand-blue 100%);
-          background-size: 220% 100%, 100% 100%;
+          background-size:
+            220% 100%,
+            100% 100%;
           box-shadow: 0 16px 30px rgba(37, 99, 235, 0.3);
           transform: translateY(-1px);
         }
@@ -744,6 +780,7 @@
 
     .login-right {
       min-height: 100vh;
+      min-height: 100dvh;
       padding: 32px 24px;
 
       .mobile-brand {
@@ -752,18 +789,18 @@
 
       .login-right-inner {
         max-width: 430px;
-        margin: 0 auto;
+        margin: auto;
       }
     }
   }
 
   @media (max-width: 767px) {
     .login-right {
-      align-items: flex-start;
+      align-items: stretch;
       padding: 28px 16px 20px;
 
       .login-right-inner {
-        max-width: none;
+        max-width: 430px;
       }
 
       .auth-card {
@@ -911,11 +948,15 @@
 @keyframes tm-button-shine {
   0%,
   45% {
-    background-position: 180% 0, 0 0;
+    background-position:
+      180% 0,
+      0 0;
   }
 
   100% {
-    background-position: -60% 0, 0 0;
+    background-position:
+      -60% 0,
+      0 0;
   }
 }
 

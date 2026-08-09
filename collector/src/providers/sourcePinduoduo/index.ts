@@ -18,10 +18,6 @@ import {
   type PinduoduoUrlType,
 } from './url-type.js';
 
-const MOBILE_UA =
-  process.env.COLLECTOR_PDD_USER_AGENT ??
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.38(0x18002633) NetType/WIFI Language/zh_CN';
-
 function resolveGotoTimeoutMs(options?: Record<string, unknown>): number {
   const raw = options?.gotoTimeoutMs ?? options?.timeoutMs;
   const n = typeof raw === 'number' ? raw : Number(raw);

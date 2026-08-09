@@ -61,6 +61,54 @@ export default [
         component: './TaskCenter/Alerts',
       },
       {
+        path: '/ops/task-center/operation-tasks',
+        name: '运营任务中心',
+        icon: 'ProfileOutlined',
+        component: './TaskCenter/OperationTasks',
+      },
+      {
+        path: '/ops/task-center/operation-tasks/:taskId',
+        name: '运营任务详情',
+        component: './TaskCenter/OperationTasks/Detail',
+        hideInMenu: true,
+      },
+      {
+        path: '/ops/inventory-sync',
+        name: 'P9 库存同步',
+        icon: 'InboxOutlined',
+        component: './Ops/InventorySync',
+      },
+      {
+        path: '/ops/inventory-sync/runs/:runId',
+        name: '库存同步运行详情',
+        component: './Ops/InventorySync/RunDetail',
+        hideInMenu: true,
+      },
+      {
+        path: '/ops/inventory-sync/calibration',
+        name: 'SKU 校准',
+        icon: 'AimOutlined',
+        component: './Ops/InventorySync/Calibration',
+      },
+      {
+        path: '/ops/inventory-sync/manual-bindings',
+        name: '人工绑定',
+        icon: 'ApartmentOutlined',
+        component: './Ops/InventorySync/ManualBindings',
+      },
+      {
+        path: '/ops/inventory-sync/bindings',
+        name: '绑定历史',
+        icon: 'BranchesOutlined',
+        component: './Ops/InventorySync/Bindings',
+      },
+      {
+        path: '/ops/inventory-sync/bindings/:bindingId',
+        name: '绑定历史详情',
+        component: './Ops/InventorySync/BindingDetail',
+        hideInMenu: true,
+      },
+      {
         path: '/ops/observability',
         name: '可观测性中心',
         icon: 'LineChartOutlined',
@@ -333,6 +381,10 @@ export default [
     routes: [
       {
         path: '/inventory',
+        component: './Inventory',
+      },
+      {
+        path: '/inventory/overview',
         name: '库存中心',
         component: './Inventory',
       },

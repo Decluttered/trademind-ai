@@ -55,3 +55,11 @@ Before exposing TradeMind to a public network, you should:
 - Avoid logging secrets, tokens, cookies, or complete third-party API responses.
 - Review platform OAuth callback URLs and permissions.
 - Back up PostgreSQL data and uploaded files.
+
+## P10 Credential and Read-only Boundary
+
+P10 stores Provider credential values only in backend AES-256-GCM envelopes whose AAD binds tenant, platform, credential ID, and version. Admin/API DTOs expose metadata only. Local keys and offline OAuth are development/test-only and fail closed in staging/production; a managed key provider is still required before external activation.
+
+OAuth state is random, expiring, single-use, and tenant/user/platform/shop/redirect bound. Redirects use an exact configured allowlist. The P10 Douyin adapter accepts only the trusted official HTTPS host, applies connection/request/header timeouts and a response-size limit, maps errors to safe internal codes, and exposes no inventory write capability.
+
+Current P10 runtime remains `L0`: real platform network, real credentials, real inventory read/write, inventory mutation, Worker, automatic business retry, Gray, and Production Ready are all disabled. Five kill switches take precedence over feature flags, and the write kill switch is permanently active in this release.

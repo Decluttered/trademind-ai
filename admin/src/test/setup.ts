@@ -3,6 +3,7 @@ import React from 'react';
 import { beforeEach, vi } from 'vitest';
 
 const request = vi.fn();
+const useAntdConfigSetter = vi.fn(() => vi.fn());
 const history = {
   location: { pathname: '/', search: '' },
   push: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('@umijs/max', () => ({
     React.createElement('a', { href: to, ...props }, children),
   useModel: vi.fn(() => ({})),
   useAccess: vi.fn(() => ({})),
+  useAntdConfigSetter,
 }));
 
 Object.defineProperty(window, 'matchMedia', {
@@ -52,6 +54,8 @@ Object.defineProperty(window, 'IntersectionObserver', { writable: true, value: I
 
 beforeEach(() => {
   request.mockReset();
+  useAntdConfigSetter.mockClear();
+  useAntdConfigSetter.mockReturnValue(vi.fn());
   history.push.mockReset();
   history.replace.mockReset();
   history.location.pathname = '/';

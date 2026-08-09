@@ -1,23 +1,18 @@
 # 抖店整链路验收清单（E2E Checklist）
 
-> 用于 **真实抖店凭证 + 公网 Storage** 环境下的端到端验收。
-> **Phase 10.4**：可配合 `scripts/douyin-e2e-*.sh` / `*.ps1` 自动化预检与只读探针；写链路需 `ALLOW_DOUYIN_WRITE_TEST=true`。无凭证时脚本 exit `3` + `blocked_by_real_credentials`。
-> 配套演示顺序见根目录 [`DEMO_CHECKLIST.md`](../DEMO_CHECKLIST.md)；发布门禁见 [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md)。
+> 用于 **真实抖店凭证 + 公网 Storage** 环境下的人工端到端验收。
+> 自动化回归由 GitHub Actions 在隔离环境执行；真实平台写链路必须获得外部生产审批，不由仓库脚本自动触发。
+> 通用人工签收见 [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md)；发布门禁见 [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md)。
 
 ---
 
 ## 1. 验收前准备
 
-### 1.1 自动化脚本（Phase 10.4，可选）
+### 1.1 验收边界
 
-| 脚本 | 用途 | 环境变量 |
-| --- | --- | --- |
-| `scripts/douyin-e2e-preflight.sh` / `.ps1` | 健康检查 + 生产预检 + 运行状态 | `TRADEMIND_API_BASE`、`TRADEMIND_ADMIN_ACCOUNT`、`TRADEMIND_ADMIN_PASSWORD` |
-| `scripts/douyin-e2e-readonly.sh` / `.ps1` | 类目统计、任务中心、操作日志、看板（只读） | 同上 |
-| `scripts/douyin-e2e-write.sh` / `.ps1` | 写链路脚手架（validate / 图片状态） | 同上 + **`ALLOW_DOUYIN_WRITE_TEST=true`** + 可选 `DOUYIN_E2E_PRODUCT_ID` / `DOUYIN_E2E_SHOP_ID` |
-| `scripts/douyin-e2e-report.sh` / `.ps1` | 汇总 JSON 工件为 Markdown 报告 | `DOUYIN_E2E_REPORT_DIR` |
-
-无 App Key / Secret 或未授权店铺时，脚本输出 **`blocked_by_real_credentials`** 并以 exit code **`3`** 退出（不得伪造通过）。
+- 无 App Key / Secret、未授权店铺或缺少公网 Storage 时，结论必须记录为 **`blocked_by_real_credentials`** 或 **`blocked_by_environment`**，不得伪造通过。
+- 只读检查可由维护者在受控环境人工执行；任何真实平台写操作必须先取得明确审批。
+- 验收结果记录在 PR 或发布工单，不向仓库提交 JSON、Markdown 报告、截图或日志产物。
 
 ### 1.2 手工检查项
 
@@ -293,7 +288,7 @@ v0.8.0-douyin-mvp-demo
 - [ ] 有凭证环境：`readonly` + `report` 工件已归档
 - [ ] [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md) 门禁项已勾选
 - [ ] `git diff --check` 无冲突标记
-- [ ] `DEMO_CHECKLIST.md` 抖店演示流程可跟跑
+- [ ] `P10_MANUAL_ACCEPTANCE_CHECKLIST.md` 中相关流程已人工签收
 - [ ] `docs/PROGRESS.md` 已更新阶段状态
 
 **Tag 说明模板（Release Notes 摘要）：**
@@ -304,7 +299,7 @@ v0.8.0-douyin-mvp-demo
 
 ## 6. 相关文档
 
-- [`DEMO_CHECKLIST.md`](../DEMO_CHECKLIST.md) — 演示勾选清单
+- [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md) — 当前人工验收清单
 - [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md) — 发布门禁
 - [`DOUYIN_E2E_REPORT_TEMPLATE.md`](DOUYIN_E2E_REPORT_TEMPLATE.md) — 人工/脚本报告模板
 - [`docs/PROGRESS.md`](PROGRESS.md) — 阶段进度与遗留

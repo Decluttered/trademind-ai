@@ -1,11 +1,20 @@
 ---
 name: admin-e2e-testing
-description: TradeMind Admin 自动化测试与 E2E 测试规范、Playwright MCP 验收、Playwright Test 回归和自动触发规则的唯一完整来源
+description: TradeMind 生产维护阶段的 Admin Playwright CI 回归、写请求安全、响应式覆盖与人工验收规范
 ---
 
 # TradeMind Admin 自动化测试与 E2E 测试规范
 
 本 Skill 是 Admin 自动化测试、E2E 测试、Playwright MCP 动态验收、Playwright Test 持久化回归、CI 触发和后续页面测试补充规则的唯一完整来源。其他入口只引用本文件，不复制完整规范。
+
+## 生产维护策略（优先级最高）
+
+- Playwright Test 继续作为 `admin/e2e/**` 与 `.github/workflows/admin-e2e.yml` 中的持久 CI 回归；这些测试及其 Mock/fixture 必须保留。
+- 功能、视觉、文案、响应式和业务流程最终由人工验收；完整 E2E 默认交由 GitHub Actions。
+- Playwright MCP 只在用户明确要求本地浏览器验收或任务确需交互诊断时使用，不生成长期保留的证据。
+- 本 Skill 后续“必须运行”的要求，在未明确要求本地执行时表示相应用例必须由 CI 覆盖。未本地运行不得声称 passed。
+- 非 GET 请求拦截、五档视口、状态覆盖、根节点 overflow 和真实平台隔离要求继续强制执行。
+- 不创建阶段/批次 gate 或一次性验收包装器；Playwright 报告、截图和临时结果完成诊断后清理，不提交 Git。
 
 ## 1. 自动适用范围
 

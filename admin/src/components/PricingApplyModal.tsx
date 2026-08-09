@@ -314,7 +314,7 @@ export default function PricingApplyModal({
                 width: 96,
                 render: (v) => {
                   const n = Number(v ?? 0);
-                  return <span style={{ color: n < 0 ? '#cf1322' : '#389e0d' }}>{n.toFixed(2)}</span>;
+                  return <span style={{ color: n < 0 ? 'var(--ant-color-error)' : 'var(--ant-color-success)' }}>{n.toFixed(2)}</span>;
                 },
               },
               { title: '利润率', dataIndex: 'profitMarginPercent', width: 86, render: (v) => (v != null ? `${Number(v).toFixed(2)}%` : '—') },
@@ -324,7 +324,7 @@ export default function PricingApplyModal({
                 width: 80,
                 render: (v) => {
                   const n = Number(v);
-                  const color = n > 0 ? '#389e0d' : n < 0 ? '#cf1322' : undefined;
+                  const color = n > 0 ? 'var(--ant-color-success)' : n < 0 ? 'var(--ant-color-error)' : undefined;
                   return <span style={{ color }}>{n >= 0 ? `+${n.toFixed(2)}` : n.toFixed(2)}</span>;
                 },
               },

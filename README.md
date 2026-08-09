@@ -41,15 +41,11 @@ TradeMind 是一个面向跨境卖家与开发团队的开源 AI 运营平台，
 
 | Item | Status |
 | --- | --- |
-| Phase | Production Capability Development In Progress |
-| Demo | MVP Demo Ready |
-| Observability | Standard OTLP/HTTP Export Code Ready; P5 Closure Verification Incomplete |
-| Backup / Release / DR | P6 fully closed; real production verification deferred |
-| Performance / Capacity | P7 Conditionally Closed; functional/development scope completed; capacity and repeatability deferred to P10 |
-| Tag | Tag deferred |
-| Production | Not Production Ready |
-| Douyin | Douyin Release Candidate |
-| Final acceptance | Final Production Acceptance Deferred to P10 |
+| Lifecycle | Production Maintenance |
+| Automated Regression | GitHub Actions |
+| Product Acceptance | Human Sign-off |
+| Runtime Activation | Managed externally; repository defaults remain fail closed |
+| Local Test Database | Optional; CI provisions isolated services |
 
 
 ## 项目定位
@@ -148,22 +144,21 @@ pnpm build:admin
 pnpm build:collector
 pnpm seed:demo-data
 pnpm seed:demo-permissions
-pnpm verify:demo-data
-pnpm verify:demo-permissions
-pnpm check:p4-r
 ```
+
+自动化回归由 GitHub Actions 执行；功能和业务流程由维护者人工验收。本地不要求创建 `trademind_test`。
 
 ### Docker 部署
 
 ```bash
-cp .env.docker.example .env
+cp .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
 Windows PowerShell：
 
 ```powershell
-Copy-Item .env.docker.example .env
+Copy-Item .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 

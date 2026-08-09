@@ -55,7 +55,6 @@ import {
   Upload,
   Table,
   message,
-  Flex,
 } from 'antd';
 import {
   DeleteOutlined,
@@ -275,11 +274,6 @@ function collectQualityWarningsFromRaw(rawData: unknown): string[] {
       seen.add(k);
       return true;
     });
-}
-
-/** @deprecated use collectQualityWarningsFromRaw */
-function customQualityWarningsFromRaw(rawData: unknown): string[] {
-  return collectQualityWarningsFromRaw(rawData);
 }
 
 function isCustomCollectIncomplete(data: ProductDetail | null): boolean {
@@ -2114,7 +2108,6 @@ export default function ProductDraftDetailPage() {
   const douyinUploadedDetailImages = douyinDetailImages.filter((img) => img.uploadStatus === 'uploaded').length;
   const douyinMappingErrorCount = douyinMapping?.errors?.length ?? 0;
   const douyinMappingWarningCount = douyinMapping?.warnings?.length ?? 0;
-  const failedDouyinTasks = douyinPublishTasks.filter((task) => task.status === 'failed');
   const selectedDouyinShop = douyinShops.find((shop) => shop.id === douyinConfig.shopId);
   const latestDouyinTask = douyinPublishTasks[0];
   const douyinSkuBindingReady = douyinSkuBinding

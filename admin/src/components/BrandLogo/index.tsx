@@ -1,6 +1,6 @@
-import logoUrl from '@/assets/logo.png';
+/** 复用 Umi 约定的 `src/favicon.png`，避免在构建产物中再生成一份相同 Logo。 */
 
-/** 站内品牌图统一用 `@/assets/logo.png`。浏览器标签图标走 Umi 约定：`src/favicon.png`（应与 logo 同步，换标时复制覆盖即可）。 */
+const logoUrl = '/favicon.png';
 
 type BrandLogoProps = {
   /** CSS height in px; width follows aspect ratio. */

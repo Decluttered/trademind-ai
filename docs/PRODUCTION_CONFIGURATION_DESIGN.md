@@ -2,15 +2,19 @@
 
 ## Goals
 
-- Multi-profile env loading without leaking dev defaults into production.
+- One environment-variable contract without leaking development defaults into production.
 - Fail-fast on insecure or missing production configuration.
 - Redacted startup summary in logs.
 
 ## Load priority
 
-```text
-code safe defaults → profile env file → system environment → APP_ENV_FILE override
-```
+From highest to lowest priority:
+
+1. Process environment variables
+2. Root `.env`
+3. Safe, non-secret code defaults
+
+`.env` is the only runtime file and `.env.example` is the only committed template. `APP_ENV` selects the profile.
 
 ## Profiles
 

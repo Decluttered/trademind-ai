@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+ENV_FILE="$ROOT/.env"
+COMPOSE=(docker compose --project-name trademind-preproduction --env-file "$ENV_FILE" -f "$ROOT/deploy/preproduction/compose.yml")
+
+node "$ROOT/scripts/p10-preproduction-preflight.mjs" --mode startup
+"${COMPOSE[@]}" config --quiet
+"${COMPOSE[@]}" up -d --wait postgres redis
+"${COMPOSE[@]}" up -d backend admin
+"$ROOT/deploy/scripts/check-preproduction-readiness.sh"

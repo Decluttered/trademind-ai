@@ -26,10 +26,6 @@ function parsePriceFromText(text: string): number | undefined {
   return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
-function buildSkuName(attrs: Record<string, string>): string {
-  return Object.values(attrs).filter(Boolean).join(' / ');
-}
-
 function cartesianCombos(
   groups: TaobaoSkuGroup[],
   max: number,

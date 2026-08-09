@@ -1,4 +1,4 @@
-import { Button, Input, Modal, Select, Space, Table, Tag, Typography, Alert, message } from 'antd';
+import { Button, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, Alert, message } from 'antd';
 import { confirmSkuManualBind } from '@/constants/sensitiveActions';
 import { history } from '@umijs/max';
 import { useCallback, useEffect, useState } from 'react';
@@ -139,7 +139,7 @@ export default function OrderSkuMatchTab({ orderId, onRefreshOrder, readOnly = f
           onRow={(row) => ({
             style:
               list.length > 1 && row.confidence === Math.max(...list.map((x) => x.confidence))
-                ? { background: '#f6ffed' }
+                ? { background: 'var(--ant-color-success-bg)' }
                 : undefined,
           })}
           columns={[
@@ -460,7 +460,7 @@ export default function OrderSkuMatchTab({ orderId, onRefreshOrder, readOnly = f
             onRow={(row) => ({
               style:
                 bindDrawerCands.length > 1 && row.confidence === maxBindCandConf
-                  ? { background: '#f6ffed' }
+                  ? { background: 'var(--ant-color-success-bg)' }
                   : undefined,
             })}
             columns={[
