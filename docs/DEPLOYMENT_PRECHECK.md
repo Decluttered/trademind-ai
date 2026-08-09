@@ -23,21 +23,13 @@
 - [ ] `product_publish_batches` 相关 migration 已执行（见 [`PUBLISH_BATCH_MIGRATION.md`](PUBLISH_BATCH_MIGRATION.md)）
 - [ ] migration 可重复启动（无 duplicate 致命错误）
 
-## 3. 路由 Smoke
+## 3. CI 与人工 Smoke
 
-```powershell
-.\scripts\demo-route-smoke.ps1
-# 期望 docs/demo-route-smoke.json passed=true，无 404
-```
-
-- [ ] `/health` 200
-- [ ] 已登录核心 API 200（见 `docs/demo-route-smoke.json`）
-- [ ] 未登录 protected 路由 401/403
-
-分项 smoke（可选）：
-
-- [ ] `scripts/ai-text-route-smoke.ps1`
-- [ ] `scripts/ai-image-route-smoke.ps1`
+- [ ] 当前提交对应的 GitHub Actions 工作流通过
+- [ ] `/health` 返回 200
+- [ ] 人工登录后核心页面和 API 可访问
+- [ ] 未登录访问 protected 路由返回 401/403
+- [ ] AI 文案、AI 图片和关键业务流程按人工验收清单检查
 
 ## 4. Redis / Worker
 
@@ -106,7 +98,7 @@ git diff --check
 | 图片 Provider | ⚠️ | 试跑 `passed_with_warning`（dashscope 白底图 Key 可选） |
 | 抖店凭证 | ✅ RC | 无真实凭证；页面显示 Release Candidate / 待凭证 |
 | Nginx / HTTPS | ⏭️ | 本轮为本地 dev（`:8080` API + `:8000` Admin）；预发需人工 |
-| 路由 smoke | ✅ | `docs/demo-route-smoke.json` passed=true，8 路由无 404 |
+| 路由 smoke | 交由 CI / 人工验收 | 不保存本地运行报告 |
 | Demo 数据 | ✅ | `seed-demo-data.ps1` → 20 slot + 7 task samples |
 | go test / build | ✅ | `go test ./...` + `pnpm build:admin` 通过 |
 | Git tag | Tag deferred | 建议 `v0.1.0-demo`；待预发 Nginx/HTTPS 人工勾选后打 tag |

@@ -26,7 +26,7 @@
 - `docs/demo-dataset.customer-service.json` — 客服
 - `docs/demo-dataset.dashboard.json` — Dashboard KPI 探测
 - `docs/demo-dataset.permissions.json` — 权限
-- `docs/demo-dataset.full-project.json` — F7 全链路索引（运行种子后生成）
+- 全链路索引由种子脚本按需临时生成，不纳入版本控制。
 
 ## 账号
 

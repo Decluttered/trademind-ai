@@ -32,23 +32,12 @@
 | `/product/publish-batches` | 批量刊登边界提示 |
 | `/ops/task-center/failures?platform=douyin_shop` | 抖店相关失败 |
 
-## 脚本（不自动执行真实 E2E）
+## 生产维护验收方式
 
-```bash
-# 前置检查（exit 3 = blocked_by_real_credentials）
-./scripts/douyin-e2e-preflight.sh
-
-# 只读探针（需凭证）
-./scripts/douyin-e2e-readonly.sh
-
-# 写探针（需 ALLOW_DOUYIN_WRITE_TEST=true）
-./scripts/douyin-e2e-write.sh
-
-# 汇总 Markdown 报告
-./scripts/douyin-e2e-report.sh
-```
-
-报告字段：`passed` / `passed_with_warning` / `skipped` / `blocked_by_real_credentials` / `blocked_by_environment` / `failed`
+- 自动化回归由 GitHub Actions 在隔离环境执行。
+- 维护者按 [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md) 完成页面、只读接口和受控业务流程检查。
+- 真实平台写操作必须先取得外部生产审批；无凭证或环境时记录 `blocked_by_real_credentials` / `blocked_by_environment`。
+- 结论记录在 PR 或发布工单，不提交一次性 JSON、Markdown 报告、截图或日志。
 
 ## 凭证缺失文案（统一）
 

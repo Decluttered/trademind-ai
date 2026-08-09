@@ -290,6 +290,6 @@ AI 不应把“成长”理解成在本地偷偷保存私有记忆；TradeMind �
 | F8 | 只修 P0/P1 | 新功能 |
 | F9 | 人工走查、预发、抖店 E2E、灰度 | —（F8 后启动） |
 
-**Phase F7（2026-06-30）**：全项目 Demo 数据升级完成。Demo 走查前先跑 [`DEMO_SEEDING_GUIDE.md`](DEMO_SEEDING_GUIDE.md)；自动化回归用 [`DEMO_AUTO_ACCEPTANCE_GUIDE.md`](DEMO_AUTO_ACCEPTANCE_GUIDE.md)（Phase F7-Auto，**非**最终人工验收）。
+**生产维护说明（2026-08-09）**：需要 Demo 数据时按 [`DEMO_SEEDING_GUIDE.md`](DEMO_SEEDING_GUIDE.md) 临时生成；自动化回归由 GitHub Actions 执行，产品流程按人工验收清单签收，不再保存一次性 Demo 自动验收报告。
 
 缺口分级沿用 [FULL_PROJECT_MVP_GAP_AUDIT.md](FULL_PROJECT_MVP_GAP_AUDIT.md)：**P0** 主链路断点 → **P1** 影响试用 → **P2** 体验 → **P3** 后续增强。

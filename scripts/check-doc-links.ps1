@@ -35,6 +35,23 @@ Get-ChildItem -Path $repoRoot -Recurse -Include *.md,*.tsx,*.ts -ErrorAction Sil
     }
 Add-Check "Admin failure route" ($wrongRouteHits.Count -eq 0) $(if ($wrongRouteHits.Count -eq 0) { "ok" } else { ($wrongRouteHits | Select-Object -First 5) -join ", " })
 
+$missingScriptReferences = @()
+$scriptReferencePattern = '(?<![A-Za-z0-9_./-])(?:deploy/)?scripts/[A-Za-z0-9._/-]+\.(?:ps1|sh|mjs|ts|py)'
+Get-ChildItem -Path $repoRoot -Recurse -Filter *.md -ErrorAction SilentlyContinue |
+    Where-Object { $_.FullName -notmatch '\\node_modules\\|\\\.git\\|\\\.umi\\|\\dist\\' } |
+    ForEach-Object {
+        $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue -Encoding UTF8
+        foreach ($match in [regex]::Matches($content, $scriptReferencePattern)) {
+            $relativePath = $match.Value.Replace('/', [IO.Path]::DirectorySeparatorChar)
+            if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $relativePath))) {
+                $relativeDocument = [IO.Path]::GetRelativePath($repoRoot, $_.FullName)
+                $missingScriptReferences += "$relativeDocument -> $($match.Value)"
+            }
+        }
+    }
+$missingScriptReferences = @($missingScriptReferences | Sort-Object -Unique)
+Add-Check "Documented script paths" ($missingScriptReferences.Count -eq 0) $(if ($missingScriptReferences.Count -eq 0) { "all present" } else { ($missingScriptReferences | Select-Object -First 5) -join ", " })
+
 $apiContent = Get-Content (Join-Path $repoRoot "docs/api.md") -Raw -Encoding UTF8
 Add-Check "Task-center API docs" ($apiContent -match '/api/v1/task-center/failures') "api.md"
 Add-Check "Operation-workbench API docs" ($apiContent -match '/api/v1/ai/operation-workbench/summary') "api.md"

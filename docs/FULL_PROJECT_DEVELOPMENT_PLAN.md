@@ -28,7 +28,7 @@ H1  Post-F9 Enhancement / URL 状态保持 ← 当前
 | --- | --- |
 | **目标** | 梳理 34 模块完成度；定义 MVP 主链路；规划 F2–F9；P0–P3 缺口分级 |
 | **输入** | 现有代码、文档、R1 验收结果 |
-| **输出** | `FULL_PROJECT_FUNCTION_MAP.md`、`FULL_PROJECT_MVP_MAIN_FLOW.md`、`FULL_PROJECT_DEVELOPMENT_PLAN.md`、`FULL_PROJECT_MVP_GAP_AUDIT.md`；更新 PROGRESS / README / DEMO_CHECKLIST |
+| **输出** | `FULL_PROJECT_FUNCTION_MAP.md`、`FULL_PROJECT_MVP_MAIN_FLOW.md`、`FULL_PROJECT_DEVELOPMENT_PLAN.md`、`FULL_PROJECT_MVP_GAP_AUDIT.md`；更新 PROGRESS / README |
 | **完成标准** | 四份文档就绪；go test + admin build 通过；**不**打 tag、**不**标记 Production Ready |
 | **不做** | 最终人工测试、真实预发、抖店 E2E、生产灰度 |
 

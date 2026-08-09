@@ -8,7 +8,7 @@
 
 | 模块 | F7 变化 |
 | --- | --- |
-| **32. Demo 数据** | `done` — 全链路样本：商品 20 slot + 订单 / 库存 / 客服 / Dashboard KPI；`demo-dataset.full-project.json` |
+| **32. Demo 数据** | `done` — 全链路样本可由种子脚本临时生成，不提交运行输出 |
 | **33. 自动化脚本** | `done` — `pnpm demo:auto-acceptance` passed；AI 图片 14/16 `passed_with_warning` |
 | **34. 最终验收** | `done` — F9 总体验收完成；真实预发 / 抖店 E2E / 灰度仍按环境项阻塞 |
 
@@ -569,7 +569,7 @@
 | **已有页面** | —（脚本驱动） |
 | **已有接口** | HTTP API 由 `scripts/seed-demo-data.*` 调用 |
 | **已有数据表** | 写入 products / orders / inventory / customer / collect / ai / publish 等 |
-| **已完成能力** | 20 商品 slot + 7 任务样本 + 订单 / 库存 / 客服 / Dashboard 样本；`docs/demo-dataset.full-project.json` |
+| **已完成能力** | 20 商品 slot + 7 任务样本 + 订单 / 库存 / 客服 / Dashboard 样本可由种子脚本临时生成 |
 | **缺失能力** | 真实平台凭证数据（F9 `manual_required`） |
 | **阻塞整体 MVP** | 否 |
 | **下一阶段建议** | Phase F8 冻结后 F9 预发复跑 |

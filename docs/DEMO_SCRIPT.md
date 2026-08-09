@@ -33,24 +33,15 @@
 - **无真实 App Key / 店铺凭证** 时，create-draft 预期 `blocked_by_real_credentials`，**不**标记为 Production Ready
 - **不**演示直接上架
 
-## 快捷脚本
+## 生产维护验收
+
+自动化回归由 GitHub Actions 执行。演示数据可按需临时生成：
 
 ```powershell
-.\scripts\demo-route-smoke.ps1          # 路由 smoke
-.\scripts\ai-text-trial-run.ps1         # 文案小样本
-.\scripts\ai-image-trial-run.ps1        # 图片小样本
-```
-
-## Phase R1.2 预发输出文件
-
-真实预发部署后，将 smoke / Demo 数据写入：
-
-```powershell
-.\scripts\demo-route-smoke.ps1 -ApiBase https://<pre-api-domain> -OutFile docs/demo-route-smoke.preprod.json
 .\scripts\seed-demo-data.ps1 -ApiBase https://<pre-api-domain> -OutFile docs/demo-dataset.preprod.json
 ```
 
-当前 `docs/demo-route-smoke.preprod.json` / `docs/demo-dataset.preprod.json` 为 **本地 dev 等价复跑**（apiBase=`http://127.0.0.1:8080`），待真实预发 HTTPS 域名替换后重新生成。
+运行输出仅用于当次人工验收，不提交到 Git。页面、状态和真实业务链路按 [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md) 人工签收。
 
 ## 变更记录
 

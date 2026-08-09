@@ -1,7 +1,7 @@
 # Demo Release 权限与安全检查（Phase R1）
 
 > **Release 状态**：`MVP Demo Ready`（非 Production Ready）  
-> 检查方式：代码审查 + 既有单测 + 路由 smoke + 试跑脚本
+> 检查方式：代码审查 + GitHub Actions 自动化回归 + 人工验收
 
 ## 权限与隔离
 
@@ -29,8 +29,9 @@ go test ./internal/modules/aiproducttext/...
 go test ./internal/modules/aiproductimage/...
 go test ./internal/modules/productpublish/...
 go test ./internal/modules/taskcenter/...
-.\scripts\demo-route-smoke.ps1
 ```
+
+以上自动化检查由 GitHub Actions 持续执行；发布前人工确认鉴权、脱敏展示和关键页面行为，不保存一次性运行报告。
 
 ## 已知边界（Demo）
 

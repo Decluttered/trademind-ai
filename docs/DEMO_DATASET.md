@@ -3,7 +3,7 @@
 > **Release 状态**：`MVP Demo Ready`（非 Production Ready）
 > 生成脚本：`scripts/seed-demo-data.ps1` / `scripts/seed-demo-data.sh`
 > 权限种子：`scripts/seed-demo-permissions.ps1`
-> 机器可读输出：`docs/demo-dataset.json`、`docs/demo-dataset.full-project.json`
+> 机器可读输出由种子脚本按需生成；运行产物不作为长期仓库文档维护。
 
 ## 生成方式
 
@@ -100,13 +100,13 @@
 ## 注意事项
 
 - 抖店真实 create-draft 仍为 **Release Candidate**，无凭证时样本 #19 预期 `blocked_by_real_credentials`
-- 批量刊登 perf / 种子依赖 `local_draft_only` 平台店铺；脚本 `publish-batch-perf.ps1` 可自动创建 TikTok / Shopee / Lazada / Amazon demo 店铺
+- 批量刊登种子依赖 `local_draft_only` 平台店铺；性能回归由 GitHub Actions 和维护者人工验收覆盖。
 - 商品标题在种子脚本中使用 ASCII 前缀 `R1 demo`，便于检索；演示前可在后台改为中文展示名
 
 ## 变更记录
 
 | 日期 | 说明 |
 | --- | --- |
-| 2026-06-30 | Phase F7：订单 / 库存 / 客服 / Dashboard 样本 + `demo-dataset.full-project.json` |
-| 2026-06-27 | Phase R1.1 复跑：`seed-demo-data.ps1` + `demo-route-smoke.ps1`；12 步走查记录 |
+| 2026-06-30 | Phase F7：订单 / 库存 / 客服 / Dashboard 样本 |
+| 2026-06-27 | Phase R1.1：种子数据与 12 步人工走查 |
 | 2026-06-27 | Phase R1 初版：seed 脚本 + demo-dataset.json |
