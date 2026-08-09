@@ -175,7 +175,7 @@ requireText('admin-runtime-status', 'admin/src/pages/Ops/Observability/index.tsx
   '模拟接收端已验证',
 ], 'observability UI distinguishes Mock verification from real backend status');
 
-for (const rel of ['.env.example', '.env.docker.example', '.env.production.example']) {
+for (const rel of ['.env.example']) {
   requireText(`env-${rel}`, rel, [
     'OTEL_EXPORTER_OTLP_PROTOCOL=http/json',
     'OTEL_EXPORTER_OTLP_HEADERS=',

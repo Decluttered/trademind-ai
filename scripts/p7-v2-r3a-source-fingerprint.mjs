@@ -10,13 +10,11 @@ const INCLUDE_ROOTS = [
   'package.json',
   'pnpm-lock.yaml',
   '.env.example',
-  '.env.docker.example',
   'docker-compose.yml',
   'docker-compose.full.yml',
 ];
 const CONFIG_TEMPLATES = new Set([
   '.env.example',
-  '.env.docker.example',
   'docker-compose.yml',
   'docker-compose.full.yml',
 ]);

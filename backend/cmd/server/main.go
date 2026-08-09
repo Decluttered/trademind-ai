@@ -52,28 +52,9 @@ func loadDotEnv() {
 	if config.NormalizeEnv(os.Getenv("APP_ENV")) == config.EnvPerformance && strings.EqualFold(strings.TrimSpace(os.Getenv("PERFORMANCE_TEST_MODE")), "true") {
 		return
 	}
-	env := config.NormalizeEnv(os.Getenv("APP_ENV"))
-	if env == config.EnvProduction {
-		if f := strings.TrimSpace(os.Getenv("APP_ENV_FILE")); f != "" {
-			_ = godotenv.Load(f)
-			return
-		}
-		for _, p := range []string{".env.production", "../.env.production", "../../.env.production"} {
-			if err := godotenv.Load(p); err == nil {
-				return
-			}
-		}
-		return
-	}
 	for _, p := range []string{".env", "../.env", "../../.env"} {
 		if err := godotenv.Load(p); err == nil {
-			break
-		}
-	}
-	env = config.NormalizeEnv(os.Getenv("APP_ENV"))
-	if env != "" && env != config.EnvDevelopment {
-		for _, p := range []string{".env." + env, "../.env." + env, "../../.env." + env} {
-			_ = godotenv.Load(p)
+			return
 		}
 	}
 }

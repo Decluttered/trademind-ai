@@ -194,7 +194,7 @@ type RedisConfig struct {
 	DB       int
 }
 
-// Load reads configuration from environment variables (after optional .env in main).
+// Load reads configuration from process variables after main applies root .env defaults.
 func Load() (*Config, error) {
 	appEnv := NormalizeEnv(firstNonEmpty(os.Getenv("APP_ENV"), EnvDevelopment))
 	cfg := &Config{

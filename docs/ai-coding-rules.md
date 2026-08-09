@@ -18,8 +18,8 @@
 | 变更类型 | 必须检查 / 更新 |
 | --- | --- |
 | 新增或修改启动命令 | `README.md`、`README.en.md`、`docs/development.md`、`package.json` 脚本说明 |
-| 新增或修改 Docker 部署 | `README.md`、`README.en.md`、`docs/docker-deployment.md`、`.env.docker.example` |
-| 新增或修改环境变量 | `.env.example`、`.env.docker.example`、`docs/env.md`、`docs/development.md`、`docs/docker-deployment.md` |
+| 新增或修改 Docker 部署 | `README.md`、`README.en.md`、`docs/docker-deployment.md`、`.env.example` |
+| 新增或修改环境变量 | `.env.example`、`docs/env.md`、`docs/development.md`、`docs/docker-deployment.md` |
 | 新增 API 或改变 API 契约 | `docs/api.md`、前端 `services` / `types`、README 中的能力描述 |
 | 新增 Provider | `docs/provider.md`、`docs/provider-template.md`、README 功能表、设置页面说明、示例配置 |
 | 新增后台页面或路由 | README 能力描述、相关 `docs/`、菜单 / 路由说明 |
@@ -33,7 +33,7 @@
 涉及配置时必须遵守：
 
 1. 新增环境变量时，同时更新 `.env.example`。
-2. Docker 部署也需要该变量时，同时更新 `.env.docker.example` 和 `docker-compose.full.yml`。
+2. Docker 部署也需要该变量时，同时更新唯一模板 `.env.example` 和 `docker-compose.full.yml`。
 3. 修改默认端口、默认路径、默认服务名时，同时更新 README、开发文档和 Docker 文档。
 4. 新增敏感配置时，必须说明是否加密存储、是否脱敏展示、是否禁止写入日志。
 5. 删除或重命名配置时，必须检查脚本、CI、Docker、文档和后台设置页。
@@ -72,7 +72,7 @@ AI Agent 修改代码时应遵循：
 - [ ] 已将用户需求压缩成短执行提示词，并按上下文预算读取相关文件。
 - [ ] 已按 `docs/ai-workflow.md` 控制上下文范围，并沉淀必要经验。
 - [ ] 没有提交 `.env`、密钥、Token、Cookie 或真实平台凭证。
-- [ ] 新增 / 修改配置已同步 `.env.example`、`.env.docker.example` 和相关文档。
+- [ ] 新增 / 修改配置已同步唯一模板 `.env.example` 和相关文档。
 - [ ] 新增 / 修改命令已同步 README 和开发文档。
 - [ ] 新增 / 修改 Docker 行为已同步 Docker 文档。
 - [ ] 新增 / 修改 API、Provider、任务或页面已同步相关 docs。

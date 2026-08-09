@@ -50,7 +50,7 @@ CORS_ALLOWED_ORIGINS=https://admin.staging.example.com
 CORS_ALLOW_CREDENTIALS=true
 ```
 
-### 生产（`.env.production.example`）
+### 生产（服务器 `.env`）
 
 ```env
 APP_ENV=production

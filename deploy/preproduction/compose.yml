@@ -37,7 +37,7 @@ services:
     image: ${P10_API_IMAGE:?an immutable preproduction API image is required}
     restart: unless-stopped
     env_file:
-      - ${P10_PREPRODUCTION_ENV_FILE:-../../.env.staging}
+      - ../../.env
     environment:
       APP_ENV: staging
       P10_ENVIRONMENT_PURPOSE: preproduction

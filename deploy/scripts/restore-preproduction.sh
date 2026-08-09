@@ -2,14 +2,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-ENV_FILE="${P10_PREPRODUCTION_ENV_FILE:-$ROOT/.env.staging}"
-export P10_PREPRODUCTION_ENV_FILE="$ENV_FILE"
+ENV_FILE="$ROOT/.env"
+source "$ROOT/deploy/scripts/load-env-defaults.sh"
+load_env_defaults "$ENV_FILE"
 COMPOSE=(docker compose --project-name trademind-preproduction --env-file "$ENV_FILE" -f "$ROOT/deploy/preproduction/compose.yml")
-node "$ROOT/scripts/p10-preproduction-preflight.mjs" --mode restore --env-file "$ENV_FILE" >/dev/null
-
-set -a
-. "$ENV_FILE"
-set +a
+node "$ROOT/scripts/p10-preproduction-preflight.mjs" --mode restore >/dev/null
 
 ARTIFACT="${1:?usage: restore-preproduction.sh <verified.dump>}"
 TARGET_DB="${P10_RESTORE_DATABASE_NAME:?set a new preproduction restore database name}"

@@ -10,9 +10,9 @@
 ```bash
 sudo cp deploy/systemd/trademind-api.service /etc/systemd/system/
 sudo mkdir -p /etc/trademind
-sudo cp .env.production.example /etc/trademind/trademind.env
+sudo cp .env.example /etc/trademind/trademind.env
 sudo chmod 600 /etc/trademind/trademind.env
-# edit secrets
+# set APP_ENV=production and inject/edit server secrets
 sudo systemctl daemon-reload
 sudo systemctl enable --now trademind-api
 ```

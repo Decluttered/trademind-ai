@@ -71,7 +71,7 @@ for (const f of [
   'deploy/nginx/trademind.conf',
   'deploy/systemd/trademind-api.service',
   'deploy/scripts/check-readiness.sh',
-  '.env.production.example',
+  '.env.example',
 ]) {
   if (fs.existsSync(path.join(root, f))) pass('deploy-' + f, f + ' exists');
   else fail('deploy-' + f, f + ' missing');
@@ -87,7 +87,7 @@ else fail('health-live', 'liveness missing');
 
 // gitignore
 const gi = read('.gitignore');
-if (gi.includes('.env.production') && gi.includes('!.env.production.example')) pass('gitignore-env', '.gitignore covers production env');
+if (gi.includes('.env.*') && gi.includes('!.env.example')) pass('gitignore-env', '.gitignore keeps only the canonical template trackable');
 else warn('gitignore-env', '.gitignore env patterns incomplete');
 
 // Admin source map note

@@ -1,6 +1,6 @@
 # 环境变量说明
 
-本文件是 `.env.example` 与 `.env.docker.example` 的说明索引。新增、删除或重命名环境变量时，必须同步更新本文件，并检查 `docs/module-map.md` 中的关联项。
+本文件是唯一配置模板 `.env.example` 的说明索引。`.env` 是唯一运行配置并保持 Git ignored；新增、删除或重命名环境变量时，必须同步更新本文件，并检查 `docs/module-map.md` 中的关联项。
 
 ## 使用方式
 
@@ -16,12 +16,14 @@ Windows PowerShell：
 Copy-Item .env.example .env
 ```
 
-Docker 完整部署：
+Docker 完整部署也使用同一模板：
 
 ```bash
-cp .env.docker.example .env
+cp .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
+
+环境由 `APP_ENV` 选择。进程环境变量优先于 `.env`，CI、容器平台和 Secret Store 可安全覆盖模板值；禁止创建 `.env.local`、`.env.test.local`、`.env.staging`、`.env.production` 等变体。
 
 ## 安全规则
 
@@ -34,7 +36,7 @@ docker compose -f docker-compose.full.yml up -d --build
 
 | 变量 | 示例 / 默认 | 服务 | 敏感 | 说明 |
 | --- | --- | --- | --- | --- |
-| `APP_ENV` | `development` | backend | 否 | 应用环境，生产建议设为 `production`。 |
+| `APP_ENV` | `development` | backend | 否 | 主运行环境使用 `development` / `test` / `staging` / `production`；既有 `demo` / `performance` 仅用于受控演示和隔离压测。 |
 | `APP_HTTP_ADDR` | `:8080` | backend | 否 | Go API 监听地址。 |
 | `P7_V2_API_HOST` | `127.0.0.1` | P7-V2 harness | 否 | 仅 P7-V2 性能环境的 loopback API host；禁止公网或 WSL 非 loopback 地址。 |
 | `P7_V2_API_PORT` | `8080` | P7-V2 harness | 否 | 仅 P7-V2 性能环境 API 端口；可迁移至 `18080`、`28080` 或 `38080`。 |
@@ -87,7 +89,7 @@ docker compose -f docker-compose.full.yml up -d --build
 | `DB_HOST` | `127.0.0.1` / `postgres` | backend | 否 | 数据库地址。 |
 | `DB_PORT` | `5432` | backend | 否 | PostgreSQL 默认 5432。 |
 | `DB_USER` | `trademind` | backend | 否 | 数据库用户。 |
-| `DB_PASSWORD` | `trademind` | backend | 是 | 数据库密码。 |
+| `DB_PASSWORD` | 明显占位值 | backend | 是 | 数据库密码；真实值只写入 `.env` 或 Secret Store。 |
 | `DB_NAME` | `trademind` | backend | 否 | 数据库名。 |
 | `DB_TIMEZONE` | `UTC` | backend | 否 | 数据库时区。 |
 | `DB_MAX_OPEN_CONNECTIONS` | `100` | backend | 否 | P7 数据库连接池最大打开连接数；生产非法配置 fail-fast。 |
@@ -150,7 +152,7 @@ docker compose -f docker-compose.full.yml up -d --build
 
 ## Docker 端口覆盖
 
-`.env.docker.example` 支持以下宿主机端口覆盖：
+`.env.example` 支持以下宿主机端口覆盖：
 
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
@@ -171,7 +173,6 @@ docker compose -f docker-compose.full.yml up -d --build
 新增或修改环境变量时必须检查：
 
 - `.env.example`
-- `.env.docker.example`
 - `docker-compose.yml`
 - `docker-compose.full.yml`
 - `docs/env.md`
@@ -181,21 +182,23 @@ docker compose -f docker-compose.full.yml up -d --build
 - 相关代码默认值与安全校验
 # P10 Pre-production Contract
 
-P10 reuses `APP_ENV=staging` as the only pre-production profile. Do not introduce a second `preproduction` runtime value. The canonical non-secret template is `.env.staging.example`; `deploy/preproduction/compose.yml` consumes it while database, Redis, application-key, JWT, and immutable-image values are injected externally.
+P10 reuses `APP_ENV=staging` as the only pre-production profile. Do not introduce a second `preproduction` runtime value. `.env.example` is the canonical non-secret contract; the target host copies it to `.env`, while database, Redis, application-key, JWT, and immutable-image values are injected externally.
 
-The P10 preflight requires explicit, pairwise-distinct identities for development/test, pre-production, and production database and Redis resources. It also requires a distinct session namespace, non-overlapping cookie domains, distinct Admin/API endpoints, a non-local staging storage mode, a matching credentialed CORS origin, explicit migration/backup/restore targets, previous immutable images, and external secret references. Inline secret values, missing or unknown environments, and production targets fail closed.
+For pre-production, copy `.env.example` to `.env`, set `APP_ENV=staging`, and fill the target host's non-secret identities. The P10 preflight requires explicit, pairwise-distinct identities for development/test, pre-production, and production database and Redis resources. It also requires a distinct session namespace, non-overlapping cookie domains, distinct Admin/API endpoints, a non-local staging storage mode, a matching credentialed CORS origin, explicit migration/backup/restore targets, previous immutable images, and external secret references. Inline secret values, missing or unknown environments, and production targets fail closed.
 
 `P10_PRODUCTION_RESTORE_ENABLED` must remain `false`. All real Provider/network/read/write, mutation, queue/worker, and automatic business retry flags remain disabled at L0. Run the non-secret contract check with:
 
 ```bash
-node scripts/p10-preproduction-preflight.mjs --mode config --env-file .env.staging.example
+node scripts/p10-preproduction-preflight.mjs --mode config
 ```
 
 Operational values must be supplied by the target host or managed secret system and must never be committed or printed in evidence.
 
+Historical phase reports and frozen evidence may still mention the ENV filenames that existed when those artifacts were produced. Those references are historical facts, not current runtime instructions; current code and deployment documentation use only `.env` and `.env.example`.
+
 ## P10 Repository-side Runtime Controls
 
-P10 repository development is manual-acceptance ready, but runtime remains fail closed at `L0`. The following variables are present in `.env.example`, `.env.docker.example`, and the backend service in `docker-compose.full.yml`:
+P10 repository development is manual-acceptance ready, but runtime remains fail closed at `L0`. The following variables are present in `.env.example` and the backend service in `docker-compose.full.yml`:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |

@@ -15,14 +15,14 @@
 ## 快速启动
 
 ```bash
-cp .env.docker.example .env
+cp .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
 Windows PowerShell：
 
 ```powershell
-Copy-Item .env.docker.example .env
+Copy-Item .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
@@ -46,7 +46,7 @@ POSTGRES_PUBLISH_PORT=5432
 REDIS_PUBLISH_PORT=6379
 ```
 
-完整环境变量说明见 [env.md](env.md)。修改 Docker 变量时必须同步 `.env.docker.example`、`docker-compose.full.yml`、本文档和 `docs/env.md`。
+完整环境变量说明见 [env.md](env.md)。修改 Docker 变量时必须同步唯一模板 `.env.example`、`docker-compose.full.yml`、本文档和 `docs/env.md`。
 
 P5-V 可观测性默认使用 `OTEL_EXPORTER_OTLP_PROTOCOL=http/json`。Docker 本地试用不配置真实 telemetry backend 时，`OTEL_EXPORTER_OTLP_ENDPOINT` 保持为空并视为 Deferred；不要把 Mock Collector 验证写成生产 collector 已上线。
 
@@ -131,15 +131,16 @@ CI 会执行轻量 Docker 配置检查：
 docker compose -f docker-compose.full.yml config
 ```
 
-本地修改 Dockerfile、Compose 或 `.env.docker.example` 后，建议先执行同样命令确认语法和变量引用正确。
+本地修改 Dockerfile、Compose 或 `.env.example` 后，建议先执行同样命令确认语法和变量引用正确。
 # P10 Independent Pre-production
 
 P10 maps pre-production to the existing `staging` profile and uses the separate `trademind-preproduction` Compose project. It does not reuse `docker-compose.yml`, `docker-compose.full.yml`, or production resources.
 
 ```bash
-cp .env.staging.example .env.staging
-node scripts/p10-preproduction-preflight.mjs --mode config --env-file .env.staging
-P10_PREPRODUCTION_ENV_FILE=.env.staging deploy/scripts/deploy-preproduction.sh
+cp .env.example .env
+# edit .env: APP_ENV=staging and fill this host's non-secret identifiers
+node scripts/p10-preproduction-preflight.mjs --mode config
+deploy/scripts/deploy-preproduction.sh
 ```
 
 Inject `PREPRODUCTION_DB_PASSWORD`, `PREPRODUCTION_REDIS_PASSWORD`, `PREPRODUCTION_APP_MASTER_KEY`, `PREPRODUCTION_JWT_SECRET`, `P10_API_IMAGE`, and `P10_ADMIN_IMAGE` from the target host or managed secret source. The repository contains references and placeholders only.

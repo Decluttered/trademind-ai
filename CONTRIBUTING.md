@@ -104,7 +104,7 @@ chore: update issue templates
 
 新增核心模块、公共契约或部署方式时，请同步更新 `README.md`、`docs/` 下相关文档，并在必要时更新 `docs/PROGRESS.md`、`CHANGELOG.md`。
 
-配置文件变更也必须同步文档：新增或修改环境变量时更新 `.env.example` 与 [docs/env.md](docs/env.md)；Docker 部署也需要时更新 `.env.docker.example` 与 `docker-compose.full.yml`；命令、端口、路径或服务名变化时同步 README 与对应 docs。
+配置文件变更也必须同步文档：新增或修改环境变量时更新唯一模板 `.env.example` 与 [docs/env.md](docs/env.md)；Docker 部署也需要时同步 `docker-compose.full.yml`；命令、端口、路径或服务名变化时同步 README 与对应 docs。
 
 如果不确定关联范围，先查 [docs/module-map.md](docs/module-map.md)。
 

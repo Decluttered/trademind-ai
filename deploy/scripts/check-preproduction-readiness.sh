@@ -2,12 +2,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-ENV_FILE="${P10_PREPRODUCTION_ENV_FILE:-$ROOT/.env.staging}"
-node "$ROOT/scripts/p10-preproduction-preflight.mjs" --mode startup --env-file "$ENV_FILE" >/dev/null
-
-set -a
-. "$ENV_FILE"
-set +a
+ENV_FILE="$ROOT/.env"
+source "$ROOT/deploy/scripts/load-env-defaults.sh"
+load_env_defaults "$ENV_FILE"
+node "$ROOT/scripts/p10-preproduction-preflight.mjs" --mode startup >/dev/null
 
 BASE_URL="http://127.0.0.1:${P10_BACKEND_BIND_PORT:-18080}"
 BODY="$(mktemp)"

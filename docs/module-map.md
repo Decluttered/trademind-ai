@@ -13,14 +13,14 @@
 
 | 改动类型 | 必须检查 / 同步 |
 | --- | --- |
-| 环境变量 | `.env.example`、`.env.docker.example`、`docker-compose.yml`、`docker-compose.full.yml`、`docs/env.md`、`docs/development.md`、`docs/docker-deployment.md` |
+| 环境变量 | `.env.example`、`docker-compose.yml`、`docker-compose.full.yml`、`docs/env.md`、`docs/development.md`、`docs/docker-deployment.md` |
 | 启动命令 / pnpm 脚本 | `package.json`、`README.md`、`README.en.md`、`docs/development.md`、`.github/workflows/*.yml` |
-| Docker 部署 | `docker-compose.full.yml`、服务 Dockerfile、`.env.docker.example`、`docs/docker-deployment.md`、`.github/workflows/docker.yml` |
+| Docker 部署 | `docker-compose.full.yml`、服务 Dockerfile、`.env.example`、`docs/docker-deployment.md`、`.github/workflows/docker.yml` |
 | 后端 API | `backend/internal/api`、对应 handler/service/dto、`docs/api.md`、`admin/src/services`、`admin/src/types`、相关页面 |
 | 统一返回 / 错误码 | `backend/internal/pkg/response`、所有调用方、`docs/api.md`、前端错误处理 |
 | 管理端页面 | `admin/config/routes.ts`、`admin/src/pages`、`admin/src/services`、`admin/src/types`、README 能力描述、相关 docs |
 | 数据库模型 / 自动迁移 | `backend/internal/modules/**/model`、`backend/internal/database`、`docs/architecture.md`、`docs/PROGRESS.md` |
-| 异步任务 / 队列 | 任务 model/service/worker、Redis 配置、健康检查、`.env.example`、`.env.docker.example`、`docs/env.md`、任务中心页面 |
+| 异步任务 / 队列 | 任务 model/service/worker、Redis 配置、健康检查、`.env.example`、`docs/env.md`、任务中心页面 |
 | AI Provider | `backend/internal/providers`、AI settings、Prompt 模板、调用记录、`docs/provider.md`、`docs/provider-template.md` |
 | Storage Provider | Provider 接口、文件上传 API、settings.storage、本地/对象存储文档、`docs/provider.md` |
 | Image Provider | 图片任务、队列、settings.image、任务页面、`docs/provider.md` |
@@ -45,7 +45,7 @@
 
 新增配置时优先判断配置归属：
 
-- 部署级固定配置：进入 `.env.example`，Docker 需要时同步 `.env.docker.example`。
+- 部署级固定配置：进入唯一模板 `.env.example`，Docker 需要时同步 Compose。
 - 可变业务配置：优先进入 settings 表和后台设置页。
 - 敏感业务配置：存库时必须 AES-GCM 加密，前端展示必须脱敏。
 
@@ -57,7 +57,7 @@
 - 重复出现的坑、质量门槛或工具协作经验，应写回对应 pitfalls、模块文档、`docs/PROGRESS.md` 或 AI 规则，避免只停留在单次对话。
 # P10 Pre-production Foundation
 
-Changes to `.env.staging.example`, `deploy/preproduction/**`, `deploy/scripts/*preproduction*`, or `scripts/p10-preproduction-*` must be checked together with `docs/P10_PREPRODUCTION_ARCHITECTURE.md`, `docs/env.md`, `docs/docker-deployment.md`, the P10 Batch 1 fixture/gate, the planning semantic manifest, the P9 transition gate, and sensitive-diff checks. Production resources, credentials, and P9 protected source are outside this module's writable scope.
+Changes to `.env.example`, `deploy/preproduction/**`, `deploy/scripts/*preproduction*`, or `scripts/p10-preproduction-*` must be checked together with `docs/P10_PREPRODUCTION_ARCHITECTURE.md`, `docs/env.md`, `docs/docker-deployment.md`, the P10 Batch 1 fixture/gate, the planning semantic manifest, the P9 transition gate, and sensitive-diff checks. Production resources, credentials, and P9 protected source are outside this module's writable scope.
 
 ## P10 Credential / Read-only / Control Modules
 

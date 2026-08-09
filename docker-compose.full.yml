@@ -1,5 +1,5 @@
 # TradeMind — Docker 部署启动（PostgreSQL + Redis + backend + admin + collector）
-# 使用方式：复制 .env.docker.example 为 .env 后执行
+# 使用方式：复制唯一模板 .env.example 为 .env 后执行
 #   docker compose -f docker-compose.full.yml up --build
 # 请勿与本仓库 docker-compose.yml（仅 infra）混淆；本文件不会删除或修改原有 compose。
 

@@ -156,14 +156,14 @@ pnpm check:p4-r
 ### Docker 部署
 
 ```bash
-cp .env.docker.example .env
+cp .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
 Windows PowerShell：
 
 ```powershell
-Copy-Item .env.docker.example .env
+Copy-Item .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 

@@ -13,8 +13,8 @@ export const FORMAL_DATASET_EXPECTED_ROWS = 1_900_150;
 
 const GENERATED_PREFIXES = ['docs/', 'artifacts/', 'logs/', 'tmp/', 'data/'];
 const IGNORED_PARTS = new Set(['.git', 'node_modules', 'dist', 'artifacts', 'docs', 'data', 'logs', 'tmp']);
-const RUNTIME_ROOTS = ['backend', 'tests/load', 'scripts', 'package.json', 'pnpm-lock.yaml', '.env.example', '.env.docker.example', 'docker-compose.yml', 'docker-compose.full.yml'];
-const FORMAL_TEMPLATE_FILES = new Set(['package.json', 'pnpm-lock.yaml', '.env.example', '.env.docker.example', 'docker-compose.yml', 'docker-compose.full.yml']);
+const RUNTIME_ROOTS = ['backend', 'tests/load', 'scripts', 'package.json', 'pnpm-lock.yaml', '.env.example', 'docker-compose.yml', 'docker-compose.full.yml'];
+const FORMAL_TEMPLATE_FILES = new Set(['package.json', 'pnpm-lock.yaml', '.env.example', 'docker-compose.yml', 'docker-compose.full.yml']);
 const IMMUTABLE_INPUT_DOCS = new Set([
   'docs/p7-v2-r3b-formal-binary-provenance-manifest.json',
   'docs/p7-v2-r3b-formal-input-sequence-manifest.json',
@@ -43,7 +43,6 @@ const IMMUTABLE_DIFF_PATHS = [
   'package.json',
   'pnpm-lock.yaml',
   '.env.example',
-  '.env.docker.example',
   'docker-compose.yml',
   'docker-compose.full.yml',
 ];

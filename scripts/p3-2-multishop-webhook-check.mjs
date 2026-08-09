@@ -114,9 +114,6 @@ requireContent('fallback.test', 'backend/internal/config/validate_test.go',
 requireContent('env.example', '.env.example',
   ['DOUYIN_WEBHOOK_TEST_SHOP_BINDING_ID', 'ENABLE_DOUYIN_WEBHOOK_DEMO_FALLBACK'],
   'env example contains fallback vars');
-requireContent('env.docker', '.env.docker.example',
-  ['DOUYIN_WEBHOOK_TEST_SHOP_BINDING_ID', 'ENABLE_DOUYIN_WEBHOOK_DEMO_FALLBACK'],
-  'docker env example contains fallback vars');
 requireContent('compose.env', 'docker-compose.full.yml',
   ['DOUYIN_WEBHOOK_TEST_SHOP_BINDING_ID', 'ENABLE_DOUYIN_WEBHOOK_DEMO_FALLBACK'],
   'docker compose passes fallback vars');

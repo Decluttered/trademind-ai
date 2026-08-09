@@ -11,7 +11,7 @@ const SHA256_RE = /^[a-f0-9]{64}$/;
 const COMMIT_RE = /^[a-f0-9]{40}$/;
 const SECRET_RE = /(^|_)(SECRET|PASSWORD|TOKEN|COOKIE|JWT|DATABASE_URL|DB_PASS|PROVIDER_KEY)$/i;
 const RUNTIME_SOURCE_ROOTS = ['backend', 'backend/migrations', 'backend/go.mod', 'backend/go.sum'];
-const RUNTIME_CONFIG_ROOTS = ['.env.example', '.env.docker.example', 'backend/internal/config'];
+const RUNTIME_CONFIG_ROOTS = ['.env.example', 'backend/internal/config'];
 const IGNORED_DIRS = new Set(['.git', 'node_modules', 'dist', 'artifacts', 'docs', 'data', 'logs', 'tmp']);
 
 export function repoRoot() {
@@ -114,7 +114,6 @@ export function migrationSetHash(runtimeWorktree) {
 export function runtimeConfigSchemaHash(runtimeWorktree) {
   return hashRoots(runtimeWorktree, RUNTIME_CONFIG_ROOTS, (rel) =>
     rel === '.env.example' ||
-    rel === '.env.docker.example' ||
     (rel.startsWith('backend/internal/config/') && rel.endsWith('.go')),
   );
 }

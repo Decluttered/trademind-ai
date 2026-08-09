@@ -2,11 +2,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-ENV_FILE="${P10_PREPRODUCTION_ENV_FILE:-$ROOT/.env.staging}"
-export P10_PREPRODUCTION_ENV_FILE="$ENV_FILE"
+ENV_FILE="$ROOT/.env"
 COMPOSE=(docker compose --project-name trademind-preproduction --env-file "$ENV_FILE" -f "$ROOT/deploy/preproduction/compose.yml")
 
-node "$ROOT/scripts/p10-preproduction-preflight.mjs" --mode migration --env-file "$ENV_FILE"
+node "$ROOT/scripts/p10-preproduction-preflight.mjs" --mode migration
 "${COMPOSE[@]}" up -d --wait postgres redis
 "${COMPOSE[@]}" up -d backend
-P10_PREPRODUCTION_ENV_FILE="$ENV_FILE" "$ROOT/deploy/scripts/check-preproduction-readiness.sh"
+"$ROOT/deploy/scripts/check-preproduction-readiness.sh"

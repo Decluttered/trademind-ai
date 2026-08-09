@@ -6,8 +6,8 @@ import { computeLiveProtectedSourceManifest } from './p9-protected-source-freeze
 import { computeP10PlanningSemanticManifest } from './p10-planning-semantic-manifest.mjs';
 import {
   readEnvFile,
+  validateP10CanonicalTemplate,
   validateP10ExternalInfrastructureEvidence,
-  validateP10PreproductionContract,
 } from './p10-preproduction-contract.mjs';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -17,7 +17,7 @@ const GATE_JSON = 'docs/p10-task-batch-1-preproduction-foundation-gate.json';
 const GATE_MD = 'docs/P10_TASK_BATCH_1_PREPRODUCTION_FOUNDATION_GATE.md';
 
 const REQUIRED_FILES = [
-  '.env.staging.example',
+  '.env.example',
   'deploy/preproduction/compose.yml',
   'deploy/scripts/check-preproduction-readiness.sh',
   'deploy/scripts/deploy-preproduction.sh',
@@ -26,6 +26,7 @@ const REQUIRED_FILES = [
   'deploy/scripts/restore-preproduction.sh',
   'deploy/scripts/rollback-preproduction.sh',
   'deploy/scripts/teardown-preproduction.sh',
+  'deploy/scripts/load-env-defaults.sh',
   'docs/P10_PREPRODUCTION_ARCHITECTURE.md',
   'docs/p10-task-batch-1-external-infrastructure.json',
   'scripts/p10-preproduction-contract.mjs',
@@ -182,7 +183,7 @@ function collectActualBundle() {
   const revalidation = readJSON('docs/p10-planning-pack-revalidation.json') || {};
   const externalEvidence = readJSON('docs/p10-task-batch-1-external-infrastructure.json') || {};
   const planningSemanticManifest = computeP10PlanningSemanticManifest();
-  const contract = validateP10PreproductionContract(readEnvFile(rootPath('.env.staging.example')));
+  const contract = validateP10CanonicalTemplate(readEnvFile(rootPath('.env.example')));
   const compose = read('deploy/preproduction/compose.yml');
   const readiness = read('deploy/scripts/check-preproduction-readiness.sh');
   const migration = read('deploy/scripts/migrate-preproduction.sh');

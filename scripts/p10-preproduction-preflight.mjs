@@ -8,10 +8,10 @@ function argument(name, fallback = '') {
 }
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const envFile = path.resolve(repoRoot, argument('--env-file', '.env.staging'));
+const envFile = path.resolve(repoRoot, '.env');
 const mode = argument('--mode', 'startup');
 const allowedModes = ['config', 'startup', 'migration', 'backup', 'restore', 'rollback', 'teardown'];
-const report = validateP10PreproductionContract(readEnvFile(envFile));
+const report = validateP10PreproductionContract({ ...readEnvFile(envFile), ...process.env });
 if (!allowedModes.includes(mode)) report.failed.push('operationMode');
 report.mode = mode;
 report.envFile = path.relative(repoRoot, envFile).replaceAll('\\', '/');

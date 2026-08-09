@@ -1,17 +1,66 @@
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
-  readEnvFile,
+  P10_DISABLED_CAPABILITY_KEYS,
   validateP10ExternalInfrastructureEvidence,
   validateP10PreproductionContract,
 } from '../../../scripts/p10-preproduction-contract.mjs';
 import { validateP10TaskBatch1Bundle } from '../../../scripts/p10-task-batch-1-gate.mjs';
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-
 function validEnv() {
-  return { ...readEnvFile(path.join(repoRoot, '.env.staging.example')) };
+  return {
+    APP_ENV: 'staging',
+    P10_ENVIRONMENT_PURPOSE: 'preproduction',
+    P10_DEPLOYMENT_ID: 'trademind-preproduction-example',
+    P10_COMPOSE_PROJECT_NAME: 'trademind-preproduction',
+    ADMIN_PUBLIC_URL: 'https://preproduction-admin.example.net',
+    API_PUBLIC_URL: 'https://preproduction-api.example.net',
+    P10_PRODUCTION_ADMIN_PUBLIC_URL: 'https://admin.example.com',
+    P10_PRODUCTION_API_PUBLIC_URL: 'https://api.example.com',
+    DB_DRIVER: 'postgres',
+    DB_NAME: 'trademind_staging',
+    DB_PASSWORD: '',
+    P10_DATABASE_PURPOSE: 'preproduction',
+    P10_DATABASE_ID: 'database-preproduction-example',
+    P10_PRODUCTION_DATABASE_ID: 'database-production-example',
+    P10_TEST_DATABASE_ID: 'database-test-example',
+    REDIS_PASSWORD: '',
+    P10_REDIS_PURPOSE: 'preproduction',
+    P10_REDIS_ID: 'redis-preproduction-example',
+    P10_PRODUCTION_REDIS_ID: 'redis-production-example',
+    P10_TEST_REDIS_ID: 'redis-test-example',
+    APP_MASTER_KEY: '',
+    JWT_SECRET: '',
+    P10_SECRET_SOURCE: 'external',
+    P10_DB_PASSWORD_REF: 'external://trademind/preproduction/postgres-password',
+    P10_REDIS_PASSWORD_REF: 'external://trademind/preproduction/redis-password',
+    P10_APP_MASTER_KEY_REF: 'external://trademind/preproduction/app-master-key',
+    P10_JWT_SECRET_REF: 'external://trademind/preproduction/jwt-secret',
+    AUTH_SESSION_MODE: 'secure_session',
+    AUTH_SECURE_COOKIE: 'true',
+    AUTH_COOKIE_DOMAIN: '.preproduction.example.net',
+    P10_PRODUCTION_COOKIE_DOMAIN: '.example.com',
+    P10_SESSION_NAMESPACE: 'trademind-preproduction',
+    P10_PRODUCTION_SESSION_NAMESPACE: 'trademind-production',
+    STORAGE_PROVIDER: 's3',
+    CORS_ALLOWED_ORIGINS: 'https://preproduction-admin.example.net',
+    CORS_ALLOW_CREDENTIALS: 'true',
+    ENABLE_SWAGGER: 'false',
+    ENABLE_DEV_ROUTES: 'false',
+    ENABLE_DEMO_SEED: 'false',
+    ENABLE_DEBUG_ENDPOINTS: 'false',
+    EXTERNAL_PROVIDER_MODE: 'mock',
+    INVENTORY_SYNC_PROVIDER_MODE: 'fixture',
+    P10_MIGRATION_TARGET: 'preproduction',
+    MIGRATION_RUN_ON_STARTUP: 'true',
+    P10_BACKUP_TARGET: 'preproduction',
+    P10_RESTORE_TARGET: 'preproduction_restore',
+    P10_PREPRODUCTION_RESTORE_ENABLED: 'true',
+    P10_PRODUCTION_RESTORE_ENABLED: 'false',
+    P10_PREVIOUS_API_IMAGE: 'registry.example.com/trademind/api:previous-approved',
+    P10_PREVIOUS_ADMIN_IMAGE: 'registry.example.com/trademind/admin:previous-approved',
+    P10_ROLLBACK_MIGRATION_COMPATIBLE: 'true',
+    ...Object.fromEntries(P10_DISABLED_CAPABILITY_KEYS.map((key) => [key, 'false'])),
+  };
 }
 
 function validExternalEvidence() {

@@ -38,7 +38,7 @@
 ## 环境变量 / 配置
 
 - [ ] 更新 `.env.example`。
-- [ ] Docker 需要时更新 `.env.docker.example`、`docker-compose.full.yml`。
+- [ ] Docker 需要时更新唯一模板 `.env.example`、`docker-compose.full.yml`。
 - [ ] 更新 `docs/env.md`、`docs/development.md`、`docs/docker-deployment.md`。
 - [ ] 敏感配置确认加密存储、脱敏展示、日志禁止输出。
 

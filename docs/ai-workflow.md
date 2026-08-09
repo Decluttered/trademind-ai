@@ -64,7 +64,7 @@ AI 开始任务时优先整理一个不超过 10 条的上下文包：
 | Provider | `docs/provider.md`、`docs/provider-template.md`、`backend/internal/providers` | 设置页、连接测试、脱敏展示、Provider 文档 |
 | Admin 页面 | `admin/config/routes.ts`、页面、services、types、UI rules | README 能力描述、相关 docs |
 | Collector | `collector/`、`docs/collector-1688-pitfalls.md`、采集 API | 后端 DTO、草稿映射、`docs/api.md` |
-| 环境变量 | `.env.example`、`.env.docker.example`、`docs/env.md`、config 代码 | Docker、开发和部署文档 |
+| 环境变量 | `.env.example`、`docs/env.md`、config 代码 | Docker、开发和部署文档 |
 | Docker / CI | workflow、compose、Dockerfile、`docs/docker-deployment.md` | README、CONTRIBUTING、PR 模板 |
 | 文档 / 规则 | `docs/README.md`、`AGENTS.md`、`.cursor/rules/README.md` | README / README.en 导航、相关 rule |
 

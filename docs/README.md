@@ -82,7 +82,7 @@ TradeMind 是一个聚焦 `AI 商品运营工具` 与 `多平台跨境 ERP MVP` 
 | --- | --- |
 | [development.md](development.md) | 本地开发环境、`pnpm dev`、分服务启动、调试与故障排查 |
 | [docker-deployment.md](docker-deployment.md) | `docker-compose.full.yml`、生产前安全配置、日志与数据管理 |
-| [env.md](env.md) | `.env.example`、`.env.docker.example`、Docker 端口、队列变量和敏感配置说明 |
+| [env.md](env.md) | 唯一模板 `.env.example`、Docker 端口、队列变量和敏感配置说明 |
 
 ## 架构与扩展
 
@@ -134,7 +134,7 @@ TradeMind 是一个聚焦 `AI 商品运营工具` 与 `多平台跨境 ERP MVP` 
 | `AGENTS.md` | 通用 AI 编程工具协作入口，适用于 Cursor 以外的 Agent。 |
 | `CHANGELOG.md` | 版本与重要变更记录。 |
 | `.env.example` | 本地开发环境变量模板。 |
-| `.env.docker.example` | Docker 完整部署环境变量模板。 |
+| `.env.example` | 所有环境和 Docker 共用的唯一配置模板。 |
 | `docker-compose.yml` | 本地开发基础设施：PostgreSQL + Redis。 |
 | `docker-compose.full.yml` | 完整 Docker 部署编排：PostgreSQL + Redis + backend + admin + collector。 |
 
@@ -143,8 +143,8 @@ TradeMind 是一个聚焦 `AI 商品运营工具` 与 `多平台跨境 ERP MVP` 
 新增或修改功能时，请同步检查：
 
 - 启动命令变化：更新 `README.md`、`README.en.md`、`development.md`。
-- Docker 行为变化：更新 `docker-deployment.md`、`.env.docker.example`。
-- 环境变量变化：更新 `.env.example`、必要时更新 `.env.docker.example`，并同步 [env.md](env.md)。
+- Docker 行为变化：更新 `docker-deployment.md`、`.env.example` 和对应 Compose。
+- 环境变量变化：更新唯一模板 `.env.example`，并同步 [env.md](env.md)。
 - API / Provider / 队列 / 数据库变化：更新 [api.md](api.md)、[provider.md](provider.md)、[module-map.md](module-map.md) 或对应架构文档。
 - 分支、CI、PR 流程变化：更新 `branching.md`、`CONTRIBUTING.md`、PR 模板。
 - 较大模块或阶段性变更：更新 [PROGRESS.md](PROGRESS.md)。

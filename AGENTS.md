@@ -73,7 +73,7 @@
 代码变更必须同步相关文档：
 
 - 新增环境变量：更新 `.env.example`。
-- Docker 也需要该变量：更新 `.env.docker.example` 和 `docker-compose.full.yml`。
+- Docker 也需要该变量：更新唯一模板 `.env.example` 和 `docker-compose.full.yml`。
 - 修改启动命令：更新 `README.md`、`README.en.md`、`docs/development.md`。
 - 修改 Docker 部署：更新 `docs/docker-deployment.md`。
 - 新增 API / Provider / 队列 / 页面 / 数据表：先查 `docs/module-map.md`，再更新 `docs/api.md`、`docs/provider.md` 或对应模块文档。

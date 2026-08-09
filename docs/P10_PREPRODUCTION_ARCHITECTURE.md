@@ -5,7 +5,7 @@ TradeMind uses the existing `staging` profile as P10 pre-production. No separate
 ## Repository Foundation
 
 - `deploy/preproduction/compose.yml` defines isolated PostgreSQL, Redis, backend, Admin, network, and named data volumes under the fixed `trademind-preproduction` project.
-- `.env.staging.example` is the non-secret configuration contract. Secret values and immutable image references are injected at runtime.
+- `.env.example` is the only non-secret configuration contract. The target host copies it to `.env`, sets `APP_ENV=staging`, and injects secret values and immutable image references at runtime.
 - `scripts/p10-preproduction-preflight.mjs` rejects missing, unknown, production, or non-isolated targets before startup, migration, backup, restore, rollback, or teardown.
 - `/health/live` remains the process probe. `/health/ready` verifies database, Redis, and completed startup migrations; deployment scripts use bounded probes rather than fixed sleep acceptance.
 - Startup migration uses the existing PostgreSQL advisory lock and AutoMigrate path. The preflight requires an explicit pre-production target before the backend is started.

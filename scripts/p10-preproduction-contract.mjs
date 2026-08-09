@@ -35,7 +35,7 @@ export const P10_DISABLED_CAPABILITY_KEYS = [
 ];
 
 const REQUIRED_KEYS = [
-  'APP_ENV', 'P10_ENVIRONMENT_PURPOSE', 'P10_DEPLOYMENT_ID',
+  'APP_ENV', 'P10_ENVIRONMENT_PURPOSE', 'P10_DEPLOYMENT_ID', 'P10_CURRENT_ALLOWED_LEVEL',
   'ADMIN_PUBLIC_URL', 'API_PUBLIC_URL',
   'P10_PRODUCTION_ADMIN_PUBLIC_URL', 'P10_PRODUCTION_API_PUBLIC_URL',
   'DB_DRIVER', 'DB_NAME', 'P10_DATABASE_PURPOSE', 'P10_DATABASE_ID',
@@ -55,6 +55,7 @@ const REQUIRED_KEYS = [
 ];
 
 function value(env, key) { return String(env?.[key] ?? '').trim(); }
+function hasKeys(env, keys) { return keys.every((key) => Object.hasOwn(env, key)); }
 function isFalse(env, key) { return value(env, key).toLowerCase() === 'false'; }
 function distinct(values) { return values.every((item, index) => item && values.indexOf(item) === index); }
 function isHTTPS(raw) {
@@ -92,6 +93,77 @@ export function parseEnvText(raw = '') {
 
 export function readEnvFile(filePath) {
   return parseEnvText(fs.readFileSync(filePath, 'utf8'));
+}
+
+export function validateP10CanonicalTemplate(env = {}) {
+  const databaseKeys = [
+    'DB_DRIVER', 'DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME',
+    'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD',
+    'P10_DATABASE_PURPOSE', 'P10_DATABASE_ID', 'P10_PRODUCTION_DATABASE_ID', 'P10_TEST_DATABASE_ID',
+  ];
+  const redisKeys = [
+    'REDIS_ADDR', 'REDIS_PASSWORD', 'REDIS_DB',
+    'P10_REDIS_PURPOSE', 'P10_REDIS_ID', 'P10_PRODUCTION_REDIS_ID', 'P10_TEST_REDIS_ID',
+  ];
+  const secretReferenceKeys = [
+    'P10_SECRET_SOURCE', 'P10_DB_PASSWORD_REF', 'P10_REDIS_PASSWORD_REF',
+    'P10_APP_MASTER_KEY_REF', 'P10_JWT_SECRET_REF',
+  ];
+  const sessionKeys = [
+    'AUTH_SESSION_MODE', 'AUTH_SECURE_COOKIE', 'AUTH_COOKIE_DOMAIN',
+    'P10_PRODUCTION_COOKIE_DOMAIN', 'P10_SESSION_NAMESPACE', 'P10_PRODUCTION_SESSION_NAMESPACE',
+  ];
+  const checks = [
+    ['requiredConfiguration', hasKeys(env, REQUIRED_KEYS)],
+    ['environmentKnown', P10_ENVIRONMENT_PROFILES.includes(value(env, 'APP_ENV').toLowerCase())],
+    ['preproductionEnvironmentMapping', P10_PREPRODUCTION_APP_ENV === 'staging'
+      && hasKeys(env, ['P10_ENVIRONMENT_PURPOSE', 'P10_DEPLOYMENT_ID', 'P10_COMPOSE_PROJECT_NAME'])],
+    ['deploymentIdentity', hasKeys(env, ['P10_DEPLOYMENT_ID', 'P10_COMPOSE_PROJECT_NAME'])],
+    ['publicEndpointIsolation', hasKeys(env, [
+      'ADMIN_PUBLIC_URL', 'API_PUBLIC_URL', 'P10_PRODUCTION_ADMIN_PUBLIC_URL', 'P10_PRODUCTION_API_PUBLIC_URL',
+    ])],
+    ['databaseIsolation', hasKeys(env, databaseKeys)],
+    ['redisIsolation', hasKeys(env, redisKeys)],
+    ['secretExternalization', hasKeys(env, secretReferenceKeys)
+      && value(env, 'APP_MASTER_KEY') === ''
+      && value(env, 'P10_LOCAL_CREDENTIAL_KEY') === ''
+      && value(env, 'TEST_DATABASE_URL') === ''
+      && value(env, 'TEST_REDIS_URL') === ''],
+    ['sessionIsolation', hasKeys(env, sessionKeys)],
+    ['stagingRuntimeSafety', hasKeys(env, [
+      'STORAGE_PROVIDER', 'CORS_ALLOWED_ORIGINS', 'CORS_ALLOW_CREDENTIALS',
+      'ENABLE_SWAGGER', 'ENABLE_DEV_ROUTES', 'ENABLE_DEMO_SEED', 'ENABLE_DEBUG_ENDPOINTS',
+    ])],
+    ['capabilityDefaults', P10_DISABLED_CAPABILITY_KEYS.every((key) => isFalse(env, key))
+      && value(env, 'P10_CURRENT_ALLOWED_LEVEL') === 'L0'
+      && value(env, 'P10_REAL_PROVIDER_ENABLED').toLowerCase() === 'false'
+      && value(env, 'P10_REAL_PLATFORM_NETWORK_ENABLED').toLowerCase() === 'false'
+      && value(env, 'P10_REAL_CREDENTIALS_ENABLED').toLowerCase() === 'false'
+      && value(env, 'P10_REAL_INVENTORY_READ_ENABLED').toLowerCase() === 'false'
+      && value(env, 'P10_INVENTORY_MUTATION_ENABLED').toLowerCase() === 'false'
+      && value(env, 'P10_BACKGROUND_WORKER_ENABLED').toLowerCase() === 'false'
+      && value(env, 'P10_AUTOMATIC_RETRY_ENABLED').toLowerCase() === 'false'
+      && value(env, 'EXTERNAL_PROVIDER_MODE') === 'mock'
+      && value(env, 'INVENTORY_SYNC_PROVIDER_MODE') === 'fixture'],
+    ['migrationSafety', hasKeys(env, ['P10_MIGRATION_TARGET', 'MIGRATION_RUN_ON_STARTUP'])],
+    ['backupRestoreSafety', hasKeys(env, [
+      'P10_BACKUP_TARGET', 'P10_RESTORE_TARGET', 'P10_PREPRODUCTION_RESTORE_ENABLED', 'P10_PRODUCTION_RESTORE_ENABLED',
+    ]) && isFalse(env, 'P10_PRODUCTION_RESTORE_ENABLED')],
+    ['rollbackFoundation', hasKeys(env, [
+      'P10_PREVIOUS_API_IMAGE', 'P10_PREVIOUS_ADMIN_IMAGE', 'P10_ROLLBACK_MIGRATION_COMPATIBLE',
+    ])],
+  ];
+  const failed = checks.filter(([, passed]) => !passed).map(([id]) => id);
+  return {
+    status: failed.length === 0 ? 'passed' : 'failed',
+    failed,
+    failedCount: failed.length,
+    environmentModel: {
+      development: 'development', test: 'test', preproduction: 'staging', production: 'production',
+    },
+    currentAllowedLevel: 'L0',
+    checks: checks.map(([id, passed]) => ({ id, status: passed ? 'passed' : 'failed' })),
+  };
 }
 
 export function validateP10PreproductionContract(env = {}) {
