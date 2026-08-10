@@ -38,9 +38,6 @@ docker compose -f docker-compose.full.yml up -d --build
 | --- | --- | --- | --- | --- |
 | `APP_ENV` | `development` | backend | 否 | 主运行环境使用 `development` / `test` / `staging` / `production`；既有 `demo` / `performance` 仅用于受控演示和隔离压测。 |
 | `APP_HTTP_ADDR` | `:8080` | backend | 否 | Go API 监听地址。 |
-| `P7_V2_API_HOST` | `127.0.0.1` | P7-V2 harness | 否 | 仅 P7-V2 性能环境的 loopback API host；禁止公网或 WSL 非 loopback 地址。 |
-| `P7_V2_API_PORT` | `8080` | P7-V2 harness | 否 | 仅 P7-V2 性能环境 API 端口；可迁移至 `18080`、`28080` 或 `38080`。 |
-| `P7_BASE_URL` | 派生自前两项 | P7-V2 harness | 否 | 必须等于 `http://${P7_V2_API_HOST}:${P7_V2_API_PORT}`，供 k6 与探针统一使用。 |
 | `P7_DIAGNOSTICS_*` | `P7_DIAGNOSTICS_ENABLED=false` | legacy diagnostics compatibility | 否 | 默认关闭；如临时诊断必须写入仓库外临时目录，完成后删除，不得创建或提交 `artifacts/`。 |
 | `APP_MASTER_KEY` | 空 / 64 位 hex | backend | 是 | AES-GCM 主密钥，用于 settings 敏感配置加密。 |
 | `ADMIN_BOOTSTRAP_EMAIL` | 空 / `admin@example.com` | backend | 否 | 初始管理员邮箱。 |
@@ -117,7 +114,6 @@ docker compose -f docker-compose.full.yml up -d --build
 | `COLLECTOR_BASE_URL` | `http://127.0.0.1:3100` | backend | 否 | Go API 调用 Collector 的基础地址。 |
 | `COLLECTOR_TIMEOUT_SECONDS` | `120` | backend | 否 | 后端调用 Collector 超时；淘宝/天猫任务会按页面打开超时自动放宽（约 `gotoTimeoutMs + 90s`）。 |
 | `COLLECTOR_HTTP_ADDR` | `:3100` / `:3001` | collector | 否 | Collector 监听地址。 |
-| `COLLECTOR_MAIN_SERVICE_URL` | `http://127.0.0.1:8080` | collector | 否 | Collector 回调或访问后端的基础地址预留。 |
 | `COLLECTOR_GOTO_TIMEOUT_MS` | `45000` | collector | 否 | Playwright 页面打开超时。 |
 | `COLLECTOR_HEADLESS` | `1` | collector | 否 | 是否无头浏览器运行；本地打开登录浏览器时可设为 `0`。 |
 | `COLLECTOR_BROWSER_PROFILE_DIR` / `BROWSER_PROFILE_ROOT` | `collector/data/browser-profiles`（相对 collector 包根目录） | collector | 否 | 1688 持久化 Profile 根目录（1688 使用子目录 `1688`）。Docker 通常设为 `/workspace/data/browser-profiles`。 |
@@ -130,7 +126,7 @@ docker compose -f docker-compose.full.yml up -d --build
 | 变量前缀 | 示例变量 | 服务 | 说明 |
 | --- | --- | --- | --- |
 | `COLLECT_*` | `COLLECT_QUEUE_ENABLED`、`COLLECT_WORKER_CONCURRENCY`、`COLLECT_QUEUE_NAME`、`COLLECT_BATCH_MAX_URLS`、`COLLECT_BATCH_CONCURRENCY_1688`、`COLLECT_BATCH_DELAY_MIN_MS_1688`、`COLLECT_BATCH_DELAY_MAX_MS_1688`、`COLLECT_BATCH_RETRY_ON_BLOCKED`、`COLLECT_BATCH_RETRY_ON_TIMEOUT`、`COLLECT_BATCH_MAX_RETRIES_1688` | backend | 采集任务队列、批量 URL 限制、1688 批量节流与重试。settings **`collector`** 分组可覆盖 1688 批量项。 |
-| `IMAGE_*` / `AI_IMAGE_*` | `IMAGE_QUEUE_ENABLED`、`IMAGE_TASK_TIMEOUT_SECONDS`、`AI_IMAGE_PROVIDER_TIMEOUT_SECONDS`、`AI_IMAGE_TASK_MAX_RUNTIME_SECONDS`、`AI_IMAGE_POLL_INTERVAL_SECONDS`、`AI_IMAGE_TRIAL_TIMEOUT_SECONDS` | backend / scripts | 图片任务队列、Provider/Worker 超时、Demo trial 轮询和总等待上限。 |
+| `IMAGE_*` | `IMAGE_QUEUE_ENABLED`、`IMAGE_TASK_TIMEOUT_SECONDS` | backend | 图片任务队列与单次任务 Provider 调用超时。 |
 | `TRANSLATE_FONT_PATH` | — | backend | 可选。图片文字翻译程序绘制所用字体（TTF/TTC）；未设置时自动查找 Noto CJK / 微软雅黑 / 内置英文字体。Docker 镜像默认安装 `fonts-noto-cjk`。 |
 | `ORDER_SYNC_*` | `ORDER_SYNC_QUEUE_ENABLED`、`ORDER_SYNC_QUEUE_NAME` | backend | 平台订单同步任务。 |
 | `CUSTOMER_MESSAGE_SYNC_*` | `CUSTOMER_MESSAGE_SYNC_QUEUE_ENABLED` | backend | 客服消息同步任务。 |
@@ -161,12 +157,6 @@ docker compose -f docker-compose.full.yml up -d --build
 | `COLLECTOR_PUBLISH_PORT` | `3001` | Collector 宿主机端口。 |
 | `POSTGRES_PUBLISH_PORT` | `5432` | PostgreSQL 宿主机端口。 |
 | `REDIS_PUBLISH_PORT` | `6379` | Redis 宿主机端口。 |
-
-## 前端
-
-| 变量 | 示例 / 默认 | 服务 | 说明 |
-| --- | --- | --- | --- |
-| `VITE_API_BASE` | `/api` | admin | 管理端 API 基础路径，当前在 `.env.example` 中为预留注释。 |
 
 ## 新增变量检查清单
 
