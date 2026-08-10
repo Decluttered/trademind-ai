@@ -2,7 +2,7 @@
 
 > 用于 **真实抖店凭证 + 公网 Storage** 环境下的人工端到端验收。
 > 自动化回归由 GitHub Actions 在隔离环境执行；真实平台写链路必须获得外部生产审批，不由仓库脚本自动触发。
-> 通用人工签收见 [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md)；发布门禁见 [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md)。
+> 通用人工签收见 [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md)。验收结论记录在 PR 或发布工单，不向仓库提交测试报告、截图或日志产物。
 
 ---
 
@@ -271,37 +271,25 @@
 
 ---
 
-## 5. Release Tag 准备
+## 5. 人工签收
 
-建议在有真实 E2E 通过后打 tag：
-
-```text
-v0.8.0-douyin-mvp-demo
-```
-
-**Tag 前检查：**
+**签收前检查：**
 
 - [ ] 本清单 2.1–2.18 全部通过或已知问题记入 PROGRESS 遗留
-- [ ] `go test ./...` 与 CI `backend-race` job 通过（backend）
-- [ ] `pnpm build:admin` 通过
-- [ ] `scripts/douyin-e2e-preflight` 在无凭证环境 exit `3`（预期 blocked）
-- [ ] 有凭证环境：`readonly` + `report` 工件已归档
-- [ ] [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md) 门禁项已勾选
+- [ ] GitHub Actions 中 backend、contract、Admin build 与 Admin E2E 等受影响工作流通过
+- [ ] 生产预检、只读检查和受控写链路均由维护者在授权环境人工执行
+- [ ] 脱敏结论已记录在 PR 或发布工单，未向仓库提交 JSON、Markdown 报告、截图或日志
 - [ ] `git diff --check` 无冲突标记
 - [ ] `P10_MANUAL_ACCEPTANCE_CHECKLIST.md` 中相关流程已人工签收
 - [ ] `docs/PROGRESS.md` 已更新阶段状态
-
-**Tag 说明模板（Release Notes 摘要）：**
-
-> TradeMind MVP Demo：抖店 Phase 1–9.2 主链路闭环。支持平台配置、OAuth、类目属性、刊登映射、图片上传、平台商品草稿、订单同步、SKU 绑定校准/手动绑定、库存同步。不含直接上架、售后、财务、多仓。
 
 ---
 
 ## 6. 相关文档
 
 - [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md) — 当前人工验收清单
-- [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md) — 发布门禁
-- [`DOUYIN_E2E_REPORT_TEMPLATE.md`](DOUYIN_E2E_REPORT_TEMPLATE.md) — 人工/脚本报告模板
+- [`DOUYIN_E2E_PRECHECK_GUIDE.md`](DOUYIN_E2E_PRECHECK_GUIDE.md) — 人工验收前置检查
+- [`DOUYIN_PRODUCTION_RUNBOOK.md`](DOUYIN_PRODUCTION_RUNBOOK.md) — 生产操作与灰度观察
 - [`docs/PROGRESS.md`](PROGRESS.md) — 阶段进度与遗留
 - [`docs/api.md`](api.md) — API 契约（含抖店可观测性）
 - [`docs/provider.md`](provider.md) — Platform Provider 说明

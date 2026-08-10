@@ -1,6 +1,6 @@
-# 抖店回滚 Runbook（Phase 10.3–10.4）
+# 抖店回滚 Runbook
 
-> 回滚演练报告模板（**environment_simulation_only**）：[`DOUYIN_ROLLBACK_DRILL_REPORT.md`](DOUYIN_ROLLBACK_DRILL_REPORT.md)
+> 回滚演练由维护者在受控环境人工执行，脱敏结论记录在 PR 或发布工单；不向仓库提交演练报告、截图或日志产物。
 
 ## 紧急停用（首选，不删数据）
 

@@ -1,11 +1,11 @@
-# 抖店 E2E 前置检查指南（H1.3 / P3）
+# 抖店人工验收前置检查指南
 
-> **抖店 Release Candidate** · **Douyin Production Adapter Implemented** · 真实 E2E **未执行**（Real Credential Verification Deferred） · Tag deferred · 非 Production Ready
+> **抖店 Release Candidate** · **Douyin Production Adapter Implemented** · 真实平台验收必须在授权环境人工执行 · 非 Production Ready
 
 ## 边界说明
 
-- Phase P3 已完成适配器**代码**：OAuth、Token、类目、图片、平台草稿、订单、库存、Webhook 签名与事件路由
-- 本阶段**不执行**真实抖店 E2E、不自动写不可逆接口、不直接上架
+- 当前适配器代码覆盖 OAuth、Token、类目、图片、平台草稿、订单、库存、Webhook 签名与事件路由
+- 仓库脚本和 CI **不执行**真实抖店写链路、不自动写不可逆接口、不直接上架
 - 凭证缺失状态：`blocked_by_real_credentials` / `environment_required`（**不是**系统 P0/P1 失败）
 - 创建本地草稿 ≠ 平台真实草稿；创建抖店草稿 ≠ 商品上架
 - **代码实现完成 ≠ 真实 E2E 已通过**
@@ -48,5 +48,5 @@
 ## 相关文档
 
 - [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md)
-- [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md)
+- [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md)
 - [`STORAGE_PUBLIC_URL_GUIDE.md`](STORAGE_PUBLIC_URL_GUIDE.md)

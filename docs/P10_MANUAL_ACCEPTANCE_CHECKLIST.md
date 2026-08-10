@@ -2,9 +2,9 @@
 
 Status: **Prepared / Pending Manual Acceptance**
 
-This checklist validates repository-side P10 development without contacting Douyin or promoting runtime beyond L0. Record the operator, date, environment, source HEAD, tenant, fixture shop, observed result and redacted evidence for every item. Do not record credential values, OAuth state values, Authorization/Cookie headers, database/Redis URLs or raw Provider responses.
+This checklist validates repository-side P10 development without contacting Douyin or promoting runtime beyond L0. Record the operator, date, environment, source HEAD, tenant, fixture shop, observed result and redacted evidence in the PR or release work order. Do not commit a completed checklist, report, screenshot or log artifact to the repository. Do not record credential values, OAuth state values, Authorization/Cookie headers, database/Redis URLs or raw Provider responses.
 
-Repository checks were executed while repairing CI, including Go tests/vet, frontend and contract tests, strict UI-copy checks, architecture ratchet, sensitive-diff scan, Admin production build and CI-mode Playwright smoke. These checks do not complete the manual checklist, real PostgreSQL/runtime acceptance, performance acceptance or `go test -race`. No item below is pre-marked as passed.
+Automated regression is owned by GitHub Actions and does not complete this manual checklist, real PostgreSQL/runtime acceptance, performance acceptance or real-platform verification. No item below is pre-marked as passed.
 
 ## A. Credential
 

@@ -399,7 +399,7 @@ List endpoints return `{items, nextCursor, hasMore, limit}` and never expose off
 
 ## 抖店可观测性 / Health & Metrics（Phase 10.4）
 
-> **不** 提供 Prometheus `/metrics`。抖店生产监控复用进程健康、任务中心、操作日志与运营看板。真实平台行为按人工验收清单执行；门禁见 [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md)。
+> **不** 提供 Prometheus `/metrics`。抖店生产监控复用进程健康、任务中心、操作日志与运营看板。真实平台行为按 [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md) 人工验收，结论记录在 PR 或发布工单，不向仓库提交测试报告产物。
 
 ### 进程健康（含抖店相关队列）
 
