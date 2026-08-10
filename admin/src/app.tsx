@@ -1,12 +1,14 @@
 import type {
   CSSProperties,
-  KeyboardEvent,
   ReactElement,
   ReactNode,
 } from "react";
+import { useCallback } from "react";
 import type { MenuDataItem } from "@umijs/route-utils";
 import { history } from "@umijs/max";
+import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import type { RequestConfig, RunTimeLayoutConfig } from "@/typings/umi-runtime";
+import AppGlobalSearch from "@/components/layout/AppGlobalSearch";
 import AppTopNav from "@/components/layout/AppTopNav";
 import AppMessageBridge from "@/components/AppMessageBridge";
 import BrandLogo from "@/components/BrandLogo";
@@ -18,13 +20,24 @@ import {
   createAdminThemeConfig,
   getStoredThemeMode,
 } from "@/theme";
-import { filterMenuByPermission } from "@/utils/menuAccess";
+import { canAccessPath, filterMenuByPermission } from "@/utils/menuAccess";
 import { useInitialStateModel } from "@/hooks/useInitialStateModel";
 import type { InitialStateModel } from "@/typings/umi-runtime";
 
-/** ProLayout 侧栏菜单头部 / 头像区回调的常用 props */
+/** ProLayout 会为侧栏品牌回调提供 props，移动端顶栏品牌回调则不会。 */
 type SiderMenuLayoutProps = {
   collapsed?: boolean;
+};
+
+type HeaderLayoutProps = SiderMenuLayoutProps & {
+  isMobile?: boolean;
+  menuData?: MenuDataItem[];
+  onCollapse?: (collapsed: boolean) => void;
+};
+
+type HeaderContentProps = HeaderLayoutProps & {
+  role?: string | null;
+  permissions?: string[];
 };
 
 async function loadProfileFromToken(
@@ -109,7 +122,7 @@ export const request: RequestConfig = {
   },
 };
 
-/** 侧栏 / 顶栏品牌图形（与登录页同一 `logo.png`） */
+/** 顶栏品牌图形（与登录页同一 `logo.png`） */
 const TM_BRAND_MARK = <BrandLogo height={28} className="tm-app-brand-logo" />;
 
 const TM_APP_LAYOUT_STYLE = {
@@ -139,6 +152,76 @@ function AppTopNavBridge() {
   );
 }
 
+function AppBrandButton() {
+  return (
+    <button
+      type="button"
+      className="tm-app-brand-header"
+      aria-label="返回工作台"
+      onClick={() => history.push("/dashboard")}
+    >
+      <BrandLogo height={28} className="tm-app-brand-logo" />
+      <span className="tm-app-brand-header__name">
+        <span className="tm-app-brand-header__name-primary">贸灵</span>
+        <span className="tm-app-brand-header__name-secondary">TradeMind</span>
+      </span>
+    </button>
+  );
+}
+
+function AppHeaderIdentity({
+  collapsed = false,
+  onCollapse,
+}: HeaderLayoutProps) {
+  const collapseLabel = collapsed ? "展开侧栏" : "收起侧栏";
+
+  return (
+    <div className="tm-app-header-identity">
+      <AppBrandButton />
+      <button
+        type="button"
+        className="tm-app-header-identity__sider-toggle"
+        aria-label={collapseLabel}
+        title={collapseLabel}
+        onClick={() => onCollapse?.(!collapsed)}
+      >
+        {collapsed ? (
+          <MenuUnfoldOutlined aria-hidden="true" />
+        ) : (
+          <MenuFoldOutlined aria-hidden="true" />
+        )}
+      </button>
+    </div>
+  );
+}
+
+function AppHeaderContent({
+  role,
+  permissions,
+  ...layoutProps
+}: HeaderContentProps) {
+  const canSearchPath = useCallback(
+    (path: string) => canAccessPath(path, role, permissions),
+    [permissions, role],
+  );
+
+  return (
+    <div
+      className={`tm-app-header-content${
+        layoutProps.isMobile ? " tm-app-header-content--mobile" : ""
+      }`}
+    >
+      {layoutProps.isMobile ? null : <AppHeaderIdentity {...layoutProps} />}
+      <AppGlobalSearch
+        items={layoutProps.menuData || []}
+        compact={layoutProps.isMobile}
+        canAccessPath={canSearchPath}
+        onNavigate={(path) => history.push(path)}
+      />
+    </div>
+  );
+}
+
 export const layout: RunTimeLayoutConfig = ({ initialState }) => ({
   className: "tm-app-layout",
   style: TM_APP_LAYOUT_STYLE,
@@ -150,88 +233,23 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => ({
   actionsRender: () => <AppTopNavBridge />,
   avatarProps: false,
   rightContentRender: false,
-  // `mix` layout already renders the complete brand in the sider. Keep the
-  // desktop header free of a second logo while retaining the mobile header mark.
+  // ProLayout forces `collapsed: false` inside headerTitleRender, so interactive
+  // collapse controls must stay in headerContentRender to receive the real state.
+  // The empty desktop title wrapper is removed by a narrowly scoped shell style.
   headerTitleRender: false,
+  headerContentRender: (props: HeaderLayoutProps) => (
+    <AppHeaderContent
+      {...props}
+      role={initialState?.currentUser?.role}
+      permissions={initialState?.currentUser?.permissions}
+    />
+  ),
+  collapsedButtonRender: false,
   menuHeaderRender: (
-    logoDom: ReactNode,
+    _logoDom: ReactNode,
     _titleDom: ReactNode,
     props?: SiderMenuLayoutProps,
-  ) => {
-    const collapsed = props?.collapsed;
-    const goHome = () => history.push("/dashboard");
-    const interactive = {
-      role: "button" as const,
-      tabIndex: 0,
-      onClick: goHome,
-      onKeyDown: (e: KeyboardEvent) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          goHome();
-        }
-      },
-    };
-
-    if (collapsed) {
-      return (
-        <div
-          {...interactive}
-          className="tm-app-brand-header tm-app-brand-header--collapsed"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100%",
-            cursor: "pointer",
-            width: "100%",
-            boxSizing: "border-box",
-          }}
-        >
-          {logoDom}
-        </div>
-      );
-    }
-
-    return (
-      <div
-        {...interactive}
-        className="tm-app-brand-header"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          height: "100%",
-          paddingInline: 16,
-          cursor: "pointer",
-          minWidth: 0,
-          boxSizing: "border-box",
-        }}
-      >
-        {logoDom}
-        <span
-          style={{
-            fontWeight: 600,
-            fontSize: 16,
-            letterSpacing: "-0.02em",
-            color: "var(--ant-color-text)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          贸灵{" "}
-          <span
-            style={{
-              fontWeight: 500,
-              color: "var(--ant-color-text-secondary)",
-            }}
-          >
-            TradeMind
-          </span>
-        </span>
-      </div>
-    );
-  },
+  ) => (props ? null : <AppBrandButton />),
   token: {
     bgLayout: "var(--ant-color-bg-layout)",
     header: {

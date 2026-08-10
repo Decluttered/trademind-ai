@@ -8,7 +8,7 @@ All notable changes to TradeMind are documented here.
 
 - Added an icon-only, tooltip-labelled top-navigation light/dark theme switch with light mode as the default and local preference persistence.
 - Applied Ant Design theme tokens across shared Admin chrome, login, dashboard, status surfaces, and responsive regression coverage.
-- Consolidated mobile brand, theme, and account actions into one fixed header, kept the full desktop brand in the sidebar only, and made the navigation drawer opaque above scrolled content.
+- Moved the complete desktop brand and its sider toggle into the fixed top header, added permission-aware navigation search with a compact mobile entry, kept a compact mobile brand beside the menu trigger, removed the duplicate sidebar brand, and made the navigation drawer opaque above scrolled content.
 - Made theme switching atomic and fully reversible for header, elevated, and portal surfaces, and safely centered mobile login and registration layouts.
 
 ### Production maintenance cleanup (2026-08-09)

@@ -62,6 +62,114 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   padding: 0;
 }
 
+.tm-app-brand-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 40px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ant-color-text);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+
+  &:hover {
+    background: var(--ant-color-fill-tertiary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ant-color-primary-border);
+    outline-offset: 1px;
+  }
+
+  &__name {
+    display: inline-flex;
+    gap: 5px;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 16px;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+
+  &__name-primary {
+    color: var(--ant-color-text);
+    font-weight: 600;
+  }
+
+  &__name-secondary {
+    overflow: hidden;
+    color: var(--ant-color-text-secondary);
+    font-weight: 500;
+    text-overflow: ellipsis;
+  }
+}
+
+.tm-app-header-identity {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  height: 100%;
+
+  &__sider-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: var(--ant-color-text-secondary);
+    background: transparent;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--ant-color-primary);
+      background: var(--ant-color-fill-tertiary);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--ant-color-primary-border);
+      outline-offset: 1px;
+    }
+  }
+}
+
+.tm-app-header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+
+  &--mobile {
+    justify-content: flex-end;
+    gap: 0;
+  }
+}
+
+/* In mix layout ProLayout keeps an empty desktop title wrapper even when
+   headerTitleRender is false. Removing only that empty node preserves the
+   native header gutter while letting the interactive brand align with nav icons. */
+.tm-app-layout .ant-pro-global-header-logo-mix:empty {
+  display: none;
+}
+
 /* ProLayout retains a 40px title-wrapper minimum even when a nested collapsed
    item is narrower. Let the wrapper follow the item so its icon and selected
    background share the same horizontal center line. */
@@ -81,7 +189,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
 }
 
 @media (max-width: 767px) {
-  .tm-app-layout .ant-pro-global-header .tm-app-brand-header > span:last-child {
+  .tm-app-layout .ant-pro-global-header .tm-app-brand-header__name {
     display: none;
   }
 }
