@@ -216,6 +216,7 @@ const smokeRoutes = [
   { path: "/product/drafts", name: /商品草稿|E2E 商品草稿/ },
   { path: "/inventory/overview", name: /库存中心/ },
   { path: "/ops/task-center/alerts", name: /告警中心/ },
+  { path: "/ops/observability", name: /可观测性中心/ },
   { path: "/files", name: /文件管理/ },
 ];
 
@@ -234,6 +235,17 @@ test.describe("@smoke Admin route smoke", () => {
       await admin.writeGuard.expectRequestCount("unexpected", 0);
     });
   }
+
+  test("renders observability alert rows without React key warnings", async ({
+    admin,
+    page,
+  }) => {
+    await admin.goto("/ops/observability");
+
+    await expect(page.getByText("http_5xx_elevated")).toBeVisible();
+    await expect(page.getByText("worker_backlog")).toBeVisible();
+    await admin.writeGuard.expectRequestCount("unexpected", 0);
+  });
 
   test("opens logout from the account dropdown without triggering a write", async ({
     admin,

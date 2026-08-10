@@ -235,8 +235,8 @@ func TestOperationTaskValidationRejectsBadPayloadsAndEnums(t *testing.T) {
 	ctx := context.Background()
 	repo := operationtask.NewOperationTaskRepository(db)
 
-	missingTenant := sampleTask(0, "missing-tenant")
-	require.ErrorIs(t, repo.Create(ctx, &missingTenant), operationtask.ErrValidation)
+	invalidTenant := sampleTask(-1, "invalid-tenant")
+	require.ErrorIs(t, repo.Create(ctx, &invalidTenant), operationtask.ErrValidation)
 
 	badJSON := sampleTask(101, "bad-json")
 	badJSON.Payload = datatypes.JSON([]byte(`{"unterminated"`))

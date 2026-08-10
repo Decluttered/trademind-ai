@@ -20,7 +20,7 @@ func (h *Handler) actor(c *gin.Context) (APIActor, error) {
 		return actor, ErrConflict
 	}
 	tenantID, err := adminperm.TenantIDFromGin(c)
-	if err != nil || tenantID <= 0 {
+	if err != nil || tenantID < 0 {
 		return actor, ErrPermissionDenied
 	}
 	actorID, err := apiActorID(c)

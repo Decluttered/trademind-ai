@@ -19,6 +19,30 @@ type Handler struct {
 	}
 }
 
+type alertListItem struct {
+	ID              string    `json:"id"`
+	RuleID          string    `json:"ruleId"`
+	Severity        string    `json:"severity"`
+	Status          string    `json:"status"`
+	Module          string    `json:"module"`
+	Summary         string    `json:"summary"`
+	OccurrenceCount int       `json:"occurrenceCount"`
+	LastSeenAt      time.Time `json:"lastSeenAt"`
+}
+
+func newAlertListItem(row AlertEvent) alertListItem {
+	return alertListItem{
+		ID:              row.ID,
+		RuleID:          row.RuleID,
+		Severity:        row.Severity,
+		Status:          row.Status,
+		Module:          row.Module,
+		Summary:         row.Summary,
+		OccurrenceCount: row.OccurrenceCount,
+		LastSeenAt:      row.LastSeenAt,
+	}
+}
+
 // Register mounts alerting routes under authed group.
 func Register(r gin.IRouter, h *Handler) {
 	if r == nil || h == nil || h.Svc == nil {
@@ -48,7 +72,11 @@ func (h *Handler) List(c *gin.Context) {
 		response.Fail(c, http.StatusInternalServerError, response.CodeInternalError, err.Error())
 		return
 	}
-	response.OK(c, gin.H{"items": rows})
+	items := make([]alertListItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, newAlertListItem(row))
+	}
+	response.OK(c, gin.H{"items": items})
 }
 
 // Ack acknowledges an alert.
