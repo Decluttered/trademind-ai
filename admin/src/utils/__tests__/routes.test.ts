@@ -45,6 +45,9 @@ describe('Admin route menu configuration', () => {
 
   it('keeps the legacy inventory URL outside the menu and exposes a unique overview path', () => {
     const inventory = routes.find((route) => route.path === '/inventory');
+    const legacyInventoryRoute = inventory?.routes?.find(
+      (route) => route.path === '/inventory',
+    );
 
     expect(inventory?.routes).toEqual(
       expect.arrayContaining([
@@ -56,7 +59,7 @@ describe('Admin route menu configuration', () => {
         }),
       ]),
     );
-    expect(inventory?.routes?.find((route) => route.path === '/inventory')?.name).toBeUndefined();
+    expect(legacyInventoryRoute).not.toHaveProperty('name');
   });
 
   it('keeps internal phase and fixture routes out of the production menu', () => {
