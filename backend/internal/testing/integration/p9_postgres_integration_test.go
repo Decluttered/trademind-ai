@@ -162,12 +162,12 @@ func TestP9PostgresAutoMigrateAgainstIsolatedDatabase(t *testing.T) {
 		"admin_users",
 		"products",
 		"product_skus",
-		"p9_inventory_sync_runs",
-		"p9_inventory_snapshot_items",
-		"p9_sku_bindings",
-		"p9_sku_binding_calibrations",
-		"p9_manual_binding_requests",
-		"p9_manual_binding_decisions",
+		"inventory_sync_runs",
+		"inventory_snapshot_items",
+		"sku_bindings",
+		"sku_binding_calibrations",
+		"manual_binding_requests",
+		"manual_binding_decisions",
 	} {
 		require.Truef(t, db.Migrator().HasTable(table), "expected migrated table %s", table)
 	}

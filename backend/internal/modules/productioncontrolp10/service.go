@@ -154,7 +154,7 @@ func (s *Service) lastReadStatus(ctx context.Context, tenantID int64, allowedSho
 		FinishedAt        *time.Time
 	}
 	var row readRun
-	query := s.DB.WithContext(ctx).Table("p9_inventory_sync_runs").
+	query := s.DB.WithContext(ctx).Table("inventory_sync_runs").
 		Select("id", "status", "provider_mode", "revision", "request_id", "safe_error_metadata", "started_at", "finished_at").
 		Where("tenant_id = ? AND provider_mode = ?", tenantID, "real_readonly")
 	if allowedShopIDs != nil {

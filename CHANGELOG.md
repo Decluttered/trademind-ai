@@ -4,6 +4,12 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Database schema naming (2026-08-10)
+
+- Replaced phase-numbered `p9_*` and `p10_*` table names with stable inventory, SKU binding, platform credential, OAuth, and production-control domain names.
+- Added a transactional, fail-closed PostgreSQL upgrade that renames existing tables and their indexes, constraints, triggers, and immutable-record function without copying or deleting data.
+- Kept API routes, permissions, state machines, and the fail-closed P10 `L0` runtime boundary unchanged.
+
 ### Admin theme (2026-08-09)
 
 - Added an icon-only, tooltip-labelled top-navigation light/dark theme switch with light mode as the default and local preference persistence.
