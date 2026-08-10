@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MenuDataItem } from '@umijs/route-utils';
+import { ConfigProvider } from 'antd';
 import { describe, expect, it, vi } from 'vitest';
 import AppGlobalSearch, { buildGlobalSearchItems } from '../AppGlobalSearch';
 
@@ -47,11 +48,13 @@ describe('AppGlobalSearch', () => {
     const onNavigate = vi.fn();
     const interaction = userEvent.setup();
     render(
-      <AppGlobalSearch
-        items={menuItems}
-        canAccessPath={allowAllPaths}
-        onNavigate={onNavigate}
-      />,
+      <ConfigProvider theme={{ token: { motion: false } }}>
+        <AppGlobalSearch
+          items={menuItems}
+          canAccessPath={allowAllPaths}
+          onNavigate={onNavigate}
+        />
+      </ConfigProvider>,
     );
 
     await interaction.click(
