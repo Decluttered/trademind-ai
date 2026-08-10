@@ -226,14 +226,14 @@ export const LIST_EMPTY_COPY = {
   },
   collectTasks: {
     title: '暂无采集任务',
-    description: '输入商品链接创建采集任务，或运行 Demo 数据脚本生成样本。',
+    description: '输入商品链接后即可创建采集任务。',
     action: '前往采集中心',
     actionPath: '/collect/hub',
     permissionHint: PERM_HINT,
   },
   productDrafts: {
     title: '暂无商品草稿',
-    description: '可以先从采集中心采集商品，或手动创建商品草稿；演示环境也可运行 Demo 数据脚本。',
+    description: '可以先从采集中心采集商品，或手动创建商品草稿。',
     action: '前往采集中心',
     actionPath: '/collect/hub',
     permissionHint: `${PERM_HINT} ${COLLECT_TARGET_SHOP_HINT}`,
@@ -264,7 +264,7 @@ export const LIST_EMPTY_COPY = {
   },
   orderList: {
     title: '暂无订单数据',
-    description: '可以先配置店铺授权并手动同步订单；演示环境也可以运行 Demo 数据脚本生成样本。',
+    description: '请先配置店铺授权，再手动发起订单同步。',
     action: '前往店铺管理',
     actionPath: '/shops/manage',
     permissionHint: PERM_HINT,
@@ -278,7 +278,7 @@ export const LIST_EMPTY_COPY = {
   },
   inventoryCenter: {
     title: '暂无库存数据',
-    description: '商品 SKU 创建后库存会在此汇总；也可运行 Demo 数据脚本生成样本。',
+    description: '商品 SKU 创建并产生库存记录后会在此汇总。',
     action: '前往商品草稿',
     actionPath: '/product/drafts',
     permissionHint: PERM_HINT,
@@ -313,7 +313,7 @@ export const LIST_EMPTY_COPY = {
   },
   customerConversations: {
     title: '暂无客服会话',
-    description: '买家咨询会话会在此展示；演示环境可运行 Demo 数据脚本生成样本。',
+    description: '创建客服会话或同步平台消息后，会话会在此展示。',
     action: '新建会话',
     actionPath: '/customer/conversations',
     permissionHint: PERM_HINT,

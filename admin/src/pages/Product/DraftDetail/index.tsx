@@ -1,6 +1,7 @@
 import type { CSSProperties, Key, ReactNode } from 'react';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import { formatDateTime } from '@/utils/formatTime';
+import { isProductionBuild } from '@/utils/runtimeEnvironment';
 import type { ProColumns } from '@ant-design/pro-components';
 import {
   OperationToolbar,
@@ -4288,7 +4289,14 @@ export default function ProductDraftDetailPage() {
                           className="product-draft-readiness__platform-select"
                           value={readinessPlat}
                           onChange={(v) => setReadinessPlat(v)}
-                          options={['douyin_shop', 'tiktok', 'shopee', 'lazada', 'amazon', 'mock'].map((p) => ({
+                          options={[
+                            'douyin_shop',
+                            'tiktok',
+                            'shopee',
+                            'lazada',
+                            'amazon',
+                            ...(!isProductionBuild ? ['mock'] : []),
+                          ].map((p) => ({
                             label: platformDisplayLabel(p),
                             value: p,
                           }))}

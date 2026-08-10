@@ -43,6 +43,7 @@ import { fetchImageProviders, testImageProvider } from '@/services/imageProvider
 import { taskTypeLabel } from '@/services/imageTasks';
 import { fetchSettingsList, saveSettingsItems, testOCRConnection } from '@/services/settings';
 import { pickGroup, toPutItems, type FieldSpec } from '@/utils/settingsForm';
+import { isProductionBuild } from '@/utils/runtimeEnvironment';
 
 const GROUP = 'image';
 
@@ -134,7 +135,7 @@ export default function ImageSettingsPage() {
   const loadCaps = useCallback(async () => {
     try {
       const list = await fetchImageProviders();
-      setCaps(list);
+      setCaps(isProductionBuild ? list.filter((cap) => cap.status !== 'planned') : list);
     } catch {
       setCaps([]);
     }
@@ -232,6 +233,13 @@ export default function ImageSettingsPage() {
     () => caps.find((c) => c.provider === (provider || '').trim()),
     [caps, provider],
   );
+
+  useEffect(() => {
+    if (!isProductionBuild || !provider || caps.length === 0) return;
+    if (!caps.some((cap) => cap.provider === provider)) {
+      form.setFieldValue('provider', 'noop');
+    }
+  }, [caps, form, provider]);
 
   const providerOptions = useMemo(() => {
     const rec = scenario ? IMAGE_SCENARIOS.find((s) => s.id === scenario)?.recommendedProviders : null;
@@ -495,14 +503,16 @@ export default function ImageSettingsPage() {
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                         推荐
                       </Typography.Text>
-                      {sc.recommendedProviders.map((p) => {
+                      {sc.recommendedProviders
+                        .filter((p) => !isProductionBuild || caps.some((cap) => cap.provider === p))
+                        .map((p) => {
                         const c = caps.find((x) => x.provider === p);
                         return (
                           <Tag key={p} color={active ? 'blue' : 'default'}>
                             {c?.displayName ?? p}
                           </Tag>
                         );
-                      })}
+                        })}
                     </div>
                   </div>
                 );

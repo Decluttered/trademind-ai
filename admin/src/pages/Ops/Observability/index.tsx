@@ -8,7 +8,7 @@ import {
   type ObservabilityOverview,
 } from '@/services/observability';
 import { ReloadOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Col, Descriptions, Row, Space, Spin, Table, Tag, message } from 'antd';
+import { Button, Card, Descriptions, Space, Spin, Table, Tag, message } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
 function severityColor(sev: string) {
@@ -26,10 +26,8 @@ function otlpStatusMeta(status?: string) {
   switch (status) {
     case 'standard_protocol_ready':
       return { color: 'green', text: '标准协议就绪' };
-    case 'mock_verified':
-      return { color: 'cyan', text: '模拟接收端已验证' };
     case 'real_backend_deferred':
-      return { color: 'gold', text: '真实后端待接入' };
+      return { color: 'gold', text: '未配置导出后端' };
     case 'export_degraded':
       return { color: 'orange', text: '导出降级' };
     case 'disabled':
@@ -79,11 +77,6 @@ export default function ObservabilityCenterPage() {
     >
       <Spin spinning={loading}>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Alert
-            type="info"
-            showIcon
-            message="代码级可观测性已就绪；真实生产监控平台验证保持待接入状态。"
-          />
           <Card title="系统概览">
             <Descriptions column={2} size="small">
               <Descriptions.Item label="模式">{overview?.mode ?? '-'}</Descriptions.Item>
@@ -107,29 +100,12 @@ export default function ObservabilityCenterPage() {
               <Descriptions.Item label="协议">
                 {overview?.runtimeStatus?.otlpProtocol ?? '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="协议测试">
-                {(() => {
-                  const meta = otlpStatusMeta(overview?.runtimeStatus?.mockCollectorVerification);
-                  return <Tag color={meta.color}>{meta.text}</Tag>;
-                })()}
-              </Descriptions.Item>
               <Descriptions.Item label="导出结果">
                 成功 {overview?.telemetry?.exportSuccess ?? 0} / 失败{' '}
                 {overview?.telemetry?.exportFailures ?? 0} / 丢弃 {overview?.telemetry?.dropped ?? 0}
               </Descriptions.Item>
             </Descriptions>
           </Card>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Card title="API 状态">请求量 / 错误率 / p95 延迟（聚合接口）</Card>
-            </Col>
-            <Col span={8}>
-              <Card title="后台任务进程">队列积压 / 死信 / 租约丢失</Card>
-            </Col>
-            <Col span={8}>
-              <Card title="安全状态">登录异常 / Refresh Reuse / Audit Chain</Card>
-            </Col>
-          </Row>
           <Card title="最近告警">
             <Table<AlertEvent>
               rowKey="id"

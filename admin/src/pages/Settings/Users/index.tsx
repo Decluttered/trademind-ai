@@ -257,7 +257,7 @@ export default function SettingsUsersPage() {
             }}
           >
             <Form.Item name="email" label="邮箱" rules={[{ required: true }]}>
-              <Input placeholder="demo_operator@example.com" />
+              <Input placeholder="operator@example.com" />
             </Form.Item>
             <Form.Item name="password" label="初始密码" rules={[{ required: true, min: 6 }]}>
               <Input.Password />

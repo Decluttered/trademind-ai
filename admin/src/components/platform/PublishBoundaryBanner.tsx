@@ -25,9 +25,9 @@ export default function PublishBoundaryBanner({
     message = `${publishCapabilityLabel('local_draft_only')}：仅在 TradeMind 内保存草稿记录，不会调用平台写接口。`;
   } else if (isRealDraft) {
     message =
-      '创建抖店草稿不等于商品上架；需人工在平台后台确认并提交，真实 E2E 未执行或被凭证阻塞时请勿视为已上线。';
+      '创建抖店草稿不等于商品上架；需人工在平台后台确认并提交，未完成人工验收时请勿视为已上线。';
   } else if (blockedByCredentials) {
-    message = '真实抖店 E2E 被凭证阻塞（需真实环境凭证），当前结果仅供 Demo 与前置检查参考。';
+    message = '缺少抖店真实环境凭证，当前结果仅代表配置检查，不代表平台调用成功。';
   }
 
   return (

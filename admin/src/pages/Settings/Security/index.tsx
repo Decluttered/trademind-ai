@@ -572,7 +572,7 @@ export default function SecuritySettingsPage() {
 
         <ProCard variant="outlined" title="租户隔离状态" style={{ marginTop: 16 }}>
           <Paragraph type="secondary" style={{ marginBottom: 12 }}>
-            以下项来自配置状态中心（Phase P4 安全基线）。完整清单见{' '}
+            以下项来自配置状态中心的安全检查。完整清单见{' '}
             <Link to="/settings/config-status">配置状态</Link>。
           </Paragraph>
           <List

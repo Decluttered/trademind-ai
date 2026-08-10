@@ -49,10 +49,8 @@ type Item struct {
 
 // Overview is GET /api/v1/settings/config-status.
 type Overview struct {
-	GeneratedAt  string       `json:"generatedAt"`
-	ProjectPhase ProjectPhase `json:"projectPhase"`
-	Items        []Item       `json:"items"`
-	DemoData     Item         `json:"demoData"`
+	GeneratedAt string `json:"generatedAt"`
+	Items       []Item `json:"items"`
 }
 
 // Service aggregates configuration health.
@@ -96,9 +94,8 @@ func (s *Service) Build(ctx context.Context) (*Overview, error) {
 		return nil, fmt.Errorf("configstatus: unavailable")
 	}
 	out := &Overview{
-		GeneratedAt:  time.Now().UTC().Format(time.RFC3339),
-		ProjectPhase: defaultProjectPhase(),
-		Items:        make([]Item, 0, 20),
+		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		Items:       make([]Item, 0, 20),
 	}
 	out.Items = append(out.Items, s.environmentItem(ctx))
 	out.Items = append(out.Items, s.productionSafetyItem(ctx))
@@ -165,7 +162,6 @@ func (s *Service) Build(ctx context.Context) (*Overview, error) {
 	out.Items = append(out.Items, s.p32RaceVerificationItem(ctx))
 	out.Items = appendP4SecurityItems(out.Items, s.Config)
 	out.Items = appendP42SecurityItems(out.Items, s.Config)
-	out.DemoData = s.demoDataItem(ctx)
 	return out, nil
 }
 
@@ -552,30 +548,5 @@ func (s *Service) customerSyncItem(ctx context.Context) Item {
 	}
 	it.Status = StatusAbnormal
 	it.Summary = "客服同步已启用但 Redis 不可用"
-	return it
-}
-
-func (s *Service) demoDataItem(ctx context.Context) Item {
-	it := Item{
-		Key:         "demo_data",
-		Title:       "Demo 数据状态",
-		SettingsURL: "/docs/DEMO_DATASET.md",
-	}
-	if s.DB == nil {
-		it.Status = StatusAbnormal
-		return it
-	}
-	var products, orders, convs int64
-	_ = s.DB.WithContext(ctx).Table("products").Where("deleted_at IS NULL").Count(&products).Error
-	_ = s.DB.WithContext(ctx).Table("orders").Where("deleted_at IS NULL").Count(&orders).Error
-	_ = s.DB.WithContext(ctx).Table("customer_conversations").Count(&convs).Error
-	if products > 5 && orders > 0 {
-		it.Status = StatusConfigured
-		it.Summary = fmt.Sprintf("商品 %d / 订单 %d / 会话 %d", products, orders, convs)
-		return it
-	}
-	it.Status = StatusNotConfigured
-	it.Summary = "Demo 种子数据较少，可运行 scripts/seed-demo-data"
-	it.NextAction = "执行 seed-demo-data 脚本导入演示数据"
 	return it
 }

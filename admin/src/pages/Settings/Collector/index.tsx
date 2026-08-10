@@ -47,6 +47,7 @@ import {
   type CollectSettingsProviderKey,
 } from '@/utils/collectSettingsProvider';
 import { pickGroup, toPutItems, type FieldSpec } from '@/utils/settingsForm';
+import { isProductionBuild } from '@/utils/runtimeEnvironment';
 
 const GROUP = 'collector';
 
@@ -207,7 +208,7 @@ function CollectorProviderSelector({
 }) {
   return (
     <div className="tm-collector-provider-grid">
-      {COLLECT_SETTINGS_PROVIDER_OPTIONS.map((option) => {
+      {COLLECT_SETTINGS_PROVIDER_OPTIONS.filter((option) => !isProductionBuild || !option.planned).map((option) => {
         const row = providers.find((p) => p.source.toLowerCase() === option.source.toLowerCase());
         const planned = row ? row.status === 'planned' : !!option.planned;
         return (
@@ -497,7 +498,7 @@ function CollectorAliExpressSection({ providerRow }: { providerRow?: CollectProv
           message={
             providerRow?.batchSupported
               ? '速卖通批量采集已开放'
-              : '速卖通批量采集：暂未开放（测试阶段仅支持单条采集）'
+              : '速卖通批量采集暂未开放，当前仅支持单条采集'
           }
         />
         <Form.Item
@@ -759,7 +760,10 @@ export default function CollectorSettingsPage() {
   const [tbLoginOpening, setTbLoginOpening] = useState(false);
 
   const providerKey = useMemo(
-    () => resolveCollectSettingsProvider(new URLSearchParams(location.search || '').get('provider')),
+    () => {
+      const selected = resolveCollectSettingsProvider(new URLSearchParams(location.search || '').get('provider'));
+      return isProductionBuild && findCollectSettingsOption(selected).planned ? '1688' : selected;
+    },
     [location.search],
   );
   const providerOption = useMemo(() => findCollectSettingsOption(providerKey), [providerKey]);

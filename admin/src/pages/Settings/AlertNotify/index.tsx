@@ -24,16 +24,29 @@ import {
   NOTIFICATION_CHANNEL_OPTIONS,
   NOTIFICATION_SEVERITY_OPTIONS,
   WEBHOOK_METHOD_OPTIONS,
+  isNotificationChannelAvailable,
   parseNotificationChannels,
   stringifyNotificationChannels,
 } from '@/constants/alertNotify';
 import { fetchSettingsList, saveSettingsItems, type SettingPutItem } from '@/services/settings';
 import { pickGroup } from '@/utils/settingsForm';
+import { isProductionBuild } from '@/utils/runtimeEnvironment';
 
 const { Paragraph, Text } = Typography;
 
 const GROUP_TC = 'taskcenter';
 const GROUP_AN = 'alert_notify';
+
+const notificationChannelOptions = isProductionBuild
+  ? NOTIFICATION_CHANNEL_OPTIONS.filter((option) =>
+      isNotificationChannelAvailable(option.value, true),
+    )
+  : NOTIFICATION_CHANNEL_OPTIONS;
+
+function visibleNotificationChannels(channels: string[]): string[] {
+  if (!isProductionBuild) return channels;
+  return channels.filter((channel) => isNotificationChannelAvailable(channel, true));
+}
 
 function boolStr(b: unknown) {
   return b ? 'true' : 'false';
@@ -49,7 +62,7 @@ function truthyStored(v: string | undefined): boolean {
 function buildTcNotifyItems(values: Record<string, unknown>): SettingPutItem[] {
   const tenantId = 0;
   const channels = Array.isArray(values.notification_channels)
-    ? stringifyNotificationChannels(values.notification_channels as string[])
+    ? stringifyNotificationChannels(visibleNotificationChannels(values.notification_channels as string[]))
     : String(values.notification_channels ?? '[]');
   return [
     {
@@ -113,7 +126,7 @@ function buildAlertNotifyItems(values: Record<string, unknown>): SettingPutItem[
   const tenantId = 0;
   const g = GROUP_AN;
   const displayChannels = Array.isArray(values.an_channels)
-    ? stringifyNotificationChannels(values.an_channels as string[])
+    ? stringifyNotificationChannels(visibleNotificationChannels(values.an_channels as string[]))
     : String(values.an_channels ?? '[]');
   return [
     { tenantId, groupKey: g, itemKey: 'enabled', itemValue: boolStr(values.an_enabled), valueType: 'string', isEncrypted: false, remark: '' },
@@ -217,10 +230,10 @@ export default function AlertNotifySettingsPage() {
         notification_min_severity: tc.notification_min_severity || undefined,
         notify_on_alert_generated: truthyStored(tc.notify_on_alert_generated),
         notify_on_repeated_alert: truthyStored(tc.notify_on_repeated_alert),
-        notification_channels: parseNotificationChannels(tc.notification_channels),
+        notification_channels: visibleNotificationChannels(parseNotificationChannels(tc.notification_channels)),
         alert_detail_public_base: tc.alert_detail_public_base || '',
         an_enabled: truthyStored(an.enabled),
-        an_channels: parseNotificationChannels(an.channels),
+        an_channels: visibleNotificationChannels(parseNotificationChannels(an.channels)),
         mail_enabled: truthyStored(an.mail_enabled),
         mail_to: an.mail_to || '',
         mail_cc: an.mail_cc || '',
@@ -284,7 +297,7 @@ export default function AlertNotifySettingsPage() {
                 告警扫描与站内策略见 <Link to="/settings/system">系统设置</Link>；SMTP 见{' '}
                 <Link to="/settings/email">邮箱设置</Link>。
               </li>
-              <li>飞书 / 企业微信当前为预留能力，可保存配置，实际发送结果为 skipped。</li>
+              {!isProductionBuild ? <li>飞书 / 企业微信仅供开发验证，实际发送结果为 skipped。</li> : null}
               <li>通知正文与回调通知内容均经裁剪，不会包含完整平台响应、客户消息全文或密钥。</li>
             </ul>
           }
@@ -369,7 +382,7 @@ export default function AlertNotifySettingsPage() {
                             mode="multiple"
                             allowClear
                             placeholder="选择邮件、回调通知等"
-                            options={NOTIFICATION_CHANNEL_OPTIONS}
+                            options={notificationChannelOptions}
                             disabled={!externalEnabled}
                           />
                         </Form.Item>
@@ -406,7 +419,7 @@ export default function AlertNotifySettingsPage() {
             </Form.Item>
 
             <Form.Item label="管理端展示通道（可选）" name="an_channels" tooltip="仅影响后台展示，不影响实际发送逻辑">
-              <Select mode="multiple" allowClear placeholder="默认展示全部已配置通道" options={NOTIFICATION_CHANNEL_OPTIONS} />
+              <Select mode="multiple" allowClear placeholder="默认展示全部已配置通道" options={notificationChannelOptions} />
             </Form.Item>
 
             <Divider plain>各通道参数</Divider>
@@ -476,37 +489,41 @@ export default function AlertNotifySettingsPage() {
                         </Form.Item>
                       </ChannelPanel>
                     </Col>
-                    <Col xs={24} lg={12}>
-                      <ChannelPanel
-                        title={NOTIFICATION_CHANNEL_META.feishu.label}
-                        desc={NOTIFICATION_CHANNEL_META.feishu.desc}
-                        planned
-                        switchName="feishu_enabled"
-                        enabled={!!getFieldValue('feishu_enabled')}
-                        groupEnabled={groupEnabled}
-                      >
-                        <Form.Item label="回调通知地址" name="feishu_webhook_url">
-                          <Input.Password autoComplete="off" placeholder="预留，后续版本启用" />
-                        </Form.Item>
-                        <Form.Item label="签名 Secret" name="feishu_secret">
-                          <Input.Password autoComplete="off" />
-                        </Form.Item>
-                      </ChannelPanel>
-                    </Col>
-                    <Col xs={24} lg={12}>
-                      <ChannelPanel
-                        title={NOTIFICATION_CHANNEL_META.wecom.label}
-                        desc={NOTIFICATION_CHANNEL_META.wecom.desc}
-                        planned
-                        switchName="wecom_enabled"
-                        enabled={!!getFieldValue('wecom_enabled')}
-                        groupEnabled={groupEnabled}
-                      >
-                        <Form.Item label="回调通知地址" name="wecom_webhook_url">
-                          <Input.Password autoComplete="off" placeholder="预留，后续版本启用" />
-                        </Form.Item>
-                      </ChannelPanel>
-                    </Col>
+                    {!isProductionBuild ? (
+                      <>
+                        <Col xs={24} lg={12}>
+                          <ChannelPanel
+                            title={NOTIFICATION_CHANNEL_META.feishu.label}
+                            desc={NOTIFICATION_CHANNEL_META.feishu.desc}
+                            planned
+                            switchName="feishu_enabled"
+                            enabled={!!getFieldValue('feishu_enabled')}
+                            groupEnabled={groupEnabled}
+                          >
+                            <Form.Item label="回调通知地址" name="feishu_webhook_url">
+                              <Input.Password autoComplete="off" placeholder="预留，后续版本启用" />
+                            </Form.Item>
+                            <Form.Item label="签名 Secret" name="feishu_secret">
+                              <Input.Password autoComplete="off" />
+                            </Form.Item>
+                          </ChannelPanel>
+                        </Col>
+                        <Col xs={24} lg={12}>
+                          <ChannelPanel
+                            title={NOTIFICATION_CHANNEL_META.wecom.label}
+                            desc={NOTIFICATION_CHANNEL_META.wecom.desc}
+                            planned
+                            switchName="wecom_enabled"
+                            enabled={!!getFieldValue('wecom_enabled')}
+                            groupEnabled={groupEnabled}
+                          >
+                            <Form.Item label="回调通知地址" name="wecom_webhook_url">
+                              <Input.Password autoComplete="off" placeholder="预留，后续版本启用" />
+                            </Form.Item>
+                          </ChannelPanel>
+                        </Col>
+                      </>
+                    ) : null}
                   </Row>
                 );
               }}

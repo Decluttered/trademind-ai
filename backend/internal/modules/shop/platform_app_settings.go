@@ -231,6 +231,9 @@ func (s *Service) TestPlatformAppSettings(c *gin.Context, platformSlug string) (
 	if p == nil {
 		return nil, fmt.Errorf("unknown platform %q", plat)
 	}
+	if err := s.requireProviderAvailable(p); err != nil {
+		return nil, err
+	}
 	sch := p.AppConfigSchema()
 	gk := strings.TrimSpace(sch.GroupKey)
 	if gk == "" {
@@ -289,6 +292,9 @@ func (s *Service) GetPlatformAppSettings(ctx context.Context, platformSlug strin
 	if p == nil {
 		return nil, fmt.Errorf("unknown platform %q", plat)
 	}
+	if err := s.requireProviderAvailable(p); err != nil {
+		return nil, err
+	}
 	sch := p.AppConfigSchema()
 	gk := strings.TrimSpace(sch.GroupKey)
 	if gk == "" {
@@ -315,6 +321,9 @@ func (s *Service) PutPlatformAppSettings(c *gin.Context, platformSlug string, va
 	p := platformp.Get(plat)
 	if p == nil {
 		return nil, fmt.Errorf("unknown platform %q", plat)
+	}
+	if err := s.requireProviderAvailable(p); err != nil {
+		return nil, err
 	}
 	sch := p.AppConfigSchema()
 	gk := strings.TrimSpace(sch.GroupKey)

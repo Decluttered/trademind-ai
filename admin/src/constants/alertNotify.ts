@@ -20,6 +20,15 @@ export const NOTIFICATION_CHANNEL_OPTIONS = Object.entries(NOTIFICATION_CHANNEL_
   }),
 );
 
+export function isNotificationChannelAvailable(
+  channel: string,
+  production: boolean,
+): boolean {
+  if (!production) return true;
+  const meta = NOTIFICATION_CHANNEL_META[channel.trim().toLowerCase()];
+  return !!meta && !meta.planned;
+}
+
 export const WEBHOOK_METHOD_OPTIONS = [
   { label: 'POST', value: 'POST' },
   { label: 'PUT', value: 'PUT' },

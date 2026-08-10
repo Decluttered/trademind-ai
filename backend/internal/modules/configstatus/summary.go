@@ -26,8 +26,5 @@ func (s *Service) DashboardSummary(ctx context.Context) (*DashboardSummary, erro
 			out.BlockedCount++
 		}
 	}
-	if ov.DemoData.Status == StatusNotConfigured || ov.DemoData.Status == StatusConfigError {
-		out.RiskCount++
-	}
 	return out, nil
 }

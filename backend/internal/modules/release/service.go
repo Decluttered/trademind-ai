@@ -53,6 +53,9 @@ func (s *Service) Get(ctx context.Context, releaseID string) (*Run, error) {
 }
 
 func (s *Service) Create(ctx context.Context, req CreateRequest, actor *uuid.UUID) (*Run, error) {
+	if s.productionExecutionDisabled() {
+		return nil, fmt.Errorf("release execution is unavailable in production")
+	}
 	if strings.TrimSpace(req.Version) == "" {
 		return nil, fmt.Errorf("version is required")
 	}
@@ -77,6 +80,9 @@ func (s *Service) Create(ctx context.Context, req CreateRequest, actor *uuid.UUI
 }
 
 func (s *Service) Execute(ctx context.Context, releaseID string) (*Run, error) {
+	if s.productionExecutionDisabled() {
+		return nil, fmt.Errorf("release execution is unavailable in production")
+	}
 	row, err := s.Get(ctx, releaseID)
 	if err != nil {
 		return nil, err
@@ -118,6 +124,9 @@ func (s *Service) Execute(ctx context.Context, releaseID string) (*Run, error) {
 }
 
 func (s *Service) Rollback(ctx context.Context, releaseID string, req RollbackRequest, actor *uuid.UUID) (*Rollback, error) {
+	if s.productionExecutionDisabled() {
+		return nil, fmt.Errorf("release rollback is unavailable in production")
+	}
 	row, err := s.Get(ctx, releaseID)
 	if err != nil {
 		return nil, err
@@ -140,6 +149,10 @@ func (s *Service) Rollback(ctx context.Context, releaseID string, req RollbackRe
 		return tx.Save(row).Error
 	})
 	return rb, err
+}
+
+func (s *Service) productionExecutionDisabled() bool {
+	return s != nil && s.Cfg != nil && config.IsProduction(s.Cfg.AppEnv)
 }
 
 func (s *Service) preflight(row *Run) error {

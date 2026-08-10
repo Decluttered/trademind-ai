@@ -334,7 +334,7 @@ function ExceptionRow({ item }: { item: DashboardException }) {
 const QUICK_LINK_META: Record<string, { icon: ReactNode; color: string; bg: string }> = {
   '/collect/hub': { icon: <CloudUploadOutlined />, color: 'var(--ant-color-primary)', bg: 'var(--ant-color-primary-bg)' },
   '/product/drafts': { icon: <FileTextOutlined />, color: 'var(--ant-color-primary)', bg: 'var(--ant-color-primary-bg)' },
-  '/ai/batches': { icon: <RobotOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
+  '/ai/text-batches': { icon: <RobotOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
   '/ai/image-tasks': { icon: <PictureOutlined />, color: 'var(--ant-color-info)', bg: 'var(--ant-color-info-bg)' },
   '/product/drafts?readiness=blocked': { icon: <SafetyCertificateOutlined />, color: 'var(--ant-color-warning)', bg: 'var(--ant-color-warning-bg)' },
   '/product/publish-tasks': { icon: <ShopOutlined />, color: 'var(--ant-color-success)', bg: 'var(--ant-color-success-bg)' },
@@ -359,7 +359,7 @@ const QUICK_LINK_GROUPS: { label: string; links: string[] }[] = [
   },
   {
     label: 'AI 工具',
-    links: ['/ai/batches', '/ai/image-tasks'],
+    links: ['/ai/text-batches', '/ai/image-tasks'],
   },
   {
     label: '运维与设置',
@@ -830,7 +830,7 @@ export default function ProductOperationsDashboardPage() {
 
   const welcomeActions: { label: string; icon: ReactNode; link: string }[] = [
     { label: '采集商品', icon: <CloudUploadOutlined />, link: '/collect/hub' },
-    { label: '批量 AI 优化', icon: <RobotOutlined />, link: '/ai/batches' },
+    { label: '批量 AI 优化', icon: <RobotOutlined />, link: '/ai/text-batches' },
     { label: 'AI 图片任务', icon: <PictureOutlined />, link: '/ai/image-tasks' },
     { label: '查看发布检查', icon: <SafetyCertificateOutlined />, link: '/product/drafts?readiness=blocked' },
   ];

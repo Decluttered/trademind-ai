@@ -364,6 +364,9 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		Redis:     dep.Redis,
 		Settings:  settingsSvc,
 	}
+	if dep.Config != nil {
+		shopSvc.AppEnv = dep.Config.AppEnv
+	}
 	productSvc.Shops = shopSvc
 	platformtiktok.BindShops(shopSvc.TikTokShopsBridge())
 	platformtiktok.BindPublishImages(newTikTokListingImageFetcher(settingsSvc))
@@ -694,7 +697,11 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	workerH := &worker.Handler{DB: dep.DB, Cfg: dep.Config}
 	worker.Register(authed, workerH)
 
-	operationTaskH := &operationtask.Handler{Svc: operationtask.NewAPIService(dep.DB)}
+	operationTaskSvc := operationtask.NewAPIService(dep.DB)
+	if dep.Config != nil {
+		operationTaskSvc.Executor.AppEnv = dep.Config.AppEnv
+	}
+	operationTaskH := &operationtask.Handler{Svc: operationTaskSvc}
 	operationtask.Register(authed, operationTaskH)
 	inventorySyncP9H := &inventorysyncp9.Handler{Svc: inventorysyncp9.NewAPIService(dep.DB)}
 	inventorysyncp9.Register(authed, inventorySyncP9H)

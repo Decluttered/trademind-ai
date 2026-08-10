@@ -9,6 +9,7 @@ import { PAGE_COPY } from '@/constants/copywriting';
 import { ORDER_SYNC_TASK_STATUS } from '@/constants/status';
 import { useUrlQueryState } from '@/hooks/useUrlState';
 import { normalizeSource, parsePositiveInt, queryTimeRange } from '@/utils/urlState';
+import { isProductionBuild } from '@/utils/runtimeEnvironment';
 import {
   getOrderSyncTask,
   queryOrderSyncTasks,
@@ -161,7 +162,7 @@ export default function OrderSyncTasksPage() {
           shopee: { text: 'Shopee' },
           lazada: { text: 'Lazada' },
           amazon: { text: 'Amazon' },
-          mock: { text: '模拟' },
+          ...(!isProductionBuild ? { mock: { text: '模拟' } } : {}),
         },
       },
       {

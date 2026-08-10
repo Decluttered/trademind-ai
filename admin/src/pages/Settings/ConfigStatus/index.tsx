@@ -45,9 +45,7 @@ function StatusCard({ item }: { item: ConfigStatusItem }) {
 export default function ConfigStatusPage() {
   const emptyLocale = useListEmptyLocale('configStatus');
   const [items, setItems] = useState<ConfigStatusItem[]>([]);
-  const [demo, setDemo] = useState<ConfigStatusItem | null>(null);
   const [generatedAt, setGeneratedAt] = useState('');
-  const [phaseLines, setPhaseLines] = useState<string[]>([]);
   const storagePublic = items.find((i) => i.key === 'storage_public_access');
   const douyinCred = items.find((i) => i.key === 'douyin_credential');
 
@@ -55,9 +53,7 @@ export default function ConfigStatusPage() {
     fetchConfigStatusOverview()
       .then((res) => {
         setItems(res.items || []);
-        setDemo(res.demoData || null);
         setGeneratedAt(res.generatedAt || '');
-        setPhaseLines(res.projectPhase?.statusLines || []);
       })
       .catch(() => {
         setItems([]);
@@ -77,21 +73,12 @@ export default function ConfigStatusPage() {
           missing={storagePublic?.status?.includes('未配置') || storagePublic?.status?.includes('待')}
           localOnly={storagePublic?.summary?.includes('本地') || storagePublic?.summary?.includes('相对')}
         />
-        {phaseLines.length > 0 ? (
-          <Card size="small" style={{ marginBottom: 16 }} title="项目阶段状态">
-            {phaseLines.map((line) => (
-              <Tag key={line} style={{ marginBottom: 4 }}>
-                {line}
-              </Tag>
-            ))}
-          </Card>
-        ) : null}
         {generatedAt ? (
           <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
             {PAGE_COPY.configStatus.snapshotAt}：{generatedAt}
           </Typography.Text>
         ) : null}
-        {items.length === 0 && !demo ? (
+        {items.length === 0 ? (
           emptyLocale.emptyText
         ) : (
           <Row gutter={[16, 16]}>
@@ -100,11 +87,6 @@ export default function ConfigStatusPage() {
                 <StatusCard item={item} />
               </Col>
             ))}
-            {demo ? (
-              <Col xs={24} sm={12} lg={8}>
-                <StatusCard item={demo} />
-              </Col>
-            ) : null}
           </Row>
         )}
       </TmPageContainer>

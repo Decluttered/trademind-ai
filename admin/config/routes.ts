@@ -2,6 +2,88 @@
  * 后台路由与侧栏菜单（名称即菜单文案）。
  * component 相对 `src/pages/`。
  */
+export function createInternalInventorySyncRoutes(
+  enabled = process.env.NODE_ENV !== 'production',
+) {
+  if (!enabled) return [];
+
+  return [
+    {
+      path: '/ops/inventory-sync',
+      name: 'P9 库存同步',
+      icon: 'InboxOutlined',
+      component: './Ops/InventorySync',
+      hideInMenu: true,
+    },
+    {
+      path: '/ops/inventory-sync/runs/:runId',
+      name: '库存同步运行详情',
+      component: './Ops/InventorySync/RunDetail',
+      hideInMenu: true,
+    },
+    {
+      path: '/ops/inventory-sync/calibration',
+      name: 'SKU 校准',
+      icon: 'AimOutlined',
+      component: './Ops/InventorySync/Calibration',
+      hideInMenu: true,
+    },
+    {
+      path: '/ops/inventory-sync/manual-bindings',
+      name: '人工绑定',
+      icon: 'ApartmentOutlined',
+      component: './Ops/InventorySync/ManualBindings',
+      hideInMenu: true,
+    },
+    {
+      path: '/ops/inventory-sync/bindings',
+      name: '绑定历史',
+      icon: 'BranchesOutlined',
+      component: './Ops/InventorySync/Bindings',
+      hideInMenu: true,
+    },
+    {
+      path: '/ops/inventory-sync/bindings/:bindingId',
+      name: '绑定历史详情',
+      component: './Ops/InventorySync/BindingDetail',
+      hideInMenu: true,
+    },
+  ];
+}
+
+export function createDevelopmentOpsRoutes(
+  enabled = process.env.NODE_ENV !== 'production',
+) {
+  if (!enabled) return [];
+
+  return [
+    {
+      path: '/ops/backups',
+      name: '备份管理',
+      icon: 'DatabaseOutlined',
+      component: './Ops/Backups',
+    },
+    {
+      path: '/ops/restores',
+      name: '恢复验证',
+      icon: 'SafetyCertificateOutlined',
+      component: './Ops/Restores',
+    },
+    {
+      path: '/ops/releases',
+      name: '发布流程记录',
+      icon: 'BranchesOutlined',
+      component: './Ops/Releases',
+    },
+    {
+      path: '/ops/disaster-recovery',
+      name: '灾备演练记录',
+      icon: 'DeploymentUnitOutlined',
+      component: './Ops/DisasterRecovery',
+    },
+  ];
+}
+
 export default [
   {
     path: '/user/login',
@@ -72,72 +154,14 @@ export default [
         component: './TaskCenter/OperationTasks/Detail',
         hideInMenu: true,
       },
-      {
-        path: '/ops/inventory-sync',
-        name: 'P9 库存同步',
-        icon: 'InboxOutlined',
-        component: './Ops/InventorySync',
-      },
-      {
-        path: '/ops/inventory-sync/runs/:runId',
-        name: '库存同步运行详情',
-        component: './Ops/InventorySync/RunDetail',
-        hideInMenu: true,
-      },
-      {
-        path: '/ops/inventory-sync/calibration',
-        name: 'SKU 校准',
-        icon: 'AimOutlined',
-        component: './Ops/InventorySync/Calibration',
-      },
-      {
-        path: '/ops/inventory-sync/manual-bindings',
-        name: '人工绑定',
-        icon: 'ApartmentOutlined',
-        component: './Ops/InventorySync/ManualBindings',
-      },
-      {
-        path: '/ops/inventory-sync/bindings',
-        name: '绑定历史',
-        icon: 'BranchesOutlined',
-        component: './Ops/InventorySync/Bindings',
-      },
-      {
-        path: '/ops/inventory-sync/bindings/:bindingId',
-        name: '绑定历史详情',
-        component: './Ops/InventorySync/BindingDetail',
-        hideInMenu: true,
-      },
+      ...createInternalInventorySyncRoutes(),
       {
         path: '/ops/observability',
         name: '可观测性中心',
         icon: 'LineChartOutlined',
         component: './Ops/Observability',
       },
-      {
-        path: '/ops/backups',
-        name: '备份管理',
-        icon: 'DatabaseOutlined',
-        component: './Ops/Backups',
-      },
-      {
-        path: '/ops/restores',
-        name: '恢复验证',
-        icon: 'SafetyCertificateOutlined',
-        component: './Ops/Restores',
-      },
-      {
-        path: '/ops/releases',
-        name: '发布回滚',
-        icon: 'BranchesOutlined',
-        component: './Ops/Releases',
-      },
-      {
-        path: '/ops/disaster-recovery',
-        name: '灾备演练',
-        icon: 'DeploymentUnitOutlined',
-        component: './Ops/DisasterRecovery',
-      },
+      ...createDevelopmentOpsRoutes(),
       {
         path: '/ops/platform-runtime',
         name: '平台运行状态',
@@ -180,7 +204,7 @@ export default [
       },
       {
         path: '/ai/batches',
-        name: 'AI 批次（旧版）',
+        name: '历史 AI 批次',
         hideInMenu: true,
         component: './AI/Batches',
       },

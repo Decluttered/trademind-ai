@@ -371,7 +371,7 @@ function DouyinPreflightPanel() {
     <SectionCard title="抖店生产预检" extra={result?.checkedAt ? `最近：${result.checkedAt}` : undefined}>
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
         <Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          上线前一键检查应用配置、店铺授权、功能开关、存储公网访问与基础数据状态。不含自动写操作，不执行真实抖店 E2E。
+          上线前检查应用配置、店铺授权、功能开关、存储公网访问与基础数据状态；不包含自动写操作。
         </Paragraph>
         <DouyinE2EPrecheckBanner blockedByCredentials={result?.blockedByRealCredentials ?? true} compact />
         <StoragePublicUrlBanner
@@ -387,7 +387,7 @@ function DouyinPreflightPanel() {
             运行生产预检
           </Button>
           <Button onClick={() => window.open('/docs/DOUYIN_E2E_PRECHECK_GUIDE.md', '_blank')}>
-            查看 E2E 准备清单
+            查看上线准备清单
           </Button>
           <Switch checked={liveTest} onChange={setLiveTest} /> <Text type="secondary">包含真实访问令牌刷新联调（需已授权店铺）</Text>
         </Space>
@@ -395,7 +395,7 @@ function DouyinPreflightPanel() {
           <Alert
             showIcon
             type="info"
-            message="当前未配置抖店真实凭证，系统只能完成本地 Demo 与前置检查，不能执行真实抖店 E2E。"
+            message="当前未配置抖店真实凭证，只能完成本地配置检查，不能调用真实平台。"
             description="凭证缺失不是系统失败，属于需真实环境凭证的前置检查项。抖店仍为发布候选。"
           />
         ) : null}

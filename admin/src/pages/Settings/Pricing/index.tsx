@@ -231,7 +231,7 @@ export default function PricingSettingsPage() {
                 </Form.Item>
               </Col>
               <Col xs={24} md={12} lg={8}>
-                <Form.Item label="按重量运费单价（预留）" name="default_shipping_cost_per_weight">
+                <Form.Item label="按重量运费单价" name="default_shipping_cost_per_weight">
                   <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="0" />
                 </Form.Item>
               </Col>

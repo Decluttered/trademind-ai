@@ -20,7 +20,6 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionKey | PermissionKey[]> 
   '/ops/releases': PERMISSIONS.RELEASE_READ,
   '/ops/disaster-recovery': PERMISSIONS.DR_READ,
   '/ops/platform-runtime': PERMISSIONS.STORE_VIEW,
-  '/ops/p10-readiness': PERMISSIONS.INVENTORY_SYNC_READ,
   '/files': PERMISSIONS.PRODUCT_VIEW,
   '/ai/prompts': PERMISSIONS.SETTINGS_MANAGE,
   '/ai/tasks': PERMISSIONS.PRODUCT_VIEW,

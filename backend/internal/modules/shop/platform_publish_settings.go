@@ -55,6 +55,9 @@ func (s *Service) GetPlatformPublishSettings(ctx context.Context, platformSlug s
 	if p == nil {
 		return nil, fmt.Errorf("unknown platform %q", plat)
 	}
+	if err := s.requireProviderAvailable(p); err != nil {
+		return nil, err
+	}
 	sch := p.PublishConfigSchema()
 	gk := strings.TrimSpace(sch.GroupKey)
 	if gk == "" {
@@ -81,6 +84,9 @@ func (s *Service) PutPlatformPublishSettings(c *gin.Context, platformSlug string
 	p := platformp.Get(plat)
 	if p == nil {
 		return nil, fmt.Errorf("unknown platform %q", plat)
+	}
+	if err := s.requireProviderAvailable(p); err != nil {
+		return nil, err
 	}
 	sch := p.PublishConfigSchema()
 	gk := strings.TrimSpace(sch.GroupKey)
