@@ -6,6 +6,7 @@ import {
 } from "../utils/assertions";
 import { AUTH_TOKEN_KEY } from "../../src/constants/auth";
 import { THEME_MODE_STORAGE_KEY } from "../../src/theme/themeMode";
+import { ok } from "../mocks/envelope";
 
 const themeSurfaceColors = {
   light: {
@@ -235,6 +236,38 @@ test.describe("@smoke Admin route smoke", () => {
       await admin.writeGuard.expectRequestCount("unexpected", 0);
     });
   }
+
+  test("renders platform runtime tabs without console warnings", async ({
+    admin,
+    page,
+  }) => {
+    await page.route("**/api/v1/platform/providers", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(
+          ok({
+            list: [
+              {
+                platform: "shopify",
+                name: "Shopify",
+                status: "planned",
+                authType: "oauth",
+                capabilities: [],
+              },
+            ],
+          }),
+        ),
+      });
+    });
+
+    await admin.goto("/ops/platform-runtime");
+
+    await expect(page.getByText("平台运行状态").first()).toBeVisible();
+    await expect(page.getByRole("tab", { name: /Shopify/ })).toBeVisible();
+    await expectNoRootOverflow(page);
+    await admin.writeGuard.expectRequestCount("unexpected", 0);
+  });
 
   test("renders observability alert rows without React key warnings", async ({
     admin,

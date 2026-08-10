@@ -10,6 +10,7 @@ import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import type { RequestConfig, RunTimeLayoutConfig } from "@/typings/umi-runtime";
 import AppGlobalSearch from "@/components/layout/AppGlobalSearch";
 import AppTopNav from "@/components/layout/AppTopNav";
+import AppModalBridge from "@/components/AppModalBridge";
 import AppMessageBridge from "@/components/AppMessageBridge";
 import BrandLogo from "@/components/BrandLogo";
 import { AUTH_TOKEN_KEY } from "@/constants/auth";
@@ -58,6 +59,7 @@ async function loadProfileFromToken(
 export function innerProvider(container: ReactElement) {
   return (
     <>
+      <AppModalBridge />
       <AppMessageBridge />
       {container}
     </>
