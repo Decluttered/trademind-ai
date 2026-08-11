@@ -1,9 +1,9 @@
 import { Drawer, type DrawerProps } from 'antd';
-import { layoutTokens } from '@/constants/layoutTokens';
+import { ADMIN_DRAWER_WIDTH } from '@/theme';
 
-const DEFAULT_DRAWER_WIDTH = `min(${layoutTokens.drawerWidthMax}px, calc(100vw - ${layoutTokens.drawerViewportGap}px))`;
+const DEFAULT_DRAWER_WIDTH = ADMIN_DRAWER_WIDTH;
 
-/** Project-wide drawer; explicit business widths still override this default. */
+/** Project-wide drawer; width is controlled by the responsive Admin drawer token. */
 export default function AppDrawer({ width = DEFAULT_DRAWER_WIDTH, rootClassName, ...rest }: DrawerProps) {
   return (
     <Drawer

@@ -7,6 +7,7 @@ import { useCallback } from "react";
 import type { MenuDataItem } from "@umijs/route-utils";
 import { history } from "@umijs/max";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
+import type { ConfigProviderProps } from "antd";
 import type { RequestConfig, RunTimeLayoutConfig } from "@/typings/umi-runtime";
 import AppGlobalSearch from "@/components/layout/AppGlobalSearch";
 import AppTopNav from "@/components/layout/AppTopNav";
@@ -18,6 +19,7 @@ import { layoutTokens } from "@/constants/layoutTokens";
 import { postJSON } from "@/services/request";
 import {
   applyThemeMode,
+  createAdminDrawerConfig,
   createAdminThemeConfig,
   getStoredThemeMode,
 } from "@/theme";
@@ -67,11 +69,12 @@ export function innerProvider(container: ReactElement) {
   );
 }
 
-export const antd = (memo: Record<string, unknown>) => {
+export const antd = (memo: ConfigProviderProps): ConfigProviderProps => {
   const mode = getStoredThemeMode();
   applyThemeMode(mode);
   return {
     ...memo,
+    drawer: createAdminDrawerConfig(memo.drawer),
     theme: createAdminThemeConfig(mode),
   };
 };
