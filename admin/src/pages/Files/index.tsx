@@ -24,6 +24,7 @@ export default function FilesPage() {
   const columns: ProColumns<FileRow>[] = [
     {
       title: '预览',
+      key: 'preview',
       dataIndex: 'url',
       width: 88,
       search: false,

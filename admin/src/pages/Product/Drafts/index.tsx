@@ -564,19 +564,6 @@ export default function ProductDraftsPage() {
         </Dropdown>
       </OperationToolbar>
       <DouyinE2EPrecheckBanner blockedByCredentials compact />
-      {(urlFilters.missingAiTitle ||
-        urlFilters.missingAiDescription ||
-        urlFilters.readinessBlocked ||
-        urlFilters.publishable ||
-        urlFilters.status ||
-        urlFilters.navSource) && (
-        <Alert
-          type="info"
-          showIcon
-          className="product-drafts-page__deep-link-alert"
-          message="已从运营看板或深链带入列表筛选（只影响本页查询，不写库）。"
-        />
-      )}
       <KeywordSafetyHint visible={showSensitiveHint} />
       {selectedCount > 0 ? (
         <OperationToolbar

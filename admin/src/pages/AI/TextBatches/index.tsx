@@ -77,14 +77,6 @@ export default function AITextBatchListPage() {
         </Button>
       }
     >
-      {navSource ? (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="已从关联页面带入导航上下文（不影响权限与店铺范围）。"
-        />
-      ) : null}
       <Space wrap style={{ marginBottom: 16 }}>
         <Select
           allowClear

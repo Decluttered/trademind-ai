@@ -238,6 +238,52 @@ test.describe("@smoke Admin route smoke", () => {
     });
   }
 
+  test("opens the shared table density and column setting controls", async ({
+    admin,
+    page,
+  }) => {
+    await admin.goto("/files");
+
+    const table = page.locator(".tm-pro-table").first();
+    await table.getByRole("button", { name: "表格密度" }).click();
+    await expect(page.getByRole("menuitem", { name: "宽松" })).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await table.getByRole("button", { name: "列设置" }).click();
+    await expect(page.getByText("列展示", { exact: true })).toBeVisible();
+    await admin.writeGuard.expectRequestCount("unexpected", 0);
+  });
+
+  test("does not render persistent instructional banners", async ({
+    admin,
+    page,
+  }) => {
+    const removedBanners = [
+      {
+        path: "/collect/hub",
+        messages: ["店铺归属与权限提示", "不要承诺百分百采集成功"],
+      },
+      { path: "/collect/tasks", messages: ["店铺归属与权限提示"] },
+      { path: "/orders/sync-tasks", messages: ["抖店订单同步说明"] },
+      { path: "/settings/inventory", messages: ["默认值说明"] },
+      { path: "/settings/security", messages: ["空闲超时说明"] },
+      {
+        path: "/settings/integrations",
+        messages: ["贸灵不提供也不内置任何第三方密钥"],
+      },
+    ];
+
+    for (const entry of removedBanners) {
+      await admin.goto(entry.path);
+      await expect(page.locator("#root")).toBeVisible();
+      for (const message of entry.messages) {
+        await expect(page.getByText(message, { exact: true })).toHaveCount(0);
+      }
+    }
+
+    await admin.writeGuard.expectRequestCount("unexpected", 0);
+  });
+
   test("shows native Feishu and Enterprise WeChat robot channels", async ({
     admin,
     page,

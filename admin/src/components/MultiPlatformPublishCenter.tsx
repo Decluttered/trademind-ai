@@ -216,18 +216,6 @@ export default function MultiPlatformPublishCenter({
     <Spin spinning={loading}>
       <div style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
-        <Alert
-          type="info"
-          showIcon
-          message="多平台刊登中心"
-          description={
-            <>
-              选择要刊登的平台和店铺，检查后可批量创建刊登草稿。当前不会直接上架；未接入真实接口的平台仅生成本地草稿与任务快照。
-              抖店继续使用现有平台草稿链路。批量多商品发布将在下一阶段开放。
-            </>
-          }
-        />
-
         {loadError ? (
           <Alert
             type="error"

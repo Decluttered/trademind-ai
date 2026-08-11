@@ -2,7 +2,7 @@
 import { InboxOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 import { ProCard } from '@ant-design/pro-components';
 import { TmPageContainer } from '@/components/ui';
-import { Alert, Button, Col, Divider, Form, InputNumber, Row, Switch, Typography, message } from 'antd';
+import { Button, Col, Divider, Form, InputNumber, Row, Switch, Typography, message } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 import {
   INVENTORY_ALERT_TOGGLES,
@@ -279,13 +279,6 @@ export default function InventorySettingsPage() {
               </Button>
             }
           >
-            <Alert
-              showIcon
-              type="info"
-              style={{ marginBottom: 16 }}
-              message="默认值说明"
-              description="「默认预警线 / 安全线」只影响新创建的商品规格，不会批量改写已有规格；已有规格可在商品详情或「库存预警」中单独设置。"
-            />
             <Row gutter={[24, 0]}>
               <Col xs={24} md={12} lg={8}>
                 <Form.Item label="新建规格默认预警线" name="default_warning_stock" extra="库存低于此值触发预警">

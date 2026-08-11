@@ -178,27 +178,6 @@ export default function AiBatchesPage() {
       title="历史 AI 批次"
       subTitle="查看历史批量 AI 任务的执行记录与结果。"
     >
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message="历史批次兼容视图"
-        description={
-          isProductionBuild
-            ? '此页面仅用于查看历史批次。新任务请使用「批量文案任务」或「批量图片任务」。'
-            : '开发环境可核对历史批次并验证兼容操作；正式任务请使用「批量文案任务」或「批量图片任务」。'
-        }
-        action={
-          <Space size="small">
-            <Button type="primary" size="small" onClick={() => history.push('/ai/text-batches')}>
-              批量文案任务
-            </Button>
-            <Button size="small" onClick={() => history.push('/ai/image-batches')}>
-              批量图片任务
-            </Button>
-          </Space>
-        }
-      />
       <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
         批量结果默认写入商品的 {AI_FIELD_COPY.aiTitle} / {AI_FIELD_COPY.aiDescription} 字段，或进入图片任务列表，不会自动覆盖正式标题、详情或替换主图。详情见{' '}
         <Link to="/settings/ai">AI 设置</Link>。

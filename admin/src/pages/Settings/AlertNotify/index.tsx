@@ -1,9 +1,7 @@
-import { Link } from '@umijs/renderer-react';
 import { BellOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 import { ProCard } from '@ant-design/pro-components';
 import { TmPageContainer } from '@/components/ui';
 import {
-  Alert,
   Button,
   Col,
   Divider,
@@ -266,25 +264,6 @@ export default function AlertNotifySettingsPage() {
             </div>
           </div>
         </ProCard>
-
-        <Alert
-          type="info"
-          showIcon
-          message="配置说明"
-          description={
-            <ul style={{ marginBottom: 0, paddingLeft: 18 }}>
-              <li>
-                需同时开启「启用外部通知」与「通道总开关」，并配置至少一个可用通道后，系统才会自动向外发送。
-              </li>
-              <li>
-                告警扫描与站内策略见 <Link to="/settings/system">系统设置</Link>；SMTP 见{' '}
-                <Link to="/settings/email">邮箱设置</Link>。
-              </li>
-              <li>飞书支持机器人签名校验；企业微信使用群机器人回调通知地址。</li>
-              <li>通知正文与回调通知内容均经裁剪，不会包含完整平台响应、客户消息全文或密钥。</li>
-            </ul>
-          }
-        />
 
         <Form
           form={form}

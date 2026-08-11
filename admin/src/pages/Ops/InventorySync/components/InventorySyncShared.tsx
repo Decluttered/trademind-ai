@@ -2,7 +2,7 @@ import { Alert, Button, Space, Tag, Tooltip, Typography } from 'antd';
 import { TaskJsonBlock } from '@/components/ui';
 import type { InventorySyncAPIError } from '@/services/inventorySyncP9';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 const SENSITIVE_KEY = /(token|secret|credential|password|cookie|authorization|oauth|accesskey|refresh|metadata)/i;
 
@@ -44,29 +44,6 @@ export function StatusTag({ map, value }: { map: Record<string, { text: string; 
   const key = String(value || '').trim();
   const item = key ? map[key] : undefined;
   return <Tag color={item?.color || 'default'}>{item?.text || key || '-'}</Tag>;
-}
-
-export function FixtureBoundary() {
-  return (
-    <Alert
-      type="warning"
-      showIcon
-      message="P9 库存同步仅为夹具 / 模拟管理台"
-      description={
-        <div>
-          <Paragraph style={{ marginBottom: 8 }}>
-            当前页面只展示后端 P9 fixture 数据和受控人工决策，不连接真实抖音店铺，不读取真实平台库存，也不会写入或修正任何线上库存。
-          </Paragraph>
-          <Space wrap>
-            <Tag>productionReady=false</Tag>
-            <Tag>p9Complete=false</Tag>
-            <Tag>realPlatformNetworkCalls=0</Tag>
-            <Tag>inventoryMutationCalls=0</Tag>
-          </Space>
-        </div>
-      }
-    />
-  );
 }
 
 export function copyableText(value?: string | null, max = 14) {

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PAGE_COPY } from '@/constants/copywriting';
 import { ORDER_SYNC_TASK_STATUS } from '@/constants/status';
 import { useUrlQueryState } from '@/hooks/useUrlState';
-import { normalizeSource, parsePositiveInt, queryTimeRange } from '@/utils/urlState';
+import { parsePositiveInt, queryTimeRange } from '@/utils/urlState';
 import { isProductionBuild } from '@/utils/runtimeEnvironment';
 import {
   getOrderSyncTask,
@@ -52,7 +52,6 @@ export default function OrderSyncTasksPage() {
     useUrlQueryState<Record<(typeof ORDER_SYNC_QUERY_KEYS)[number], string | undefined>>(
       ORDER_SYNC_QUERY_KEYS,
     );
-  const navSource = normalizeSource(urlState.source);
   const actionRef = useRef<ActionType>();
   const formRef = useRef<import('@ant-design/pro-components').ProFormInstance>();
   const [tablePage, setTablePage] = useState(1);
@@ -254,21 +253,6 @@ export default function OrderSyncTasksPage() {
 
   return (
     <TmPageContainer title={PAGE_COPY.orderSyncTasks.title} subTitle={PAGE_COPY.orderSyncTasks.description}>
-      {navSource ? (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="已从关联页面带入导航上下文（不影响权限与店铺范围）。"
-        />
-      ) : null}
-      <Alert
-        showIcon
-        type="info"
-        style={{ marginBottom: 16 }}
-        message="抖店订单同步说明"
-        description="须先在「设置 → 平台接入设置 → 抖店」开启「开启订单同步」，并在「店铺管理」完成店铺授权。未授权或授权过期时不能同步；失败任务可在本页重试或到「失败任务中心」查看。"
-      />
       <ProTable<OrderSyncTaskDTO>
         rowKey="id"
         actionRef={actionRef}

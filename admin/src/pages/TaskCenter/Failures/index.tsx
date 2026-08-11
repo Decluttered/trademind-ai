@@ -668,12 +668,6 @@ export default function TaskCenterFailuresPage() {
       subTitle={PAGE_COPY.taskFailures.description}
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Alert
-          showIcon
-          type="info"
-          message="抖店相关失败"
-          description="刊登、图片上传、创建草稿、订单同步、库存同步、规格绑定失败会聚合到本页。错误信息已脱敏，不含授权凭证或应用密钥。抖店授权/类目/图片/规格未绑定类问题请按提示回到对应页面处理后再重试。"
-        />
         <KeywordSafetyHint visible={showSensitiveHint} />
         <ProCard variant="outlined" size="small">
           {summary ? (

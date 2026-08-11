@@ -1,7 +1,7 @@
 import { ReloadOutlined, SaveOutlined, SettingOutlined } from '@ant-design/icons';
 import { ProCard } from '@ant-design/pro-components';
 import { TmPageContainer } from '@/components/ui';
-import { Alert, Button, Col, Divider, Form, Input, InputNumber, Row, Select, Switch, Typography, message } from 'antd';
+import { Button, Col, Divider, Form, Input, InputNumber, Row, Select, Switch, Typography, message } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PAGE_COPY } from '@/constants/copywriting';
 import {
@@ -244,14 +244,6 @@ export default function SystemSettingsPage() {
           </ProCard>
 
           <ProCard variant="outlined" title="任务中心 · 站内告警策略" className="tm-system-settings__panel" style={{ marginTop: 16 }}>
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 20 }}
-              message="告警生成规则"
-              description="开启「自动生成站内告警」后，系统会根据下方分类开关与重复失败规则写入任务中心告警列表；未达最低等级的事件将被忽略。"
-            />
-
             <Row gutter={[24, 16]}>
               <Col xs={24} md={12} lg={8}>
                 <Form.Item label="自动生成站内告警" name="enable_task_alerts" valuePropName="checked">

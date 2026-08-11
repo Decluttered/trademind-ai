@@ -795,13 +795,6 @@ export default function SecuritySettingsPage() {
 
         <Form form={form} layout="vertical" onFinish={onFinish}>
           <ProCard variant="outlined" title="策略配置" className="tm-system-settings__panel" style={{ marginTop: 16 }}>
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-              message="空闲超时说明"
-              description="仅统计无操作时间；关闭浏览器标签不会立即失效，下次请求时会校验会话是否过期。"
-            />
             <Row gutter={[24, 0]}>
               <Col xs={24} md={12} lg={10}>
                 <Form.Item

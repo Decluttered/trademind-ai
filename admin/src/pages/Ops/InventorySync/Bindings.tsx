@@ -17,7 +17,6 @@ import {
   BINDING_STATUS_LABELS,
   ConfidenceText,
   CursorPager,
-  FixtureBoundary,
   StatusTag,
   copyableText,
   renderInventorySyncError,
@@ -128,7 +127,6 @@ export default function InventorySyncBindingsPage() {
       extra={<Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>刷新</Button>}
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <FixtureBoundary />
         {renderInventorySyncError(error)}
         <Card>
           <Form

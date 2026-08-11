@@ -22,7 +22,6 @@ import { formatDateTime } from '@/utils/formatTime';
 import {
   ActionSourceHint,
   CursorPager,
-  FixtureBoundary,
   MANUAL_REQUEST_STATUS_LABELS,
   StatusTag,
   copyableText,
@@ -241,7 +240,6 @@ export default function InventorySyncManualBindingsPage() {
       extra={<Button icon={<ReloadOutlined />} onClick={() => void Promise.all([loadList(), loadDetail()])} loading={loading || detailLoading}>刷新</Button>}
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <FixtureBoundary />
         {renderInventorySyncError(error)}
         <Card>
           <Form form={form} layout="vertical" onFinish={updateFilters}>
@@ -352,7 +350,6 @@ export default function InventorySyncManualBindingsPage() {
         cancelText="取消"
         destroyOnHidden
       >
-        <FixtureBoundary />
         <Form form={decisionForm} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item label="Expected Revision">
             <Input disabled value={detail?.request.revision} />
