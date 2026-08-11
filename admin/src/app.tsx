@@ -22,6 +22,7 @@ import {
   getStoredThemeMode,
 } from "@/theme";
 import { canAccessPath, filterMenuByPermission } from "@/utils/menuAccess";
+import { isPublicAdminPath } from "@/utils/publicRoutes";
 import { useInitialStateModel } from "@/hooks/useInitialStateModel";
 import type { InitialStateModel } from "@/typings/umi-runtime";
 
@@ -111,7 +112,7 @@ export const request: RequestConfig = {
       if (status === 401 && !reqUrl.includes("/auth/login")) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         const path = history.location.pathname;
-        if (path !== "/user/login" && !path.startsWith("/user/login")) {
+        if (!isPublicAdminPath(path)) {
           const q = encodeURIComponent(path);
           window.location.assign(
             `${window.location.origin}/user/login?redirect=${q}`,
@@ -287,8 +288,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => ({
     ),
   onPageChange: () => {
     const { pathname } = history.location;
-    if (pathname === "/user/login" || pathname.startsWith("/user/login"))
-      return;
+    if (isPublicAdminPath(pathname)) return;
     // 必须用 token 判断：initialState 在此闭包里不会在登录后刷新，会一直当作未登录并反复 push 登录页，触发 Navigate 死循环。
     if (!localStorage.getItem(AUTH_TOKEN_KEY)) {
       history.replace(`/user/login?redirect=${encodeURIComponent(pathname)}`);

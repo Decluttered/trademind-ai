@@ -170,6 +170,8 @@ docker compose -f docker-compose.full.yml up -d --build
 | Backend Health | <http://127.0.0.1:8080/health> |
 | Collector Health | <http://127.0.0.1:3001/health> |
 
+Admin 根路径展示公开产品首页，访客可从首页进入登录页或注册页；登录后再进入运营工作台。
+
 更多说明：
 
 - [本地开发](docs/development.md)

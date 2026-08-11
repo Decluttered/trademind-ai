@@ -91,6 +91,11 @@ export default [
     component: './User/Login',
   },
   {
+    path: '/user/register',
+    layout: false,
+    component: './User/Login',
+  },
+  {
     path: '/',
     layout: false,
     component: './Index',

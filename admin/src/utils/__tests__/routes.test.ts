@@ -36,6 +36,16 @@ function collectVisibleMenuNames(nodes: RouteNode[], names: string[] = []): stri
 }
 
 describe('Admin route menu configuration', () => {
+  it('exposes separate public home, login, and registration routes', () => {
+    expect(routes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: '/', layout: false, component: './Index' }),
+        expect.objectContaining({ path: '/user/login', layout: false, component: './User/Login' }),
+        expect.objectContaining({ path: '/user/register', layout: false, component: './User/Login' }),
+      ]),
+    );
+  });
+
   it('uses a unique path for every visible menu item', () => {
     const paths = collectVisibleMenuPaths(routes);
     const duplicates = paths.filter((path, index) => paths.indexOf(path) !== index);

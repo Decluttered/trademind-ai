@@ -38,7 +38,9 @@ async function expectMobileDrawerOpaque(
   const drawer = page.locator(".ant-drawer-content:visible").first();
   await expect(drawer).toBeVisible();
   await expect
-    .poll(() => drawer.evaluate((content) => content.getBoundingClientRect().left))
+    .poll(() =>
+      drawer.evaluate((content) => content.getBoundingClientRect().left),
+    )
     .toBeGreaterThanOrEqual(-1);
 
   const state = await drawer.evaluate((content) => {
@@ -47,10 +49,7 @@ async function expectMobileDrawerOpaque(
     const rect = content.getBoundingClientRect();
     const probeX = Math.max(
       1,
-      Math.min(
-        window.innerWidth - 1,
-        rect.left + Math.max(24, rect.width / 2),
-      ),
+      Math.min(window.innerWidth - 1, rect.left + Math.max(24, rect.width / 2)),
     );
     const probeY = Math.min(
       rect.bottom - 24,
@@ -144,7 +143,11 @@ async function startThemeFrameProbe(page: Page, surfaceSelector: string) {
 
         while (current) {
           const color = background(current);
-          if (color && color !== "transparent" && color !== "rgba(0, 0, 0, 0)") {
+          if (
+            color &&
+            color !== "transparent" &&
+            color !== "rgba(0, 0, 0, 0)"
+          ) {
             return color;
           }
           current = current.parentElement;
@@ -155,9 +158,8 @@ async function startThemeFrameProbe(page: Page, surfaceSelector: string) {
 
       probeWindow.__tmThemeFrames?.push({
         mode: document.documentElement.dataset.theme,
-        switching: document.documentElement.classList.contains(
-          "tm-theme-switching",
-        ),
+        switching:
+          document.documentElement.classList.contains("tm-theme-switching"),
         headerBackground: paintedBackground(header),
         siderBackground: background(sider),
         surfaceBackground: background(surface),
@@ -173,8 +175,7 @@ async function startThemeFrameProbe(page: Page, surfaceSelector: string) {
 
 async function readThemeFrames(page: Page) {
   await page.waitForFunction(
-    () =>
-      ((window as ThemeProbeWindow).__tmThemeFrames?.length ?? 0) >= 12,
+    () => ((window as ThemeProbeWindow).__tmThemeFrames?.length ?? 0) >= 12,
   );
   return page.evaluate(
     () => (window as ThemeProbeWindow).__tmThemeFrames ?? [],
@@ -202,11 +203,13 @@ function expectThemeFramesConsistent(
   );
 
   for (const frame of themedFrames) {
-    expect(frame, `${mode} mixed frame ${JSON.stringify(frame)}`).toMatchObject({
-      headerBackground: settledFrame?.headerBackground,
-      siderBackground: settledFrame?.siderBackground,
-      surfaceBackground: settledFrame?.surfaceBackground,
-    });
+    expect(frame, `${mode} mixed frame ${JSON.stringify(frame)}`).toMatchObject(
+      {
+        headerBackground: settledFrame?.headerBackground,
+        siderBackground: settledFrame?.siderBackground,
+        surfaceBackground: settledFrame?.surfaceBackground,
+      },
+    );
   }
 }
 
@@ -375,9 +378,7 @@ test.describe("@smoke Admin route smoke", () => {
     await expect(
       page.getByRole("button", { name: "返回工作台" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "收起侧栏" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "收起侧栏" })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "搜索功能或页面" }),
     ).toBeVisible();
@@ -415,9 +416,9 @@ test.describe("@smoke Admin route smoke", () => {
       `brand left ${brandLogoBox.x} vs navigation icon left ${firstNavigationIconBox.x}`,
     ).toBeLessThanOrEqual(4);
     await expect(page.locator(".tm-app-brand-logo")).toHaveCount(1);
-    await expect(
-      page.locator(".ant-pro-sider .tm-app-brand-logo"),
-    ).toHaveCount(0);
+    await expect(page.locator(".ant-pro-sider .tm-app-brand-logo")).toHaveCount(
+      0,
+    );
 
     const darkThemeAction = page.getByRole("button", {
       name: "切换到深色模式",
@@ -469,9 +470,7 @@ test.describe("@smoke Admin route smoke", () => {
     await admin.goto("/ops/task-center/alerts");
 
     await page.getByRole("button", { name: "收起侧栏" }).click();
-    await expect(
-      page.getByRole("button", { name: "展开侧栏" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "展开侧栏" })).toBeVisible();
 
     const sider = page.locator(".ant-pro-sider-collapsed");
     const selectedItem = sider.locator(
@@ -502,9 +501,7 @@ test.describe("@smoke Admin route smoke", () => {
     ).toBeLessThanOrEqual(1);
 
     await page.getByRole("button", { name: "展开侧栏" }).click();
-    await expect(
-      page.getByRole("button", { name: "收起侧栏" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "收起侧栏" })).toBeVisible();
     await expect(page.locator(".ant-pro-sider-collapsed")).toHaveCount(0);
 
     await expectNoRootOverflow(page);
@@ -566,6 +563,92 @@ test.describe("@smoke Admin route smoke", () => {
     await admin.writeGuard.expectRequestCount("unexpected", 0);
   });
 
+  test("keeps the public homepage responsive and opens both auth routes", async ({
+    admin,
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+    await page.evaluate(
+      ([authKey, themeKey]) => {
+        window.localStorage.removeItem(authKey);
+        window.localStorage.removeItem(themeKey);
+      },
+      [AUTH_TOKEN_KEY, THEME_MODE_STORAGE_KEY],
+    );
+    await page.reload();
+
+    const hero = page.locator(".landing-hero");
+    const lightHeroBackground = await hero.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+
+    await page.getByRole("button", { name: "切换到深色模式" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(
+      page.getByRole("button", { name: "切换到浅色模式" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect
+      .poll(() =>
+        hero.evaluate((element) => getComputedStyle(element).backgroundColor),
+      )
+      .not.toBe(lightHeroBackground);
+
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await page.getByRole("button", { name: "切换到浅色模式" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.reload();
+    await expect
+      .poll(() =>
+        page
+          .locator(".landing-capability-card")
+          .first()
+          .evaluate((element) => getComputedStyle(element).opacity),
+      )
+      .toBe("1");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 1280, height: 800 },
+      { width: 1024, height: 768 },
+      { width: 768, height: 900 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/");
+      await expect(
+        page.getByRole("heading", { name: /从采集到刊登更顺畅/ }),
+      ).toBeVisible();
+      await expectNoRootOverflow(page);
+    }
+
+    await page.locator("#capabilities").scrollIntoViewIfNeeded();
+    await expect(page.locator(".landing-capability-card").first()).toHaveClass(
+      /is-visible/,
+    );
+
+    await page.getByRole("link", { name: "免费注册" }).first().click();
+    await expect(page).toHaveURL(/\/user\/register/);
+    await expect(page.getByRole("tab", { name: "注册" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    await page.goto("/");
+    await page.getByRole("link", { name: "登录", exact: true }).click();
+    await expect(page).toHaveURL(/\/user\/login/);
+    await expect(page.getByRole("tab", { name: "登录" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await admin.writeGuard.expectRequestCount("unexpected", 0);
+  });
+
   test("centers login and registration safely on mobile", async ({
     admin,
     page,
@@ -578,8 +661,8 @@ test.describe("@smoke Admin route smoke", () => {
       },
       [AUTH_TOKEN_KEY, THEME_MODE_STORAGE_KEY],
     );
-    await page.goto("/user/login");
-    await expect(page).toHaveURL(/\/user\/login/);
+    await page.goto("/user/register");
+    await expect(page).toHaveURL(/\/user\/register/);
 
     const expectCentered = async (tab: "登录" | "注册") => {
       await expect(page.getByRole("tab", { name: tab })).toHaveAttribute(
@@ -620,9 +703,10 @@ test.describe("@smoke Admin route smoke", () => {
       ).toBeLessThanOrEqual(1301);
     };
 
-    await expectCentered("登录");
-    await page.getByRole("tab", { name: "注册" }).click();
     await expectCentered("注册");
+    await page.getByRole("tab", { name: "登录" }).click();
+    await expect(page).toHaveURL(/\/user\/login/);
+    await expectCentered("登录");
     await expectNoRootOverflow(page);
     await admin.writeGuard.expectRequestCount("unexpected", 0);
   });
@@ -659,7 +743,9 @@ test.describe("@smoke Admin route smoke", () => {
 
     await page.getByRole("button", { name: "切换到浅色模式" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-    await expect.poll(() => readThemeStyles(sendTestButton)).toEqual(lightButton);
+    await expect
+      .poll(() => readThemeStyles(sendTestButton))
+      .toEqual(lightButton);
     await expect.poll(() => readThemeStyles(avatar)).toEqual(lightAvatar);
     await expect(avatar).toHaveText("E");
 
