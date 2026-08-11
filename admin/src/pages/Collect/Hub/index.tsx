@@ -231,18 +231,22 @@ function RecentTaskList({
         >
           <List.Item.Meta
             title={
-              <Space wrap size={8}>
+              <Space wrap size={8} className="tm-collect-hub-task-list__title">
                 <Text strong>{task.source}</Text>
                 <Tag color={taskStatusTagColor(task.status)}>{commonStatusLabel(task.status)}</Tag>
               </Space>
             }
             description={
-              <Space direction="vertical" size={2}>
-                <Text type="secondary" ellipsis={{ tooltip: task.sourceUrl }}>
+              <div className="tm-collect-hub-task-list__description">
+                <Text
+                  type="secondary"
+                  ellipsis={{ tooltip: task.sourceUrl }}
+                  className="tm-collect-hub-task-list__url"
+                >
                   {task.sourceUrl}
                 </Text>
                 <Text type="secondary">{formatDateTime(task.createdAt)}</Text>
-              </Space>
+              </div>
             }
           />
         </List.Item>
@@ -289,8 +293,10 @@ function BrowserProfileSummary({
     <Space direction="vertical" size={10} className="tm-collect-hub-profile-list">
       {profiles.map((profile) => (
         <div className="tm-collect-hub-profile" key={profile.id}>
-          <div>
-            <Text strong>{profile.name}</Text>
+          <div className="tm-collect-hub-profile__main">
+            <Text strong className="tm-collect-hub-profile__name">
+              {profile.name}
+            </Text>
             <Text type="secondary" className="tm-collect-hub-profile__domain">
               {profile.domain}
             </Text>
@@ -595,7 +601,7 @@ export default function CollectHubPage() {
                   {loginSensitiveProviders.map((provider) => (
                     <div className="tm-collect-hub-risk" key={provider.source}>
                       <LoginOutlined />
-                      <div>
+                      <div className="tm-collect-hub-risk__content">
                         <Text strong>{provider.name}</Text>
                         <Text type="secondary">可能需要采集浏览器登录或人工验证</Text>
                       </div>
