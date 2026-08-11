@@ -218,6 +218,7 @@ const smokeRoutes = [
   { path: "/inventory/overview", name: /库存中心/ },
   { path: "/ops/task-center/alerts", name: /告警中心/ },
   { path: "/ops/observability", name: /可观测性中心/ },
+  { path: "/settings/alert-notify", name: /告警通知配置/ },
   { path: "/files", name: /文件管理/ },
 ];
 
@@ -236,6 +237,19 @@ test.describe("@smoke Admin route smoke", () => {
       await admin.writeGuard.expectRequestCount("unexpected", 0);
     });
   }
+
+  test("shows native Feishu and Enterprise WeChat robot channels", async ({
+    admin,
+    page,
+  }) => {
+    await admin.goto("/settings/alert-notify");
+
+    await expect(page.getByText("飞书", { exact: true })).toBeVisible();
+    await expect(page.getByText("企业微信", { exact: true })).toBeVisible();
+    await expect(page.getByText(/当前保存后发送结果为 skipped/)).toHaveCount(0);
+    await expectNoRootOverflow(page);
+    await admin.writeGuard.expectRequestCount("unexpected", 0);
+  });
 
   test("renders platform runtime tabs without console warnings", async ({
     admin,

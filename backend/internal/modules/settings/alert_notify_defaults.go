@@ -31,10 +31,10 @@ func EnsureAlertNotifyDefaults(ctx context.Context, db *gorm.DB) error {
 		{"webhook_secret", "", true, "string", ""},
 		{"webhook_timeout_seconds", "", false, "string", "HTTP 超时秒数，留空则后端使用引擎默认值"},
 		{"webhook_template", "", false, "string", "预留：首版未使用自定义模板"},
-		{"feishu_enabled", "false", false, "string", "预留，发送为 planned"},
+		{"feishu_enabled", "false", false, "string", "飞书群自定义机器人通知开关"},
 		{"feishu_webhook_url", "", true, "string", ""},
 		{"feishu_secret", "", true, "string", ""},
-		{"wecom_enabled", "false", false, "string", "预留，发送为 planned"},
+		{"wecom_enabled", "false", false, "string", "企业微信群机器人通知开关"},
 		{"wecom_webhook_url", "", true, "string", ""},
 	}
 	for _, d := range defs {

@@ -438,7 +438,7 @@ List endpoints return `{items, nextCursor, hasMore, limit}` and never expose off
 | `GET` | `/api/v1/task-center/failures/:taskType/:id` | 失败详情（脱敏 raw） |
 | `GET` | `/api/v1/task-center/alerts` | 站内告警列表 |
 | `POST` | `/api/v1/task-center/alerts/scan` | 扫描并生成告警（dedupe） |
-| `POST` | `/api/v1/task-center/alerts/:id/notify` | Webhook 通知（需配置） |
+| `POST` | `/api/v1/task-center/alerts/:id/notify` | 手动触发已配置的邮件、通用 Webhook、飞书群机器人或企业微信群机器人通知；请求体可指定 `channels`，发送结果写入通知审计记录 |
 | `GET` | `/api/v1/task-center/failure-categories` | 含 `sub:douyin_*` 分类 |
 
 ### 操作日志与运营看板

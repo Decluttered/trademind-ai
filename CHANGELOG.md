@@ -4,6 +4,12 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Native alert robots (2026-08-11)
+
+- Added native Feishu custom-bot delivery with optional timestamp signing and native Enterprise WeChat group-robot delivery.
+- Validate vendor response codes even on HTTP 2xx, retain masked audit targets, and keep production delivery HTTPS-only with bounded timeouts and response summaries.
+- Exposed both implemented channels in the production Admin settings flow and retained encrypted webhook and signing-secret storage.
+
 ### Database schema naming (2026-08-10)
 
 - Replaced phase-numbered `p9_*` and `p10_*` table names with stable inventory, SKU binding, platform credential, OAuth, and production-control domain names.

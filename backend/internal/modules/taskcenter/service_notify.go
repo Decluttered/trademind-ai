@@ -386,9 +386,24 @@ func (s *Service) NotifyGeneratedAlerts(ctx context.Context, candidates []alertN
 					res.RawSummary = merged
 				}
 			case "feishu":
-				res = notify.PlannedSender{Channel: "feishu", Reason: "feishu integration planned"}.Send(ctx, payload)
+				sec := time.Duration(webhookNotifyTimeoutSeconds(an)) * time.Second
+				allowHTTP := s.Cfg != nil && s.Cfg.AppEnv != "production"
+				res = notify.SendFeishu(ctx, notify.FeishuDeps{
+					URL:       strings.TrimSpace(an["feishu_webhook_url"]),
+					Secret:    strings.TrimSpace(an["feishu_secret"]),
+					Timeout:   sec,
+					AllowHTTP: allowHTTP,
+				}, payload)
+				res = withAlertCount(res, alert.AlertCount)
 			case "wecom":
-				res = notify.PlannedSender{Channel: "wecom", Reason: "wecom integration planned"}.Send(ctx, payload)
+				sec := time.Duration(webhookNotifyTimeoutSeconds(an)) * time.Second
+				allowHTTP := s.Cfg != nil && s.Cfg.AppEnv != "production"
+				res = notify.SendWeCom(ctx, notify.WeComDeps{
+					URL:       strings.TrimSpace(an["wecom_webhook_url"]),
+					Timeout:   sec,
+					AllowHTTP: allowHTTP,
+				}, payload)
+				res = withAlertCount(res, alert.AlertCount)
 			default:
 				res = notify.AlertNotificationResult{Channel: ch, Status: TaskAlertNotifStatusSkipped, ErrorMessage: "unknown channel"}
 			}
@@ -403,6 +418,17 @@ func (s *Service) NotifyGeneratedAlerts(ctx context.Context, candidates []alertN
 			}
 		}
 	}
+}
+
+func withAlertCount(res notify.AlertNotificationResult, alertCount int) notify.AlertNotificationResult {
+	if res.Status != TaskAlertNotifStatusSuccess {
+		return res
+	}
+	if res.RawSummary == nil {
+		res.RawSummary = map[string]any{}
+	}
+	res.RawSummary["alertCount"] = alertCount
+	return res
 }
 
 func channelEnabled(an map[string]string, ch string) bool {
