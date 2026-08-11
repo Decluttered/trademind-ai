@@ -567,17 +567,12 @@ test.describe("@smoke Admin route smoke", () => {
     admin,
     page,
   }) => {
+    await page.addInitScript((authKey) => {
+      window.localStorage.removeItem(authKey);
+    }, AUTH_TOKEN_KEY);
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
-    await page.evaluate(
-      ([authKey, themeKey]) => {
-        window.localStorage.removeItem(authKey);
-        window.localStorage.removeItem(themeKey);
-      },
-      [AUTH_TOKEN_KEY, THEME_MODE_STORAGE_KEY],
-    );
-    await page.reload();
 
     const hero = page.locator(".landing-hero");
     const lightHeroBackground = await hero.evaluate(
