@@ -1038,6 +1038,8 @@ export default function ProductDraftDetailPage() {
   const [publishForm] = Form.useForm();
   const [douyinForm] = Form.useForm();
   const [douyinMappingForm] = Form.useForm();
+  const douyinFormConnectedRef = useRef(false);
+  const douyinMappingFormConnectedRef = useRef(false);
   const [publishSubmitting, setPublishSubmitting] = useState(false);
   const [douyinSaving, setDouyinSaving] = useState(false);
   const [douyinConfirmingAction, setDouyinConfirmingActionState] = useState<'' | 'config' | 'mapping' | 'create'>('');
@@ -1487,13 +1489,13 @@ export default function ProductDraftDetailPage() {
         message.success('抖店刊登草稿校验通过');
       }
       setReadinessPlat('douyin_shop');
-      setReadinessShopId(String(douyinForm.getFieldValue('shopId') || ''));
+      setReadinessShopId(String(douyinConfig.shopId || ''));
     } catch (e: unknown) {
       message.error((e as Error)?.message || '校验抖店刊登草稿失败');
     } finally {
       setDouyinMappingValidating(false);
     }
-  }, [currentDouyinMapping, douyinForm, douyinMapping, id]);
+  }, [currentDouyinMapping, douyinConfig.shopId, douyinMapping, id]);
 
   const handleUploadDouyinImages = useCallback(async (force = false) => {
     if (!douyinMapping) {
@@ -1926,7 +1928,7 @@ export default function ProductDraftDetailPage() {
   }, [douyinConfig.categoryId, douyinConfig.shopId, douyinMapping, douyinShops, publishReadiness]);
 
   const handleCreateDouyinDraft = useCallback(() => {
-    const shopId = String(douyinForm.getFieldValue('shopId') || douyinConfig.shopId || '').trim();
+    const shopId = String(douyinConfig.shopId || '').trim();
     if (!shopId) {
       message.error('请选择抖店店铺');
       return;
@@ -1952,7 +1954,7 @@ export default function ProductDraftDetailPage() {
         setDouyinConfirmingAction('');
       }
     });
-  }, [douyinConfig.shopId, douyinDraftCreating, douyinForm, id, reloadDouyinPublishTasks, reloadPublicationSkus, reloadDouyinSkuBindings, setDouyinConfirmingAction]);
+  }, [douyinConfig.shopId, douyinDraftCreating, id, reloadDouyinPublishTasks, reloadPublicationSkus, reloadDouyinSkuBindings, setDouyinConfirmingAction]);
 
   const shopsForReadinessPlat = useMemo(() => {
     const p = readinessPlat.trim().toLowerCase();
@@ -2010,12 +2012,14 @@ export default function ProductDraftDetailPage() {
 
   useEffect(() => {
     if (draftTabKey !== 'publish') return;
-    douyinForm.setFieldsValue({
-      shopId: douyinConfig.shopId,
-      categoryId: douyinConfig.categoryId,
-      platformAttributes: douyinConfig.platformAttributes ?? {},
-    });
-    if (douyinMapping) {
+    if (douyinFormConnectedRef.current) {
+      douyinForm.setFieldsValue({
+        shopId: douyinConfig.shopId,
+        categoryId: douyinConfig.categoryId,
+        platformAttributes: douyinConfig.platformAttributes ?? {},
+      });
+    }
+    if (douyinMapping && douyinMappingFormConnectedRef.current) {
       douyinMappingForm.setFieldsValue({
         title: douyinMapping.title,
         description: douyinMapping.description,
@@ -2025,11 +2029,9 @@ export default function ProductDraftDetailPage() {
 
   useEffect(() => {
     if (draftTabKey !== 'publish' || !id) return;
-    const sid = publishForm.getFieldValue('shopId') as string | undefined;
-    if (sid) void refreshPublishReadiness(String(sid));
     void reloadDouyinPublishTasks();
     void reloadDouyinSkuBindings();
-  }, [draftTabKey, id, publishForm, refreshPublishReadiness, reloadDouyinPublishTasks, reloadDouyinSkuBindings]);
+  }, [draftTabKey, id, reloadDouyinPublishTasks, reloadDouyinSkuBindings]);
 
   const progressBlockerCount = operationProgress?.blockerCount ?? operationProgress?.blockers?.length ?? 0;
   const progressWarningCount = operationProgress?.warningCount ?? operationProgress?.warnings?.length ?? 0;
@@ -4763,17 +4765,17 @@ export default function ProductDraftDetailPage() {
                                 <Button
                                   icon={<SyncOutlined />}
                                   loading={douyinCategoryLoading}
-                                  onClick={() => void reloadDouyinCategories(douyinForm.getFieldValue('shopId'), true)}
+                                  onClick={() => void reloadDouyinCategories(douyinConfig.shopId, true)}
                                 >
                                   刷新类目
                                 </Button>
                                 <Button
                                   loading={douyinAttrLoading}
-                                  disabled={!douyinForm.getFieldValue('categoryId')}
+                                  disabled={!douyinConfig.categoryId}
                                   onClick={() =>
                                     void reloadDouyinAttrs(
-                                      douyinForm.getFieldValue('categoryId'),
-                                      douyinForm.getFieldValue('shopId'),
+                                      douyinConfig.categoryId,
+                                      douyinConfig.shopId,
                                       true,
                                     )
                                   }
@@ -4794,6 +4796,9 @@ export default function ProductDraftDetailPage() {
                                 <Alert type="warning" showIcon message="暂无已授权抖店店铺" description="请先完成抖店店铺授权，再回到本页选择店铺和类目。" />
                               ) : null}
                               <Form
+                                ref={(instance) => {
+                                  douyinFormConnectedRef.current = Boolean(instance);
+                                }}
                                 form={douyinForm}
                                 layout="vertical"
                                 className="product-draft-douyin-flow__form"
@@ -4890,7 +4895,7 @@ export default function ProductDraftDetailPage() {
                                     />
                                   </Form.Item>
                                 </div>
-                                {douyinForm.getFieldValue('categoryId') && douyinAttrs.length === 0 ? (
+                                {douyinConfig.categoryId && douyinAttrs.length === 0 ? (
                                   <Alert type="info" showIcon message="该类目暂无本地属性缓存，请点击「刷新属性」。" />
                                 ) : null}
                                 {douyinAttrs.length > 0 ? (
@@ -4947,7 +4952,7 @@ export default function ProductDraftDetailPage() {
                                     <Button
                                       onClick={() => {
                                         setReadinessPlat('douyin_shop');
-                                        setReadinessShopId(String(douyinForm.getFieldValue('shopId') || ''));
+                                        setReadinessShopId(String(douyinConfig.shopId || ''));
                                         openDraftLocation('readiness', 'publish-check');
                                       }}
                                     >
@@ -5002,7 +5007,14 @@ export default function ProductDraftDetailPage() {
                                       description={douyinIssueList(douyinMapping.warnings)}
                                     />
                                   ) : null}
-                                  <Form form={douyinMappingForm} layout="vertical" className="product-draft-douyin-draft__form">
+                                  <Form
+                                    ref={(instance) => {
+                                      douyinMappingFormConnectedRef.current = Boolean(instance);
+                                    }}
+                                    form={douyinMappingForm}
+                                    layout="vertical"
+                                    className="product-draft-douyin-draft__form"
+                                  >
                                     <Form.Item name="title" label="抖店标题" rules={[{ required: true, message: '请填写抖店标题' }]}>
                                       <Input showCount maxLength={80} />
                                     </Form.Item>

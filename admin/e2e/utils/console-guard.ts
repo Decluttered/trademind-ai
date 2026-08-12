@@ -4,7 +4,6 @@ type GuardEntry = { type: string; text: string };
 
 const allowedWarnings: RegExp[] = [
   /ResizeObserver loop completed with undelivered notifications/i,
-  /Warning: Instance created by `useForm` is not connected to any Form element\. Forget to pass `form` prop\?/,
 ];
 
 export class ConsoleGuard {
