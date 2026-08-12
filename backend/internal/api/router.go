@@ -65,6 +65,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/observability"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/response"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	aigate "github.com/trademind-ai/trademind/backend/internal/providers/ai"
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
 	platformamazon "github.com/trademind-ai/trademind/backend/internal/providers/platform/amazon"
@@ -337,6 +338,11 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		Redis:    dep.Redis,
 	}
 	if dep.Config != nil {
+		_, tenantSource, tenantErr := dep.Config.ResolveRequestTenantID(0)
+		env := config.NormalizeEnv(dep.Config.AppEnv)
+		collectSvc.AllowLegacyTenantZero = tenantErr == nil &&
+			tenantSource == security.AuthSourceLegacyDevZero &&
+			(env == config.EnvDevelopment || env == config.EnvTest)
 		collectSvc.QueueName = dep.Config.CollectQueueName
 		collectSvc.QueueEnabled = dep.Config.CollectQueueEnabled
 		collectSvc.BatchMaxURLs = dep.Config.CollectBatchMaxURLs

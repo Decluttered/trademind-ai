@@ -22,6 +22,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/pkg/opslabels"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/pagination"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/repository"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	aigate "github.com/trademind-ai/trademind/backend/internal/providers/ai"
 	platformdouyin "github.com/trademind-ai/trademind/backend/internal/providers/platform/douyinshop"
 )
@@ -715,7 +716,11 @@ func (s *Service) ImportDraft(c *gin.Context, adminID *uuid.UUID, p ImportDraftP
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("product: no db")
 	}
-	out, err := s.importDraftCore(c.Request.Context(), adminID, p)
+	tenantID, err := adminperm.TenantIDFromGin(c)
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.importDraftCore(c.Request.Context(), tenantID, adminID, p)
 	if err != nil {
 		return nil, err
 	}
@@ -740,7 +745,11 @@ func (s *Service) ImportDraftWithContext(ctx context.Context, adminID *uuid.UUID
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	out, err := s.importDraftCore(ctx, adminID, p)
+	tenant, err := security.RequireTenantContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.importDraftCore(ctx, tenant.TenantID, adminID, p)
 	if err != nil {
 		return nil, err
 	}
@@ -757,7 +766,7 @@ func (s *Service) ImportDraftWithContext(ctx context.Context, adminID *uuid.UUID
 	return out, nil
 }
 
-func (s *Service) importDraftCore(ctx context.Context, adminID *uuid.UUID, p ImportDraftParams) (*Product, error) {
+func (s *Service) importDraftCore(ctx context.Context, tenantID int64, adminID *uuid.UUID, p ImportDraftParams) (*Product, error) {
 	title := strings.TrimSpace(p.Title)
 	if title == "" {
 		title = "（未命名商品）"
@@ -775,7 +784,7 @@ func (s *Service) importDraftCore(ctx context.Context, adminID *uuid.UUID, p Imp
 	var out *Product
 	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		pr := &Product{
-			TenantID:      0,
+			TenantID:      tenantID,
 			CreatedBy:     adminID,
 			Source:        strings.TrimSpace(p.Source),
 			SourceURL:     strings.TrimSpace(p.SourceURL),

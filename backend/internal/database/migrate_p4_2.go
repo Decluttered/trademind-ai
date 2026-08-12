@@ -69,6 +69,22 @@ func backfillP42TenantIDs(db *gorm.DB) error {
 			_ = err
 		}
 	}
+	return backfillP42CollectTenantIDs(db)
+}
+
+func backfillP42CollectTenantIDs(db *gorm.DB) error {
+	stmts := []string{
+		`UPDATE products SET tenant_id = (SELECT admin_users.tenant_id FROM admin_users WHERE admin_users.id = products.created_by AND admin_users.tenant_id > 0 LIMIT 1) WHERE tenant_id = 0 AND created_by IS NOT NULL AND EXISTS (SELECT 1 FROM admin_users WHERE admin_users.id = products.created_by AND admin_users.tenant_id > 0)`,
+		`UPDATE collect_batches SET tenant_id = (SELECT admin_users.tenant_id FROM admin_users WHERE admin_users.id = collect_batches.created_by AND admin_users.tenant_id > 0 LIMIT 1) WHERE tenant_id = 0 AND created_by IS NOT NULL AND EXISTS (SELECT 1 FROM admin_users WHERE admin_users.id = collect_batches.created_by AND admin_users.tenant_id > 0)`,
+		`UPDATE collect_tasks SET tenant_id = (SELECT admin_users.tenant_id FROM admin_users WHERE admin_users.id = collect_tasks.created_by AND admin_users.tenant_id > 0 LIMIT 1) WHERE tenant_id = 0 AND created_by IS NOT NULL AND EXISTS (SELECT 1 FROM admin_users WHERE admin_users.id = collect_tasks.created_by AND admin_users.tenant_id > 0)`,
+		`UPDATE collect_tasks SET tenant_id = (SELECT collect_batches.tenant_id FROM collect_batches WHERE collect_batches.id = collect_tasks.batch_id AND collect_batches.tenant_id > 0 LIMIT 1) WHERE tenant_id = 0 AND batch_id IS NOT NULL AND EXISTS (SELECT 1 FROM collect_batches WHERE collect_batches.id = collect_tasks.batch_id AND collect_batches.tenant_id > 0)`,
+		`UPDATE collect_tasks SET tenant_id = (SELECT products.tenant_id FROM products WHERE products.id = collect_tasks.result_product_id AND products.tenant_id > 0 LIMIT 1) WHERE tenant_id = 0 AND result_product_id IS NOT NULL AND EXISTS (SELECT 1 FROM products WHERE products.id = collect_tasks.result_product_id AND products.tenant_id > 0)`,
+	}
+	for _, sql := range stmts {
+		if err := db.Exec(sql).Error; err != nil {
+			return fmt.Errorf("p4.2 collect tenant backfill: %w", err)
+		}
+	}
 	return nil
 }
 

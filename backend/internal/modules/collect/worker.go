@@ -3,6 +3,7 @@ package collect
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -10,8 +11,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/trademind-ai/trademind/backend/internal/modules/worker"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/tasktenant"
+	"gorm.io/gorm"
 )
 
 func normalizeCollectConcurrency(n int) int {
@@ -24,16 +27,21 @@ func normalizeCollectConcurrency(n int) int {
 	return n
 }
 
-// StartWorker runs BRPOP consumers until ctx is cancelled.
+// StartWorker runs reliable ready-to-processing consumers until ctx is cancelled.
 func StartWorker(ctx context.Context, wg *sync.WaitGroup, log *slog.Logger, svc *Service, queueName string, concurrency int, reg *worker.Registry) {
-	if svc == nil || svc.Redis == nil || svc.Redis.Client == nil {
+	if svc == nil || svc.Redis == nil || svc.Redis.Client == nil || svc.DB == nil || svc.Client == nil || svc.Products == nil {
+		if log != nil {
+			log.Warn("collect_worker_skipped", "reason", "worker dependencies unavailable")
+		}
 		return
 	}
-	if queueName == "" {
-		queueName = "collect:tasks"
-	}
+	queueName = collectQueueName(queueName)
 	concurrency = normalizeCollectConcurrency(concurrency)
 
+	if err := svc.recoverCollectQueue(ctx, queueName, log); err != nil && log != nil {
+		log.Warn("collect_queue_recovery_failed", "error", err)
+	}
+	startCollectQueueRecovery(ctx, wg, log, svc, queueName, time.Minute)
 	SetCollectWorkersRunning(true)
 
 	for i := 0; i < concurrency; i++ {
@@ -56,55 +64,130 @@ func StartWorker(ctx context.Context, wg *sync.WaitGroup, log *slog.Logger, svc 
 	}
 }
 
-func runCollectWorker(ctx context.Context, log *slog.Logger, svc *Service, queueName string, slot int, workerLeaseID string) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
+func startCollectQueueRecovery(ctx context.Context, wg *sync.WaitGroup, log *slog.Logger, svc *Service, queueName string, interval time.Duration) {
+	if interval <= 0 {
+		interval = time.Minute
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := svc.recoverCollectQueue(ctx, queueName, log); err != nil && log != nil {
+					log.Warn("collect_queue_recovery_failed", "error", err)
+				}
+			}
 		}
+	}()
+}
 
-		res, err := svc.Redis.BRPop(ctx, 5*time.Second, queueName).Result()
+func runCollectWorker(ctx context.Context, log *slog.Logger, svc *Service, queueName string, slot int, workerLeaseID string) {
+	var lastReserveErrorLog time.Time
+	for {
+		payload, err := svc.reserveTask(ctx, queueName, 5*time.Second)
 		if err != nil {
 			if ctx.Err() != nil {
 				return
 			}
-			continue
-		}
-		if len(res) < 2 {
-			continue
-		}
-		payload := res[1]
-
-		var msg QueueMessage
-		if err := json.Unmarshal([]byte(payload), &msg); err != nil {
-			if log != nil {
-				log.Warn("collect_worker_bad_message", "worker", slot, "error", err)
-			}
-			continue
-		}
-		tid, err := uuid.Parse(strings.TrimSpace(msg.TaskID))
-		if err != nil {
-			if log != nil {
-				log.Warn("collect_worker_bad_task_id", "worker", slot, "error", err)
-			}
-			continue
-		}
-
-		jobCtx := context.Background()
-		if svc.DB != nil {
-			var probe CollectTask
-			if err := svc.DB.WithContext(jobCtx).Select("tenant_id").First(&probe, "id = ?", tid).Error; err == nil {
-				wctx, _, terr := tasktenant.BeginWorker(jobCtx, svc.DB, probe.TenantID, uuid.Nil, "collect")
-				if terr != nil {
-					if log != nil {
-						log.Warn("collect_worker_tenant_missing", "worker", slot, "taskId", tid.String(), "error", tasktenant.WrapError(terr))
-					}
-					continue
+			if !errors.Is(err, goredis.Nil) {
+				if log != nil && (lastReserveErrorLog.IsZero() || time.Since(lastReserveErrorLog) >= 30*time.Second) {
+					log.Warn("collect_worker_reserve_failed", "worker", slot, "queue", queueName, "error", err)
+					lastReserveErrorLog = time.Now()
 				}
-				jobCtx = wctx
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(time.Second):
+				}
 			}
+			continue
 		}
-		svc.RunCollectJob(jobCtx, tid, workerLeaseID)
+		processReservedCollectTask(log, svc, queueName, payload, slot, workerLeaseID)
 	}
+}
+
+func processReservedCollectTask(log *slog.Logger, svc *Service, queueName, payload string, slot int, workerLeaseID string) {
+	jobCtx := context.Background()
+	ack := func() {
+		if err := svc.ackReservedTask(jobCtx, queueName, payload); err != nil && log != nil {
+			log.Warn("collect_worker_ack_failed", "worker", slot, "error", err)
+		}
+	}
+	requeue := func(cause error) {
+		if err := svc.requeueReservedTask(jobCtx, queueName, payload); err != nil {
+			if log != nil {
+				log.Error("collect_worker_requeue_failed", "worker", slot, "cause", cause, "error", err)
+			}
+			return
+		}
+		if log != nil {
+			log.Warn("collect_worker_requeued", "worker", slot, "cause", cause)
+		}
+	}
+
+	var msg QueueMessage
+	if err := json.Unmarshal([]byte(payload), &msg); err != nil {
+		if log != nil {
+			log.Warn("collect_worker_bad_message", "worker", slot, "error", err)
+		}
+		ack()
+		return
+	}
+	tid, err := uuid.Parse(strings.TrimSpace(msg.TaskID))
+	if err != nil {
+		if log != nil {
+			log.Warn("collect_worker_bad_task_id", "worker", slot, "error", err)
+		}
+		ack()
+		return
+	}
+
+	var task CollectTask
+	if err := svc.DB.WithContext(jobCtx).First(&task, "id = ?", tid).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if log != nil {
+				log.Warn("collect_worker_task_not_found", "worker", slot, "taskId", tid.String())
+			}
+			ack()
+			return
+		}
+		requeue(err)
+		return
+	}
+	if task.Status != StatusPending && !(task.Status == StatusRetrying && task.NextRetryAt == nil) {
+		ack()
+		return
+	}
+	if !svc.acceptsTenantID(task.TenantID) {
+		if err := svc.failTaskMissingTenant(jobCtx, &task); err != nil {
+			requeue(err)
+			return
+		}
+		if log != nil {
+			log.Warn("collect_worker_tenant_missing", "worker", slot, "taskId", tid.String(), "error", tasktenant.WrapError(tasktenant.RequireTaskTenant(task.TenantID)))
+		}
+		ack()
+		return
+	}
+
+	wctx, _, err := tasktenant.BeginWorkerWithLegacyZero(jobCtx, svc.DB, task.TenantID, uuid.Nil, "collect", svc.AllowLegacyTenantZero)
+	if err != nil {
+		requeue(err)
+		return
+	}
+	_, err = svc.RunCollectJob(wctx, tid, workerLeaseID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ack()
+			return
+		}
+		requeue(err)
+		return
+	}
+	ack()
 }

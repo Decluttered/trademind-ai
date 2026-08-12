@@ -35,7 +35,8 @@ func TestCollectStaleWorkerFinishFails(t *testing.T) {
 		Status:         StatusPending,
 	}).Error)
 
-	taskA, claimA, ok := svc.tryClaimCollectTask(ctx, id, "worker-a", 40*time.Millisecond)
+	taskA, claimA, ok, err := svc.tryClaimCollectTask(ctx, id, "worker-a", 40*time.Millisecond)
+	require.NoError(t, err)
 	require.True(t, ok)
 	require.NotNil(t, taskA)
 	require.NotNil(t, claimA)
@@ -45,12 +46,13 @@ func TestCollectStaleWorkerFinishFails(t *testing.T) {
 		"status": StatusPending, "locked_by": nil, "locked_until": nil,
 	}).Error)
 
-	_, claimB, ok := svc.tryClaimCollectTask(ctx, id, "worker-b", 90*time.Second)
+	_, claimB, ok, err := svc.tryClaimCollectTask(ctx, id, "worker-b", 90*time.Second)
+	require.NoError(t, err)
 	require.True(t, ok)
 	require.NotNil(t, claimB)
 	require.NotEqual(t, claimA.ExecutionID, claimB.ExecutionID)
 
-	err := svc.finishCollectTask(ctx, id, "worker-a", claimA, map[string]any{
+	err = svc.finishCollectTask(ctx, id, "worker-a", claimA, map[string]any{
 		"status":        StatusSuccess,
 		"error_message": "",
 	})
