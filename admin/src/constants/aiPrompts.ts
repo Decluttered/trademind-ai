@@ -60,7 +60,7 @@ export const AI_LANGUAGE_OPTIONS = [
   { value: 'fr', label: '法语' },
   { value: 'es', label: '西班牙语' },
   { value: 'pt', label: '葡萄牙语' },
-] as const;
+];
 
 /** AI 文案语气：中文展示，value 保持与现有 Prompt 变量兼容。 */
 export const AI_TONE_OPTIONS = [
@@ -70,7 +70,7 @@ export const AI_TONE_OPTIONS = [
   { value: 'persuasive', label: '卖点导向' },
   { value: 'enthusiastic', label: '热情活力' },
   { value: 'formal', label: '正式严谨' },
-] as const;
+];
 
 /** AI 商品文案目标平台；显示名同时作为 Prompt 值，兼容既有请求 payload。 */
 export const AI_TARGET_PLATFORM_OPTIONS = [
