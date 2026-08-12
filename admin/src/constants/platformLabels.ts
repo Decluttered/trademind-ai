@@ -10,6 +10,11 @@ export const PLATFORM_DISPLAY_LABEL: Record<string, string> = {
   manual: '手动',
 };
 
+/** 本站已接入的真实电商平台；从统一展示表派生，不包含开发模拟和手动录入方式。 */
+export const SUPPORTED_COMMERCE_PLATFORM_KEYS = Object.keys(PLATFORM_DISPLAY_LABEL).filter(
+  (platform) => platform !== 'mock' && platform !== 'manual',
+);
+
 export const SHOP_AUTH_STATUS_LABEL: Record<string, string> = {
   unauthorized: '未授权',
   authorized: '已授权',

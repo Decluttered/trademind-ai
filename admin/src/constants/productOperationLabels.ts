@@ -111,12 +111,13 @@ export function localizePublishCheckItem(item: {
 }
 
 export function localizeCollectWarningCode(code: string): string {
-  const mapped = PUBLISH_CHECK_CODE_LABEL[code.trim().toUpperCase()];
+  const normalized = code.trim();
+  const mapped = PUBLISH_CHECK_CODE_LABEL[normalized.toUpperCase()];
   if (mapped) {
     return mapped.message ? `${mapped.title}：${mapped.message}` : mapped.title;
   }
-  if (/^[A-Z][A-Z0-9_]+$/.test(code.trim())) {
+  if (/^[A-Z][A-Z0-9_]+$/.test(normalized) || /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/i.test(normalized)) {
     return '采集提示需检查：请核对商品内容后再发布。';
   }
-  return code;
+  return normalized;
 }

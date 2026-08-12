@@ -12,6 +12,7 @@ import { formatDateTime } from '@/utils/formatTime';
 import { ModalForm, ProFormDigit, ProFormRadio, ProFormSelect, ProFormText, ProFormTextArea, type ActionType, type ProColumns } from '@ant-design/pro-components';
 import { TmPageContainer, TechnicalDetails, TmProTable as ProTable } from '@/components/ui';
 import { confirmRevokeStoreAuth } from '@/constants/sensitiveActions';
+import { AI_LANGUAGE_OPTIONS } from '@/constants/aiPrompts';
 import {
   Alert,
   Button,
@@ -575,7 +576,13 @@ export default function ShopsPage() {
         <ProFormText name="region" label="地区" />
         <ProFormText name="currency" label="币种" placeholder="USD" />
         <ProFormText name="timezone" label="时区" placeholder="America/Los_Angeles" />
-        <ProFormText name="defaultLanguage" label="默认语言" placeholder="例如 en" />
+        <ProFormSelect
+          name="defaultLanguage"
+          label="默认语言"
+          options={AI_LANGUAGE_OPTIONS}
+          placeholder="请选择默认语言"
+          fieldProps={{ showSearch: true, optionFilterProp: 'label' }}
+        />
         <ProFormTextArea name="remark" label="备注" fieldProps={{ rows: 2 }} />
       </ModalForm>
 
@@ -622,7 +629,13 @@ export default function ShopsPage() {
         <ProFormText name="region" label="地区" />
         <ProFormText name="currency" label="币种" />
         <ProFormText name="timezone" label="时区" />
-        <ProFormText name="defaultLanguage" label="默认语言" />
+        <ProFormSelect
+          name="defaultLanguage"
+          label="默认语言"
+          options={AI_LANGUAGE_OPTIONS}
+          placeholder="请选择默认语言"
+          fieldProps={{ showSearch: true, optionFilterProp: 'label' }}
+        />
         <ProFormSelect
           name="status"
           label="状态"

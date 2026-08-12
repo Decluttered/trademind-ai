@@ -24,7 +24,14 @@ import {
   localizePublishCheckItem,
   readinessStatusLabel,
 } from '@/constants/productOperationLabels';
-import { aiPromptCodeLabel, aiTaskTypeLabel, aiTextProviderLabel } from '@/constants/aiPrompts';
+import {
+  AI_LANGUAGE_OPTIONS,
+  AI_TARGET_PLATFORM_OPTIONS,
+  AI_TONE_OPTIONS,
+  aiPromptCodeLabel,
+  aiTaskTypeLabel,
+  aiTextProviderLabel,
+} from '@/constants/aiPrompts';
 import { platformDisplayLabel } from '@/constants/platformLabels';
 import { getProductReadinessAction } from '@/constants/productReadinessActions';
 import { EditableProTable, ModalForm, ProForm, ProFormDigit, ProFormSelect, ProFormText, ProFormTextArea } from '@ant-design/pro-components';
@@ -122,7 +129,6 @@ import {
   type GenerateDescriptionResult,
   type OptimizeTitleResult,
   type ProductOperationProgress,
-  type ProductOperationIssue,
   type ProductDetail,
   type DouyinDraftImage,
   type DouyinDraftAttribute,
@@ -702,13 +708,6 @@ function sectionFromOperationUrl(raw?: string): string | null {
   }
 }
 
-function operationStepColor(step?: string) {
-  if (step === 'ready') return 'green';
-  if (step === 'publish_check') return 'orange';
-  if (step === 'pricing' || step === 'images') return 'gold';
-  return 'blue';
-}
-
 function OperationProgressPanel({
   progress,
   loading,
@@ -761,15 +760,6 @@ function OperationProgressPanel({
     );
   }
 
-  const issues: ProductOperationIssue[] = [
-    ...(progress.blockers ?? []),
-    ...(progress.warnings ?? []).map((w) => ({
-      code: w.code,
-      title: w.title,
-      message: w.message,
-      severity: 'warning' as const,
-    })),
-  ].slice(0, 5);
   const blockerCount = progress.blockerCount ?? progress.blockers?.length ?? 0;
   const warningCount = progress.warningCount ?? progress.warnings?.length ?? 0;
   const priorityTone = blockerCount > 0 ? 'danger' : warningCount > 0 ? 'warning' : progress.publishReady ? 'ready' : 'default';
@@ -784,29 +774,20 @@ function OperationProgressPanel({
           </Tag>
         </div>
       }
-      description="用来判断当前商品能否进入发布检查和刊登。"
+      description="根据商品内容、图片、价格和发布检查实时计算。"
       className={`product-draft-progress product-draft-progress--${priorityTone}`}
       headerExtra={
         <OperationToolbar>
-          <Button icon={<ReloadOutlined />} onClick={onReload} loading={loading}>
-            刷新
+          <Button type="text" icon={<ReloadOutlined />} onClick={onReload} loading={loading} aria-label="刷新商品运营进度">
+            刷新进度
           </Button>
           <Button type="primary" onClick={() => onAction(progress.nextActionUrl)}>
-            {progress.nextActionLabel || '继续完善'}
+            {progress.nextActionLabel || '继续处理'}
           </Button>
         </OperationToolbar>
       }
     >
       <Spin spinning={loading}>
-        <div className="product-draft-progress__priority">
-          <div>
-            <Typography.Text type="secondary">下一步</Typography.Text>
-            <Typography.Text strong>{progress.nextActionLabel || progress.currentStepLabel || '继续完善'}</Typography.Text>
-          </div>
-          <Button type="link" className="product-draft-progress__priority-action" onClick={() => onAction(progress.nextActionUrl)}>
-            进入处理位置
-          </Button>
-        </div>
         <div className="product-draft-progress__grid">
           <div className="product-draft-progress__meter">
             <div className="product-draft-progress__meter-head">
@@ -818,12 +799,11 @@ function OperationProgressPanel({
               status={progress.publishReady ? 'success' : 'active'}
               showInfo={false}
             />
-            <Typography.Text type="secondary">完成度由商品内容、图片、价格和发布检查实时计算。</Typography.Text>
           </div>
           <div className="product-draft-progress__summary" aria-label="商品运营状态概览">
             <div className="product-draft-progress__metric">
-              <span>当前需要</span>
-              <Tag color={operationStepColor(progress.currentStep)}>{progress.currentStepLabel || '继续完善'}</Tag>
+              <span>下一步</span>
+              <strong className="product-draft-progress__next-step">{progress.nextActionLabel || progress.currentStepLabel || '继续处理'}</strong>
             </div>
             <div className="product-draft-progress__metric">
               <span>阻断问题</span>
@@ -835,35 +815,10 @@ function OperationProgressPanel({
             </div>
           </div>
         </div>
-        {issues.length ? (
-          <div className="product-draft-progress__issues">
-            <Typography.Text strong>还需处理</Typography.Text>
-            <Space direction="vertical" style={{ width: '100%' }} size={6}>
-              {issues.map((x, index) => (
-                <Alert
-                  key={`${x.code}-${x.title}-${x.severity}-${index}`}
-                  type={x.severity === 'failed' ? 'error' : 'warning'}
-                  showIcon
-                  message={x.title}
-                  description={
-                    <Space direction="vertical" size={4}>
-                      <Typography.Text>{x.message}</Typography.Text>
-                      {x.actionUrl ? (
-                        <Button
-                          type="link"
-                          size="small"
-                          className="product-draft-progress__issue-action"
-                          onClick={() => onAction(x.actionUrl)}
-                        >
-                          {x.actionLabel || '去处理'}
-                        </Button>
-                      ) : null}
-                    </Space>
-                  }
-                />
-              ))}
-            </Space>
-          </div>
+        {blockerCount > 0 || warningCount > 0 ? (
+          <Typography.Text type="secondary" className="product-draft-progress__hint">
+            具体问题和处理入口已归入「发布检查」，避免在各模块重复展示。
+          </Typography.Text>
         ) : null}
       </Spin>
     </SectionCard>
@@ -2541,16 +2496,6 @@ export default function ProductDraftDetailPage() {
                   <span>来源平台</span>
                   <strong>{data.source ? platformDisplayName(data.source) : '未记录'}</strong>
                 </div>
-                <div className="product-draft-header__meta-item product-draft-header__meta-item--source">
-                  <span>来源商品</span>
-                  {data.sourceUrl ? (
-                    <Typography.Link href={data.sourceUrl} target="_blank" rel="noreferrer" title={data.sourceUrl}>
-                      打开原商品
-                    </Typography.Link>
-                  ) : (
-                    <strong>未提供</strong>
-                  )}
-                </div>
                 <div className="product-draft-header__meta-item">
                   <span>更新时间</span>
                   <strong>{productUpdatedAt || '未记录'}</strong>
@@ -2578,55 +2523,49 @@ export default function ProductDraftDetailPage() {
       extra={
         data ? (
           <div className="product-draft-header__actions">
-            <div className="product-draft-header__action-group">
-              <span>状态操作</span>
-              <Button
-                onClick={async () => {
-                  try {
-                    await updateProduct(id, { status: 'ready' });
-                    message.success('已设为「可用」');
-                    await reloadDetail();
-                  } catch (e: unknown) {
-                    message.error((e as Error)?.message || '失败');
-                  }
-                }}
-              >
-                标记为可用
+            <Button
+              onClick={async () => {
+                try {
+                  await updateProduct(id, { status: 'ready' });
+                  message.success('已设为「可用」');
+                  await reloadDetail();
+                } catch (e: unknown) {
+                  message.error((e as Error)?.message || '失败');
+                }
+              }}
+            >
+              标记为可用
+            </Button>
+            <Button
+              onClick={async () => {
+                try {
+                  await updateProduct(id, { status: 'archived' });
+                  message.success('已归档');
+                  await reloadDetail();
+                } catch (e: unknown) {
+                  message.error((e as Error)?.message || '失败');
+                }
+              }}
+            >
+              归档
+            </Button>
+            <Popconfirm
+              title="确定删除草稿？"
+              description="软删除，列表不可见"
+              onConfirm={async () => {
+                try {
+                  await deleteProduct(id);
+                  message.success('已删除');
+                  window.location.href = '/product/drafts';
+                } catch (e: unknown) {
+                  message.error((e as Error)?.message || '删除失败');
+                }
+              }}
+            >
+              <Button danger type="text" icon={<DeleteOutlined />}>
+                删除草稿
               </Button>
-              <Button
-                onClick={async () => {
-                  try {
-                    await updateProduct(id, { status: 'archived' });
-                    message.success('已归档');
-                    await reloadDetail();
-                  } catch (e: unknown) {
-                    message.error((e as Error)?.message || '失败');
-                  }
-                }}
-              >
-                归档
-              </Button>
-            </div>
-            <div className="product-draft-header__action-group product-draft-header__action-group--danger">
-              <span>危险操作</span>
-              <Popconfirm
-                title="确定删除草稿？"
-                description="软删除，列表不可见"
-                onConfirm={async () => {
-                  try {
-                    await deleteProduct(id);
-                    message.success('已删除');
-                    window.location.href = '/product/drafts';
-                  } catch (e: unknown) {
-                    message.error((e as Error)?.message || '删除失败');
-                  }
-                }}
-              >
-                <Button danger type="text" icon={<DeleteOutlined />}>
-                  删除草稿
-                </Button>
-              </Popconfirm>
-            </div>
+            </Popconfirm>
           </div>
         ) : null
       }
@@ -2644,7 +2583,7 @@ export default function ProductDraftDetailPage() {
           className="product-draft-page-state"
         />
       ) : data ? (
-        <Space direction="vertical" className="product-draft-detail-shell" size="middle">
+        <Space direction="vertical" className="product-draft-detail-shell" size={0}>
           <OperationProgressPanel
             progress={operationProgress}
             loading={operationProgressLoading}
@@ -2653,17 +2592,6 @@ export default function ProductDraftDetailPage() {
             onAction={openOperationAction}
           />
           <div className="product-draft-tabs-frame">
-            <div className="product-draft-tabs-frame__head">
-              <div>
-                <Typography.Text type="secondary">当前模块</Typography.Text>
-                <Typography.Text strong>{PRODUCT_DRAFT_TAB_LABELS[draftTabKey] || PRODUCT_DRAFT_TAB_LABELS.basic}</Typography.Text>
-              </div>
-              <div className="product-draft-tabs-frame__status" aria-label="当前商品发布检查摘要">
-                {progressBlockerCount > 0 ? <Tag color="red">阻断 {progressBlockerCount}</Tag> : null}
-                {progressWarningCount > 0 ? <Tag color="orange">建议检查 {progressWarningCount}</Tag> : null}
-                {progressBlockerCount === 0 && progressWarningCount === 0 ? <Tag color="green">暂无阻断</Tag> : null}
-              </div>
-            </div>
             <Tabs
               className="product-draft-tabs"
               activeKey={draftTabKey}
@@ -2681,7 +2609,7 @@ export default function ProductDraftDetailPage() {
               key: 'basic',
               label: tabLabels.basic,
               children: (
-                <Space direction="vertical" className="product-draft-basic" size="middle">
+                <Space direction="vertical" className="product-draft-basic" size={0}>
                   <SectionCard
                     title="采集质量"
                     description="先看采集结果是否需要人工复核，再进入字段补充。"
@@ -2695,8 +2623,8 @@ export default function ProductDraftDetailPage() {
                         <Alert
                           type="info"
                           showIcon
-                          message="当前来源没有独立采集质量规则"
-                          description="请继续检查来源链接、标题、描述、图片和规格。发布前的阻断项会在发布检查中再次提示。"
+                          message="请人工核对采集结果"
+                          description="当前来源未提供专项质量检查，请重点核对来源链接、标题、描述、图片和规格。"
                         />
                       )}
                       {showCustomIncompleteHint ? (
@@ -2921,13 +2849,13 @@ export default function ProductDraftDetailPage() {
                     </ProForm>
                   </SectionCard>
 
-                  <SectionCard
-                    title="采集扩展属性"
-                    description="从采集原始数据中提取，仅用于核对和后续平台映射参考。"
-                    className="product-draft-basic__section product-draft-basic__attributes"
-                  >
-                    <div id="attributes" />
-                    {collectedAttrRows.length > 0 ? (
+                  <div id="attributes" className="product-draft-basic__anchor" />
+                  {collectedAttrRows.length > 0 ? (
+                    <SectionCard
+                      title="采集扩展属性"
+                      description="从采集原始数据中提取，仅用于核对和后续平台映射参考。"
+                      className="product-draft-basic__section product-draft-basic__attributes"
+                    >
                       <Table
                         size="small"
                         pagination={collectedAttrRows.length > 12 ? { pageSize: 12, size: 'small' } : false}
@@ -2961,14 +2889,8 @@ export default function ProductDraftDetailPage() {
                           },
                         ]}
                       />
-                    ) : (
-                      <EmptyState
-                        compact
-                        title="暂无采集扩展属性"
-                        description="当前商品详情没有返回可展示的采集属性。若发布检查提示平台属性缺失，请到发布检查或刊登配置中补齐。"
-                      />
-                    )}
-                  </SectionCard>
+                    </SectionCard>
+                  ) : null}
                 </Space>
               ),
             },
@@ -5859,10 +5781,15 @@ export default function ProductDraftDetailPage() {
         >
           <div className="product-draft-ai-modal__fields">
             <Form.Item name="language" label="语言" rules={[{ required: true }]}>
-              <Input placeholder="例如 en" />
+              <Select options={AI_LANGUAGE_OPTIONS} placeholder="请选择生成语言" />
             </Form.Item>
             <Form.Item name="platform" label="平台" rules={[{ required: true }]}>
-              <Input placeholder="TikTok Shop" />
+              <Select
+                options={AI_TARGET_PLATFORM_OPTIONS}
+                placeholder="请选择目标平台"
+                showSearch
+                optionFilterProp="label"
+              />
             </Form.Item>
             <Form.Item name="maxLength" label="最长字符数" rules={[{ required: true }]}>
               <InputNumber min={20} max={500} style={{ width: '100%' }} />
@@ -6025,13 +5952,18 @@ export default function ProductDraftDetailPage() {
         >
           <div className="product-draft-ai-modal__fields">
             <Form.Item name="language" label="语言" rules={[{ required: true }]}>
-              <Input placeholder="例如 en" />
+              <Select options={AI_LANGUAGE_OPTIONS} placeholder="请选择生成语言" />
             </Form.Item>
             <Form.Item name="platform" label="平台" rules={[{ required: true }]}>
-              <Input placeholder="TikTok Shop" />
+              <Select
+                options={AI_TARGET_PLATFORM_OPTIONS}
+                placeholder="请选择目标平台"
+                showSearch
+                optionFilterProp="label"
+              />
             </Form.Item>
             <Form.Item name="tone" label="语气" rules={[{ required: true }]}>
-              <Input placeholder="例如 professional" />
+              <Select options={AI_TONE_OPTIONS} placeholder="请选择文案语气" />
             </Form.Item>
           </div>
           <Form.Item className="product-draft-ai-modal__submit">

@@ -28,6 +28,39 @@ test.describe('@product-draft 商品详情导航', () => {
     await expectActiveTab(page, '基础信息');
   });
 
+  test('keeps the detail overview concise without duplicate module chrome', async ({ page }) => {
+    const detail = new ProductDraftDetailPage(page);
+    await detail.goto('basic');
+
+    await expect(page.getByText('商品运营进度', { exact: true })).toHaveCount(1);
+    await expect(page.getByText('当前模块', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('状态操作', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('危险操作', { exact: true })).toHaveCount(0);
+  });
+
+  test('uses localized controlled selectors in AI text dialogs', async ({ page }) => {
+    const detail = new ProductDraftDetailPage(page);
+    await detail.goto('ai');
+
+    await page.getByRole('button', { name: '生成标题建议' }).first().click();
+    const titleDialog = page.getByRole('dialog', { name: 'AI 标题优化' });
+    await expect(titleDialog.getByLabel('语言').locator('..').locator('..')).toContainText('英语');
+    const titlePlatform = titleDialog.getByLabel('平台');
+    const titlePlatformSelector = titlePlatform.locator('..').locator('..');
+    await expect(titlePlatformSelector).toContainText('TikTok Shop');
+    await titlePlatformSelector.click();
+    await titlePlatform.fill('抖店');
+    await titlePlatform.press('Enter');
+    await expect(titlePlatformSelector).toContainText('抖店');
+    await titleDialog.getByRole('button', { name: 'Close' }).click();
+
+    await page.getByRole('button', { name: '生成描述建议' }).first().click();
+    const descriptionDialog = page.getByRole('dialog', { name: 'AI 描述生成' });
+    await expect(descriptionDialog.getByText('英语', { exact: true })).toBeVisible();
+    await expect(descriptionDialog.getByText('TikTok Shop', { exact: true })).toBeVisible();
+    await expect(descriptionDialog.getByText('专业稳健', { exact: true })).toBeVisible();
+  });
+
   test('restores readiness publish-check after refresh', async ({ page }) => {
     await page.goto(`/product/drafts/${E2E_PRODUCT_ID}?tab=readiness&section=publish-check`);
     await expectActiveTab(page, '发布检查');

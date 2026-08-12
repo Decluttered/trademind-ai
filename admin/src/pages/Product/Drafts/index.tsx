@@ -38,6 +38,11 @@ import {
 import { useRef, useState, useMemo, useEffect } from 'react';
 import { history, useLocation } from '@umijs/max';
 import { PAGE_COPY } from '@/constants/copywriting';
+import {
+  AI_LANGUAGE_OPTIONS,
+  AI_TARGET_PLATFORM_OPTIONS,
+  AI_TONE_OPTIONS,
+} from '@/constants/aiPrompts';
 import { useListEmptyLocale } from '@/hooks/useListEmptyLocale';
 import {
   PUBLISH_BATCH_LIMIT_MESSAGE,
@@ -895,10 +900,15 @@ export default function ProductDraftsPage() {
           {(bulkOp === 'title_optimize' || bulkOp === 'description_generate') && (
             <>
               <Form.Item name="language" label="语言" rules={[{ required: true }]}>
-                <Input placeholder="例如 en" />
+                <Select options={AI_LANGUAGE_OPTIONS} placeholder="请选择生成语言" />
               </Form.Item>
               <Form.Item name="platform" label="平台口径" rules={[{ required: true }]}>
-                <Input placeholder="TikTok Shop" />
+                <Select
+                  options={AI_TARGET_PLATFORM_OPTIONS}
+                  placeholder="请选择目标平台"
+                  showSearch
+                  optionFilterProp="label"
+                />
               </Form.Item>
               {bulkOp === 'title_optimize' && (
                 <Form.Item name="maxLength" label="最大长度">
@@ -906,7 +916,7 @@ export default function ProductDraftsPage() {
                 </Form.Item>
               )}
               <Form.Item name="tone" label="语气 / 风格">
-                <Input placeholder="例如 professional" />
+                <Select options={AI_TONE_OPTIONS} placeholder="请选择文案语气" />
               </Form.Item>
               <Form.Item name="applyMode" label="应用策略" tooltip="成功后写入草稿中的 AI 优化标题 / AI 优化描述">
                 <Select

@@ -30,5 +30,6 @@ describe('product operation labels', () => {
   it('maps machine collect warning codes to actionable user copy', () => {
     expect(localizeCollectWarningCode('TITLE_EMPTY')).toContain('商品标题待完善');
     expect(localizeCollectWarningCode('UNKNOWN_MACHINE_CODE')).toBe('采集提示需检查：请核对商品内容后再发布。');
+    expect(localizeCollectWarningCode('dom-gallery')).toBe('采集提示需检查：请核对商品内容后再发布。');
   });
 });
