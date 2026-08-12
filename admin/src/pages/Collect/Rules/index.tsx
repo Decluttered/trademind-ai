@@ -214,13 +214,6 @@ export default function CollectRulesPage() {
         </Space>
       }
     >
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message="不会写规则？"
-        description="点击「AI 帮我生成规则」，输入一个商品链接，系统会自动尝试生成采集规则。生成后请先测试，确认标题、价格、图片识别正确后再保存。"
-      />
       <ProTable<CollectRuleRow>
         rowKey="id"
         actionRef={actionRef}
@@ -401,12 +394,6 @@ export default function CollectRulesPage() {
             普通用户建议使用「AI 帮我生成规则」。只有需要精细调整时，才需要修改下方采集规则内容。
           </Typography.Paragraph>
         </div>
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 8 }}
-          message="这里是系统识别页面内容的规则，格式不正确会导致采集失败。不会写的话，建议使用「AI 帮我生成规则」。"
-        />
         <TechnicalDetails label="采集规则内容（高级）">
           <ProFormDependency name={['ruleJson']}>
             {({ ruleJson }) =>

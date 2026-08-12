@@ -25,6 +25,31 @@
       "auth": true,
       "requestBody": ["shopId", "options", "force"],
       "responseData": "ProductPublishTaskDTO"
+    },
+    { "method": "GET", "path": "/api/v1/customer/dashboard", "auth": true, "responseData": "CustomerDashboardSummary" },
+    { "method": "GET", "path": "/api/v1/customer/auto-reply-setting", "auth": true, "responseData": "CustomerAutoReplySetting" },
+    {
+      "method": "PUT",
+      "path": "/api/v1/customer/auto-reply-setting",
+      "auth": true,
+      "requestBody": ["messageSyncEnabled", "autoReplyEnabled", "pollIntervalSeconds"],
+      "responseData": "CustomerAutoReplySetting"
+    },
+    { "method": "GET", "path": "/api/v1/customer/shops/:shopId/auto-reply-policy", "auth": true, "responseData": "CustomerAutoReplyPolicy" },
+    {
+      "method": "PUT",
+      "path": "/api/v1/customer/shops/:shopId/auto-reply-policy",
+      "auth": true,
+      "requestBody": ["enabled", "tone", "shopPolicy", "maxReplyRunes", "maxRepliesPerHour", "requireOrderContext", "lowRiskOnly"],
+      "responseData": "CustomerAutoReplyPolicy"
+    },
+    { "method": "GET", "path": "/api/v1/customer/shops/:shopId/auto-reply-runs", "auth": true, "responseData": "CustomerAutoReplyRunList" },
+    {
+      "method": "POST",
+      "path": "/api/v1/customer/conversations/:id/send-platform-message",
+      "auth": true,
+      "requestBody": ["reply", "clientMessageId", "suggestionId"],
+      "responseData": "CustomerMessage"
     }
   ]
 }

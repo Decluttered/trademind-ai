@@ -7,7 +7,7 @@ import {
   type ReleaseRun,
 } from '@/services/opsP6';
 import { BranchesOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Alert, Button, Form, Input, Modal, Space, Table, Tag, message } from 'antd';
+import { Button, Form, Input, Modal, Space, Table, Tag, message } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
 export default function ReleasesPage() {
@@ -47,11 +47,6 @@ export default function ReleasesPage() {
       }
     >
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Alert
-          showIcon
-          type="info"
-          message="发布失败只允许应用层回滚；数据库恢复需进入人工高风险流程。"
-        />
         <Table<ReleaseRun>
           rowKey="releaseId"
           loading={loading}
@@ -100,7 +95,7 @@ export default function ReleasesPage() {
       >
         <Form form={form} layout="vertical">
           <Form.Item name="version" label="版本" rules={[{ required: true }]}>
-            <Input placeholder="例如 v0.9.0-p6-dev" />
+            <Input placeholder="例如 v1.2.0" />
           </Form.Item>
           <Form.Item name="gitCommit" label="提交摘要">
             <Input />

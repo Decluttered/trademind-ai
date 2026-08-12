@@ -11,6 +11,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
+	"github.com/trademind-ai/trademind/backend/internal/rdb"
 	"gorm.io/gorm"
 
 	"github.com/trademind-ai/trademind/backend/internal/modules/aiprompt"
@@ -24,15 +25,19 @@ import (
 
 // Service orchestrates customer chat MVP (manual inbox + AI suggestions).
 type Service struct {
-	DB          *gorm.DB
-	Settings    *settings.Service
-	Prompts     *aiprompt.Service
-	AITasks     *aitask.Service
-	AIGateway   *aigate.Gateway
-	OpLog       *operationlog.Service
-	Orders      *order.Service
-	Shops       *shop.Service
-	Idempotency *idempotency.Service
+	DB                             *gorm.DB
+	Redis                          *rdb.Client
+	Settings                       *settings.Service
+	Prompts                        *aiprompt.Service
+	AITasks                        *aitask.Service
+	AIGateway                      *aigate.Gateway
+	OpLog                          *operationlog.Service
+	Orders                         *order.Service
+	Shops                          *shop.Service
+	Idempotency                    *idempotency.Service
+	AutoReplyQueueName             string
+	AutoReplyDependenciesAvailable func() bool
+	AllowLegacyTenantZero          bool
 }
 
 // --- list ---
@@ -686,19 +691,22 @@ func (s *Service) CreateMessage(c *gin.Context, conversationID uuid.UUID, body C
 		CreatedBy:      adminID,
 	}
 	now := time.Now().UTC()
-	if err := s.DB.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(msg).Error; err != nil {
-			return err
-		}
-		updates := map[string]any{"last_message_at": &now}
-		if msg.Role == RoleCustomer {
-			updates["status"] = StatusPendingReply
-		}
-		if err := tx.Model(&CustomerConversation{}).Where("id = ?", conversationID).Updates(updates).Error; err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	err := s.withConversationMutationLock(c.Request.Context(), conversationID, func() error {
+		return s.DB.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+			if err := tx.Create(msg).Error; err != nil {
+				return err
+			}
+			updates := map[string]any{"last_message_at": &now}
+			if msg.Role == RoleCustomer {
+				updates["status"] = StatusPendingReply
+			}
+			if err := tx.Model(&CustomerConversation{}).Where("id = ?", conversationID).Updates(updates).Error; err != nil {
+				return err
+			}
+			return nil
+		})
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -742,15 +750,18 @@ func (s *Service) MarkReplied(c *gin.Context, conversationID uuid.UUID, body Mar
 		Source:         SourceManual,
 		CreatedBy:      adminID,
 	}
-	if err := s.DB.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(msg).Error; err != nil {
-			return err
-		}
-		return tx.Model(&CustomerConversation{}).Where("id = ?", conversationID).Updates(map[string]any{
-			"status":          StatusReplied,
-			"last_message_at": &now,
-		}).Error
-	}); err != nil {
+	err := s.withConversationMutationLock(c.Request.Context(), conversationID, func() error {
+		return s.DB.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+			if err := tx.Create(msg).Error; err != nil {
+				return err
+			}
+			return tx.Model(&CustomerConversation{}).Where("id = ?", conversationID).Updates(map[string]any{
+				"status":          StatusReplied,
+				"last_message_at": &now,
+			}).Error
+		})
+	})
+	if err != nil {
 		return nil, err
 	}
 	if s.OpLog != nil {
@@ -823,39 +834,41 @@ func (s *Service) AcceptSuggestion(c *gin.Context, id uuid.UUID, body AcceptSugg
 		return err
 	}
 	now := time.Now().UTC()
-	return s.DB.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
-		msg := &CustomerMessage{
-			ConversationID: su.ConversationID,
-			Role:           RoleAgent,
-			Content:        final,
-			Language:       conv.CustomerLanguage,
-			MessageType:    MessageTypeText,
-			Source:         SourceManual,
-			CreatedBy:      adminID,
-		}
-		if err := tx.Create(msg).Error; err != nil {
-			return err
-		}
-		if err := tx.Model(&CustomerReplySuggestion{}).Where("id = ?", id).Update("status", SuggestionAccepted).Error; err != nil {
-			return err
-		}
-		if err := tx.Model(&CustomerConversation{}).Where("id = ?", su.ConversationID).Updates(map[string]any{
-			"status":          StatusReplied,
-			"last_message_at": &now,
-		}).Error; err != nil {
-			return err
-		}
-		if s.OpLog != nil {
-			_ = s.OpLog.Write(c, operationlog.WriteOpts{
-				AdminUserID: adminID,
-				Action:      "customer.reply_suggestion.accept",
-				Resource:    "customer_reply_suggestion",
-				ResourceID:  id.String(),
-				Status:      "success",
-				Message:     fmt.Sprintf("suggestionId=%s conversationId=%s agentMessageId=%s replyLen=%d", id.String(), su.ConversationID.String(), msg.ID.String(), utf8.RuneCountInString(final)),
-			})
-		}
-		return nil
+	return s.withConversationMutationLock(c.Request.Context(), su.ConversationID, func() error {
+		return s.DB.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
+			msg := &CustomerMessage{
+				ConversationID: su.ConversationID,
+				Role:           RoleAgent,
+				Content:        final,
+				Language:       conv.CustomerLanguage,
+				MessageType:    MessageTypeText,
+				Source:         SourceManual,
+				CreatedBy:      adminID,
+			}
+			if err := tx.Create(msg).Error; err != nil {
+				return err
+			}
+			if err := tx.Model(&CustomerReplySuggestion{}).Where("id = ?", id).Update("status", SuggestionAccepted).Error; err != nil {
+				return err
+			}
+			if err := tx.Model(&CustomerConversation{}).Where("id = ?", su.ConversationID).Updates(map[string]any{
+				"status":          StatusReplied,
+				"last_message_at": &now,
+			}).Error; err != nil {
+				return err
+			}
+			if s.OpLog != nil {
+				_ = s.OpLog.Write(c, operationlog.WriteOpts{
+					AdminUserID: adminID,
+					Action:      "customer.reply_suggestion.accept",
+					Resource:    "customer_reply_suggestion",
+					ResourceID:  id.String(),
+					Status:      "success",
+					Message:     fmt.Sprintf("suggestionId=%s conversationId=%s agentMessageId=%s replyLen=%d", id.String(), su.ConversationID.String(), msg.ID.String(), utf8.RuneCountInString(final)),
+				})
+			}
+			return nil
+		})
 	})
 }
 

@@ -20,7 +20,6 @@ import {
   BINDING_RESULT_LABELS,
   ConfidenceText,
   CursorPager,
-  FixtureBoundary,
   StatusTag,
   copyableText,
   errorMessage,
@@ -155,7 +154,6 @@ export default function InventorySyncCalibrationPage() {
       }
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <FixtureBoundary />
         {renderInventorySyncError(error)}
         <Card>
           <Form form={form} layout="vertical" onFinish={submitFilter}>
@@ -231,7 +229,6 @@ export default function InventorySyncCalibrationPage() {
         cancelText="取消"
         destroyOnHidden
       >
-        <FixtureBoundary />
         <Form form={reasonForm} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item label="Expected Calibration Version">
             <Input disabled value={expectedCalibrationVersion} />

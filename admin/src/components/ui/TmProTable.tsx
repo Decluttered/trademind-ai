@@ -1,4 +1,4 @@
-import { ReloadOutlined } from '@ant-design/icons';
+import { ColumnHeightOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { ProTable } from '@ant-design/pro-components';
 import type { ActionType, ProTableProps } from '@ant-design/pro-components';
 import { Button, Tooltip } from 'antd';
@@ -35,10 +35,22 @@ export default function TmProTable<
       return false;
     }
     const base = options ?? {};
+    const setting = base.setting === false
+      ? false
+      : {
+          ...(typeof base.setting === 'object' ? base.setting : {}),
+          settingIcon:
+            (typeof base.setting === 'object' ? base.setting.settingIcon : undefined) ?? (
+              <Button type="text" aria-label="列设置" icon={<SettingOutlined />} />
+            ),
+        };
     return {
       density: true,
-      setting: true,
       ...base,
+      densityIcon: base.densityIcon ?? (
+        <Button type="text" aria-label="表格密度" icon={<ColumnHeightOutlined />} />
+      ),
+      setting,
       // 内置 reload 为 span+图标，点击区域易失效；改由 toolBarRender 中的 Button 触发。
       reload: false,
     };

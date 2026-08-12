@@ -179,7 +179,7 @@ export default function OrderDetailPage() {
           type="warning"
           style={{ marginBottom: 16 }}
           message="抖店/平台凭证待真实授权"
-          description="当前为 Demo / RC 环境展示。未配置真实店铺凭证时，平台订单不会自动同步成功，请勿误以为已接入真实订单。"
+          description="未配置真实店铺凭证时，平台订单不会同步成功；请先完成店铺授权并通过连接检查。"
         />
       ) : null}
 

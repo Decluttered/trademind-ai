@@ -12,6 +12,7 @@ import DouyinE2EPrecheckBanner from '@/components/platform/DouyinE2EPrecheckBann
 import { EmptyState, OperationToolbar, TmPageContainer, TmProTable as ProTable } from '@/components/ui';
 import type { ActionType, ProColumns, ProFormInstance } from '@ant-design/pro-components';
 import { formatDateTime } from '@/utils/formatTime';
+import { isProductionBuild } from '@/utils/runtimeEnvironment';
 
 import {
   Alert,
@@ -37,6 +38,11 @@ import {
 import { useRef, useState, useMemo, useEffect } from 'react';
 import { history, useLocation } from '@umijs/max';
 import { PAGE_COPY } from '@/constants/copywriting';
+import {
+  AI_LANGUAGE_OPTIONS,
+  AI_TARGET_PLATFORM_OPTIONS,
+  AI_TONE_OPTIONS,
+} from '@/constants/aiPrompts';
 import { useListEmptyLocale } from '@/hooks/useListEmptyLocale';
 import {
   PUBLISH_BATCH_LIMIT_MESSAGE,
@@ -194,11 +200,15 @@ export default function ProductDraftsPage() {
       icon: <DollarOutlined />,
       label: '批量设置发布价',
     },
-    {
-      key: 'legacyBulkAi',
-      icon: <RobotOutlined />,
-      label: '历史版批量 AI',
-    },
+    ...(!isProductionBuild
+      ? [
+          {
+            key: 'legacyBulkAi',
+            icon: <RobotOutlined />,
+            label: '开发版批量 AI',
+          },
+        ]
+      : []),
   ];
 
   const onMoreActionClick: MenuProps['onClick'] = ({ key }) => {
@@ -425,7 +435,13 @@ export default function ProductDraftsPage() {
     [keywordFieldProps],
   );
 
-  const eligibleBatchPlatforms = ['tiktok', 'shopee', 'lazada', 'amazon', 'mock'];
+  const eligibleBatchPlatforms = [
+    'tiktok',
+    'shopee',
+    'lazada',
+    'amazon',
+    ...(!isProductionBuild ? ['mock'] : []),
+  ];
 
   const shopsForBatchPlat = shopsList.filter(
     (s) =>
@@ -553,19 +569,6 @@ export default function ProductDraftsPage() {
         </Dropdown>
       </OperationToolbar>
       <DouyinE2EPrecheckBanner blockedByCredentials compact />
-      {(urlFilters.missingAiTitle ||
-        urlFilters.missingAiDescription ||
-        urlFilters.readinessBlocked ||
-        urlFilters.publishable ||
-        urlFilters.status ||
-        urlFilters.navSource) && (
-        <Alert
-          type="info"
-          showIcon
-          className="product-drafts-page__deep-link-alert"
-          message="已从运营看板或深链带入列表筛选（只影响本页查询，不写库）。"
-        />
-      )}
       <KeywordSafetyHint visible={showSensitiveHint} />
       {selectedCount > 0 ? (
         <OperationToolbar
@@ -848,36 +851,37 @@ export default function ProductDraftsPage() {
         </Space>
       </Drawer>
 
-      <Drawer
-        title="旧版批量 AI（商品草稿）"
-        width="min(640px, calc(100vw - 32px))"
-        className="product-drafts-drawer"
-        open={bulkOpen}
-        onClose={() => setBulkOpen(false)}
-        destroyOnHidden
-        extra={
-          <Button
-            type="primary"
-            loading={bulkLoading}
-            onClick={() => void submitBulkAI()}
-          >
-            创建批次
-          </Button>
-        }
-      >
-        <Alert
-          type="info"
-          showIcon
-          className="product-drafts-drawer__alert"
-          message="旧版入口保留用于历史批次兼容。不会自动覆盖正式标题/详情，不会替换主图，不会刊登。新任务建议优先使用上方「批量 AI 优化」或「批量 AI 图片处理」。"
-        />
-        <Typography.Paragraph type="secondary">
-          已勾选 <strong>{selectedRowKeys.length}</strong> 个商品。
-          {selectedRowKeys.length === 0 ? (
-            <>未勾选时将使用下方「与列表相同的筛选条件」；必须勾选确认项。</>
-          ) : null}
-        </Typography.Paragraph>
-        <Form form={bulkForm} layout="vertical">
+      {!isProductionBuild ? (
+        <Drawer
+          title="开发版批量 AI（商品草稿）"
+          width="min(640px, calc(100vw - 32px))"
+          className="product-drafts-drawer"
+          open={bulkOpen}
+          onClose={() => setBulkOpen(false)}
+          destroyOnHidden
+          extra={
+            <Button
+              type="primary"
+              loading={bulkLoading}
+              onClick={() => void submitBulkAI()}
+            >
+              创建批次
+            </Button>
+          }
+        >
+          <Alert
+            type="info"
+            showIcon
+            className="product-drafts-drawer__alert"
+            message="该入口仅用于开发环境兼容验证。正式批量任务请使用「批量 AI 优化」或「批量 AI 图片处理」。"
+          />
+          <Typography.Paragraph type="secondary">
+            已勾选 <strong>{selectedRowKeys.length}</strong> 个商品。
+            {selectedRowKeys.length === 0 ? (
+              <>未勾选时将使用下方「与列表相同的筛选条件」；必须勾选确认项。</>
+            ) : null}
+          </Typography.Paragraph>
+          <Form form={bulkForm} layout="vertical">
           <Form.Item label="操作类型" required>
             <Radio.Group
               value={bulkOp}
@@ -896,10 +900,15 @@ export default function ProductDraftsPage() {
           {(bulkOp === 'title_optimize' || bulkOp === 'description_generate') && (
             <>
               <Form.Item name="language" label="语言" rules={[{ required: true }]}>
-                <Input placeholder="例如 en" />
+                <Select options={AI_LANGUAGE_OPTIONS} placeholder="请选择生成语言" />
               </Form.Item>
               <Form.Item name="platform" label="平台口径" rules={[{ required: true }]}>
-                <Input placeholder="TikTok Shop" />
+                <Select
+                  options={AI_TARGET_PLATFORM_OPTIONS}
+                  placeholder="请选择目标平台"
+                  showSearch
+                  optionFilterProp="label"
+                />
               </Form.Item>
               {bulkOp === 'title_optimize' && (
                 <Form.Item name="maxLength" label="最大长度">
@@ -907,7 +916,7 @@ export default function ProductDraftsPage() {
                 </Form.Item>
               )}
               <Form.Item name="tone" label="语气 / 风格">
-                <Input placeholder="例如 professional" />
+                <Select options={AI_TONE_OPTIONS} placeholder="请选择文案语气" />
               </Form.Item>
               <Form.Item name="applyMode" label="应用策略" tooltip="成功后写入草稿中的 AI 优化标题 / AI 优化描述">
                 <Select
@@ -940,8 +949,9 @@ export default function ProductDraftsPage() {
               </Checkbox>
             </Form.Item>
           )}
-        </Form>
-      </Drawer>
+          </Form>
+        </Drawer>
+      ) : null}
 
       <PricingApplyModal
         open={pricingBatchOpen}

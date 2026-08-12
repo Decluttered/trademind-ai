@@ -572,7 +572,7 @@ export default function SecuritySettingsPage() {
 
         <ProCard variant="outlined" title="租户隔离状态" style={{ marginTop: 16 }}>
           <Paragraph type="secondary" style={{ marginBottom: 12 }}>
-            以下项来自配置状态中心（Phase P4 安全基线）。完整清单见{' '}
+            以下项来自配置状态中心的安全检查。完整清单见{' '}
             <Link to="/settings/config-status">配置状态</Link>。
           </Paragraph>
           <List
@@ -795,13 +795,6 @@ export default function SecuritySettingsPage() {
 
         <Form form={form} layout="vertical" onFinish={onFinish}>
           <ProCard variant="outlined" title="策略配置" className="tm-system-settings__panel" style={{ marginTop: 16 }}>
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-              message="空闲超时说明"
-              description="仅统计无操作时间；关闭浏览器标签不会立即失效，下次请求时会校验会话是否过期。"
-            />
             <Row gutter={[24, 0]}>
               <Col xs={24} md={12} lg={10}>
                 <Form.Item

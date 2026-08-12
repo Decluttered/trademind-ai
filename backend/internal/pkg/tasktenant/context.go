@@ -10,10 +10,11 @@ import (
 
 // TaskScope carries tenant and optional shop for worker tasks.
 type TaskScope struct {
-	TenantID     int64
-	ShopID       uuid.UUID
-	ResourceType string
-	ResourceID   string
+	TenantID              int64
+	ShopID                uuid.UUID
+	ResourceType          string
+	ResourceID            string
+	AllowLegacyTenantZero bool
 }
 
 // RequireTaskTenant validates task has a positive tenant id.
@@ -24,12 +25,25 @@ func RequireTaskTenant(tenantID int64) error {
 	return nil
 }
 
+// RequireTaskTenantForMode permits tenant zero only for explicitly authorized
+// legacy local-development workers. All other worker paths remain fail-closed.
+func RequireTaskTenantForMode(tenantID int64, allowLegacyTenantZero bool) error {
+	if tenantID < 0 || (tenantID == 0 && !allowLegacyTenantZero) {
+		return security.ErrTaskTenantMissing
+	}
+	return nil
+}
+
 // BuildWorkerContext creates tenant context from task scope.
 func BuildWorkerContext(scope TaskScope, actorID uuid.UUID, operation string) context.Context {
 	ctx := security.WorkerSystemContext(scope.TenantID, actorID, operation)
 	tc := security.FromContext(ctx)
 	if tc != nil {
-		tc.AuthSource = security.AuthSourceWorker
+		if scope.TenantID == 0 && scope.AllowLegacyTenantZero {
+			tc.AuthSource = security.AuthSourceLegacyDevZero
+		} else {
+			tc.AuthSource = security.AuthSourceWorker
+		}
 		if scope.ShopID != uuid.Nil {
 			tc.ShopScope = []uuid.UUID{scope.ShopID}
 		}

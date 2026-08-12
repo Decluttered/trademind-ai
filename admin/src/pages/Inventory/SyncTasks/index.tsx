@@ -286,7 +286,7 @@ export default function InventorySyncTasksPage() {
         }
       />
       <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
-        TikTok Shop、Shopee、Lazada、抖店已支持库存同步（测试中）；Amazon 仍在规划中。模拟店铺仍走模拟库存同步。
+        可用平台由店铺授权与平台能力状态决定；仅已开放库存同步能力的平台可以创建任务。
       </Typography.Paragraph>
       <ProTable<InventorySyncTaskDTO>
         rowKey="id"

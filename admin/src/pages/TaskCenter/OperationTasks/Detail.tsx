@@ -26,6 +26,7 @@ import {
   type PlatformDraftSummary,
 } from '@/services/operationTasks';
 import { formatDateTime } from '@/utils/formatTime';
+import { isProductionBuild } from '@/utils/runtimeEnvironment';
 import {
   NonProductionBoundary,
   OperationAttemptStatusTag,
@@ -347,7 +348,14 @@ export default function OperationTaskDetailPage() {
                 label: '草稿版本',
                 children: (
                   <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                    <SectionCard title="最新草稿" description="仅表示本地、模拟或沙箱草稿，不代表已发布商品。">
+                    <SectionCard
+                      title="最新草稿"
+                      description={
+                        isProductionBuild
+                          ? '仅表示 TradeMind 内的本地草稿，不代表已发布商品。'
+                          : '仅表示本地、模拟或沙箱草稿，不代表已发布商品。'
+                      }
+                    >
                       {currentDraft ? (
                         <Descriptions column={{ xs: 1, sm: 2, lg: 3 }} size="small">
                           <Descriptions.Item label="版本">v{currentDraft.draftVersion}</Descriptions.Item>
@@ -438,14 +446,22 @@ export default function OperationTaskDetailPage() {
 
         {modal === 'execute' ? (
           <Form form={form} layout="vertical">
-            <NonProductionBoundary />
-            <Paragraph style={{ marginTop: 12 }}>执行仅生成本地、模拟或沙箱草稿，不调用真实平台发布或上架。</Paragraph>
+            {!isProductionBuild ? <NonProductionBoundary /> : null}
+            <Paragraph style={{ marginTop: 12 }}>
+              {isProductionBuild
+                ? '执行仅生成本地草稿，不调用真实平台发布或上架。'
+                : '执行仅生成本地、模拟或沙箱草稿，不调用真实平台发布或上架。'}
+            </Paragraph>
             <Form.Item name="adapterMode" label="草稿生成模式" rules={[{ required: true, message: '请选择草稿生成模式' }]}>
               <Select
                 options={[
                   { value: 'local_draft_only', label: adapterModeLabel('local_draft_only') },
-                  { value: 'mock', label: adapterModeLabel('mock') },
-                  { value: 'sandbox', label: adapterModeLabel('sandbox') },
+                  ...(!isProductionBuild
+                    ? [
+                        { value: 'mock', label: adapterModeLabel('mock') },
+                        { value: 'sandbox', label: adapterModeLabel('sandbox') },
+                      ]
+                    : []),
                 ]}
               />
             </Form.Item>

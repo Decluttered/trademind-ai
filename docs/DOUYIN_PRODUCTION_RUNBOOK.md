@@ -1,4 +1,4 @@
-# 抖店生产 Runbook（Phase 10.3–10.4）
+# 抖店生产 Runbook
 
 > **状态**：Release Candidate  
 > **真实 E2E**：`blocked_by_real_credentials`
@@ -45,33 +45,33 @@ API：`GET/POST /api/v1/platform/douyin/runtime-status/*`
 
 ## 灰度观察阶段（Phase 10.4）
 
-> 有真实凭证并通过 [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md) 预检后执行。全程保持 **Release Candidate**，未全绿前不得标记 production available。
+> 有真实凭证、完成生产预检并取得外部生产审批后执行。全程保持 **Release Candidate**，人工验收未完成前不得标记 production available。
 
 ### Phase G0 — 发布前（0–2h）
 
-1. 运行 `scripts/douyin-e2e-preflight`（预期有凭证时 `blockedByRealCredentials=false`）
+1. 在管理端执行生产预检，或人工调用 `POST /api/v1/platform/douyin/production-preflight`（`liveTest: true`）
 2. 确认 `runtime-status=normal`，开关与 Runbook § 上线前检查一致
 3. 备份 PostgreSQL；确认迁移无重复订单阻断
 4. 记录 Git SHA 与配置快照（不含 Secret）
 
 ### Phase G1 — 只读观察（2–24h）
 
-1. 运行 `scripts/douyin-e2e-readonly`；归档 JSON 至 `DOUYIN_E2E_REPORT_DIR`
+1. 维护者检查类目、任务中心、运营看板与抖店聚合健康等只读入口
 2. 每 4h 检查：`GET /health` 队列深度、`task-center/summary` 抖店失败数
 3. 操作日志抽查：`douyin.auth.*`、无 Token 明文
-4. **禁止**开启写链路脚本，除非已进入 G2 且 `ALLOW_DOUYIN_WRITE_TEST=true`
+4. **禁止**执行真实平台写操作，除非已进入 G2 并取得明确审批
 
 ### Phase G2 — 写链路小流量（24–72h）
 
 1. 单测试店铺、单 SKU、小时间窗订单同步
-2. 运行 `scripts/douyin-e2e-write`（显式 `ALLOW_DOUYIN_WRITE_TEST=true`）
-3. 验证幂等：重复订单 Upsert = 0、重复扣库存 = 0（见 E2E 报告模板 §6）
+2. 按 [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md) 人工执行受控写链路
+3. 验证幂等：重复订单 Upsert = 0、重复扣库存 = 0
 4. 失败任务 → 告警 scan → 人工处理；P0 错误立即 `paused` 或 `emergency_disabled`
 
 ### Phase G3 — 收口
 
-1. 填写 [`DOUYIN_E2E_REPORT_TEMPLATE.md`](DOUYIN_E2E_REPORT_TEMPLATE.md) §9 发布结论
-2. 完成回滚演练记录（可为 `environment_simulation_only`）
+1. 将脱敏发布结论记录在 PR 或发布工单，不向仓库提交报告产物
+2. 按 [`DOUYIN_ROLLBACK_RUNBOOK.md`](DOUYIN_ROLLBACK_RUNBOOK.md) 完成回滚演练，并在发布工单记录结论
 3. 仍 **不** 默认引入 Prometheus；继续用 taskcenter + `/health` + 看板
 
 ## 可观测性（无 Prometheus）
@@ -86,8 +86,7 @@ API：`GET/POST /api/v1/platform/douyin/runtime-status/*`
 
 ## 相关文档
 
-- [`DOUYIN_PRODUCTION_AUDIT.md`](DOUYIN_PRODUCTION_AUDIT.md)
-- [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md)
+- [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md)
+- [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md)
 - [`DOUYIN_DUPLICATE_DATA_REPAIR.md`](DOUYIN_DUPLICATE_DATA_REPAIR.md)
 - [`DOUYIN_ROLLBACK_RUNBOOK.md`](DOUYIN_ROLLBACK_RUNBOOK.md)
-- [`DOUYIN_ROLLBACK_DRILL_REPORT.md`](DOUYIN_ROLLBACK_DRILL_REPORT.md)

@@ -8,6 +8,8 @@
 - [Docker 部署](docker-deployment.md)
 - [环境变量](env.md)
 - [API 契约](api.md)
+- [AI 客服回复设计](CUSTOMER_AI_REPLY_SUGGESTION_DESIGN.md)
+- [客服中心设计](CUSTOMER_SERVICE_CENTER_DESIGN.md)
 - [Provider 扩展](provider.md)
 - [系统架构](architecture.md)
 

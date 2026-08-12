@@ -88,68 +88,6 @@ func (s *Service) aiConfigured() bool {
 	return s != nil && s.Products != nil && s.Products.AIGateway != nil && s.Products.AITasks != nil
 }
 
-func parseProductIDs(raw []string) ([]uuid.UUID, error) {
-	seen := map[uuid.UUID]struct{}{}
-	out := make([]uuid.UUID, 0, len(raw))
-	for _, item := range raw {
-		item = strings.TrimSpace(item)
-		if item == "" {
-			continue
-		}
-		u, err := uuid.Parse(item)
-		if err != nil {
-			return nil, fmt.Errorf("商品 ID 无效")
-		}
-		if _, ok := seen[u]; ok {
-			continue
-		}
-		seen[u] = struct{}{}
-		out = append(out, u)
-	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("请至少选择一个商品")
-	}
-	return out, nil
-}
-
-func normalizeOperationTypes(raw []string) ([]string, error) {
-	if len(raw) == 0 {
-		return nil, fmt.Errorf("请选择优化内容")
-	}
-	seen := map[string]struct{}{}
-	out := make([]string, 0, len(raw))
-	for _, op := range raw {
-		op = strings.TrimSpace(strings.ToLower(op))
-		switch op {
-		case OpTitle, OpDescription:
-		default:
-			return nil, fmt.Errorf("不支持的处理类型")
-		}
-		if _, ok := seen[op]; ok {
-			continue
-		}
-		seen[op] = struct{}{}
-		out = append(out, op)
-	}
-	sort.Strings(out)
-	return out, nil
-}
-
-func contentHash(s string) string {
-	h := sha256.Sum256([]byte(strings.TrimSpace(s)))
-	return hex.EncodeToString(h[:])
-}
-
-func promptTitle(p *product.Product) string {
-	if p == nil {
-		return ""
-	}
-	if t := strings.TrimSpace(p.OriginalTitle); t != "" {
-		return t
-	}
-	return strings.TrimSpace(p.Title)
-}
-
 func (s *Service) loadProducts(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*product.Product, error) {
 	var rows []product.Product
 	if err := s.DB.WithContext(ctx).Where("id IN ?", ids).Find(&rows).Error; err != nil {

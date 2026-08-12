@@ -75,11 +75,11 @@ func (r *APIRepository) ListSnapshots(ctx context.Context, tenantID int64, runID
 	switch params.BindingResult {
 	case "":
 	case "matched":
-		tx = tx.Where("EXISTS (SELECT 1 FROM p9_sku_bindings b WHERE b.tenant_id = p9_inventory_snapshot_items.tenant_id AND b.shop_connection_id = p9_inventory_snapshot_items.shop_connection_id AND b.external_sku_id = p9_inventory_snapshot_items.external_sku_id AND b.binding_status = ?)", SKUBindingStatusConfirmed)
+		tx = tx.Where("EXISTS (SELECT 1 FROM sku_bindings b WHERE b.tenant_id = inventory_snapshot_items.tenant_id AND b.shop_connection_id = inventory_snapshot_items.shop_connection_id AND b.external_sku_id = inventory_snapshot_items.external_sku_id AND b.binding_status = ?)", SKUBindingStatusConfirmed)
 	case "manual_review":
-		tx = tx.Where("EXISTS (SELECT 1 FROM p9_manual_binding_requests m WHERE m.tenant_id = p9_inventory_snapshot_items.tenant_id AND m.inventory_snapshot_item_id = p9_inventory_snapshot_items.id AND m.status = ?)", ManualBindingStatusPending)
+		tx = tx.Where("EXISTS (SELECT 1 FROM manual_binding_requests m WHERE m.tenant_id = inventory_snapshot_items.tenant_id AND m.inventory_snapshot_item_id = inventory_snapshot_items.id AND m.status = ?)", ManualBindingStatusPending)
 	case "unmatched":
-		tx = tx.Where("NOT EXISTS (SELECT 1 FROM p9_sku_bindings b WHERE b.tenant_id = p9_inventory_snapshot_items.tenant_id AND b.shop_connection_id = p9_inventory_snapshot_items.shop_connection_id AND b.external_sku_id = p9_inventory_snapshot_items.external_sku_id AND b.binding_status = ?) AND NOT EXISTS (SELECT 1 FROM p9_manual_binding_requests m WHERE m.tenant_id = p9_inventory_snapshot_items.tenant_id AND m.inventory_snapshot_item_id = p9_inventory_snapshot_items.id AND m.status = ?)", SKUBindingStatusConfirmed, ManualBindingStatusPending)
+		tx = tx.Where("NOT EXISTS (SELECT 1 FROM sku_bindings b WHERE b.tenant_id = inventory_snapshot_items.tenant_id AND b.shop_connection_id = inventory_snapshot_items.shop_connection_id AND b.external_sku_id = inventory_snapshot_items.external_sku_id AND b.binding_status = ?) AND NOT EXISTS (SELECT 1 FROM manual_binding_requests m WHERE m.tenant_id = inventory_snapshot_items.tenant_id AND m.inventory_snapshot_item_id = inventory_snapshot_items.id AND m.status = ?)", SKUBindingStatusConfirmed, ManualBindingStatusPending)
 	default:
 		return nil, snapshotRelations{}, "", false, ErrValidation
 	}
@@ -275,9 +275,9 @@ func (r *APIRepository) ListManualDecisions(ctx context.Context, tenantID int64,
 
 func (r *APIRepository) BindingHistory(ctx context.Context, binding *SKUBinding) ([]SKUBindingCalibration, []ManualBindingDecision, error) {
 	var calibrations []SKUBindingCalibration
-	err := r.DB.WithContext(ctx).Table("p9_sku_binding_calibrations AS c").
+	err := r.DB.WithContext(ctx).Table("sku_binding_calibrations AS c").
 		Select("c.*").
-		Joins("JOIN p9_inventory_snapshot_items s ON s.id = c.inventory_snapshot_item_id").
+		Joins("JOIN inventory_snapshot_items s ON s.id = c.inventory_snapshot_item_id").
 		Where("c.tenant_id = ? AND s.shop_connection_id = ? AND s.external_sku_id = ?", binding.TenantID, binding.ShopConnectionID, binding.ExternalSKUID).
 		Order("c.calibration_version DESC, c.confidence DESC, c.created_at DESC").
 		Scan(&calibrations).Error
@@ -285,9 +285,9 @@ func (r *APIRepository) BindingHistory(ctx context.Context, binding *SKUBinding)
 		return nil, nil, stableError(err, ErrStateConflict)
 	}
 	var decisions []ManualBindingDecision
-	err = r.DB.WithContext(ctx).Table("p9_manual_binding_decisions AS d").
+	err = r.DB.WithContext(ctx).Table("manual_binding_decisions AS d").
 		Select("d.*").
-		Joins("JOIN p9_manual_binding_requests m ON m.id = d.manual_binding_request_id").
+		Joins("JOIN manual_binding_requests m ON m.id = d.manual_binding_request_id").
 		Where("d.tenant_id = ? AND m.shop_connection_id = ? AND m.external_sku_id = ?", binding.TenantID, binding.ShopConnectionID, binding.ExternalSKUID).
 		Order("d.created_at DESC, d.id DESC").
 		Scan(&decisions).Error

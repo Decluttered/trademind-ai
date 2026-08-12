@@ -93,7 +93,7 @@ func RequireTenantContext(ctx context.Context) (*TenantContext, error) {
 	if tc == nil {
 		return nil, ErrTenantContextMissing
 	}
-	if tc.TenantID <= 0 {
+	if tc.TenantID < 0 || (tc.TenantID == 0 && tc.AuthSource != AuthSourceLegacyDevZero) {
 		return nil, ErrTenantContextMissing
 	}
 	return tc, nil

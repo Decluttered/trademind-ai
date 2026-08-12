@@ -252,10 +252,10 @@ export default function PricingApplyModal({
             <Form.Item name="shippingCost" label="固定运费成本">
               <InputNumber min={0} precision={2} style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="weight" label="重量（预留，可选）">
+            <Form.Item name="weight" label="商品重量（可选）">
               <InputNumber min={0} precision={3} style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="shippingCostPerWeight" label="按重量运费单价（预留）">
+            <Form.Item name="shippingCostPerWeight" label="按重量运费单价">
               <InputNumber min={0} precision={2} style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="platformCommissionPercent" label="平台佣金（%）">

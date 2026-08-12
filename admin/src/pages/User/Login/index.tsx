@@ -12,7 +12,7 @@ import {
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { Form, Input, Checkbox, Button, Tabs, Row, Col } from 'antd';
-import { history } from '@umijs/max';
+import { history, Link, useLocation } from '@umijs/max';
 import { useInitialStateModel } from '@/hooks/useInitialStateModel';
 import { message } from 'antd';
 import { useEffect, useState, useRef } from 'react';
@@ -33,6 +33,12 @@ const FEATURE_TAGS = [
 
 const PLATFORM_ITEMS = ['1688', 'Shopee', 'Lazada', 'Temu'];
 
+type AuthTabKey = 'login' | 'register';
+
+function authTabFromPathname(pathname: string): AuthTabKey {
+  return pathname.replace(/\/+$/, '') === '/user/register' ? 'register' : 'login';
+}
+
 type ApiErrorLike = {
   response?: { data?: { message?: string } };
   message?: string;
@@ -46,8 +52,9 @@ function getAuthErrorMessage(error: unknown, fallback: string) {
 
 export default function LoginPage() {
   const { setInitialState, initialState } = useInitialStateModel();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('login');
+  const activeTab = authTabFromPathname(location.pathname);
 
   const [loginForm] = Form.useForm();
   const [registerForm] = Form.useForm();
@@ -67,6 +74,13 @@ export default function LoginPage() {
       if (countdownTimer.current) clearInterval(countdownTimer.current);
     };
   }, []);
+
+  const changeAuthTab = (key: string) => {
+    const nextTab: AuthTabKey = key === 'register' ? 'register' : 'login';
+    history.replace(
+      `${nextTab === 'register' ? '/user/register' : '/user/login'}${location.search}`,
+    );
+  };
 
   const onLogin = async (values: any) => {
     setLoading(true);
@@ -221,7 +235,7 @@ export default function LoginPage() {
                 className="auth-tabs"
                 activeKey={activeTab}
                 centered
-                onChange={setActiveTab}
+                onChange={changeAuthTab}
                 items={[
                   { key: 'login', label: '登录' },
                   { key: 'register', label: '注册' },
@@ -299,14 +313,11 @@ export default function LoginPage() {
 
                 <div className="register-link">
                   还没有账号？
-                  <a
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveTab('register');
-                    }}
+                  <Link
+                    to={`/user/register${location.search}`}
                   >
                     立即注册
-                  </a>
+                  </Link>
                 </div>
               </Form>
             ) : (
@@ -406,20 +417,17 @@ export default function LoginPage() {
 
                 <div className="register-link">
                   已有账号？
-                  <a
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveTab('login');
-                    }}
+                  <Link
+                    to={`/user/login${location.search}`}
                   >
                     去登录
-                  </a>
+                  </Link>
                 </div>
               </Form>
             )}
 
             <div className="agreement">
-              登录即表示你同意 <a href="#">《用户协议》</a> 和 <a href="#">《隐私政策》</a>
+              {activeTab === 'login' ? '登录' : '注册'}即表示你已阅读并同意用户协议与隐私政策
             </div>
           </div>
         </div>

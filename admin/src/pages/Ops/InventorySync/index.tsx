@@ -18,7 +18,6 @@ import { formatDateTime } from '@/utils/formatTime';
 import {
   ActionSourceHint,
   CursorPager,
-  FixtureBoundary,
   RUN_STATUS_LABELS,
   StatusTag,
   copyableText,
@@ -219,7 +218,6 @@ export default function InventorySyncDashboardPage() {
       }
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <FixtureBoundary />
         {renderInventorySyncError(error)}
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} lg={6}><MetricCard title="当前批次运行" value={items.length} description="当前 cursor 窗口" intent="data" /></Col>
@@ -283,7 +281,6 @@ export default function InventorySyncDashboardPage() {
         okButtonProps={{ 'data-testid': 'p9-create-run-submit' } as never}
         destroyOnHidden
       >
-        <FixtureBoundary />
         <Form form={createForm} layout="vertical" style={{ marginTop: 16 }} initialValues={{ platform: 'douyin', providerMode: 'mock', fixtureScenario: 'success_single_page' }}>
           <Form.Item name="shopConnectionId" label="店铺连接 ID" rules={[{ required: true, whitespace: true, message: '请输入店铺连接 ID' }]}>
             <Input data-testid="p9-create-run-shop" placeholder="后端按登录态校验店铺权限" />

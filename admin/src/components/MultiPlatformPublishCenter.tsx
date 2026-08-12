@@ -216,18 +216,6 @@ export default function MultiPlatformPublishCenter({
     <Spin spinning={loading}>
       <div style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
-        <Alert
-          type="info"
-          showIcon
-          message="多平台刊登中心"
-          description={
-            <>
-              选择要刊登的平台和店铺，检查后可批量创建刊登草稿。当前不会直接上架；未接入真实接口的平台仅生成本地草稿与任务快照。
-              抖店继续使用现有平台草稿链路。批量多商品发布将在下一阶段开放。
-            </>
-          }
-        />
-
         {loadError ? (
           <Alert
             type="error"
@@ -320,7 +308,7 @@ export default function MultiPlatformPublishCenter({
           <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
             统一标题、描述、价格与图片策略可在各平台单独配置区覆盖。单独配置会优先生效，不会影响其他平台或店铺。
           </Typography.Paragraph>
-          <Typography.Text type="secondary">本阶段统一配置预留接口，请在下方各平台区域完成具体配置。</Typography.Text>
+          <Typography.Text type="secondary">请在下方对应平台区域完成刊登配置。</Typography.Text>
         </Card>
 
         <Card size="small" title="发布检查结果" variant="borderless">

@@ -28,17 +28,17 @@ type RuntimeControl struct {
 	Revision           int   `gorm:"not null;default:1" json:"revision"`
 }
 
-func (RuntimeControl) TableName() string { return "p10_runtime_controls" }
+func (RuntimeControl) TableName() string { return "production_runtime_controls" }
 
 type ScopeAllowlist struct {
 	model.HardDeleteBase
-	TenantID int64     `gorm:"not null;uniqueIndex:ux_p10_scope_allowlist_tenant_shop,priority:1;index" json:"tenantId"`
-	ShopID   uuid.UUID `gorm:"type:char(36);not null;uniqueIndex:ux_p10_scope_allowlist_tenant_shop,priority:2;index" json:"shopId"`
+	TenantID int64     `gorm:"not null;uniqueIndex:ux_production_scope_allowlist_tenant_shop,priority:1;index" json:"tenantId"`
+	ShopID   uuid.UUID `gorm:"type:char(36);not null;uniqueIndex:ux_production_scope_allowlist_tenant_shop,priority:2;index" json:"shopId"`
 	Enabled  bool      `gorm:"not null;default:false;index" json:"enabled"`
 	Revision int       `gorm:"not null;default:1" json:"revision"`
 }
 
-func (ScopeAllowlist) TableName() string { return "p10_scope_allowlists" }
+func (ScopeAllowlist) TableName() string { return "production_scope_allowlists" }
 
 type GrayPolicy struct {
 	model.HardDeleteBase
@@ -55,7 +55,7 @@ type GrayPolicy struct {
 	Revision              int        `gorm:"not null;default:1" json:"revision"`
 }
 
-func (GrayPolicy) TableName() string { return "p10_gray_policies" }
+func (GrayPolicy) TableName() string { return "production_rollout_policies" }
 
 type ControlAuditEvent struct {
 	model.HardDeleteBase
@@ -66,7 +66,7 @@ type ControlAuditEvent struct {
 	Metadata  datatypes.JSON `gorm:"type:jsonb;not null" json:"metadata"`
 }
 
-func (ControlAuditEvent) TableName() string { return "p10_control_audit_events" }
+func (ControlAuditEvent) TableName() string { return "production_control_audit_events" }
 
 func Migrate(db interface{ AutoMigrate(...any) error }) error {
 	return db.AutoMigrate(&RuntimeControl{}, &ScopeAllowlist{}, &GrayPolicy{}, &ControlAuditEvent{})

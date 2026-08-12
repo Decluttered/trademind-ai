@@ -79,4 +79,63 @@ test.describe('@product-draft @responsive 五档响应式', () => {
       layoutTokens.pageMaxOuterGap + layoutTokens.pagePaddingX,
     );
   });
+
+  for (const viewport of [viewports[0], viewports[4]]) {
+    test(`draft detail sections keep visible spacing at ${viewport.width}x${viewport.height}`, async ({
+      admin,
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await admin.goto(`/product/drafts/${E2E_PRODUCT_ID}?tab=basic`);
+
+      const progress = page.locator('.product-draft-progress');
+      const tabsFrame = page.locator('.product-draft-tabs-frame');
+      const tabs = page.locator('.product-draft-tabs');
+      const firstSection = page.locator('.product-draft-basic__quality');
+      const secondSection = page.locator('.product-draft-basic__source');
+      await expect(progress).toBeVisible();
+      await expect(tabsFrame).toBeVisible();
+      await expect(firstSection).toBeVisible();
+      await expect(secondSection).toBeVisible();
+
+      const [progressBox, tabsFrameBox, tabsBox, firstSectionBox, secondSectionBox] = await Promise.all([
+        progress.boundingBox(),
+        tabsFrame.boundingBox(),
+        tabs.boundingBox(),
+        firstSection.boundingBox(),
+        secondSection.boundingBox(),
+      ]);
+      if (!progressBox || !tabsFrameBox || !tabsBox || !firstSectionBox || !secondSectionBox) {
+        throw new Error('商品详情主要区块不可见');
+      }
+
+      expect(tabsFrameBox.y - (progressBox.y + progressBox.height)).toBeGreaterThanOrEqual(12);
+      expect(firstSectionBox.x - tabsBox.x).toBeGreaterThanOrEqual(viewport.width <= 480 ? 10 : 14);
+      expect(tabsBox.x + tabsBox.width - (firstSectionBox.x + firstSectionBox.width)).toBeGreaterThanOrEqual(
+        viewport.width <= 480 ? 10 : 14,
+      );
+      expect(secondSectionBox.y - (firstSectionBox.y + firstSectionBox.height)).toBeGreaterThanOrEqual(12);
+      await expectNoRootOverflow(page);
+    });
+
+    test(`inventory toolbars remain separated from tables at ${viewport.width}x${viewport.height}`, async ({
+      admin,
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await admin.goto(`/product/drafts/${E2E_PRODUCT_ID}?tab=inventory`);
+
+      const stockActions = page.locator('.product-draft-stock__section-actions');
+      const syncToolbar = page.locator('.product-draft-inventory-sync__toolbar');
+      const syncTable = page.locator('.product-draft-inventory-sync__table');
+      await expect(stockActions).toBeVisible();
+      await expect(syncToolbar).toBeVisible();
+      await expect(syncTable).toBeVisible();
+
+      const [toolbarBox, tableBox] = await Promise.all([syncToolbar.boundingBox(), syncTable.boundingBox()]);
+      if (!toolbarBox || !tableBox) throw new Error('库存同步工具栏或表格不可见');
+      expect(tableBox.y - (toolbarBox.y + toolbarBox.height)).toBeGreaterThanOrEqual(12);
+      await expectNoRootOverflow(page);
+    });
+  }
 });

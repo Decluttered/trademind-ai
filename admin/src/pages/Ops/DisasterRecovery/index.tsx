@@ -1,7 +1,7 @@
 import { TmPageContainer } from '@/components/ui';
 import { createDRDrill, fetchDRStatus, type DRStatus } from '@/services/opsP6';
 import { DeploymentUnitOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Descriptions, Form, Input, Modal, Space, Switch, Tag, message } from 'antd';
+import { Button, Card, Descriptions, Form, Input, Modal, Space, Switch, Tag, message } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
 export default function DisasterRecoveryPage() {
@@ -41,11 +41,6 @@ export default function DisasterRecoveryPage() {
       }
     >
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Alert
-          showIcon
-          type="warning"
-          message="当前只记录隔离演练；真实生产灾难恢复验收、真实 PITR 演练和真实流量切换保持待接入。"
-        />
         <Card title="当前状态">
           <Descriptions column={2}>
             <Descriptions.Item label="演练状态">

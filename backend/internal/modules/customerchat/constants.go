@@ -44,3 +44,13 @@ const (
 
 // TaskTypeCustomerReplyGenerate is recorded on ai_tasks.task_type
 const TaskTypeCustomerReplyGenerate = "customer_reply_generate"
+
+const (
+	AutoReplyRunPending       = "pending"
+	AutoReplyRunGenerating    = "generating"
+	AutoReplyRunSending       = "sending"
+	AutoReplyRunSent          = "sent"
+	AutoReplyRunHumanRequired = "human_required"
+	AutoReplyRunSkipped       = "skipped"
+	AutoReplyRunFailed        = "failed"
+)

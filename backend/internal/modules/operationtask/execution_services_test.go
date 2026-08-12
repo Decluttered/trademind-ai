@@ -175,6 +175,37 @@ func TestExecutionOrchestratorRejectsPreconditionsWithoutCallingPort(t *testing.
 	})
 	require.ErrorIs(t, err, operationtask.ErrExecutionModeForbidden)
 	require.Equal(t, 0, port.callCount())
+
+}
+
+func TestProductionExecutionAllowsOnlyLocalDraftMode(t *testing.T) {
+	db := openOperationTaskTestDB(t)
+	task, _, _, actor := createApprovedExecutionTask(t, db)
+	port := newRecordingExecutionPort()
+	orchestrator := operationtask.NewExecutionOrchestrator(db, allowExecutionAuthorizer{}, port)
+	orchestrator.AppEnv = "production"
+
+	_, err := orchestrator.Execute(context.Background(), operationtask.ExecutionInput{
+		TenantID:        task.TenantID,
+		OperationTaskID: task.ID,
+		ActorID:         actor,
+		RequestID:       "req-production-sandbox",
+		IdempotencyKey:  "idem-production-sandbox",
+	})
+	require.ErrorIs(t, err, operationtask.ErrExecutionModeForbidden)
+	require.Equal(t, 0, port.callCount())
+
+	out, err := orchestrator.Execute(context.Background(), operationtask.ExecutionInput{
+		TenantID:        task.TenantID,
+		OperationTaskID: task.ID,
+		ActorID:         actor,
+		RequestID:       "req-production-local",
+		IdempotencyKey:  "idem-production-local",
+		AdapterMode:     operationtask.AdapterModeLocalDraftOnly,
+	})
+	require.NoError(t, err)
+	require.Equal(t, operationtask.AdapterModeLocalDraftOnly, out.Attempt.AdapterMode)
+	require.Equal(t, 1, port.callCount())
 }
 
 func TestExecutionOrchestratorFailureClassificationSafeRecordingAndManualRetry(t *testing.T) {

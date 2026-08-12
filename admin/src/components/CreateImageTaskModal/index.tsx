@@ -25,6 +25,7 @@ import { useImageProviders } from '@/hooks/useImageProviders';
 import { uploadFile } from '@/services/files';
 import { testOCRConnection } from '@/services/settings';
 import { fetchProductDetail, type ProductImageRow } from '@/services/products';
+import { isProductionBuild } from '@/utils/runtimeEnvironment';
 import {
   BEGINNER_IMAGE_TASK_TYPE_VALUES,
   IMAGE_TASK_RESULT_MODE_OPTIONS,
@@ -749,41 +750,43 @@ export function CreateImageTaskModal({
         }
       </ProFormDependency>
 
-      <Collapse
-        ghost
-        items={[
-          {
-            key: 'advanced',
-            label: '高级设置（开发调试）',
-            children: (
-              <>
-                <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
-                  普通用户无需填写。仅用于开发调试、外部图片处理或特殊任务参数覆盖。
-                </Typography.Paragraph>
-                <ProFormText
-                  name="sourceImageId"
-                  label="商品图片 ID，高级"
-                  placeholder="系统内部 UUID"
-                  extra="系统内部图片 ID。普通用户无需填写，请直接选择商品图片。"
-                />
-                <ProFormText
-                  name="sourceImageUrl"
-                  label="外部图片链接，高级"
-                  placeholder="https://..."
-                  extra="可填写公网可访问的 HTTPS 图片地址。填写后将覆盖上方选择的图片。"
-                />
-                <ProFormTextArea
-                  name="inputJson"
-                  label="高级参数，高级"
-                  fieldProps={{ rows: 4, style: { fontFamily: 'monospace' } }}
-                  extra="用于覆盖默认处理参数，普通用户无需填写。"
-                  initialValue="{}"
-                />
-              </>
-            ),
-          },
-        ]}
-      />
+      {!isProductionBuild ? (
+        <Collapse
+          ghost
+          items={[
+            {
+              key: 'advanced',
+              label: '开发参数',
+              children: (
+                <>
+                  <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
+                    仅用于开发环境验证内部图片标识和任务参数覆盖。
+                  </Typography.Paragraph>
+                  <ProFormText
+                    name="sourceImageId"
+                    label="商品图片 ID"
+                    placeholder="系统内部 UUID"
+                    extra="系统内部图片 ID；一般应直接选择商品图片。"
+                  />
+                  <ProFormText
+                    name="sourceImageUrl"
+                    label="外部图片链接"
+                    placeholder="https://..."
+                    extra="填写后将覆盖上方选择的图片。"
+                  />
+                  <ProFormTextArea
+                    name="inputJson"
+                    label="任务参数 JSON"
+                    fieldProps={{ rows: 4, style: { fontFamily: 'monospace' } }}
+                    extra="覆盖默认处理参数。"
+                    initialValue="{}"
+                  />
+                </>
+              ),
+            },
+          ]}
+        />
+      ) : null}
     </ModalForm>
   );
 }

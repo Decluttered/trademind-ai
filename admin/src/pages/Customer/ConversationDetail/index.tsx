@@ -32,6 +32,11 @@ import {
   SHOP_STATUS,
 } from '@/constants/status';
 import { platformLabel } from '@/constants/userFriendly';
+import {
+  AI_CONTEXT_PLATFORM_OPTIONS,
+  AI_LANGUAGE_OPTIONS,
+  AI_TONE_OPTIONS,
+} from '@/constants/aiPrompts';
 import { confirmCustomerReplySend } from '@/constants/sensitiveActions';
 import {
   acceptReplySuggestion,
@@ -286,6 +291,7 @@ export default function CustomerConversationDetailPage() {
       try {
         await sendPlatformMessage(id, {
           reply: finalReply,
+          clientMessageId: crypto.randomUUID(),
           suggestionId: suggestionId || undefined,
         });
         message.success('已发送到平台');
@@ -610,18 +616,29 @@ export default function CustomerConversationDetailPage() {
                   />
                 </div>
                 <Space wrap>
-                  <span>language</span>
-                  <Input style={{ width: 100 }} value={lang} onChange={(e) => setLang(e.target.value)} />
-                  <span>tone</span>
-                  <Input style={{ width: 140 }} value={tone} onChange={(e) => setTone(e.target.value)} />
+                  <span>回复语言</span>
+                  <Select
+                    style={{ width: 140 }}
+                    options={[...AI_LANGUAGE_OPTIONS]}
+                    value={lang}
+                    onChange={setLang}
+                  />
+                  <span>回复语气</span>
+                  <Select
+                    style={{ width: 140 }}
+                    options={[...AI_TONE_OPTIONS]}
+                    value={tone}
+                    onChange={setTone}
+                  />
                 </Space>
                 <div>
-                  <Typography.Text>platform</Typography.Text>
-                  <Input
+                  <Typography.Text>会话平台</Typography.Text>
+                  <Select
                     style={{ marginTop: 4 }}
+                    options={AI_CONTEXT_PLATFORM_OPTIONS}
                     value={platform}
-                    onChange={(e) => setPlatform(e.target.value)}
-                    placeholder="manual"
+                    onChange={setPlatform}
+                    placeholder="请选择会话平台"
                   />
                 </div>
                 <div>

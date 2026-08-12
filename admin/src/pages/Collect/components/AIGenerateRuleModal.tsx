@@ -279,13 +279,6 @@ export function AIGenerateRuleModal({ open, onClose, initialUrl, onSaved }: Prop
           ]}
         />
 
-        <Alert
-          type="info"
-          showIcon
-          className="tm-ai-rule-modal__alert"
-          message="输入一个商品链接，系统会先读取页面上的商品信息，再让 AI 帮你生成采集规则。生成后会自动测试标题、价格、图片等内容是否能识别。"
-          description="商品规格、库存、实时价格通常由网站动态加载，不一定都能自动识别。识别评分低于 60 时不建议直接启用。"
-        />
         <Typography.Paragraph type="secondary" className="tm-ai-rule-modal__hero-text" style={{ marginBottom: 0 }}>
           请先在
           <Typography.Link onClick={() => history.push('/settings/ai')}>设置 → AI 设置</Typography.Link>

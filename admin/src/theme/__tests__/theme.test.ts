@@ -1,5 +1,6 @@
 import { theme as antdTheme } from "antd";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ADMIN_DRAWER_WIDTH, createAdminDrawerConfig } from "../componentConfig";
 import { createAdminThemeConfig } from "../themeConfig";
 import {
   THEME_MODE_STORAGE_KEY,
@@ -59,5 +60,20 @@ describe("Admin theme config", () => {
     expect(lightAgain.token?.colorBgElevated).toBe("#ffffff");
     expect(lightAgain.cssVar).toEqual({ key: "trademind-admin-light" });
     expect(lightAgain.components?.Table?.headerBg).toBe("#f8fafc");
+  });
+
+  it("applies the responsive project width to every drawer wrapper", () => {
+    const drawer = createAdminDrawerConfig({
+      styles: {
+        body: { padding: 12 },
+        wrapper: { maxWidth: "100vw" },
+      },
+    });
+
+    expect(drawer.styles?.body).toEqual({ padding: 12 });
+    expect(drawer.styles?.wrapper).toEqual({
+      maxWidth: "100vw",
+      width: ADMIN_DRAWER_WIDTH,
+    });
   });
 });

@@ -5,18 +5,18 @@ export { ALERT_SEVERITY_OPTIONS as NOTIFICATION_SEVERITY_OPTIONS };
 /** 通知通道（存库 JSON 数组元素） */
 export const NOTIFICATION_CHANNEL_META: Record<
   string,
-  { label: string; desc: string; planned?: boolean }
+  { label: string; desc: string }
 > = {
   mail: { label: '邮件', desc: '经邮件服务器发送；发信配置请在「邮箱设置」中完成' },
   webhook: { label: '回调通知', desc: '推送到自定义 HTTPS 地址' },
-  feishu: { label: '飞书', desc: '后续版本支持，当前保存后发送结果为 skipped', planned: true },
-  wecom: { label: '企业微信', desc: '后续版本支持，当前保存后发送结果为 skipped', planned: true },
+  feishu: { label: '飞书', desc: '通过飞书群自定义机器人发送文本告警，支持签名校验' },
+  wecom: { label: '企业微信', desc: '通过企业微信群机器人发送文本告警' },
 };
 
 export const NOTIFICATION_CHANNEL_OPTIONS = Object.entries(NOTIFICATION_CHANNEL_META).map(
   ([value, meta]) => ({
     value,
-    label: meta.planned ? `${meta.label}（预留）` : meta.label,
+    label: meta.label,
   }),
 );
 

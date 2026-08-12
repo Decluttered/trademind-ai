@@ -6,7 +6,7 @@
 
 - 基础路径：`/api/v1`
 - 健康检查：`GET /health`、`GET /api/v1/health`（综合）；`GET /health/live`（存活）；`GET /health/ready`（就绪，DB/Redis/迁移/生产门闸）
-- 可观测性（P5 / P5.1 / P5-V，需权限）：`GET /api/v1/observability/overview|http|tasks|providers|security`；`overview` 会返回运行态 `runtimeStatus` 与 telemetry 导出摘要，用于区分 `standard_protocol_ready` / `mock_verified` / `real_backend_deferred` / `export_degraded` / `disabled` / `incomplete`；`GET /api/v1/observability/alerts`；`POST /api/v1/observability/alerts/:id/ack|silence`；内部指标：`GET /internal/metrics`（默认仅内网/本机）
+- 可观测性（P5 / P5.1 / P5-V，需权限）：`GET /api/v1/observability/overview|http|tasks|providers|security`；`overview` 会返回运行态 `runtimeStatus` 与 telemetry 导出摘要，用于区分 `standard_protocol_ready` / `mock_verified` / `real_backend_deferred` / `export_degraded` / `disabled` / `incomplete`；`GET /api/v1/observability/alerts` 返回 `items[]`，字段为 `id`、`ruleId`、`severity`、`status`、`module`、`summary`、`occurrenceCount`、`lastSeenAt`；`POST /api/v1/observability/alerts/:id/ack|silence`；内部指标：`GET /internal/metrics`（默认仅内网/本机）
 - 鉴权：管理端受保护接口使用 `Authorization: Bearer <token>`
 - 返回格式：统一 JSON 响应，核心字段为 `code`、`message`、`data`、`traceId`
 - 敏感信息：接口不得返回完整 API Key、Token、Secret、Cookie 或密码
@@ -211,7 +211,18 @@
 | `GET` | `/api/v1/ai/tasks` | AI 任务列表。 |
 | `GET` | `/api/v1/ai/tasks/:id` | AI 任务详情。 |
 
-客服 AI 回复建议见 **`POST /api/v1/customer/conversations/:id/ai/generate-reply`**（非 legacy `/ai/chat`）。
+### 客服与 AI 回复
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/customer/dashboard` | 客服中心汇总。 |
+| `POST` | `/api/v1/customer/conversations/:id/ai/generate-reply` | 生成 AI 回复建议，不直接外发。 |
+| `POST` | `/api/v1/customer/conversations/:id/send-platform-message` | 人工确认后外发；请求必须包含 `reply` 和唯一 `clientMessageId`，可带 `suggestionId`。 |
+| `GET` | `/api/v1/customer/shops/:shopId/auto-reply-policy` | 查询店铺自动回复策略及部署总开关状态。 |
+| `PUT` | `/api/v1/customer/shops/:shopId/auto-reply-policy` | 管理员显式更新店铺策略；启用时 `lowRiskOnly` 必须为 `true`。 |
+| `GET` | `/api/v1/customer/shops/:shopId/auto-reply-runs` | 查询店铺最近 50 条自动回复处理记录。 |
+
+自动回复默认关闭。`GET/PUT /api/v1/customer/auto-reply-setting` 管理租户级消息同步开关、自动回复总开关和 15–3600 秒轮询间隔；设置持久化到数据库并动态生效。只有两个总开关与店铺策略同时开启才生效。响应中的 `workerAvailable` 仅在 Redis 可探活、客服消息同步 Worker、自动回复轮询调度器和自动回复消费者均运行时为 `true`。轮询器通过数据库 `next_poll_at` 原子认领已启用店铺并创建增量同步任务，单店只允许一个 `pending/running` 任务。每条入站消息只创建一个幂等运行记录；Redis ready/processing 队列可恢复未确认任务。外发前会在会话锁内重新检查最新客户消息、人工回复、会话状态与频率限制。平台发送幂等租约在调用期间持续续期；平台成功并完成本地消息落库后，即使幂等元数据收尾失败也只重放本地消息，不会再次调用平台。`generating` 租约过期可恢复，`sending` 过期或平台发送结果未知则转 `human_required/platform_send_result_unknown`，写入统一失败任务中心且不自动重发。最近运行记录可选返回截断后的 `errorMessage`。
 
 ## Dev / Demo 种子（非 production）
 
@@ -399,13 +410,13 @@ List endpoints return `{items, nextCursor, hasMore, limit}` and never expose off
 
 ## 抖店可观测性 / Health & Metrics（Phase 10.4）
 
-> **不** 提供 Prometheus `/metrics`。抖店生产监控复用进程健康、任务中心、操作日志与运营看板。真实平台行为按人工验收清单执行；门禁见 [`DOUYIN_RELEASE_GATE.md`](DOUYIN_RELEASE_GATE.md)。
+> **不** 提供 Prometheus `/metrics`。抖店生产监控复用进程健康、任务中心、操作日志与运营看板。真实平台行为按 [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md) 人工验收，结论记录在 PR 或发布工单，不向仓库提交测试报告产物。
 
 ### 进程健康（含抖店相关队列）
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| `GET` | `/health` | 匿名；`data.status` 为 `up` / `degraded`；含 `checks.database`、`checks.redis` |
+| `GET` | `/health` | 匿名；`data.status` 为 `up` / `degraded`；含 `checks.database`、`checks.redis`、`customerMessageSyncQueue` 与 `customerAutoReplyQueue`；自动回复队列块包含 ready/processing 长度、Redis 探活、消息同步 Worker、轮询调度器和自动回复消费者状态 |
 | `GET` | `/api/v1/health` | 同上 |
 
 `data` 中与抖店 Worker 相关的块（队列启用时）：
@@ -438,7 +449,7 @@ List endpoints return `{items, nextCursor, hasMore, limit}` and never expose off
 | `GET` | `/api/v1/task-center/failures/:taskType/:id` | 失败详情（脱敏 raw） |
 | `GET` | `/api/v1/task-center/alerts` | 站内告警列表 |
 | `POST` | `/api/v1/task-center/alerts/scan` | 扫描并生成告警（dedupe） |
-| `POST` | `/api/v1/task-center/alerts/:id/notify` | Webhook 通知（需配置） |
+| `POST` | `/api/v1/task-center/alerts/:id/notify` | 手动触发已配置的邮件、通用 Webhook、飞书群机器人或企业微信群机器人通知；请求体可指定 `channels`，发送结果写入通知审计记录 |
 | `GET` | `/api/v1/task-center/failure-categories` | 含 `sub:douyin_*` 分类 |
 
 ### 操作日志与运营看板

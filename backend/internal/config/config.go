@@ -91,14 +91,14 @@ type Config struct {
 	// OrderSyncTaskTimeoutSeconds caps each Provider.SyncOrders context (default 120).
 	OrderSyncTaskTimeoutSeconds int
 
-	// CustomerMessageSyncQueueEnabled gates async customer message sync jobs (Redis list + worker).
-	CustomerMessageSyncQueueEnabled bool
 	// CustomerMessageSyncQueueName is the Redis list key (default customer:message:sync:tasks).
 	CustomerMessageSyncQueueName string
 	// CustomerMessageSyncWorkerConcurrency is concurrent BRPOP consumers (default 1).
 	CustomerMessageSyncWorkerConcurrency int
 	// CustomerMessageSyncTaskTimeoutSeconds caps each Provider.PullMessages context (default 120).
 	CustomerMessageSyncTaskTimeoutSeconds int
+	CustomerAutoReplyQueueName            string
+	CustomerAutoReplyWorkerConcurrency    int
 
 	// ProductPublishQueueEnabled gates async product publish jobs (Redis list + worker).
 	ProductPublishQueueEnabled bool
@@ -277,13 +277,17 @@ func Load() (*Config, error) {
 		OrderSyncWorkerConcurrency:  atoiOrDefault(os.Getenv("ORDER_SYNC_WORKER_CONCURRENCY"), 1),
 		OrderSyncTaskTimeoutSeconds: atoiOrDefault(os.Getenv("ORDER_SYNC_TASK_TIMEOUT_SECONDS"), 120),
 
-		CustomerMessageSyncQueueEnabled: envBool(os.Getenv("CUSTOMER_MESSAGE_SYNC_QUEUE_ENABLED"), true),
 		CustomerMessageSyncQueueName: strings.TrimSpace(firstNonEmpty(
 			os.Getenv("CUSTOMER_MESSAGE_SYNC_QUEUE_NAME"),
 			"customer:message:sync:tasks",
 		)),
 		CustomerMessageSyncWorkerConcurrency:  atoiOrDefault(os.Getenv("CUSTOMER_MESSAGE_SYNC_WORKER_CONCURRENCY"), 1),
 		CustomerMessageSyncTaskTimeoutSeconds: atoiOrDefault(os.Getenv("CUSTOMER_MESSAGE_SYNC_TASK_TIMEOUT_SECONDS"), 120),
+		CustomerAutoReplyQueueName: strings.TrimSpace(firstNonEmpty(
+			os.Getenv("CUSTOMER_AUTO_REPLY_QUEUE_NAME"),
+			"customer:auto:reply:tasks",
+		)),
+		CustomerAutoReplyWorkerConcurrency: atoiOrDefault(os.Getenv("CUSTOMER_AUTO_REPLY_WORKER_CONCURRENCY"), 1),
 
 		ProductPublishQueueEnabled: envBool(os.Getenv("PRODUCT_PUBLISH_QUEUE_ENABLED"), true),
 		ProductPublishQueueName: strings.TrimSpace(firstNonEmpty(

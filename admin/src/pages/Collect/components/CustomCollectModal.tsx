@@ -16,7 +16,6 @@ import { BrowserProfileLoginPanel } from '@/pages/Collect/components/BrowserProf
 import { AIGenerateRuleModal } from '@/pages/Collect/components/AIGenerateRuleModal';
 import { RuleTestResultPanel } from '@/pages/Collect/components/RuleTestResultPanel';
 import {
-  CUSTOM_COLLECT_USAGE_LINES,
   detectCustomCollectPlatform,
   type CustomCollectPlatformHint,
 } from '@/utils/customCollectPlatform';
@@ -269,19 +268,6 @@ export function CustomCollectModal({ open, onClose }: Props) {
         }
       }}
     >
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message="使用说明"
-        description={
-          <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-            {CUSTOM_COLLECT_USAGE_LINES.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-        }
-      />
       {platformHint && (platformHint.kind === 'blocked' || showPlannedHint) ? (
         <PlatformConflictAlert
           hint={platformHint}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/trademind-ai/trademind/backend/internal/config"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -147,6 +148,7 @@ type ExecutionOrchestrator struct {
 	Authorizer   ExecutionAuthorizer
 	Port         DraftExecutionPort
 	Classifier   *ExecutionFailureClassifier
+	AppEnv       string
 	Now          func() time.Time
 }
 
@@ -191,7 +193,7 @@ func (s *ExecutionOrchestrator) execute(ctx context.Context, in ExecutionInput, 
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("execution orchestrator: db is nil")
 	}
-	if in.TenantID <= 0 || in.OperationTaskID == uuid.Nil || in.ActorID == uuid.Nil ||
+	if in.TenantID < 0 || in.OperationTaskID == uuid.Nil || in.ActorID == uuid.Nil ||
 		strings.TrimSpace(in.RequestID) == "" || strings.TrimSpace(executionIdempotencyKey(in)) == "" {
 		return nil, ErrValidation
 	}
@@ -264,6 +266,11 @@ func (s *ExecutionOrchestrator) prepare(ctx context.Context, in ExecutionInput, 
 		}
 		if mode == "" {
 			mode = portModeForDraft(latestDraft.AdapterMode)
+		} else {
+			mode = requestedPortMode(mode)
+		}
+		if config.IsProduction(s.AppEnv) && mode != ExecutionPortModeLocalDraftFixture {
+			return ErrExecutionModeForbidden
 		}
 		if !allowedExecutionPortMode(mode) {
 			return ErrExecutionModeForbidden
@@ -327,7 +334,7 @@ func (s *ExecutionOrchestrator) prepare(ctx context.Context, in ExecutionInput, 
 			ApprovalRecordID:         approval.ID,
 			AttemptNumber:            attemptNumber,
 			Status:                   ExecutionAttemptStatusRunning,
-			AdapterMode:              latestDraft.AdapterMode,
+			AdapterMode:              adapterModeForPort(mode),
 			Platform:                 latestDraft.Platform,
 			ApprovedDraftVersion:     approval.DraftVersion,
 			ApprovedDraftPayloadHash: approval.DraftPayloadHash,
@@ -690,6 +697,30 @@ func portModeForDraft(adapterMode string) string {
 		return ExecutionPortModeSandboxFixture
 	default:
 		return ExecutionPortModeLocalDraftFixture
+	}
+}
+
+func requestedPortMode(mode string) string {
+	switch strings.TrimSpace(strings.ToLower(mode)) {
+	case AdapterModeMock:
+		return ExecutionPortModeMock
+	case AdapterModeSandbox, ExecutionPortModeSandboxFixture:
+		return ExecutionPortModeSandboxFixture
+	case AdapterModeLocalDraftOnly, ExecutionPortModeLocalDraftFixture:
+		return ExecutionPortModeLocalDraftFixture
+	default:
+		return strings.TrimSpace(strings.ToLower(mode))
+	}
+}
+
+func adapterModeForPort(mode string) string {
+	switch strings.TrimSpace(strings.ToLower(mode)) {
+	case ExecutionPortModeMock:
+		return AdapterModeMock
+	case ExecutionPortModeSandboxFixture:
+		return AdapterModeSandbox
+	default:
+		return AdapterModeLocalDraftOnly
 	}
 }
 

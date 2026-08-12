@@ -1,9 +1,7 @@
-import { Link } from '@umijs/renderer-react';
 import { BellOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 import { ProCard } from '@ant-design/pro-components';
 import { TmPageContainer } from '@/components/ui';
 import {
-  Alert,
   Button,
   Col,
   Divider,
@@ -14,7 +12,6 @@ import {
   Select,
   Space,
   Switch,
-  Tag,
   Typography,
   message,
 } from 'antd';
@@ -166,7 +163,6 @@ function buildAlertNotifyItems(values: Record<string, unknown>): SettingPutItem[
 function ChannelPanel({
   title,
   desc,
-  planned,
   switchName,
   enabled,
   groupEnabled,
@@ -174,7 +170,6 @@ function ChannelPanel({
 }: {
   title: string;
   desc: string;
-  planned?: boolean;
   switchName: string;
   enabled: boolean;
   groupEnabled: boolean;
@@ -187,7 +182,6 @@ function ChannelPanel({
         <div>
           <Space size={8} wrap>
             <Text className="tm-alert-notify__channel-title">{title}</Text>
-            {planned ? <Tag>预留</Tag> : null}
           </Space>
           <Text type="secondary" className="tm-alert-notify__channel-desc">
             {desc}
@@ -270,25 +264,6 @@ export default function AlertNotifySettingsPage() {
             </div>
           </div>
         </ProCard>
-
-        <Alert
-          type="info"
-          showIcon
-          message="配置说明"
-          description={
-            <ul style={{ marginBottom: 0, paddingLeft: 18 }}>
-              <li>
-                需同时开启「启用外部通知」与「通道总开关」，并配置至少一个可用通道后，系统才会自动向外发送。
-              </li>
-              <li>
-                告警扫描与站内策略见 <Link to="/settings/system">系统设置</Link>；SMTP 见{' '}
-                <Link to="/settings/email">邮箱设置</Link>。
-              </li>
-              <li>飞书 / 企业微信当前为预留能力，可保存配置，实际发送结果为 skipped。</li>
-              <li>通知正文与回调通知内容均经裁剪，不会包含完整平台响应、客户消息全文或密钥。</li>
-            </ul>
-          }
-        />
 
         <Form
           form={form}
@@ -480,16 +455,25 @@ export default function AlertNotifySettingsPage() {
                       <ChannelPanel
                         title={NOTIFICATION_CHANNEL_META.feishu.label}
                         desc={NOTIFICATION_CHANNEL_META.feishu.desc}
-                        planned
                         switchName="feishu_enabled"
                         enabled={!!getFieldValue('feishu_enabled')}
                         groupEnabled={groupEnabled}
                       >
-                        <Form.Item label="回调通知地址" name="feishu_webhook_url">
-                          <Input.Password autoComplete="off" placeholder="预留，后续版本启用" />
+                        <Form.Item
+                          label="机器人回调通知地址"
+                          name="feishu_webhook_url"
+                          rules={groupEnabled && getFieldValue('feishu_enabled')
+                            ? [{ required: true, message: '请输入飞书机器人回调通知地址' }]
+                            : []}
+                        >
+                          <Input.Password autoComplete="off" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..." />
                         </Form.Item>
-                        <Form.Item label="签名 Secret" name="feishu_secret">
-                          <Input.Password autoComplete="off" />
+                        <Form.Item
+                          label="签名 Secret"
+                          name="feishu_secret"
+                          extra="飞书机器人开启签名校验时填写"
+                        >
+                          <Input.Password autoComplete="off" placeholder="未开启签名校验时留空" />
                         </Form.Item>
                       </ChannelPanel>
                     </Col>
@@ -497,13 +481,18 @@ export default function AlertNotifySettingsPage() {
                       <ChannelPanel
                         title={NOTIFICATION_CHANNEL_META.wecom.label}
                         desc={NOTIFICATION_CHANNEL_META.wecom.desc}
-                        planned
                         switchName="wecom_enabled"
                         enabled={!!getFieldValue('wecom_enabled')}
                         groupEnabled={groupEnabled}
                       >
-                        <Form.Item label="回调通知地址" name="wecom_webhook_url">
-                          <Input.Password autoComplete="off" placeholder="预留，后续版本启用" />
+                        <Form.Item
+                          label="机器人回调通知地址"
+                          name="wecom_webhook_url"
+                          rules={groupEnabled && getFieldValue('wecom_enabled')
+                            ? [{ required: true, message: '请输入企业微信机器人回调通知地址' }]
+                            : []}
+                        >
+                          <Input.Password autoComplete="off" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..." />
                         </Form.Item>
                       </ChannelPanel>
                     </Col>

@@ -1,7 +1,7 @@
 import { TmPageContainer } from '@/components/ui';
 import { createRestore, fetchRestores, verifyRestore, type RestoreJob } from '@/services/opsP6';
 import { ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
-import { Alert, Button, Form, Input, Modal, Space, Switch, Table, Tag, message } from 'antd';
+import { Button, Form, Input, Modal, Space, Switch, Table, Tag, message } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
 export default function RestoresPage() {
@@ -41,11 +41,6 @@ export default function RestoresPage() {
       }
     >
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Alert
-          showIcon
-          type="warning"
-          message="恢复默认只允许隔离环境；真实生产恢复和 RPO/RTO 验证保持待接入。"
-        />
         <Table<RestoreJob>
           rowKey="restoreId"
           loading={loading}

@@ -17,10 +17,13 @@ import (
 )
 
 func newOperationTaskAPITestRouter(t *testing.T) (*gin.Engine, *operationtask.APIService, int64, string) {
+	return newOperationTaskAPITestRouterForTenant(t, 101)
+}
+
+func newOperationTaskAPITestRouterForTenant(t *testing.T, tenantID int64) (*gin.Engine, *operationtask.APIService, int64, string) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	db := openOperationTaskTestDB(t)
-	tenantID := int64(101)
 	actorID := createAdminUser(t, db, tenantID, admin.RoleAdmin, admin.StatusActive)
 	svc := operationtask.NewAPIService(db)
 	r := gin.New()
@@ -32,6 +35,18 @@ func newOperationTaskAPITestRouter(t *testing.T) (*gin.Engine, *operationtask.AP
 	})
 	operationtask.Register(r.Group("/api/v1"), &operationtask.Handler{Svc: svc})
 	return r, svc, tenantID, actorID.String()
+}
+
+func TestOperationTaskHandlerListAllowsLegacyDevelopmentTenantZero(t *testing.T) {
+	r, _, tenantID, _ := newOperationTaskAPITestRouterForTenant(t, 0)
+	require.Zero(t, tenantID)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/operation-tasks?limit=1", nil)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Contains(t, rec.Body.String(), `"items":[]`)
 }
 
 func TestOperationTaskHandlerRequiresIdempotencyKeyForWrites(t *testing.T) {

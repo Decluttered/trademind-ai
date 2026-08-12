@@ -4,13 +4,12 @@ type GuardEntry = { type: string; text: string };
 
 const allowedWarnings: RegExp[] = [
   /ResizeObserver loop completed with undelivered notifications/i,
-  /Warning: Instance created by `useForm` is not connected to any Form element\. Forget to pass `form` prop\?/,
-  /Warning: \[antd: Modal\] Static function can not consume context like dynamic theme\. Please use 'App' component instead\./,
 ];
 
 export class ConsoleGuard {
   private readonly errors: GuardEntry[] = [];
   private readonly warnings: GuardEntry[] = [];
+  private readonly allowedErrors: RegExp[] = [];
 
   constructor(private readonly page: Page) {}
 
@@ -21,8 +20,16 @@ export class ConsoleGuard {
     this.page.on('console', (message) => this.recordConsole(message));
   }
 
+  allowError(pattern: RegExp) {
+    this.allowedErrors.push(pattern);
+  }
+
   async expectNoFatalErrors() {
-    const fatalErrors = this.errors.filter((entry) => !allowedWarnings.some((pattern) => pattern.test(entry.text)));
+    const fatalErrors = this.errors.filter(
+      (entry) =>
+        !allowedWarnings.some((pattern) => pattern.test(entry.text)) &&
+        !this.allowedErrors.some((pattern) => pattern.test(entry.text)),
+    );
     const fatalWarnings = this.warnings.filter((entry) => !allowedWarnings.some((pattern) => pattern.test(entry.text)));
     expect([...fatalErrors, ...fatalWarnings], 'fatal console/page errors').toEqual([]);
   }

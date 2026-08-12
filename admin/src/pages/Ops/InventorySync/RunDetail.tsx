@@ -24,7 +24,6 @@ import {
   BINDING_RESULT_LABELS,
   ConfidenceText,
   CursorPager,
-  FixtureBoundary,
   RUN_STATUS_LABELS,
   StatusTag,
   copyableText,
@@ -177,7 +176,6 @@ export default function InventorySyncRunDetailPage() {
       }
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <FixtureBoundary />
         {renderInventorySyncError(error)}
         {run ? (
           <SectionCard title="运行概览" description="成功状态表示 fixture/test 完成，不代表真实库存同步完成。" headerExtra={<StatusTag map={RUN_STATUS_LABELS} value={run.status} />}>

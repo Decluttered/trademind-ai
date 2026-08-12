@@ -4,11 +4,30 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### AI customer service production hardening (2026-08-12)
+
+- Fixed manual platform-message delivery to include the backend-required client message id.
+- Added default-off, shop-scoped low-risk AI auto replies with tenant-scoped Redis workers, idempotent run records, rate and context guards, sensitive-commitment blocking, auditability, and no automatic business retry.
+- Added Admin policy controls with explicit confirmation, readonly protection, recent run status, API contract coverage, and deployment documentation.
+- Added database-backed run leases, reliable Redis reservation/ack recovery, multi-instance polling claims, final pre-send conversation checks, PostgreSQL uniqueness/index guards, and stale Admin request isolation.
+
+### Native alert robots (2026-08-11)
+
+- Added native Feishu custom-bot delivery with optional timestamp signing and native Enterprise WeChat group-robot delivery.
+- Validate vendor response codes even on HTTP 2xx, retain masked audit targets, and keep production delivery HTTPS-only with bounded timeouts and response summaries.
+- Exposed both implemented channels in the production Admin settings flow and retained encrypted webhook and signing-secret storage.
+
+### Database schema naming (2026-08-10)
+
+- Replaced phase-numbered `p9_*` and `p10_*` table names with stable inventory, SKU binding, platform credential, OAuth, and production-control domain names.
+- Added a transactional, fail-closed PostgreSQL upgrade that renames existing tables and their indexes, constraints, triggers, and immutable-record function without copying or deleting data.
+- Kept API routes, permissions, state machines, and the fail-closed P10 `L0` runtime boundary unchanged.
+
 ### Admin theme (2026-08-09)
 
 - Added an icon-only, tooltip-labelled top-navigation light/dark theme switch with light mode as the default and local preference persistence.
 - Applied Ant Design theme tokens across shared Admin chrome, login, dashboard, status surfaces, and responsive regression coverage.
-- Consolidated mobile brand, theme, and account actions into one fixed header, kept the full desktop brand in the sidebar only, and made the navigation drawer opaque above scrolled content.
+- Moved the complete desktop brand and its sider toggle into the fixed top header, added permission-aware navigation search with a compact mobile entry, kept a compact mobile brand beside the menu trigger, removed the duplicate sidebar brand, and made the navigation drawer opaque above scrolled content.
 - Made theme switching atomic and fully reversible for header, elevated, and portal surfaces, and safely centered mobile login and registration layouts.
 
 ### Production maintenance cleanup (2026-08-09)

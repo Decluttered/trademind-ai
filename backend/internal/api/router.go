@@ -65,6 +65,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/observability"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/response"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	aigate "github.com/trademind-ai/trademind/backend/internal/providers/ai"
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
 	platformamazon "github.com/trademind-ai/trademind/backend/internal/providers/platform/amazon"
@@ -337,6 +338,11 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		Redis:    dep.Redis,
 	}
 	if dep.Config != nil {
+		_, tenantSource, tenantErr := dep.Config.ResolveRequestTenantID(0)
+		env := config.NormalizeEnv(dep.Config.AppEnv)
+		collectSvc.AllowLegacyTenantZero = tenantErr == nil &&
+			tenantSource == security.AuthSourceLegacyDevZero &&
+			(env == config.EnvDevelopment || env == config.EnvTest)
 		collectSvc.QueueName = dep.Config.CollectQueueName
 		collectSvc.QueueEnabled = dep.Config.CollectQueueEnabled
 		collectSvc.BatchMaxURLs = dep.Config.CollectBatchMaxURLs
@@ -363,6 +369,9 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		OpLog:     opLogSvc,
 		Redis:     dep.Redis,
 		Settings:  settingsSvc,
+	}
+	if dep.Config != nil {
+		shopSvc.AppEnv = dep.Config.AppEnv
 	}
 	productSvc.Shops = shopSvc
 	platformtiktok.BindShops(shopSvc.TikTokShopsBridge())
@@ -464,6 +473,7 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 
 	customerChatSvc := &customerchat.Service{
 		DB:          dep.DB,
+		Redis:       dep.Redis,
 		Settings:    settingsSvc,
 		Prompts:     promptSvc,
 		AITasks:     aiTaskSvc,
@@ -472,6 +482,12 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		Orders:      orderSvc,
 		Shops:       shopSvc,
 		Idempotency: idempotencySvc,
+		AutoReplyQueueName: func() string {
+			if dep.Config != nil {
+				return strings.TrimSpace(dep.Config.CustomerAutoReplyQueueName)
+			}
+			return "customer:auto:reply:tasks"
+		}(),
 	}
 	customerChatH := &customerchat.Handler{Svc: customerChatSvc}
 
@@ -483,8 +499,17 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		CustomerChat: customerChatSvc,
 		OpLog:        opLogSvc,
 	}
+	customerChatSvc.AutoReplyDependenciesAvailable = func() bool {
+		return customersync.CustomerMessageSyncWorkersRunning() && customersync.AutoReplyPollingSchedulerRunning()
+	}
+	customerSyncSvc.QueueEnabled = dep.Redis != nil && dep.Redis.Client != nil
 	if dep.Config != nil {
-		customerSyncSvc.QueueEnabled = dep.Config.CustomerMessageSyncQueueEnabled
+		_, tenantSource, tenantErr := dep.Config.ResolveRequestTenantID(0)
+		env := config.NormalizeEnv(dep.Config.AppEnv)
+		allowLegacyTenantZero := tenantErr == nil && tenantSource == security.AuthSourceLegacyDevZero &&
+			(env == config.EnvDevelopment || env == config.EnvTest)
+		customerChatSvc.AllowLegacyTenantZero = allowLegacyTenantZero
+		customerSyncSvc.AllowLegacyTenantZero = allowLegacyTenantZero
 		if strings.TrimSpace(dep.Config.CustomerMessageSyncQueueName) != "" {
 			customerSyncSvc.QueueName = strings.TrimSpace(dep.Config.CustomerMessageSyncQueueName)
 		} else {
@@ -694,7 +719,11 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	workerH := &worker.Handler{DB: dep.DB, Cfg: dep.Config}
 	worker.Register(authed, workerH)
 
-	operationTaskH := &operationtask.Handler{Svc: operationtask.NewAPIService(dep.DB)}
+	operationTaskSvc := operationtask.NewAPIService(dep.DB)
+	if dep.Config != nil {
+		operationTaskSvc.Executor.AppEnv = dep.Config.AppEnv
+	}
+	operationTaskH := &operationtask.Handler{Svc: operationTaskSvc}
 	operationtask.Register(authed, operationTaskH)
 	inventorySyncP9H := &inventorysyncp9.Handler{Svc: inventorysyncp9.NewAPIService(dep.DB)}
 	inventorysyncp9.Register(authed, inventorySyncP9H)
@@ -878,11 +907,10 @@ func healthHandler(dep *Deps) gin.HandlerFunc {
 			status = "degraded"
 		}
 
-		cmQEnabled := false
+		cmQEnabled := dep.Redis != nil && dep.Redis.Client != nil
 		cmQName := "customer:message:sync:tasks"
 		cmWConc := 1
 		if dep.Config != nil {
-			cmQEnabled = dep.Config.CustomerMessageSyncQueueEnabled
 			if strings.TrimSpace(dep.Config.CustomerMessageSyncQueueName) != "" {
 				cmQName = strings.TrimSpace(dep.Config.CustomerMessageSyncQueueName)
 			}
@@ -892,7 +920,22 @@ func healthHandler(dep *Deps) gin.HandlerFunc {
 			}
 		}
 		cmq := customersync.BuildCustomerMessageSyncQueueHealthBlock(ctx, dep.Redis, cmQEnabled, cmQName, cmWConc)
-		if cmQEnabled && !cmq.RedisAvailable && checks["redis"] == "ok" {
+		if cmQEnabled && (!cmq.RedisAvailable || !cmq.WorkerRunning) && checks["redis"] == "ok" {
+			status = "degraded"
+		}
+
+		autoReplyQueueName := "customer:auto:reply:tasks"
+		autoReplyWorkerConcurrency := 1
+		if dep.Config != nil {
+			if strings.TrimSpace(dep.Config.CustomerAutoReplyQueueName) != "" {
+				autoReplyQueueName = strings.TrimSpace(dep.Config.CustomerAutoReplyQueueName)
+			}
+			autoReplyWorkerConcurrency = dep.Config.CustomerAutoReplyWorkerConcurrency
+		}
+		autoReplyQueue := customerchat.BuildAutoReplyQueueHealthBlock(ctx, dep.Redis, autoReplyQueueName, autoReplyWorkerConcurrency)
+		autoReplyQueue.MessageSyncWorkerRunning = customersync.CustomerMessageSyncWorkersRunning()
+		autoReplyQueue.SchedulerRunning = customersync.AutoReplyPollingSchedulerRunning()
+		if (!autoReplyQueue.RedisAvailable || !autoReplyQueue.WorkerRunning || !autoReplyQueue.MessageSyncWorkerRunning || !autoReplyQueue.SchedulerRunning) && checks["redis"] == "ok" {
 			status = "degraded"
 		}
 
@@ -945,6 +988,7 @@ func healthHandler(dep *Deps) gin.HandlerFunc {
 			"imageQueue":               iq,
 			"orderSyncQueue":           osq,
 			"customerMessageSyncQueue": cmq,
+			"customerAutoReplyQueue":   autoReplyQueue,
 			"productPublishQueue":      ppq,
 			"inventorySyncQueue":       invq,
 			"workers":                  workers,

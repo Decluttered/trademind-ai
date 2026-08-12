@@ -24,6 +24,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/aiprompt"
 	"github.com/trademind-ai/trademind/backend/internal/modules/alerting"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collect"
+	"github.com/trademind-ai/trademind/backend/internal/modules/customerchat"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customersync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/douyinruntime"
 	"github.com/trademind-ai/trademind/backend/internal/modules/files"
@@ -407,15 +408,19 @@ func main() {
 		log.Warn("order_sync_worker_skipped", "reason", "redis unavailable while ORDER_SYNC_QUEUE_ENABLED=true")
 	}
 
-	if cfg.CustomerMessageSyncQueueEnabled && redisClient != nil && customerSyncSvc != nil {
+	if redisClient != nil && customerSyncSvc != nil {
 		qn := strings.TrimSpace(cfg.CustomerMessageSyncQueueName)
 		if qn == "" {
 			qn = "customer:message:sync:tasks"
 		}
 		customersync.StartWorker(workerCtx, &workerWG, log, customerSyncSvc, qn, cmWorkerConc, workerReg)
 		log.Info("customer_message_sync_worker_started", "concurrency", cmWorkerConc, "queue", qn)
-	} else if cfg.CustomerMessageSyncQueueEnabled && redisClient == nil {
-		log.Warn("customer_message_sync_worker_skipped", "reason", "redis unavailable while CUSTOMER_MESSAGE_SYNC_QUEUE_ENABLED=true")
+	}
+	if redisClient != nil && customerSyncSvc != nil && customerSyncSvc.CustomerChat != nil {
+		customerchat.StartAutoReplyWorker(workerCtx, &workerWG, log, customerSyncSvc.CustomerChat, cfg.CustomerAutoReplyWorkerConcurrency)
+		log.Info("customer_auto_reply_worker_started", "concurrency", cfg.CustomerAutoReplyWorkerConcurrency, "queue", cfg.CustomerAutoReplyQueueName)
+		customersync.StartAutoReplyPollingScheduler(workerCtx, &workerWG, log, customerSyncSvc)
+		log.Info("customer_auto_reply_poll_scheduler_started", "settings", "managed_in_admin")
 	}
 
 	if cfg.ProductPublishQueueEnabled && redisClient != nil && productPublishSvc != nil {

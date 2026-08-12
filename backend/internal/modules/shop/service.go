@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/trademind-ai/trademind/backend/internal/config"
 	"github.com/trademind-ai/trademind/backend/internal/encrypt"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
@@ -39,6 +40,7 @@ type Service struct {
 	OpLog     *operationlog.Service
 	Redis     *rdb.Client
 	Settings  *settings.Service
+	AppEnv    string
 }
 
 // --- platform providers (public metadata) ---
@@ -67,7 +69,7 @@ func (s *Service) ListPlatformProviders() []PlatformProviderDTO {
 	}
 	list := make([]wrap, 0, len(all))
 	for _, p := range all {
-		if p == nil {
+		if p == nil || !s.providerAvailable(p) {
 			continue
 		}
 		list = append(list, wrap{p: p})
@@ -266,6 +268,9 @@ func (s *Service) Create(c *gin.Context, body CreateBody, adminID *uuid.UUID) (*
 	prov := platformp.Get(platformID)
 	if prov == nil {
 		return nil, fmt.Errorf("unknown platform %q", platformID)
+	}
+	if err := s.requireProviderAvailable(prov); err != nil {
+		return nil, err
 	}
 	name := strings.TrimSpace(body.ShopName)
 	if name == "" {
@@ -615,6 +620,9 @@ func (s *Service) UpdateAuth(c *gin.Context, shopID uuid.UUID, body UpdateAuthBo
 	if prov == nil {
 		return nil, fmt.Errorf("unknown platform")
 	}
+	if err := s.requireProviderAvailable(prov); err != nil {
+		return nil, err
+	}
 	if shopRow.Platform == "manual" {
 		return nil, fmt.Errorf("manual platform does not require authorization storage")
 	}
@@ -829,6 +837,9 @@ func (s *Service) TestConnection(c *gin.Context, shopID uuid.UUID, adminID *uuid
 	if p == nil {
 		return nil, fmt.Errorf("unknown platform")
 	}
+	if err := s.requireProviderAvailable(p); err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
 	defer cancel()
 
@@ -866,4 +877,24 @@ func (s *Service) TestConnection(c *gin.Context, shopID uuid.UUID, adminID *uuid
 	res, err := p.TestConnection(ctx, req)
 	tryLog(res, err)
 	return res, err
+}
+
+func (s *Service) providerAvailable(p platformp.Provider) bool {
+	if p == nil {
+		return false
+	}
+	if s == nil || !config.IsProduction(s.AppEnv) {
+		return true
+	}
+	if strings.EqualFold(strings.TrimSpace(p.Platform()), "mock") {
+		return false
+	}
+	return p.Status() == platformp.StatusAvailable || p.Status() == platformp.StatusBeta
+}
+
+func (s *Service) requireProviderAvailable(p platformp.Provider) error {
+	if s.providerAvailable(p) {
+		return nil
+	}
+	return fmt.Errorf("platform %q is unavailable in production", p.Platform())
 }

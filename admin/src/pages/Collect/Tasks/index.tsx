@@ -19,13 +19,12 @@ import {
 } from 'antd';
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { COLLECT_TASK_STATUS } from '@/constants/status';
-import { COLLECT_SUCCESS_SHOP_HINT, COLLECT_TARGET_SHOP_HINT } from '@/constants/copywriting';
+import { COLLECT_SUCCESS_SHOP_HINT } from '@/constants/copywriting';
 import { useListEmptyLocale } from '@/hooks/useListEmptyLocale';
 import { useUrlQueryState } from '@/hooks/useUrlState';
 import { useKeywordSearchField } from '@/hooks/useKeywordSearchField';
 import KeywordSafetyHint from '@/components/common/KeywordSafetyHint';
 import {
-  normalizeSource,
   parsePositiveInt,
   resolveCollectPlatformFromQuery,
 } from '@/utils/urlState';
@@ -74,7 +73,6 @@ export default function CollectTasksPage() {
     useUrlQueryState<Record<(typeof COLLECT_TASK_QUERY_KEYS)[number], string | undefined>>(
       COLLECT_TASK_QUERY_KEYS,
     );
-  const navSource = normalizeSource(urlState.source);
   const batchIdFromQuery = urlState.batchId;
   const collectPlatformFromQuery = resolveCollectPlatformFromQuery(
     urlState.sourcePlatform,
@@ -430,21 +428,6 @@ export default function CollectTasksPage() {
         )
       }
     >
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message="店铺归属与权限提示"
-        description={COLLECT_TARGET_SHOP_HINT}
-      />
-      {navSource ? (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="已从关联页面带入导航上下文（不影响权限与店铺范围）。"
-        />
-      ) : null}
       <KeywordSafetyHint visible={showSensitiveHint} />
       <ProCard variant="outlined" style={{ marginBottom: 16 }} bodyStyle={{ paddingBottom: 8 }}>
         {formSource === 'custom' ? (

@@ -19,7 +19,9 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/ctxkey"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/tasklease"
 	"github.com/trademind-ai/trademind/backend/internal/rdb"
 )
@@ -35,6 +37,7 @@ type Service struct {
 	Redis                   *rdb.Client
 	QueueName               string
 	QueueEnabled            bool
+	AllowLegacyTenantZero   bool
 	BatchMaxURLs            int
 	CollectorTimeoutSeconds int
 
@@ -55,6 +58,10 @@ type Service struct {
 
 	// TaskLeaseTimeoutSeconds is Redis/DB lease for multi-instance workers (from COLLECT_TASK_TIMEOUT_SECONDS).
 	TaskLeaseTimeoutSeconds int
+}
+
+func (s *Service) acceptsTenantID(tenantID int64) bool {
+	return tenantID > 0 || (tenantID == 0 && s != nil && s.AllowLegacyTenantZero)
 }
 
 func clampCollectPage(page, ps int) (int, int) {
@@ -258,9 +265,9 @@ func (s *Service) failTaskRetryExhausted(ctx context.Context, task *CollectTask,
 }
 
 // RunCollectJob executes one task from the queue (Collector → product draft).
-func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, workerID string) {
+func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, workerID string) (claimed bool, err error) {
 	if s == nil || s.DB == nil || s.Client == nil || s.Products == nil {
-		return
+		return false, fmt.Errorf("collect: worker dependencies unavailable")
 	}
 	ctx := parent
 	if ctx == nil {
@@ -270,20 +277,23 @@ func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, worker
 	defer func() {
 		if r := recover(); r != nil {
 			s.handleCollectPanic(ctx, taskID, workerID, r)
+			claimed = true
+			err = nil
 		}
 	}()
 
 	var peek CollectTask
 	if err := s.DB.WithContext(ctx).First(&peek, "id = ?", taskID).Error; err != nil {
-		return
+		return false, err
 	}
 	prevStatus := peek.Status
 
 	lease := s.collectLeaseTTL()
-	task, claim, ok := s.tryClaimCollectTask(ctx, taskID, workerID, lease)
-	if !ok {
-		return
+	task, claim, ok, err := s.tryClaimCollectTask(ctx, taskID, workerID, lease)
+	if err != nil || !ok {
+		return false, err
 	}
+	claimed = true
 
 	stopRenew := s.startCollectLeaseRenewal(ctx, taskID, workerID, claim, lease)
 	defer stopRenew()
@@ -306,7 +316,7 @@ func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, worker
 	releaseGate, preflightErr := s.runBatchCollectPreflight(ctx, task)
 	if preflightErr != nil {
 		s.handleCollectJobError(ctx, task, preflightErr, workerID, claim)
-		return
+		return true, nil
 	}
 	if releaseGate != nil {
 		defer releaseGate()
@@ -353,16 +363,16 @@ func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, worker
 		}
 		if len(task.RequestOptions) == 0 {
 			s.failTask(ctx, task, prevStatus, "missing custom rule snapshot", nil, workerID, claim)
-			return
+			return true, nil
 		}
 		if err := json.Unmarshal(task.RequestOptions, &snap); err != nil || len(snap.Rule) == 0 {
 			s.failTask(ctx, task, prevStatus, "invalid custom rule snapshot", nil, workerID, claim)
-			return
+			return true, nil
 		}
 		var ruleObj any
 		if err := json.Unmarshal(snap.Rule, &ruleObj); err != nil {
 			s.failTask(ctx, task, prevStatus, "invalid embedded rule json", nil, workerID, claim)
-			return
+			return true, nil
 		}
 		collectorOpts = map[string]any{
 			"ruleId":       snap.RuleID,
@@ -390,20 +400,20 @@ func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, worker
 	outcome, err := s.Client.CollectWithTimeout(ctx, task.Source, task.SourceURL, collectorOpts, collectTimeout)
 	if err != nil {
 		s.handleCollectJobError(ctx, task, err, workerID, claim)
-		return
+		return true, nil
 	}
 
 	norm, err := parseNormalized(outcome.ProductJSON)
 	if err != nil {
 		s.handleCollectJobError(ctx, task, fmt.Errorf("parse normalized product: %w", err), workerID, claim)
-		return
+		return true, nil
 	}
 	if strings.EqualFold(strings.TrimSpace(task.Source), "1688") && len(norm.MainImages) == 0 {
 		s.handleCollectJobError(ctx, task, &CollectorRejectedError{
 			Code:    "PARSE_FAILED",
 			Message: "missing main images after collect",
 		}, workerID, claim)
-		return
+		return true, nil
 	}
 
 	params := norm.importParams(outcome.ProductJSON)
@@ -419,7 +429,7 @@ func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, worker
 	created, err := s.Products.ImportDraftWithContext(ctx, task.CreatedBy, params)
 	if err != nil {
 		s.handleCollectJobError(ctx, task, err, workerID, claim)
-		return
+		return true, nil
 	}
 
 	fin := time.Now().UTC()
@@ -436,11 +446,11 @@ func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, worker
 		"retry_count":       0,
 	}); err != nil {
 		slog.Warn("collect_success_lease_lost", "taskId", taskID.String(), "error", err.Error())
-		return
+		return true, nil
 	}
 	var refreshed CollectTask
 	if err := s.DB.WithContext(ctx).First(&refreshed, "id = ?", taskID).Error; err != nil {
-		return
+		return true, nil
 	}
 	s.reconcileCollectBatchWithTerminalLog(ctx, refreshed.BatchID)
 
@@ -528,6 +538,7 @@ func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, worker
 			})
 		}
 	}
+	return true, nil
 }
 
 func parseOptionalRuleID(p *string) (*uuid.UUID, error) {
@@ -565,6 +576,10 @@ func (s *Service) CreateTaskAsync(c *gin.Context, body CreateTaskBody, adminID *
 	}
 	if !s.QueueEnabled {
 		return zero, ErrCollectQueueDisabled
+	}
+	tenantID, err := adminperm.TenantIDFromGin(c)
+	if err != nil || !s.acceptsTenantID(tenantID) {
+		return zero, security.ErrTenantContextMissing
 	}
 	source := strings.TrimSpace(body.Source)
 	url := strings.TrimSpace(body.URL)
@@ -628,6 +643,7 @@ func (s *Service) CreateTaskAsync(c *gin.Context, body CreateTaskBody, adminID *
 	}
 
 	task := &CollectTask{
+		TenantID:       tenantID,
 		Source:         source,
 		SourceURL:      url,
 		Status:         StatusPending,

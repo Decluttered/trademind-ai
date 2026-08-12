@@ -16,7 +16,6 @@ import { formatDateTime } from '@/utils/formatTime';
 import {
   BINDING_STATUS_LABELS,
   ConfidenceText,
-  FixtureBoundary,
   StatusTag,
   copyableText,
   renderInventorySyncError,
@@ -91,7 +90,6 @@ export default function InventorySyncBindingDetailPage() {
       }
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <FixtureBoundary />
         {renderInventorySyncError(error)}
         {binding ? (
           <SectionCard title="绑定摘要" description="绑定由 P9 fixture 校准或人工确认产生，不会写入真实平台库存。" headerExtra={<StatusTag map={BINDING_STATUS_LABELS} value={binding.bindingStatus} />}>

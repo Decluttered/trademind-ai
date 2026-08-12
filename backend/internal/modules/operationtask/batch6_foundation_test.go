@@ -61,6 +61,7 @@ func TestRBACAuthorizerStrictRolesTenantAndActor(t *testing.T) {
 
 	authz := operationtask.NewRBACAuthorizer(db)
 	taskID := uuid.New()
+	require.ErrorIs(t, authz.CanRead(context.Background(), -1, adminID), operationtask.ErrPermissionDenied)
 	require.NoError(t, authz.CanReview(context.Background(), tenantID, adminID))
 	require.NoError(t, authz.CanReview(context.Background(), tenantID, reviewerID))
 	require.ErrorIs(t, authz.CanReview(context.Background(), tenantID, operatorID), operationtask.ErrPermissionDenied)

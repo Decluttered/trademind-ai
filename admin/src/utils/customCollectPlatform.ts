@@ -129,13 +129,6 @@ export function detectCustomCollectPlatform(urlStr: string): CustomCollectPlatfo
   return null;
 }
 
-export const CUSTOM_COLLECT_USAGE_LINES = [
-  '自定义链接采集适合采基础信息。不同网站结构差异较大，采集结果请先预览确认后再使用。',
-  '用于采集没有专用采集器的网站商品页。请先创建采集规则，再开始采集。',
-  '如果是 1688、速卖通、拼多多等已支持的平台，请优先使用对应的专用采集器，识别更稳定。',
-  '建议先测试采集效果，确认标题、价格、图片识别正确后再提交采集任务。',
-] as const;
-
 export const CUSTOM_COLLECT_CARD_DESCRIPTION =
   '适合采集没有专用采集器的网站商品页，可采集商品标题、价格、图片、参数等基础信息。';
 

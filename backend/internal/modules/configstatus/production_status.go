@@ -9,43 +9,6 @@ import (
 	storagepub "github.com/trademind-ai/trademind/backend/internal/pkg/storagepublic"
 )
 
-// ProjectPhase describes release posture for the config status center header.
-type ProjectPhase struct {
-	Phase                    string   `json:"phase"`
-	StatusLines              []string `json:"statusLines"`
-	FinalAcceptance          string   `json:"finalAcceptance"`
-	ProductionReady          bool     `json:"productionReady"`
-	TagDeferred              bool     `json:"tagDeferred"`
-	GrayReleaseAllowed       bool     `json:"grayReleaseAllowed"`
-	InfrastructureFoundation bool     `json:"infrastructureFoundationReady"`
-}
-
-func defaultProjectPhase() ProjectPhase {
-	return ProjectPhase{
-		Phase: "Production Capability Development In Progress",
-		StatusLines: []string{
-			"Production Capability Development In Progress",
-			"Security Foundation Implemented",
-			"Tenant Isolation Enforced",
-			"Sensitive Data Protection Implemented",
-			"Real Environment Security Verification Deferred",
-			"Core Reliability Foundation Ready",
-			"Infrastructure Foundation Ready",
-			"MVP Demo Ready",
-			"Tag deferred",
-			"非 Production Ready",
-			"抖店 Production Adapter Implemented",
-			"Real Credential Verification Deferred",
-			"Final Acceptance Deferred",
-		},
-		FinalAcceptance:          "Phase P10",
-		ProductionReady:          false,
-		TagDeferred:              true,
-		GrayReleaseAllowed:       false,
-		InfrastructureFoundation: true,
-	}
-}
-
 func (s *Service) environmentItem(ctx context.Context) Item {
 	it := Item{
 		Key:    "environment",

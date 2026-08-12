@@ -61,7 +61,7 @@ func (s *Service) GetReleaseGate(ctx context.Context) (*ReleaseGateDTO, error) {
 	items = append(items, gateItem("stale_recovery", "停滞任务恢复", staleSt, staleMsg))
 	items = append(items, gateItem("alerts", "告警", GatePassed, "已接入任务中心告警"))
 	items = append(items, gateItem("ci_race", "CI 并发测试", GateWarning, "Linux 并发测试任务已配置，待 CI 执行"))
-	items = append(items, gateItem("rollback_drill", "回滚演练", GateWarning, "见 docs/DOUYIN_ROLLBACK_DRILL_REPORT.md"))
+	items = append(items, gateItem("rollback_drill", "回滚演练", GateWarning, "按 docs/DOUYIN_ROLLBACK_RUNBOOK.md 人工执行并记录到发布工单"))
 	graySt, grayMsg := gateGray(cfg)
 	items = append(items, gateItem("gray_observation", "灰度观察", graySt, grayMsg))
 

@@ -14,7 +14,6 @@ import {
 } from '@/constants/publishLimits';
 import { PRODUCT_STATUS } from '@/constants/status';
 import { productSourceLabel } from '@/constants/userFriendly';
-import ConfigPriorityBanner from '@/pages/Product/PublishBatch/components/ConfigPriorityBanner';
 import EffectiveConfigPreviewModal from '@/pages/Product/PublishBatch/components/EffectiveConfigPreviewModal';
 import OverrideConfigTabs from '@/pages/Product/PublishBatch/components/OverrideConfigTabs';
 import PublishConfigEditor from '@/pages/Product/PublishBatch/components/PublishConfigEditor';
@@ -620,13 +619,6 @@ export default function PublishBatchWizardPage() {
 
       {step === 2 && (
         <Card title="第 3 步：统一刊登配置">
-          <Alert
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-            message="这里的配置会应用到本次选择的所有商品和刊登目标。后续单独配置会优先生效。"
-          />
-          <ConfigPriorityBanner />
           <PublishConfigEditor value={commonConfig} onChange={setCommonConfig} />
           <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between' }}>
             <Button onClick={() => setStep(1)}>上一步</Button>
@@ -639,13 +631,6 @@ export default function PublishBatchWizardPage() {
 
       {step === 3 && (
         <Card title="第 4 步：单独配置（可选）">
-          <Alert
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-            message="当某些商品、平台或店铺需要不同配置时，可以在这里单独设置。单独配置会优先生效。"
-          />
-          <ConfigPriorityBanner />
           <OverrideConfigTabs
             products={products}
             targets={selectedTargetList}
@@ -712,8 +697,6 @@ export default function PublishBatchWizardPage() {
             </Descriptions.Item>
             <Descriptions.Item label="仅本地草稿">{checkResult.summary.localDraftOnlyCount}</Descriptions.Item>
           </Descriptions>
-
-          <ConfigPriorityBanner />
 
           {configReminders.length > 0 && (
             <Alert

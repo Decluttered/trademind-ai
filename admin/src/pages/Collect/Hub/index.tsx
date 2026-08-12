@@ -12,7 +12,7 @@ import {
 import { history } from '@umijs/max';
 import { Alert, Button, Col, List, Result, Row, Skeleton, Space, Tag, Typography, message } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { COLLECT_TARGET_SHOP_HINT, PAGE_COPY, commonStatusLabel } from '@/constants/copywriting';
+import { PAGE_COPY, commonStatusLabel } from '@/constants/copywriting';
 import { layoutTokens } from '@/constants/layoutTokens';
 import { EmptyState, MetricCard, OperationToolbar, SectionCard, TmPageContainer } from '@/components/ui';
 import { CustomCollectModal } from '@/pages/Collect/components/CustomCollectModal';
@@ -231,18 +231,22 @@ function RecentTaskList({
         >
           <List.Item.Meta
             title={
-              <Space wrap size={8}>
+              <Space wrap size={8} className="tm-collect-hub-task-list__title">
                 <Text strong>{task.source}</Text>
                 <Tag color={taskStatusTagColor(task.status)}>{commonStatusLabel(task.status)}</Tag>
               </Space>
             }
             description={
-              <Space direction="vertical" size={2}>
-                <Text type="secondary" ellipsis={{ tooltip: task.sourceUrl }}>
+              <div className="tm-collect-hub-task-list__description">
+                <Text
+                  type="secondary"
+                  ellipsis={{ tooltip: task.sourceUrl }}
+                  className="tm-collect-hub-task-list__url"
+                >
                   {task.sourceUrl}
                 </Text>
                 <Text type="secondary">{formatDateTime(task.createdAt)}</Text>
-              </Space>
+              </div>
             }
           />
         </List.Item>
@@ -289,8 +293,10 @@ function BrowserProfileSummary({
     <Space direction="vertical" size={10} className="tm-collect-hub-profile-list">
       {profiles.map((profile) => (
         <div className="tm-collect-hub-profile" key={profile.id}>
-          <div>
-            <Text strong>{profile.name}</Text>
+          <div className="tm-collect-hub-profile__main">
+            <Text strong className="tm-collect-hub-profile__name">
+              {profile.name}
+            </Text>
             <Text type="secondary" className="tm-collect-hub-profile__domain">
               {profile.domain}
             </Text>
@@ -505,13 +511,6 @@ export default function CollectHubPage() {
           </div>
         </section>
 
-        <Alert
-          type="info"
-          showIcon
-          message="店铺归属与权限提示"
-          description={COLLECT_TARGET_SHOP_HINT}
-        />
-
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={16}>
             <SectionCard
@@ -598,17 +597,11 @@ export default function CollectHubPage() {
                 description="平台登录态和验证码会影响采集成功率。"
                 compact
               >
-                <Alert
-                  type="warning"
-                  showIcon
-                  message="不要承诺百分百采集成功"
-                  description="部分平台会触发登录、验证码、安全验证或页面结构变更。请先完成登录状态检测，失败后按任务提示重试。"
-                />
                 <div className="tm-collect-hub-risk-list">
                   {loginSensitiveProviders.map((provider) => (
                     <div className="tm-collect-hub-risk" key={provider.source}>
                       <LoginOutlined />
-                      <div>
+                      <div className="tm-collect-hub-risk__content">
                         <Text strong>{provider.name}</Text>
                         <Text type="secondary">可能需要采集浏览器登录或人工验证</Text>
                       </div>

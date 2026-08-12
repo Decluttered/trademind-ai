@@ -12,6 +12,9 @@ func AutoMigrateWithP10(db *gorm.DB) error {
 	if err := AutoMigrate(db); err != nil {
 		return err
 	}
+	if err := migrateLegacyPhaseTableNames(db, productionPhaseTableRenames); err != nil {
+		return err
+	}
 	if err := credentialp10.Migrate(db); err != nil {
 		return err
 	}

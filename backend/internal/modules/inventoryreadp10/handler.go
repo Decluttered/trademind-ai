@@ -113,7 +113,7 @@ func (h *Handler) Rerun(c *gin.Context) {
 		TenantID         int64
 		ShopConnectionID uuid.UUID
 	}
-	if err := h.Service.DB.WithContext(c.Request.Context()).Table("p9_inventory_sync_runs").Select("tenant_id", "shop_connection_id").Where("tenant_id = ? AND id = ?", tenantID, runID).Scan(&source).Error; err != nil || source.ShopConnectionID == uuid.Nil {
+	if err := h.Service.DB.WithContext(c.Request.Context()).Table("inventory_sync_runs").Select("tenant_id", "shop_connection_id").Where("tenant_id = ? AND id = ?", tenantID, runID).Scan(&source).Error; err != nil || source.ShopConnectionID == uuid.Nil {
 		response.Fail(c, http.StatusNotFound, response.CodeNotFound, "运行记录不存在")
 		return
 	}

@@ -170,6 +170,8 @@ Default URLs:
 | Backend Health | <http://127.0.0.1:8080/health> |
 | Collector Health | <http://127.0.0.1:3001/health> |
 
+The Admin root URL serves the public product homepage, with direct links to sign in or register before entering the operations workspace.
+
 Further reading:
 
 - [docs/development.md](docs/development.md)

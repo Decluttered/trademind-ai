@@ -1,13 +1,13 @@
 import { type ActionType, type ProColumns } from '@ant-design/pro-components';
 import { TmPageContainer, TechnicalDetails, TaskJsonBlock, TmProTable as ProTable } from '@/components/ui';
-import { Alert, Button, Drawer, Popconfirm, Space, Tag, Typography, message } from 'antd';
+import { Button, Drawer, Popconfirm, Space, Tag, Typography, message } from 'antd';
 import { formatDateTime } from '@/utils/formatTime';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CUSTOMER_MESSAGE_SYNC_TASK_STATUS } from '@/constants/status';
 import { PLATFORM_OPTIONS, platformLabel } from '@/constants/userFriendly';
 import { useUrlQueryState } from '@/hooks/useUrlState';
-import { normalizeSource, parsePositiveInt, queryTimeRange } from '@/utils/urlState';
+import { parsePositiveInt, queryTimeRange } from '@/utils/urlState';
 import {
   getCustomerMessageSyncTask,
   queryCustomerMessageSyncTasks,
@@ -42,7 +42,6 @@ export default function CustomerMessageSyncTasksPage() {
     useUrlQueryState<Record<(typeof CUSTOMER_SYNC_QUERY_KEYS)[number], string | undefined>>(
       CUSTOMER_SYNC_QUERY_KEYS,
     );
-  const navSource = normalizeSource(urlState.source);
   const actionRef = useRef<ActionType>();
   const formRef = useRef<import('@ant-design/pro-components').ProFormInstance>();
   const [tablePage, setTablePage] = useState(1);
@@ -236,14 +235,6 @@ export default function CustomerMessageSyncTasksPage() {
 
   return (
     <TmPageContainer title="客服消息同步任务">
-      {navSource ? (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="已从关联页面带入导航上下文（不影响权限与店铺范围）。"
-        />
-      ) : null}
       <ProTable<CustomerMessageSyncTaskRow>
         rowKey="id"
         actionRef={actionRef}

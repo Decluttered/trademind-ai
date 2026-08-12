@@ -300,14 +300,6 @@ export default function ProductPublishTasksPage() {
 
   return (
     <TmPageContainer title="商品刊登任务" subTitle="查看刊登子任务与批量刊登批次进度。">
-      {navSource ? (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="已从关联页面带入导航上下文（不影响权限与店铺范围）。"
-        />
-      ) : null}
       {batchIdFromUrl ? (
         <Alert
           type="info"
@@ -321,7 +313,7 @@ export default function ProductPublishTasksPage() {
         onChange={(key) => {
           setUrlState(
             {
-              tab: key === 'tasks' ? undefined : key,
+              tab: key,
               page: undefined,
               pageSize: undefined,
               drawer: undefined,
@@ -376,7 +368,7 @@ export default function ProductPublishTasksPage() {
                       status: qp.status,
                       start: qp.start,
                       end: qp.end,
-                      tab: undefined,
+                      tab: 'tasks',
                       source: urlState.source,
                       drawer: urlState.drawer,
                       id: urlState.id,

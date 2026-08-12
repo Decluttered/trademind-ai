@@ -26,19 +26,19 @@ func (s *Service) collectLeaseTTL() time.Duration {
 }
 
 // tryClaimCollectTask atomically moves pending/retrying (due) to running with a lease.
-func (s *Service) tryClaimCollectTask(ctx context.Context, taskID uuid.UUID, workerID string, lease time.Duration) (*CollectTask, *tasklease.ClaimResult, bool) {
+func (s *Service) tryClaimCollectTask(ctx context.Context, taskID uuid.UUID, workerID string, lease time.Duration) (*CollectTask, *tasklease.ClaimResult, bool, error) {
 	if s == nil || s.DB == nil {
-		return nil, nil, false
+		return nil, nil, false, fmt.Errorf("collect: no db")
 	}
 	claim, ok, err := tasklease.TryClaimPendingOrRetrying(ctx, s.DB, CollectTask{}.TableName(), StatusPending, StatusRetrying, StatusRunning, taskID, workerID, lease)
 	if err != nil || !ok {
-		return nil, nil, false
+		return nil, nil, ok, err
 	}
 	var task CollectTask
 	if err := s.DB.WithContext(ctx).First(&task, "id = ?", taskID).Error; err != nil {
-		return nil, nil, false
+		return nil, nil, false, err
 	}
-	return &task, &claim, true
+	return &task, &claim, true, nil
 }
 
 func (s *Service) startCollectLeaseRenewal(ctx context.Context, taskID uuid.UUID, workerID string, claim *tasklease.ClaimResult, leaseTTL time.Duration) (stop func()) {

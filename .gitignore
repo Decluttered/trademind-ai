@@ -63,6 +63,7 @@ ms-playwright/
 # Go
 .cache/
 .gocache/
+.gocache-*/
 .gomodcache/
 /backend/bin/
 /backend/tmp/

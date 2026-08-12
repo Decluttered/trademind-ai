@@ -85,7 +85,7 @@ func runWorker(ctx context.Context, log *slog.Logger, svc *Service, queueName st
 		if svc.DB != nil {
 			var probe CustomerMessageSyncTask
 			if err := svc.DB.WithContext(jobCtx).Select("shop_id, tenant_id").First(&probe, "id = ?", tid).Error; err == nil {
-				wctx, _, terr := tasktenant.BeginWorker(jobCtx, svc.DB, probe.TenantID, probe.ShopID, "customer_message_sync")
+				wctx, _, terr := tasktenant.BeginWorkerWithLegacyZero(jobCtx, svc.DB, probe.TenantID, probe.ShopID, "customer_message_sync", svc.AllowLegacyTenantZero)
 				if terr != nil {
 					if log != nil {
 						log.Warn("customer_sync_worker_tenant_missing", "worker", slot, "taskId", tid.String(), "error", tasktenant.WrapError(terr))

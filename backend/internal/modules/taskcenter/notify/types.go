@@ -1,7 +1,6 @@
 package notify
 
 import (
-	"context"
 	"time"
 )
 
@@ -54,25 +53,17 @@ type WebhookDeps struct {
 	AllowHTTP bool
 }
 
-// PlannedSender is a no-op channel reserved for future vendor SDKs.
-type PlannedSender struct {
-	Channel string
-	Reason  string
+// FeishuDeps contains a Feishu custom bot webhook and optional signing secret.
+type FeishuDeps struct {
+	URL       string
+	Secret    string
+	Timeout   time.Duration
+	AllowHTTP bool
 }
 
-// SendPlanned returns a skipped result.
-func (p PlannedSender) Send(_ context.Context, _ AlertNotificationPayload) AlertNotificationResult {
-	ch := p.Channel
-	if ch == "" {
-		ch = "unknown"
-	}
-	return AlertNotificationResult{
-		Channel: ch,
-		Status:  "skipped",
-		Target:  ch + ":planned",
-		RawSummary: map[string]any{
-			"implementation": "planned",
-			"reason":         p.Reason,
-		},
-	}
+// WeComDeps contains an Enterprise WeChat group robot webhook.
+type WeComDeps struct {
+	URL       string
+	Timeout   time.Duration
+	AllowHTTP bool
 }

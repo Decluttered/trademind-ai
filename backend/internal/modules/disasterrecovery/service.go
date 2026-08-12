@@ -34,6 +34,9 @@ func (s *Service) Status(ctx context.Context) (map[string]any, error) {
 }
 
 func (s *Service) CreateDrill(ctx context.Context, req DrillRequest, actor *uuid.UUID) (*Drill, error) {
+	if s != nil && s.Cfg != nil && config.IsProduction(s.Cfg.AppEnv) {
+		return nil, fmt.Errorf("disaster recovery drill recording is unavailable in production")
+	}
 	if !req.ConfirmedIsolated {
 		return nil, fmt.Errorf("DR drill must be confirmed isolated")
 	}

@@ -4,6 +4,11 @@ import {
   AI_TEXT_BATCH_MAX_PRODUCTS,
   AI_TEXT_OPERATION_OPTIONS,
 } from '@/constants/aiProductText';
+import {
+  AI_LANGUAGE_OPTIONS,
+  AI_TARGET_PLATFORM_OPTIONS,
+  AI_TONE_OPTIONS,
+} from '@/constants/aiPrompts';
 import { PUBLISH_BATCH_LIMIT_MESSAGE } from '@/constants/publishLimits';
 import { PRODUCT_STATUS } from '@/constants/status';
 import { productSourceLabel } from '@/constants/userFriendly';
@@ -26,6 +31,7 @@ import {
   Input,
   InputNumber,
   Radio,
+  Select,
   Space,
   Spin,
   Steps,
@@ -313,13 +319,18 @@ export default function AITextBatchWizardPage() {
 
             <Typography.Title level={5}>通用配置</Typography.Title>
             <Form.Item name="language" label="目标语言">
-              <Input />
+              <Select options={AI_LANGUAGE_OPTIONS} placeholder="请选择生成语言" />
             </Form.Item>
             <Form.Item name="platform" label="目标平台">
-              <Input />
+              <Select
+                options={AI_TARGET_PLATFORM_OPTIONS}
+                placeholder="请选择目标平台"
+                showSearch
+                optionFilterProp="label"
+              />
             </Form.Item>
             <Form.Item name="tone" label="语气风格">
-              <Input />
+              <Select options={AI_TONE_OPTIONS} placeholder="请选择文案语气" />
             </Form.Item>
             <Form.Item name="keywords" label="关键词（逗号分隔）">
               <Input placeholder="可选" />

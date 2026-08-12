@@ -174,22 +174,22 @@ func TestP9PostgresMigrationSchemaIndexesConstraintsAndJSONB(t *testing.T) {
 	require.NoError(t, Migrate(db))
 
 	for _, table := range []string{
-		"p9_inventory_sync_runs",
-		"p9_inventory_snapshot_items",
-		"p9_sku_bindings",
-		"p9_sku_binding_calibrations",
-		"p9_manual_binding_requests",
-		"p9_manual_binding_decisions",
+		"inventory_sync_runs",
+		"inventory_snapshot_items",
+		"sku_bindings",
+		"sku_binding_calibrations",
+		"manual_binding_requests",
+		"manual_binding_decisions",
 	} {
 		require.Truef(t, db.Migrator().HasTable(table), "expected P9 table %s", table)
 	}
 
 	for _, index := range []string{
-		"ux_p9_inventory_sync_runs_tenant_idempotency",
-		"ux_p9_inventory_snapshots_tenant_run_external_sku",
-		"ux_p9_sku_bindings_current_confirmed",
-		"ux_p9_manual_binding_requests_pending",
-		"ux_p9_manual_binding_decisions_idempotency",
+		"ux_inventory_sync_runs_tenant_idempotency",
+		"ux_inventory_snapshots_tenant_run_external_sku",
+		"ux_sku_bindings_current_confirmed",
+		"ux_manual_binding_requests_pending",
+		"ux_manual_binding_decisions_idempotency",
 	} {
 		var count int64
 		require.NoError(t, db.Raw("SELECT COUNT(*) FROM pg_indexes WHERE schemaname = current_schema() AND indexname = ?", index).Scan(&count).Error)
@@ -197,12 +197,12 @@ func TestP9PostgresMigrationSchemaIndexesConstraintsAndJSONB(t *testing.T) {
 	}
 
 	for _, constraint := range []string{
-		"chk_p9_inventory_sync_runs_revision",
-		"chk_p9_inventory_sync_runs_provider_mode",
-		"chk_p9_inventory_snapshot_items_quantities",
-		"chk_p9_sku_bindings_revision_confidence",
-		"chk_p9_sku_binding_calibrations_confidence",
-		"chk_p9_manual_binding_requests_hashes",
+		"chk_inventory_sync_runs_revision",
+		"chk_inventory_sync_runs_provider_mode",
+		"chk_inventory_snapshot_items_quantities",
+		"chk_sku_bindings_revision_confidence",
+		"chk_sku_binding_calibrations_confidence",
+		"chk_manual_binding_requests_hashes",
 	} {
 		var count int64
 		require.NoError(t, db.Raw("SELECT COUNT(*) FROM pg_constraint WHERE conname = ? AND connamespace = current_schema()::regnamespace", constraint).Scan(&count).Error)
@@ -213,12 +213,12 @@ func TestP9PostgresMigrationSchemaIndexesConstraintsAndJSONB(t *testing.T) {
 		table string
 		name  string
 	}{
-		{"p9_inventory_sync_runs", "cursor"},
-		{"p9_inventory_sync_runs", "checkpoint"},
-		{"p9_inventory_sync_runs", "safe_error_metadata"},
-		{"p9_inventory_snapshot_items", "safe_metadata"},
-		{"p9_sku_binding_calibrations", "score_breakdown"},
-		{"p9_sku_binding_calibrations", "reason_codes"},
+		{"inventory_sync_runs", "cursor"},
+		{"inventory_sync_runs", "checkpoint"},
+		{"inventory_sync_runs", "safe_error_metadata"},
+		{"inventory_snapshot_items", "safe_metadata"},
+		{"sku_binding_calibrations", "score_breakdown"},
+		{"sku_binding_calibrations", "reason_codes"},
 	} {
 		var dataType string
 		require.NoError(t, db.Raw("SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?", column.table, column.name).Scan(&dataType).Error)
@@ -226,14 +226,14 @@ func TestP9PostgresMigrationSchemaIndexesConstraintsAndJSONB(t *testing.T) {
 	}
 
 	for _, trigger := range []string{
-		"trg_p9_inventory_snapshot_items_no_update",
-		"trg_p9_inventory_snapshot_items_no_delete",
-		"trg_p9_sku_binding_calibrations_no_update",
-		"trg_p9_sku_binding_calibrations_no_delete",
-		"trg_p9_manual_binding_decisions_no_update",
-		"trg_p9_manual_binding_decisions_no_delete",
-		"trg_p9_operation_logs_no_update",
-		"trg_p9_operation_logs_no_delete",
+		"trg_inventory_snapshot_items_no_update",
+		"trg_inventory_snapshot_items_no_delete",
+		"trg_sku_binding_calibrations_no_update",
+		"trg_sku_binding_calibrations_no_delete",
+		"trg_manual_binding_decisions_no_update",
+		"trg_manual_binding_decisions_no_delete",
+		"trg_inventory_operation_logs_no_update",
+		"trg_inventory_operation_logs_no_delete",
 	} {
 		var count int64
 		require.NoError(t, db.Raw("SELECT COUNT(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE t.tgname = ? AND NOT t.tgisinternal AND n.nspname = current_schema()", trigger).Scan(&count).Error)
@@ -271,7 +271,7 @@ func TestP9PostgresRepositoryConstraintsImmutabilityAndAtomicity(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
 	var scoreType, reasonType string
-	require.NoError(t, db.Raw("SELECT jsonb_typeof(score_breakdown), jsonb_typeof(reason_codes) FROM p9_sku_binding_calibrations WHERE tenant_id = ? AND id = ?", tenantID, rows[0].ID).Row().Scan(&scoreType, &reasonType))
+	require.NoError(t, db.Raw("SELECT jsonb_typeof(score_breakdown), jsonb_typeof(reason_codes) FROM sku_binding_calibrations WHERE tenant_id = ? AND id = ?", tenantID, rows[0].ID).Row().Scan(&scoreType, &reasonType))
 	require.Equal(t, "array", scoreType)
 	require.Equal(t, "array", reasonType)
 	require.Error(t, db.Session(&gorm.Session{SkipHooks: true}).Model(&SKUBindingCalibration{}).Where("tenant_id = ? AND id = ?", tenantID, rows[0].ID).Update("confidence", 100).Error)

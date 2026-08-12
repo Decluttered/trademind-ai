@@ -7,7 +7,7 @@ type Props = {
   compact?: boolean;
 };
 
-/** 抖店 E2E 前置提示：不执行真实 E2E，仅说明边界与下一步 */
+/** 抖店上线前置提示：仅说明凭据与人工验收边界。 */
 export default function DouyinE2EPrecheckBanner({
   blockedByCredentials = true,
   releaseCandidate = true,
@@ -16,8 +16,8 @@ export default function DouyinE2EPrecheckBanner({
   if (!blockedByCredentials && !releaseCandidate) return null;
 
   const message = blockedByCredentials
-    ? '当前未配置抖店真实凭证，系统只能完成本地 Demo 与前置检查，不能执行真实抖店 E2E。'
-    : '抖店仍为发布候选，真实 E2E 需人工验收，创建平台草稿不等于商品上架。';
+    ? '当前未配置抖店真实凭证，只能完成本地配置检查，不能调用真实平台。'
+    : '抖店接入仍需人工验收；创建平台草稿不等于商品上架。';
 
   return (
     <Alert
@@ -39,7 +39,7 @@ export default function DouyinE2EPrecheckBanner({
               去配置平台凭证
             </Button>
             <Button size="small" onClick={() => history.push('/settings/config-status')}>
-              查看 E2E 准备清单
+              查看上线准备清单
             </Button>
             <Button size="small" onClick={() => history.push('/ops/task-center/failures?platform=douyin_shop')}>
               查看失败任务

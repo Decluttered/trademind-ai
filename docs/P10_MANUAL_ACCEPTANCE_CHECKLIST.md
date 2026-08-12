@@ -2,9 +2,9 @@
 
 Status: **Prepared / Pending Manual Acceptance**
 
-This checklist validates repository-side P10 development without contacting Douyin or promoting runtime beyond L0. Record the operator, date, environment, source HEAD, tenant, fixture shop, observed result and redacted evidence for every item. Do not record credential values, OAuth state values, Authorization/Cookie headers, database/Redis URLs or raw Provider responses.
+This checklist validates repository-side P10 development without contacting Douyin or promoting runtime beyond L0. Record the operator, date, environment, source HEAD, tenant, fixture shop, observed result and redacted evidence in the PR or release work order. Do not commit a completed checklist, report, screenshot or log artifact to the repository. Do not record credential values, OAuth state values, Authorization/Cookie headers, database/Redis URLs or raw Provider responses.
 
-Repository checks were executed while repairing CI, including Go tests/vet, frontend and contract tests, strict UI-copy checks, architecture ratchet, sensitive-diff scan, Admin production build and CI-mode Playwright smoke. These checks do not complete the manual checklist, real PostgreSQL/runtime acceptance, performance acceptance or `go test -race`. No item below is pre-marked as passed.
+Automated regression is owned by GitHub Actions and does not complete this manual checklist, real PostgreSQL/runtime acceptance, performance acceptance or real-platform verification. No item below is pre-marked as passed.
 
 ## A. Credential
 
@@ -48,20 +48,7 @@ Repository checks were executed while repairing CI, including Go tests/vet, fron
 - [ ] Repeat the key with a different payload and confirm conflict.
 - [ ] Manually rerun only a failed/cancelled tenant-scoped source revision; confirm no automatic retry.
 
-## E. Admin
-
-- [ ] Open `/ops/p10-readiness` and verify environment, L0 boundary, Provider, credential metadata and read-only status.
-- [ ] Verify tenant/shop scope, last sync, last safe error and rate-limit state.
-- [ ] Verify all five kill switches; Write remains permanently blocked.
-- [ ] Save allowlist and Gray draft with revision checks; verify Owner/Technical Lead approvals reset and cannot be self-generated.
-- [ ] Verify pause and stop immediately produce a blocked Gray state.
-- [ ] Verify Admin never displays access token, refresh token, ciphertext, app secret or client secret.
-- [ ] Verify `inventory_sync.read`, `inventory_sync.run` and `config.manage` RBAC for admin/operator/reviewer/readonly.
-- [ ] Manually inspect normal/loading/empty/error/readonly/disabled/submitting states.
-- [ ] Inspect 1440x900, 1280x800, 1024x768, 768x900 and 375x812; verify root horizontal overflow is absent and tables scroll only internally.
-- [ ] Intercept every non-GET request during UI acceptance; confirm cancel=0, confirm=1, rapid repeat=1 and no extra write request.
-
-## F. Security
+## E. Security
 
 - [ ] Confirm tenant/store authorization on credential, control and read-run routes.
 - [ ] Confirm strict JSON rejects unknown fields, multiple values and oversized bodies.
@@ -72,7 +59,7 @@ Repository checks were executed while repairing CI, including Go tests/vet, fron
 - [ ] Confirm kill switches override feature flags and all real calls remain denied at L0.
 - [ ] Confirm no P10 inventory write capability, Worker, scheduler, queue consumer or automatic business retry exists.
 
-## G. Gray
+## F. Gray
 
 - [ ] Configure at most one tenant, one shop and `maxSku<=100`; confirm overflow is rejected.
 - [ ] Confirm Draft, PendingApproval, Approved, Active, Paused and Stopped are represented by the model.
@@ -81,7 +68,7 @@ Repository checks were executed while repairing CI, including Go tests/vet, fron
 - [ ] Confirm Pause and Stop block Provider read through the kill-switch/Gray guard.
 - [ ] Confirm runtime remains L0 and no real Gray begins during this checklist.
 
-## H. Recovery and Operations
+## G. Recovery and Operations
 
 - [ ] Review `backup-preproduction.sh` artifact, checksum, metadata, retention configuration and environment guard.
 - [ ] Review `restore-preproduction.sh` explicit isolated target identity and production-restore denial.

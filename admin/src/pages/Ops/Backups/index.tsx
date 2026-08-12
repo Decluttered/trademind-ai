@@ -7,7 +7,7 @@ import {
   type BackupJob,
 } from '@/services/opsP6';
 import { DatabaseOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
-import { Alert, Button, Modal, Space, Table, Tag, message } from 'antd';
+import { Button, Modal, Space, Table, Tag, message } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
 function statusColor(status?: string) {
@@ -64,11 +64,6 @@ export default function BackupsPage() {
       }
     >
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Alert
-          showIcon
-          type="info"
-          message="真实对象存储和真实生产备份验证保持待接入；页面不提供完整备份下载。"
-        />
         <Table<BackupJob>
           rowKey="backupId"
           loading={loading}

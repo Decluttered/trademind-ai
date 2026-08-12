@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
 	"github.com/trademind-ai/trademind/backend/internal/config"
 	"gorm.io/gorm"
 )
@@ -33,4 +34,15 @@ func TestRollbackNeverRestoresDatabase(t *testing.T) {
 	if rb.DatabaseRestore {
 		t.Fatalf("application rollback must not restore database")
 	}
+}
+
+func TestProductionRejectsReleaseMutations(t *testing.T) {
+	svc := &Service{Cfg: &config.Config{AppEnv: config.EnvProduction}}
+
+	_, err := svc.Create(context.Background(), CreateRequest{Version: "v1.0.0"}, nil)
+	require.ErrorContains(t, err, "unavailable in production")
+	_, err = svc.Execute(context.Background(), "rel_test")
+	require.ErrorContains(t, err, "unavailable in production")
+	_, err = svc.Rollback(context.Background(), "rel_test", RollbackRequest{Reason: "test"}, nil)
+	require.ErrorContains(t, err, "unavailable in production")
 }

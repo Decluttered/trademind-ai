@@ -419,13 +419,6 @@ export function TranslateImageTextModal({
               ),
               children: (
                 <>
-                  <Alert
-                    type="info"
-                    showIcon
-                    className="tm-translate-image-text-modal__advanced-hint"
-                    message="仅在需要覆盖默认渲染或擦除策略时调整"
-                    description="这些字段会随翻译任务一起提交，不会保存为全局配置。"
-                  />
                   <ProFormRadio.Group
                     name="renderMode"
                     label="覆盖渲染方式"

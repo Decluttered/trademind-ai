@@ -19,6 +19,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/rdb"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // QueueMessage is Redis LIST payload for workers.
@@ -109,9 +110,10 @@ type Service struct {
 	CustomerChat *customerchat.Service
 	OpLog        *operationlog.Service
 
-	QueueEnabled bool
-	QueueName    string
-	TaskTimeout  time.Duration
+	QueueEnabled          bool
+	QueueName             string
+	TaskTimeout           time.Duration
+	AllowLegacyTenantZero bool
 }
 
 func (s *Service) normalizedQueueName() string {
@@ -120,6 +122,34 @@ func (s *Service) normalizedQueueName() string {
 		return "customer:message:sync:tasks"
 	}
 	return q
+}
+
+func (s *Service) createSyncTaskIfIdle(ctx context.Context, task *CustomerMessageSyncTask) (bool, error) {
+	if s == nil || s.DB == nil || task == nil || task.ShopID == uuid.Nil {
+		return false, fmt.Errorf("invalid customer sync task")
+	}
+	created := false
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var lockedShop shop.Shop
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("id").First(&lockedShop, "id = ?", task.ShopID).Error; err != nil {
+			return err
+		}
+		var active int64
+		if err := tx.Model(&CustomerMessageSyncTask{}).
+			Where("shop_id = ? AND status IN ?", task.ShopID, []string{StatusPending, StatusRunning}).Count(&active).Error; err != nil {
+			return err
+		}
+		if active > 0 {
+			return nil
+		}
+		res := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(task)
+		if res.Error != nil {
+			return res.Error
+		}
+		created = res.RowsAffected == 1
+		return nil
+	})
+	return created, err
 }
 
 func parseRFC3339Ptr(raw string) (*time.Time, error) {
@@ -226,6 +256,7 @@ func (s *Service) CreateShopSync(c *gin.Context, shopID uuid.UUID, body SyncCust
 	}
 
 	task := CustomerMessageSyncTask{
+		TenantID:  row.TenantID,
 		ShopID:    shopID,
 		Platform:  strings.TrimSpace(row.Platform),
 		TaskType:  TaskTypeCustomerMessageSync,
@@ -235,8 +266,12 @@ func (s *Service) CreateShopSync(c *gin.Context, shopID uuid.UUID, body SyncCust
 		Input:     inputJSON,
 		CreatedBy: adminID,
 	}
-	if err := s.DB.WithContext(c.Request.Context()).Create(&task).Error; err != nil {
+	created, err := s.createSyncTaskIfIdle(c.Request.Context(), &task)
+	if err != nil {
 		return nil, err
+	}
+	if !created {
+		return nil, fmt.Errorf("customer message sync already pending or running for this shop")
 	}
 
 	if s.OpLog != nil {
@@ -379,16 +414,18 @@ func (s *Service) ProcessQueuedTask(ctx context.Context, taskID uuid.UUID, worke
 	if s.CustomerChat == nil {
 		return fail("customer chat service unavailable")
 	}
-	convN, msgN, err := s.CustomerChat.SyncPlatformCustomerMessages(ctx, shopRow, res)
+	convN, msgN, inboundMessageIDs, err := s.CustomerChat.SyncPlatformCustomerMessages(ctx, shopRow, res)
 	if err != nil {
 		return fail(err.Error())
 	}
+	autoSummary := s.CustomerChat.EnqueueAutoReplies(ctx, shopRow, inboundMessageIDs)
 
 	outMap := map[string]any{
 		"conversationsTouched": convN,
 		"messagesInserted":     msgN,
 		"hasMore":              res.HasMore,
 		"nextCursor":           res.NextCursor,
+		"autoReply":            autoSummary,
 	}
 	if len(res.RawSummary) > 0 {
 		outMap["providerSummary"] = platformp.TrimRawMap(res.RawSummary, 16, 400)
@@ -556,6 +593,15 @@ func (s *Service) RetryFailed(c *gin.Context, taskID uuid.UUID, adminID *uuid.UU
 	}
 	if strings.TrimSpace(task.Status) != StatusFailed {
 		return nil, fmt.Errorf("only failed tasks can be retried")
+	}
+	var active int64
+	if err := s.DB.WithContext(c.Request.Context()).Model(&CustomerMessageSyncTask{}).
+		Where("shop_id = ? AND id <> ? AND status IN ?", task.ShopID, task.ID, []string{StatusPending, StatusRunning}).
+		Count(&active).Error; err != nil {
+		return nil, err
+	}
+	if active > 0 {
+		return nil, fmt.Errorf("customer message sync already pending or running for this shop")
 	}
 
 	reset := time.Now().UTC()

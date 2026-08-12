@@ -9,7 +9,7 @@ import {
 } from '@ant-design/icons';
 import { ProCard } from '@ant-design/pro-components';
 import { TmPageContainer } from '@/components/ui';
-import { Alert, Col, Row, Space, Spin, Statistic, Tag, Typography } from 'antd';
+import { Col, Row, Space, Spin, Statistic, Tag, Typography } from 'antd';
 import type { ComponentType, CSSProperties, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PAGE_COPY } from '@/constants/copywriting';
@@ -202,19 +202,6 @@ export default function IntegrationsHubPage() {
       title={PAGE_COPY.integrations.title}
       subTitle={PAGE_COPY.integrations.description}
     >
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message="贸灵不提供也不内置任何第三方密钥"
-        description={
-          <>
-            请自行在各开放平台、云厂商、模型供应商处注册应用并获取凭据；仅在后台填写后由服务端 AES-GCM 加密入库。前端不会直连
-            OpenAI、云存储、电商平台 API 或 SMTP；所有出网调用由后端完成。
-            {data?.disclaimerShort ? ` ${data.disclaimerShort}` : ''}
-          </>
-        }
-      />
       <Spin spinning={loading}>
         {data ? (
           <>

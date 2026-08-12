@@ -8,11 +8,12 @@ import (
 
 // Auth source constants.
 const (
-	AuthSourceAccessToken = "access_token"
-	AuthSourceWebhook     = "webhook"
-	AuthSourceWorker      = "worker"
-	AuthSourceSystem      = "system"
-	AuthSourceDevFallback = "dev_tenant_fallback"
+	AuthSourceAccessToken   = "access_token"
+	AuthSourceWebhook       = "webhook"
+	AuthSourceWorker        = "worker"
+	AuthSourceSystem        = "system"
+	AuthSourceDevFallback   = "dev_tenant_fallback"
+	AuthSourceLegacyDevZero = "legacy_dev_zero"
 )
 
 // SystemContext identifies privileged internal operations (not a tenant impersonation).

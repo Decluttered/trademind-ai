@@ -51,9 +51,9 @@ func TestP9PGSchemaForeignKeysPartialIndexesAndTimeContract(t *testing.T) {
 		name      string
 		predicate string
 	}{
-		{"ux_p9_sku_bindings_current_confirmed", "confirmed"},
-		{"ux_p9_manual_binding_requests_pending", "pending"},
-		{"ux_p9_inventory_sync_runs_tenant_idempotency", "idempotency_key_hash"},
+		{"ux_sku_bindings_current_confirmed", "confirmed"},
+		{"ux_manual_binding_requests_pending", "pending"},
+		{"ux_inventory_sync_runs_tenant_idempotency", "idempotency_key_hash"},
 	} {
 		var index struct {
 			IsUnique  bool
@@ -64,17 +64,17 @@ func TestP9PGSchemaForeignKeysPartialIndexesAndTimeContract(t *testing.T) {
 		require.Contains(t, index.Predicate, spec.predicate, spec.name)
 	}
 
-	for _, table := range []string{"p9_inventory_sync_runs", "p9_inventory_snapshot_items", "p9_sku_bindings", "p9_sku_binding_calibrations", "p9_manual_binding_requests", "p9_manual_binding_decisions"} {
+	for _, table := range []string{"inventory_sync_runs", "inventory_snapshot_items", "sku_bindings", "sku_binding_calibrations", "manual_binding_requests", "manual_binding_decisions"} {
 		var count int64
 		require.NoError(t, db.Raw(`SELECT COUNT(*) FROM pg_constraint c JOIN pg_class r ON r.oid = c.conrelid JOIN pg_namespace n ON n.oid = r.relnamespace WHERE c.contype = 'f' AND n.nspname = current_schema() AND r.relname = ?`, table).Scan(&count).Error)
 		require.Greater(t, count, int64(0), table)
 	}
 
 	for _, column := range []struct{ table, name string }{
-		{"p9_inventory_sync_runs", "created_at"},
-		{"p9_inventory_sync_runs", "started_at"},
-		{"p9_inventory_snapshot_items", "observed_at"},
-		{"p9_inventory_snapshot_items", "source_updated_at"},
+		{"inventory_sync_runs", "created_at"},
+		{"inventory_sync_runs", "started_at"},
+		{"inventory_snapshot_items", "observed_at"},
+		{"inventory_snapshot_items", "source_updated_at"},
 	} {
 		var dataType string
 		require.NoError(t, db.Raw("SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?", column.table, column.name).Scan(&dataType).Error)

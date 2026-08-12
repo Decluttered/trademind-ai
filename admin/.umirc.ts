@@ -4,23 +4,6 @@ import routes from './config/routes';
 
 const lightTheme = createStaticLightThemeConfig();
 
-const appRoutes = routes.map((route) =>
-  route.path === '/ops'
-    ? {
-        ...route,
-        routes: [
-          ...(route.routes || []),
-          {
-            path: '/ops/p10-readiness',
-            name: 'P10 人工验收',
-            icon: 'SafetyCertificateOutlined',
-            component: './Ops/P10Readiness',
-          },
-        ],
-      }
-    : route,
-);
-
 export default defineConfig({
   title: '贸灵 TradeMind',
   npmClient: 'npm',
@@ -44,7 +27,7 @@ export default defineConfig({
     fixSiderbar: true,
     contentWidth: 'Fluid',
   },
-  routes: appRoutes,
+  routes,
   devtool: process.env.NODE_ENV === 'production' ? false : 'source-map',
   proxy: {
     '/api': {

@@ -6,6 +6,7 @@ import {
   AI_IMAGE_IMAGE_FILTERS,
   AI_IMAGE_OPERATION_OPTIONS,
 } from '@/constants/aiProductImage';
+import { AI_LANGUAGE_OPTIONS } from '@/constants/aiPrompts';
 import {
   checkAiProductImageBatch,
   createAiProductImageBatch,
@@ -24,6 +25,7 @@ import {
   Image,
   Input,
   Radio,
+  Select,
   Space,
   Spin,
   Steps,
@@ -268,7 +270,7 @@ export default function AIImageBatchWizardPage() {
             <Card title="设置处理要求">
               <Form form={form} layout="vertical" initialValues={{ language: 'en', backgroundStyle: 'white', keepSubject: true, outputFormat: 'webp' }}>
                 <Form.Item name="language" label="目标语言">
-                  <Input placeholder="如 en / th / vi" />
+                  <Select options={AI_LANGUAGE_OPTIONS} placeholder="请选择图片文案语言" />
                 </Form.Item>
                 <Form.Item name="backgroundStyle" label="背景风格">
                   <Input placeholder="如 white / studio" />

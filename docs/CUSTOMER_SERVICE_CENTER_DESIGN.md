@@ -1,4 +1,4 @@
-# 客服中心设计（Phase F4）
+# 客服中心设计
 
 ## 入口
 
@@ -6,6 +6,7 @@
 - 会话列表：`/customer/conversations`
 - 会话详情：`/customer/conversations/:id`
 - 消息同步任务：`/customer/message-sync-tasks`
+- AI 自动回复策略：`/customer/auto-reply-settings`
 - API 别名：`/api/v1/customer/*` 与 `/api/v1/customer-service/*`
 
 ## 列表字段
@@ -19,4 +20,4 @@
 
 ## 原则
 
-不自动发送；不展示平台 raw；技术详情默认折叠。
+默认人工确认发送；自动回复必须由部署总开关和店铺策略双重显式开启，且仅允许低风险消息。系统不展示平台 raw，技术详情默认折叠；数据库租约与可靠 Redis processing 队列负责崩溃恢复，发送结果未知时转人工且不自动重试。
