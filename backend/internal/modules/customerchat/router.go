@@ -16,6 +16,11 @@ func registerCustomerRoutes(c *gin.RouterGroup, h *Handler) {
 		return
 	}
 	c.GET("/dashboard", h.GetDashboard)
+	c.GET("/auto-reply-setting", h.GetAutoReplySetting)
+	c.PUT("/auto-reply-setting", h.UpdateAutoReplySetting)
+	c.GET("/shops/:shopId/auto-reply-policy", h.GetAutoReplyPolicy)
+	c.PUT("/shops/:shopId/auto-reply-policy", h.UpdateAutoReplyPolicy)
+	c.GET("/shops/:shopId/auto-reply-runs", h.ListAutoReplyRuns)
 	c.GET("/conversations", h.ListConversations)
 	c.POST("/conversations", h.CreateConversation)
 

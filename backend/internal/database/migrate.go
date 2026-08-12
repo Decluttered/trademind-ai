@@ -168,6 +168,9 @@ func AutoMigrate(db *gorm.DB) error {
 		&customerchat.CustomerMessage{},
 		&customerchat.CustomerReplySuggestion{},
 		&customerchat.CustomerFailureEvent{},
+		&customerchat.CustomerAutoReplySetting{},
+		&customerchat.CustomerAutoReplyPolicy{},
+		&customerchat.CustomerAutoReplyRun{},
 		&taskcenter.TaskFailureMark{},
 		&taskcenter.TaskAlert{},
 		&taskcenter.TaskAlertNotification{},
@@ -233,5 +236,8 @@ func AutoMigrate(db *gorm.DB) error {
 	if err := migrateP5Observability(db); err != nil {
 		return err
 	}
-	return migrateP7Performance(db)
+	if err := migrateP7Performance(db); err != nil {
+		return err
+	}
+	return migrateCustomerAutoReplyReliability(db)
 }

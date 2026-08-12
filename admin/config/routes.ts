@@ -480,6 +480,11 @@ export default [
         name: '消息同步任务',
         component: './Customer/MessageSyncTasks',
       },
+      {
+        path: '/customer/auto-reply-settings',
+        name: 'AI 自动回复',
+        component: './Customer/AutoReplySettings',
+      },
     ],
   },
   {

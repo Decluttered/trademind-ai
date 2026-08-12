@@ -291,6 +291,7 @@ export default function CustomerConversationDetailPage() {
       try {
         await sendPlatformMessage(id, {
           reply: finalReply,
+          clientMessageId: crypto.randomUUID(),
           suggestionId: suggestionId || undefined,
         });
         message.success('已发送到平台');
@@ -618,14 +619,14 @@ export default function CustomerConversationDetailPage() {
                   <span>回复语言</span>
                   <Select
                     style={{ width: 140 }}
-                    options={AI_LANGUAGE_OPTIONS}
+                    options={[...AI_LANGUAGE_OPTIONS]}
                     value={lang}
                     onChange={setLang}
                   />
                   <span>回复语气</span>
                   <Select
                     style={{ width: 140 }}
-                    options={AI_TONE_OPTIONS}
+                    options={[...AI_TONE_OPTIONS]}
                     value={tone}
                     onChange={setTone}
                   />

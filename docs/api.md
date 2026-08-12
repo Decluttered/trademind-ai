@@ -211,7 +211,18 @@
 | `GET` | `/api/v1/ai/tasks` | AI 任务列表。 |
 | `GET` | `/api/v1/ai/tasks/:id` | AI 任务详情。 |
 
-客服 AI 回复建议见 **`POST /api/v1/customer/conversations/:id/ai/generate-reply`**（非 legacy `/ai/chat`）。
+### 客服与 AI 回复
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/customer/dashboard` | 客服中心汇总。 |
+| `POST` | `/api/v1/customer/conversations/:id/ai/generate-reply` | 生成 AI 回复建议，不直接外发。 |
+| `POST` | `/api/v1/customer/conversations/:id/send-platform-message` | 人工确认后外发；请求必须包含 `reply` 和唯一 `clientMessageId`，可带 `suggestionId`。 |
+| `GET` | `/api/v1/customer/shops/:shopId/auto-reply-policy` | 查询店铺自动回复策略及部署总开关状态。 |
+| `PUT` | `/api/v1/customer/shops/:shopId/auto-reply-policy` | 管理员显式更新店铺策略；启用时 `lowRiskOnly` 必须为 `true`。 |
+| `GET` | `/api/v1/customer/shops/:shopId/auto-reply-runs` | 查询店铺最近 50 条自动回复处理记录。 |
+
+自动回复默认关闭。`GET/PUT /api/v1/customer/auto-reply-setting` 管理租户级消息同步开关、自动回复总开关和 15–3600 秒轮询间隔；设置持久化到数据库并动态生效。只有两个总开关与店铺策略同时开启才生效。响应中的 `workerAvailable` 仅在 Redis 可探活、客服消息同步 Worker、自动回复轮询调度器和自动回复消费者均运行时为 `true`。轮询器通过数据库 `next_poll_at` 原子认领已启用店铺并创建增量同步任务，单店只允许一个 `pending/running` 任务。每条入站消息只创建一个幂等运行记录；Redis ready/processing 队列可恢复未确认任务。外发前会在会话锁内重新检查最新客户消息、人工回复、会话状态与频率限制。平台发送幂等租约在调用期间持续续期；平台成功并完成本地消息落库后，即使幂等元数据收尾失败也只重放本地消息，不会再次调用平台。`generating` 租约过期可恢复，`sending` 过期或平台发送结果未知则转 `human_required/platform_send_result_unknown`，写入统一失败任务中心且不自动重发。最近运行记录可选返回截断后的 `errorMessage`。
 
 ## Dev / Demo 种子（非 production）
 
@@ -405,7 +416,7 @@ List endpoints return `{items, nextCursor, hasMore, limit}` and never expose off
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| `GET` | `/health` | 匿名；`data.status` 为 `up` / `degraded`；含 `checks.database`、`checks.redis` |
+| `GET` | `/health` | 匿名；`data.status` 为 `up` / `degraded`；含 `checks.database`、`checks.redis`、`customerMessageSyncQueue` 与 `customerAutoReplyQueue`；自动回复队列块包含 ready/processing 长度、Redis 探活、消息同步 Worker、轮询调度器和自动回复消费者状态 |
 | `GET` | `/api/v1/health` | 同上 |
 
 `data` 中与抖店 Worker 相关的块（队列启用时）：

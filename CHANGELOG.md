@@ -4,6 +4,13 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### AI customer service production hardening (2026-08-12)
+
+- Fixed manual platform-message delivery to include the backend-required client message id.
+- Added default-off, shop-scoped low-risk AI auto replies with tenant-scoped Redis workers, idempotent run records, rate and context guards, sensitive-commitment blocking, auditability, and no automatic business retry.
+- Added Admin policy controls with explicit confirmation, readonly protection, recent run status, API contract coverage, and deployment documentation.
+- Added database-backed run leases, reliable Redis reservation/ack recovery, multi-instance polling claims, final pre-send conversation checks, PostgreSQL uniqueness/index guards, and stale Admin request isolation.
+
 ### Native alert robots (2026-08-11)
 
 - Added native Feishu custom-bot delivery with optional timestamp signing and native Enterprise WeChat group-robot delivery.

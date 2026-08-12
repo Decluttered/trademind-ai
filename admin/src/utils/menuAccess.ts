@@ -50,6 +50,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionKey | PermissionKey[]> 
   '/customer/hub': PERMISSIONS.CUSTOMER_VIEW,
   '/customer/conversations': PERMISSIONS.CUSTOMER_VIEW,
   '/customer/message-sync-tasks': PERMISSIONS.CUSTOMER_VIEW,
+  '/customer/auto-reply-settings': PERMISSIONS.CUSTOMER_VIEW,
   '/settings/system': PERMISSIONS.SETTINGS_MANAGE,
   '/settings/security': PERMISSIONS.SETTINGS_MANAGE,
   '/settings/email': PERMISSIONS.SETTINGS_MANAGE,

@@ -531,13 +531,13 @@ func (s *Service) inventorySyncItem(ctx context.Context) Item {
 func (s *Service) customerSyncItem(ctx context.Context) Item {
 	it := Item{
 		Key:         "customer_sync",
-		Title:       "客服消息同步开关",
-		SettingsURL: "/settings/integrations",
+		Title:       "客服消息队列",
+		SettingsURL: "/customer/auto-reply-settings",
 	}
-	enabled := s.Config != nil && s.Config.CustomerMessageSyncQueueEnabled
+	enabled := s.Redis != nil && s.Redis.Client != nil
 	if !enabled {
 		it.Status = StatusDisabled
-		it.Summary = "客服消息同步未启用"
+		it.Summary = "客服消息队列不可用"
 		return it
 	}
 	block := customersync.BuildCustomerMessageSyncQueueHealthBlock(ctx, s.Redis, enabled, "customer:message:sync:tasks", 1)
@@ -547,6 +547,6 @@ func (s *Service) customerSyncItem(ctx context.Context) Item {
 		return it
 	}
 	it.Status = StatusAbnormal
-	it.Summary = "客服同步已启用但 Redis 不可用"
+	it.Summary = "客服消息队列异常"
 	return it
 }

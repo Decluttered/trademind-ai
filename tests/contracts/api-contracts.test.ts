@@ -10,7 +10,7 @@ describe('TradeMind API contract registry', () => {
     expect(contracts.envelope.errorCodeRule).toContain('non-zero');
   });
 
-  it('covers the core Admin product publishing and readiness endpoints', () => {
+  it('covers core Admin production endpoints', () => {
     const routes = new Set(contracts.endpoints.map(routeKey));
 
     expect(routes).toEqual(
@@ -24,6 +24,13 @@ describe('TradeMind API contract registry', () => {
         'GET /api/v1/products/:id/publish-targets',
         'POST /api/v1/products/:id/platform-configs/douyin_shop/create-draft',
         'POST /api/v1/products/:id/publish',
+        'GET /api/v1/customer/dashboard',
+        'GET /api/v1/customer/auto-reply-setting',
+        'PUT /api/v1/customer/auto-reply-setting',
+        'GET /api/v1/customer/shops/:shopId/auto-reply-policy',
+        'PUT /api/v1/customer/shops/:shopId/auto-reply-policy',
+        'GET /api/v1/customer/shops/:shopId/auto-reply-runs',
+        'POST /api/v1/customer/conversations/:id/send-platform-message',
       ]),
     );
   });
@@ -38,8 +45,26 @@ describe('TradeMind API contract registry', () => {
     expect(readiness?.query).toEqual(['platform', 'shopId', 'mode']);
   });
 
+  it('requires fail-closed customer auto-reply and idempotent send fields', () => {
+    const setting = contracts.endpoints.find((item) => routeKey(item) === 'PUT /api/v1/customer/auto-reply-setting');
+    const policy = contracts.endpoints.find((item) => routeKey(item) === 'PUT /api/v1/customer/shops/:shopId/auto-reply-policy');
+    const send = contracts.endpoints.find((item) => routeKey(item) === 'POST /api/v1/customer/conversations/:id/send-platform-message');
+
+    expect(setting?.requestBody).toEqual(['messageSyncEnabled', 'autoReplyEnabled', 'pollIntervalSeconds']);
+    expect(policy?.requestBody).toEqual([
+      'enabled',
+      'tone',
+      'shopPolicy',
+      'maxReplyRunes',
+      'maxRepliesPerHour',
+      'requireOrderContext',
+      'lowRiskOnly',
+    ]);
+    expect(send?.requestBody).toEqual(['reply', 'clientMessageId', 'suggestionId']);
+  });
+
   it('marks every protected Admin endpoint as authenticated', () => {
-    expect(contracts.endpoints).toHaveLength(9);
+    expect(contracts.endpoints).toHaveLength(16);
     expect(contracts.endpoints.every((endpoint) => endpoint.auth === true)).toBe(true);
   });
 });

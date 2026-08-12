@@ -58,14 +58,14 @@ export default function CustomerHubPage() {
   return (
     <TmPageContainer
       title="客服中心"
-      subTitle="查看待回复会话、AI 建议与消息同步状态。所有回复均需人工确认，系统不会自动发送。"
+      subTitle="查看待回复会话、AI 建议、受控自动回复与消息同步状态。"
     >
       <Alert
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="人工确认发送"
-        description="AI 仅提供回复建议；确认后将把回复发送给客户，不会自动外发。"
+        message="默认人工确认，自动回复需显式启用"
+        description="默认仅生成 AI 建议；管理员可按店铺启用低风险自动回复，高风险内容始终转人工。"
       />
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space wrap>
@@ -138,6 +138,9 @@ export default function CustomerHubPage() {
                 </Col>
                 <Col>
                   <Button onClick={() => history.push('/customer/message-sync-tasks')}>消息同步任务</Button>
+                </Col>
+                <Col>
+                  <Button onClick={() => history.push('/customer/auto-reply-settings')}>AI 自动回复</Button>
                 </Col>
                 <Col>
                   <Button onClick={() => history.push(appendSourceToUrl('/ops/task-center/failures?taskType=customer_failure', 'taskcenter'))}>

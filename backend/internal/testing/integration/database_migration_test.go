@@ -7,6 +7,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/trademind-ai/trademind/backend/internal/database"
+	"github.com/trademind-ai/trademind/backend/internal/modules/customerchat"
+	"github.com/trademind-ai/trademind/backend/internal/modules/customersync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrolp10"
 	"github.com/trademind-ai/trademind/backend/internal/testing/postgrestest"
 	"github.com/trademind-ai/trademind/backend/internal/testing/safeenv"
@@ -23,6 +25,74 @@ type legacyRuntimeControl struct {
 	ReadKillActive     bool  `gorm:"not null;default:true"`
 	WriteKillActive    bool  `gorm:"not null;default:true"`
 	Revision           int   `gorm:"not null;default:1"`
+}
+
+func TestCustomerAutoReplyReliabilityConstraints(t *testing.T) {
+	t.Setenv("APP_ENV", "test")
+	_, ok, err := safeenv.TestDatabaseURLFromEnv()
+	require.NoError(t, err)
+	if !ok {
+		t.Skip("TEST_DATABASE_URL is not set; skipping customer auto-reply PostgreSQL constraints")
+	}
+
+	db := postgrestest.Require(t).DB
+	require.NoError(t, database.AutoMigrate(db))
+	require.NoError(t, database.AutoMigrate(db))
+
+	shopID := uuid.New()
+	conversationID := uuid.New()
+	externalMessageID := "platform-message-1"
+	first := customerchat.CustomerMessage{ConversationID: conversationID, Role: customerchat.RoleCustomer, Content: "hello", Language: "en", MessageType: customerchat.MessageTypeText, Source: customerchat.SourcePlatform, ExternalMessageID: &externalMessageID}
+	require.NoError(t, db.Create(&first).Error)
+	second := first
+	second.ID = uuid.Nil
+	require.Error(t, db.Create(&second).Error)
+
+	task := customersync.CustomerMessageSyncTask{ShopID: shopID, Platform: "mock", TaskType: customersync.TaskTypeCustomerMessageSync, Status: customersync.StatusPending, Mode: customersync.ModeIncremental}
+	require.NoError(t, db.Create(&task).Error)
+	duplicateTask := task
+	duplicateTask.ID = uuid.New()
+	require.Error(t, db.Create(&duplicateTask).Error)
+}
+
+func TestCustomerAutoReplyMigrationRejectsDuplicateReferencedAsSentMessage(t *testing.T) {
+	t.Setenv("APP_ENV", "test")
+	_, ok, err := safeenv.TestDatabaseURLFromEnv()
+	require.NoError(t, err)
+	if !ok {
+		t.Skip("TEST_DATABASE_URL is not set; skipping customer auto-reply PostgreSQL migration guard")
+	}
+
+	db := postgrestest.Require(t).DB
+	require.NoError(t, db.AutoMigrate(
+		&customerchat.CustomerMessage{},
+		&customerchat.CustomerReplySuggestion{},
+		&customerchat.CustomerAutoReplyRun{},
+	))
+	conversationID := uuid.New()
+	externalMessageID := "duplicate-platform-message"
+	keeper := customerchat.CustomerMessage{
+		ConversationID: conversationID, Role: customerchat.RoleAgent, Content: "sent reply", Language: "en",
+		MessageType: customerchat.MessageTypeText, Source: customerchat.SourcePlatform, ExternalMessageID: &externalMessageID,
+		CreatedAt: time.Now().UTC().Add(-time.Minute),
+	}
+	require.NoError(t, db.Create(&keeper).Error)
+	duplicate := keeper
+	duplicate.ID = uuid.Nil
+	duplicate.CreatedAt = time.Now().UTC()
+	require.NoError(t, db.Create(&duplicate).Error)
+	sourceMessageID := uuid.New()
+	run := customerchat.CustomerAutoReplyRun{
+		TenantID: 7, ShopID: uuid.New(), ConversationID: conversationID, MessageID: sourceMessageID,
+		SentMessageID: &duplicate.ID, Status: customerchat.AutoReplyRunSent,
+	}
+	require.NoError(t, db.Create(&run).Error)
+
+	err = database.AutoMigrate(db)
+	require.ErrorContains(t, err, "duplicate rows are referenced")
+	var duplicateCount int64
+	require.NoError(t, db.Model(&customerchat.CustomerMessage{}).Where("conversation_id = ? AND external_message_id = ?", conversationID, externalMessageID).Count(&duplicateCount).Error)
+	require.Equal(t, int64(2), duplicateCount)
 }
 
 func (legacyRuntimeControl) TableName() string { return "p10_runtime_controls" }

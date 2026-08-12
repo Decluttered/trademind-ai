@@ -48,6 +48,8 @@ REDIS_PUBLISH_PORT=6379
 
 完整环境变量说明见 [env.md](env.md)。修改 Docker 变量时必须同步唯一模板 `.env.example`、`docker-compose.full.yml`、本文档和 `docs/env.md`。
 
+AI 客服自动回复使用 backend 已有 Redis 服务和独立 ready/processing 队列。`.env` 仅保留队列名和 Worker 并发等基础设施参数；消息同步、自动回复总开关和轮询间隔在 Admin「客服 / AI 自动回复」中管理并默认关闭。上线前先检查 `/health` 的 `customerAutoReplyQueue`：Redis、客服消息同步 Worker、轮询调度器和自动回复消费者必须均可用，再验证平台客服 Provider 的收取与发送契约、AI Provider 和店铺授权，最后在页面开启总开关并逐店确认开启。
+
 P5-V 可观测性默认使用 `OTEL_EXPORTER_OTLP_PROTOCOL=http/json`。Docker 本地试用不配置真实 telemetry backend 时，`OTEL_EXPORTER_OTLP_ENDPOINT` 保持为空并视为 Deferred；不要把 Mock Collector 验证写成生产 collector 已上线。
 
 P7 性能数据集与负载测试只能在隔离 `APP_ENV=performance` 环境执行；普通 Docker 试用与生产部署必须保持 `PERFORMANCE_TEST_MODE=false`、`ALLOW_PERFORMANCE_DATASET=false`，不得把隔离压测描述为真实生产容量验证。

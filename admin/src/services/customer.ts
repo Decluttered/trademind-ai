@@ -119,6 +119,63 @@ export type CustomerDashboardSummary = {
   openConversationCount: number;
 };
 
+export type CustomerAutoReplyPolicy = {
+  shopId: string;
+  shopName: string;
+  platform: string;
+  globalEnabled: boolean;
+  workerAvailable: boolean;
+  enabled: boolean;
+  effectiveEnabled: boolean;
+  tone: string;
+  shopPolicy?: string;
+  maxReplyRunes: number;
+  maxRepliesPerHour: number;
+  requireOrderContext: boolean;
+  lowRiskOnly: boolean;
+  updatedAt?: string;
+};
+
+export type CustomerAutoReplySetting = {
+  messageSyncEnabled: boolean;
+  autoReplyEnabled: boolean;
+  pollIntervalSeconds: number;
+  workerAvailable: boolean;
+  effectiveEnabled: boolean;
+  updatedAt?: string;
+};
+
+export type UpdateCustomerAutoReplySetting = Pick<
+  CustomerAutoReplySetting,
+  'messageSyncEnabled' | 'autoReplyEnabled' | 'pollIntervalSeconds'
+>;
+
+export type UpdateCustomerAutoReplyPolicy = Pick<
+  CustomerAutoReplyPolicy,
+  | 'enabled'
+  | 'tone'
+  | 'shopPolicy'
+  | 'maxReplyRunes'
+  | 'maxRepliesPerHour'
+  | 'requireOrderContext'
+  | 'lowRiskOnly'
+>;
+
+export type CustomerAutoReplyRun = {
+  id: string;
+  conversationId: string;
+  messageId: string;
+  suggestionId?: string;
+  sentMessageId?: string;
+  status: 'pending' | 'generating' | 'sending' | 'sent' | 'human_required' | 'skipped' | 'failed';
+  riskLevel?: string;
+  reasonCode?: string;
+  errorMessage?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  createdAt: string;
+};
+
 export type SuggestionRow = {
   id: string;
   conversationId: string;
@@ -207,6 +264,31 @@ export async function queryConversations(params: {
 
 export async function getCustomerDashboard(): Promise<CustomerDashboardSummary> {
   return getJSON('/api/v1/customer/dashboard');
+}
+
+export async function getCustomerAutoReplyPolicy(shopId: string): Promise<CustomerAutoReplyPolicy> {
+  return getJSON(`/api/v1/customer/shops/${shopId}/auto-reply-policy`);
+}
+
+export async function getCustomerAutoReplySetting(): Promise<CustomerAutoReplySetting> {
+  return getJSON('/api/v1/customer/auto-reply-setting');
+}
+
+export async function updateCustomerAutoReplySetting(
+  payload: UpdateCustomerAutoReplySetting,
+): Promise<CustomerAutoReplySetting> {
+  return putJSON('/api/v1/customer/auto-reply-setting', payload);
+}
+
+export async function updateCustomerAutoReplyPolicy(
+  shopId: string,
+  payload: UpdateCustomerAutoReplyPolicy,
+): Promise<CustomerAutoReplyPolicy> {
+  return putJSON(`/api/v1/customer/shops/${shopId}/auto-reply-policy`, payload);
+}
+
+export async function queryCustomerAutoReplyRuns(shopId: string): Promise<CustomerAutoReplyRun[]> {
+  return getJSON(`/api/v1/customer/shops/${shopId}/auto-reply-runs`);
 }
 
 export async function querySuggestions(conversationId: string): Promise<{ list: SuggestionRow[] }> {
@@ -353,7 +435,12 @@ export async function retryCustomerMessageSyncTask(id: string): Promise<Customer
 
 export async function sendPlatformMessage(
   conversationId: string,
-  payload: { reply: string; suggestionId?: string; idempotencyKey?: string },
+  payload: {
+    reply: string;
+    clientMessageId: string;
+    suggestionId?: string;
+    idempotencyKey?: string;
+  },
 ): Promise<CustomerMessageRow> {
   return postJSON(`/api/v1/customer/conversations/${conversationId}/send-platform-message`, payload);
 }
