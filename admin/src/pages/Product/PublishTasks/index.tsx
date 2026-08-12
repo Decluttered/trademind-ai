@@ -313,7 +313,7 @@ export default function ProductPublishTasksPage() {
         onChange={(key) => {
           setUrlState(
             {
-              tab: key === 'tasks' ? undefined : key,
+              tab: key,
               page: undefined,
               pageSize: undefined,
               drawer: undefined,
@@ -368,7 +368,7 @@ export default function ProductPublishTasksPage() {
                       status: qp.status,
                       start: qp.start,
                       end: qp.end,
-                      tab: undefined,
+                      tab: 'tasks',
                       source: urlState.source,
                       drawer: urlState.drawer,
                       id: urlState.id,

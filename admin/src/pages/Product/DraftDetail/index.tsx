@@ -3655,19 +3655,19 @@ export default function ProductDraftDetailPage() {
                     description="库存调整会写入本地规格库存；预警线只影响预警规则，不修改实际库存。"
                     className="product-draft-stock__section"
                     headerExtra={
-                      <Space wrap className="product-draft-stock__section-actions">
+                      <div className="product-draft-stock__section-actions">
                         <Typography.Text type="secondary">已选 {skuBatchSelKeys.length} 个 SKU</Typography.Text>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        setSkuBatchScope(skuBatchSelKeys.length ? 'selected' : 'all');
-                        skuBatchStockForm.setFieldsValue({ warningStock: 10, safetyStock: 2 });
-                        setSkuBatchStockOpen(true);
-                      }}
-                    >
-                      批量设置预警线
-                    </Button>
-                      </Space>
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            setSkuBatchScope(skuBatchSelKeys.length ? 'selected' : 'all');
+                            skuBatchStockForm.setFieldsValue({ warningStock: 10, safetyStock: 2 });
+                            setSkuBatchStockOpen(true);
+                          }}
+                        >
+                          批量设置预警线
+                        </Button>
+                      </div>
                     }
                   >
                   {localInventoryRows.length === 0 ? (
@@ -3958,7 +3958,7 @@ export default function ProductDraftDetailPage() {
                       </Typography.Text>
                     </div>
                   </div>
-                  <Space wrap className="product-draft-inventory-sync__toolbar">
+                  <div className="product-draft-inventory-sync__toolbar">
                     <Select
                       allowClear
                       placeholder="按平台筛选（批量同步）"
@@ -4006,7 +4006,7 @@ export default function ProductDraftDetailPage() {
                     <Typography.Text type="secondary" className="product-draft-inventory-sync__hint">
                       勾选左侧可选行；不可选项表示缺少平台映射或未开放库存同步。
                     </Typography.Text>
-                  </Space>
+                  </div>
                   <Spin spinning={pubSkuLoading}>
                     <Table<PublicationSkuListingRow>
                       size="small"

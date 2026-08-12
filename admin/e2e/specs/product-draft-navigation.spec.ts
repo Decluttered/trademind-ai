@@ -93,4 +93,17 @@ test.describe('@product-draft 商品详情导航', () => {
       await expect(page).toHaveURL(/section=douyin-sku-bindings/);
     }
   });
+
+  test('publish task tabs keep explicit URL state in both directions', async ({ page }) => {
+    await page.goto('/product/publish-tasks?tab=batches');
+    await expectActiveTab(page, '刊登批次');
+
+    await page.getByRole('tab', { name: '子任务' }).click();
+    await expectActiveTab(page, '子任务');
+    await expect(page).toHaveURL(/tab=tasks/);
+
+    await page.getByRole('tab', { name: '刊登批次' }).click();
+    await expectActiveTab(page, '刊登批次');
+    await expect(page).toHaveURL(/tab=batches/);
+  });
 });

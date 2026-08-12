@@ -79,4 +79,26 @@ test.describe('@product-draft @responsive 五档响应式', () => {
       layoutTokens.pageMaxOuterGap + layoutTokens.pagePaddingX,
     );
   });
+
+  for (const viewport of [viewports[0], viewports[4]]) {
+    test(`inventory toolbars remain separated from tables at ${viewport.width}x${viewport.height}`, async ({
+      admin,
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await admin.goto(`/product/drafts/${E2E_PRODUCT_ID}?tab=inventory`);
+
+      const stockActions = page.locator('.product-draft-stock__section-actions');
+      const syncToolbar = page.locator('.product-draft-inventory-sync__toolbar');
+      const syncTable = page.locator('.product-draft-inventory-sync__table');
+      await expect(stockActions).toBeVisible();
+      await expect(syncToolbar).toBeVisible();
+      await expect(syncTable).toBeVisible();
+
+      const [toolbarBox, tableBox] = await Promise.all([syncToolbar.boundingBox(), syncTable.boundingBox()]);
+      if (!toolbarBox || !tableBox) throw new Error('库存同步工具栏或表格不可见');
+      expect(tableBox.y - (toolbarBox.y + toolbarBox.height)).toBeGreaterThanOrEqual(12);
+      await expectNoRootOverflow(page);
+    });
+  }
 });
