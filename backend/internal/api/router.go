@@ -32,7 +32,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/customerchat"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customersync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/demoseed"
-	"github.com/trademind-ai/trademind/backend/internal/modules/disasterrecovery"
 	"github.com/trademind-ai/trademind/backend/internal/modules/douyinpreflight"
 	"github.com/trademind-ai/trademind/backend/internal/modules/douyinruntime"
 	"github.com/trademind-ai/trademind/backend/internal/modules/exportmod"
@@ -809,10 +808,6 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	releaseSvc := &release.Service{DB: dep.DB, Cfg: dep.Config, Backup: backupSvc, OpLog: opLogSvc}
 	releaseH := &release.Handler{Svc: releaseSvc}
 	release.Register(authed, releaseH)
-	drSvc := &disasterrecovery.Service{DB: dep.DB, Cfg: dep.Config}
-	drH := &disasterrecovery.Handler{Svc: drSvc}
-	disasterrecovery.Register(authed, drH)
-
 	alertSvc := alerting.NewService(dep.DB, alertCooldown, alertRecovery)
 	obsH := &observabilitymod.Handler{DB: dep.DB, Cfg: dep.Config, Obs: dep.Obs, Alert: alertSvc, OpLog: opLogSvc}
 	observabilitymod.Register(authed, obsH)

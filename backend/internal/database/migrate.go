@@ -15,7 +15,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectrule"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customerchat"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customersync"
-	"github.com/trademind-ai/trademind/backend/internal/modules/disasterrecovery"
 	"github.com/trademind-ai/trademind/backend/internal/modules/files"
 	"github.com/trademind-ai/trademind/backend/internal/modules/imagetask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventory"
@@ -185,7 +184,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&release.Artifact{},
 		&release.Step{},
 		&release.Rollback{},
-		&disasterrecovery.Drill{},
 		&performance.TestRun{},
 		&performance.Regression{},
 		&performance.CapacitySnapshot{},

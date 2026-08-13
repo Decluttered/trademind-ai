@@ -56,8 +56,6 @@ const (
 	PermReleaseCreate   = "release.create"
 	PermReleaseExecute  = "release.execute"
 	PermReleaseRollback = "release.rollback"
-	PermDRRead          = "dr.read"
-	PermDRExecute       = "dr.execute"
 	// P8 operation task permissions
 	PermOperationTaskEdit      = "operationtask.edit"
 	PermOperationTaskReview    = "operationtask.review"
@@ -125,8 +123,6 @@ var allPermissions = []string{
 	PermReleaseCreate,
 	PermReleaseExecute,
 	PermReleaseRollback,
-	PermDRRead,
-	PermDRExecute,
 	PermOperationTaskEdit,
 	PermOperationTaskReview,
 	PermOperationTaskExecute,
@@ -185,7 +181,6 @@ var operatorPermissions = []string{
 	PermBackupRead,
 	PermRestoreRead,
 	PermReleaseRead,
-	PermDRRead,
 	PermOperationTaskEdit,
 	PermOperationTaskAuditRead,
 	PermInventorySyncRead,
@@ -212,7 +207,6 @@ var readonlyPermissions = []string{
 	PermBackupRead,
 	PermRestoreRead,
 	PermReleaseRead,
-	PermDRRead,
 	PermOperationTaskAuditRead,
 	PermInventorySyncRead,
 	PermInventorySnapshotRead,

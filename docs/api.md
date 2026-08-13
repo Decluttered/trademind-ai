@@ -527,10 +527,8 @@ All P6 write operations require Bearer authentication and backend RBAC. The fron
 | `GET` | `/api/v1/ops/releases/:id` | `release.read` | 发布详情。 |
 | `POST` | `/api/v1/ops/releases/:id/execute` | `release.execute` | 执行受控发布状态机。 |
 | `POST` | `/api/v1/ops/releases/:id/rollback` | `release.rollback` | 应用层回滚；禁止自动数据库恢复。 |
-| `GET` | `/api/v1/ops/dr/status` | `dr.read` | 灾备状态与 Deferred 项。 |
-| `POST` | `/api/v1/ops/dr/drills` | `dr.execute` | 记录隔离演练；必须确认隔离环境。 |
 
-Historical P6-VR closure evidence is available from Git history. The current working tree keeps the reusable backup, isolated restore and application rollback paths only; this still does not mark Production Ready or perform a real production restore, PITR drill or traffic switch.
+The standalone disaster-recovery drill record API has been retired. The current working tree keeps the reusable backup, isolated restore and application rollback paths only; this still does not mark Production Ready or perform a real production restore, PITR validation or traffic switch. Existing `dr_drills` data is not exposed and is not dropped automatically.
 
 ## P7 Performance / Capacity API Status
 

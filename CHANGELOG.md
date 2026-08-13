@@ -4,6 +4,12 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Disaster-recovery drill recorder retirement (2026-08-13)
+
+- Removed the development-only Admin page, `/api/v1/ops/dr/*` endpoints, dedicated permissions, unused schedule configuration, unpopulated metrics and their misleading default alert.
+- Retained backup verification, isolated restore validation, application rollback, WAL/PITR checks and operational runbooks.
+- Stopped managing the legacy `dr_drills` table through `AutoMigrate`; existing rows remain untouched pending an explicit retention or archival decision.
+
 ### Operation task center production hardening (2026-08-13)
 
 - Added permission-aware task creation, restorable list filters and cursor history, detail Tab deep links, explicit stale/partial-error states, and responsive Admin workflows.

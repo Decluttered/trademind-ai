@@ -75,12 +75,6 @@ export function createDevelopmentOpsRoutes(
       icon: 'BranchesOutlined',
       component: './Ops/Releases',
     },
-    {
-      path: '/ops/disaster-recovery',
-      name: '灾备演练记录',
-      icon: 'DeploymentUnitOutlined',
-      component: './Ops/DisasterRecovery',
-    },
   ];
 }
 

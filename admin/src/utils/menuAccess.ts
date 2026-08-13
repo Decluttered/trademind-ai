@@ -18,7 +18,6 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionKey | PermissionKey[]> 
   '/ops/backups': PERMISSIONS.BACKUP_READ,
   '/ops/restores': PERMISSIONS.RESTORE_READ,
   '/ops/releases': PERMISSIONS.RELEASE_READ,
-  '/ops/disaster-recovery': PERMISSIONS.DR_READ,
   '/ops/platform-runtime': PERMISSIONS.STORE_VIEW,
   '/files': PERMISSIONS.PRODUCT_VIEW,
   '/ai/prompts': PERMISSIONS.SETTINGS_MANAGE,

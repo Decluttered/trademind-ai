@@ -2,9 +2,12 @@ package alerting
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 )
+
+var retiredDefaultRuleIDs = []string{"wal_archive_interrupted"}
 
 // DefaultRules returns built-in alert rules.
 func DefaultRules() []AlertRule {
@@ -28,7 +31,6 @@ func DefaultRules() []AlertRule {
 		{ID: "release_migration_failed", Name: "Release migration failed", Metric: "release_failures_total", Condition: ">", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/MIGRATION_FAILED.md", ChannelGroup: "ops"},
 		{ID: "release_health_failed", Name: "Release health check failed", Metric: "release_health_check_failures_total", Condition: ">", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/DEPLOYMENT_HEALTH_FAILED.md", ChannelGroup: "ops"},
 		{ID: "automatic_rollback_failed", Name: "Automatic rollback failed", Metric: "release_rollbacks_total", Condition: ">", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/AUTOMATIC_ROLLBACK_FAILED.md", ChannelGroup: "ops"},
-		{ID: "wal_archive_interrupted", Name: "WAL archive interrupted", Metric: "dr_drill_failures_total", Condition: ">", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 600, Enabled: true, RunbookURL: "docs/runbooks/WAL_ARCHIVE_INTERRUPTED.md", ChannelGroup: "ops"},
 	}
 }
 
@@ -37,17 +39,22 @@ func EnsureDefaultRules(ctx context.Context, db *gorm.DB) error {
 	if db == nil {
 		return nil
 	}
-	for _, rule := range DefaultRules() {
-		var count int64
-		if err := db.WithContext(ctx).Model(&AlertRule{}).Where("id = ?", rule.ID).Count(&count).Error; err != nil {
-			return err
+	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id IN ?", retiredDefaultRuleIDs).Delete(&AlertRule{}).Error; err != nil {
+			return fmt.Errorf("remove retired default alert rules: %w", err)
 		}
-		if count > 0 {
-			continue
+		for _, rule := range DefaultRules() {
+			var count int64
+			if err := tx.Model(&AlertRule{}).Where("id = ?", rule.ID).Count(&count).Error; err != nil {
+				return fmt.Errorf("inspect default alert rule %s: %w", rule.ID, err)
+			}
+			if count > 0 {
+				continue
+			}
+			if err := tx.Create(&rule).Error; err != nil {
+				return fmt.Errorf("create default alert rule %s: %w", rule.ID, err)
+			}
 		}
-		if err := db.WithContext(ctx).Create(&rule).Error; err != nil {
-			return err
-		}
-	}
-	return nil
+		return nil
+	})
 }

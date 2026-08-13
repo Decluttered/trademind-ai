@@ -97,8 +97,10 @@ describe('Admin route menu configuration', () => {
         expect.objectContaining({ path: '/ops/backups', name: '备份管理' }),
         expect.objectContaining({ path: '/ops/restores', name: '恢复验证' }),
         expect.objectContaining({ path: '/ops/releases', name: '发布流程记录' }),
-        expect.objectContaining({ path: '/ops/disaster-recovery', name: '灾备演练记录' }),
       ]),
+    );
+    expect(createDevelopmentOpsRoutes(true)).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: '/ops/disaster-recovery' })]),
     );
   });
 

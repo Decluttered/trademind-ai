@@ -172,10 +172,6 @@ type Catalog struct {
 	ReleaseLastSuccess         *prometheus.GaugeVec
 	ReleaseCurrentVersion      *prometheus.GaugeVec
 	ReleaseHealthFailures      *prometheus.CounterVec
-	DRDrillsTotal              *prometheus.CounterVec
-	DRDrillDuration            *prometheus.HistogramVec
-	DRDrillFailures            *prometheus.CounterVec
-	DRLastSuccess              *prometheus.GaugeVec
 
 	once sync.Once
 	err  error
@@ -911,20 +907,7 @@ func (c *Catalog) registerAll() error {
 	if err != nil {
 		return err
 	}
-	c.DRDrillsTotal, err = c.reg.Counter("dr_drills_total", "DR drills", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.DRDrillDuration, err = c.reg.Histogram("dr_drill_duration_seconds", "DR drill duration", defaultBuckets, "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.DRDrillFailures, err = c.reg.Counter("dr_drill_failures_total", "DR drill failures", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.DRLastSuccess, err = c.reg.Gauge("dr_last_success_timestamp", "Last successful DR drill timestamp", "environment_class")
-	return err
+	return nil
 }
 
 // ObserveHTTP records HTTP server metrics.

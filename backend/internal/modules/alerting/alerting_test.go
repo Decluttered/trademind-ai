@@ -42,6 +42,38 @@ func TestAlertDeduplicationAndRecovery(t *testing.T) {
 	}
 }
 
+func TestEnsureDefaultRulesRemovesRetiredRules(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&AlertRule{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&AlertRule{ID: "wal_archive_interrupted", Enabled: true}).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	if err := EnsureDefaultRules(context.Background(), db); err != nil {
+		t.Fatal(err)
+	}
+
+	var retiredCount int64
+	if err := db.Model(&AlertRule{}).Where("id = ?", "wal_archive_interrupted").Count(&retiredCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	if retiredCount != 0 {
+		t.Fatalf("expected retired default rule to be removed, got %d", retiredCount)
+	}
+	var activeCount int64
+	if err := db.Model(&AlertRule{}).Count(&activeCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	if activeCount != int64(len(DefaultRules())) {
+		t.Fatalf("expected %d active default rules, got %d", len(DefaultRules()), activeCount)
+	}
+}
+
 func TestAlertEvaluatorDeliveryAndRecovery(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {

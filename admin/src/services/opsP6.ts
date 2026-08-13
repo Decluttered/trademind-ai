@@ -42,16 +42,6 @@ export type ReleaseRun = {
   errorSummary?: string;
 };
 
-export type DRStatus = {
-  status: string;
-  rpoTarget: string;
-  rtoTarget: string;
-  realProductionDRVerification: string;
-  realProductionBackupVerification: string;
-  realPITRDrill: string;
-  lastDrill?: Record<string, unknown>;
-};
-
 type ListResult<T> = {
   items: T[];
   total: number;
@@ -111,18 +101,4 @@ export async function executeRelease(id: string) {
 
 export async function rollbackRelease(id: string, reason: string) {
   return request(`/api/v1/ops/releases/${id}/rollback`, { method: 'POST', data: { reason } });
-}
-
-export async function fetchDRStatus() {
-  return request<{ data: DRStatus }>('/api/v1/ops/dr/status', { method: 'GET' });
-}
-
-export async function createDRDrill(data: {
-  drillType: string;
-  backupId?: string;
-  restoreId?: string;
-  releaseId?: string;
-  confirmedIsolated: boolean;
-}) {
-  return request('/api/v1/ops/dr/drills', { method: 'POST', data });
 }

@@ -22,8 +22,6 @@ type BackupConfig struct {
 	MaxAgeHours           int
 	CommandTimeoutSeconds int
 	VerifyEnabled         bool
-	RestoreDrillEnabled   bool
-	RestoreDrillSchedule  string
 }
 
 // PostgresBackupConfig holds PostgreSQL backup/PITR command settings.
@@ -68,8 +66,6 @@ func loadBackupConfig(appEnv string) BackupConfig {
 		MaxAgeHours:           atoiOrDefault(os.Getenv("BACKUP_MAX_AGE_HOURS"), 30),
 		CommandTimeoutSeconds: atoiOrDefault(os.Getenv("BACKUP_COMMAND_TIMEOUT_SECONDS"), 900),
 		VerifyEnabled:         envBool(os.Getenv("BACKUP_VERIFY_ENABLED"), true),
-		RestoreDrillEnabled:   envBool(os.Getenv("BACKUP_RESTORE_DRILL_ENABLED"), false),
-		RestoreDrillSchedule:  strings.TrimSpace(firstNonEmpty(os.Getenv("BACKUP_RESTORE_DRILL_SCHEDULE"), "0 4 * * 0")),
 	}
 }
 
