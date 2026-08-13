@@ -30,12 +30,14 @@ export type OperationTaskSummary = {
 export type PlatformDraftSummary = {
   draftId: string;
   draftVersion: number;
+  adapterMode: 'mock' | 'sandbox' | 'local_draft_only' | 'production_draft' | string;
   payloadHash: string;
   status: string;
   changeReason?: string;
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
+  payload?: unknown;
 };
 
 export type ApprovalSummary = {
@@ -159,7 +161,7 @@ export type RejectTaskRequest = ApproveTaskRequest;
 
 export type ExecuteTaskRequest = {
   expectedTaskRevision: number;
-  adapterMode: 'mock' | 'sandbox' | 'local_draft_only';
+  adapterMode: 'mock' | 'sandbox' | 'local_draft_only' | 'production_draft';
 };
 
 export type RetryTaskRequest = {
@@ -208,8 +210,8 @@ function idempotencyHeaders(key: string) {
 }
 
 export function createOperationIdempotencyKey(action: string) {
-  const random = Math.random().toString(36).slice(2, 12);
-  return `p8-ui:${action}:${Date.now()}:${random}`;
+  const random = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2, 12);
+  return `operation-task-ui:${action}:${Date.now()}:${random}`;
 }
 
 export function extractOperationTaskAPIError(error: unknown): OperationTaskAPIError {

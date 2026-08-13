@@ -220,6 +220,7 @@ const smokeRoutes = [
   { path: "/product/drafts", name: /商品草稿|E2E 商品草稿/ },
   { path: "/inventory/overview", name: /库存中心/ },
   { path: "/ops/task-center/alerts", name: /告警中心/ },
+  { path: "/ops/task-center/operation-tasks", name: /运营任务中心/ },
   { path: "/ops/observability", name: /可观测性中心/ },
   { path: "/settings/alert-notify", name: /告警通知配置/ },
   { path: "/files", name: /文件管理/ },

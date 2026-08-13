@@ -66,6 +66,11 @@ function targetKey(platform: string, shopId?: string | null) {
   return s ? `${p}:${s}` : p;
 }
 
+function isDouyinPlatform(platform?: string) {
+  const value = (platform || '').trim().toLowerCase();
+  return value === 'douyin_shop' || value === 'douyin';
+}
+
 function statusColor(status: string) {
   if (status === 'ready') return 'green';
   if (status === 'warning') return 'orange';
@@ -256,6 +261,7 @@ export default function PublishBatchWizardPage() {
   };
 
   const toggleShop = (platform: PublishTargetPlatform, shopId: string, shopName: string, checked: boolean) => {
+    if (isDouyinPlatform(platform.platform)) return;
     const key = targetKey(platform.platform, shopId);
     setSelectedTargets((prev) => {
       const next = { ...prev };
@@ -279,6 +285,10 @@ export default function PublishBatchWizardPage() {
     const clientErr = validatePublishConfigClient(commonConfig);
     if (clientErr) {
       message.error(clientErr);
+      return;
+    }
+    if (selectedTargetList.some((target) => isDouyinPlatform(target.platform))) {
+      message.error('抖店平台草稿需逐商品进入运营任务中心并人工审核');
       return;
     }
     if (!productIds.length || !selectedTargetList.length) {
@@ -312,6 +322,10 @@ export default function PublishBatchWizardPage() {
   const runCreate = async (onlyReady: boolean) => {
     if (matrixLimitError) {
       message.error(matrixLimitError);
+      return;
+    }
+    if (selectedTargetList.some((target) => isDouyinPlatform(target.platform))) {
+      message.error('抖店平台草稿需逐商品进入运营任务中心并人工审核');
       return;
     }
     setCreating(true);
@@ -569,11 +583,20 @@ export default function PublishBatchWizardPage() {
                     <Typography.Text strong>{plat.platformLabel}</Typography.Text>
                     <Tag>{publishCapabilityLabel(plat.capability)}</Tag>
                   </Space>
+                  {isDouyinPlatform(plat.platform) ? (
+                    <Alert
+                      type="info"
+                      showIcon
+                      message="抖店需逐商品进入运营任务人工审核"
+                      action={<Link to="/ops/task-center/operation-tasks?create=production">进入运营任务中心</Link>}
+                      style={{ marginBottom: 8 }}
+                    />
+                  ) : null}
                   <Space direction="vertical" style={{ width: '100%' }}>
                     {plat.shops?.length ? (
                       plat.shops.map((shop) => {
                         const key = targetKey(plat.platform, shop.shopId);
-                        const disabled = !shop.enabled || shop.authStatus !== 'authorized';
+                        const disabled = isDouyinPlatform(plat.platform) || !shop.enabled || shop.authStatus !== 'authorized';
                         return (
                           <Checkbox
                             key={key}

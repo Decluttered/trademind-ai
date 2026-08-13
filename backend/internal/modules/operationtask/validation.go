@@ -49,6 +49,7 @@ var allowedOperationTaskStatuses = map[string]bool{
 	OperationTaskStatusExecutionQueued: true,
 	OperationTaskStatusExecuting:       true,
 	OperationTaskStatusDraftWritten:    true,
+	OperationTaskStatusResultUnknown:   true,
 	OperationTaskStatusExecutionFailed: true,
 	OperationTaskStatusCancelled:       true,
 }
@@ -61,9 +62,10 @@ var allowedPriorities = map[string]bool{
 }
 
 var allowedAdapterModes = map[string]bool{
-	AdapterModeMock:           true,
-	AdapterModeSandbox:        true,
-	AdapterModeLocalDraftOnly: true,
+	AdapterModeMock:            true,
+	AdapterModeSandbox:         true,
+	AdapterModeLocalDraftOnly:  true,
+	AdapterModeProductionDraft: true,
 }
 
 var allowedPlatformDraftStatuses = map[string]bool{
@@ -86,11 +88,12 @@ var allowedReviewerRoles = map[string]bool{
 }
 
 var allowedExecutionAttemptStatuses = map[string]bool{
-	ExecutionAttemptStatusQueued:    true,
-	ExecutionAttemptStatusRunning:   true,
-	ExecutionAttemptStatusSucceeded: true,
-	ExecutionAttemptStatusFailed:    true,
-	ExecutionAttemptStatusCancelled: true,
+	ExecutionAttemptStatusQueued:        true,
+	ExecutionAttemptStatusRunning:       true,
+	ExecutionAttemptStatusSucceeded:     true,
+	ExecutionAttemptStatusFailed:        true,
+	ExecutionAttemptStatusResultUnknown: true,
+	ExecutionAttemptStatusCancelled:     true,
 }
 
 var allowedExecutionErrorCategories = map[string]bool{
@@ -109,6 +112,8 @@ var allowedExecutionResultTypes = map[string]bool{
 	"local_draft":     true,
 	"mock_draft":      true,
 	"sandbox_fixture": true,
+	"platform_draft":  true,
+	"result_unknown":  true,
 }
 
 var allowedOperationTaskEventTypes = map[string]bool{
@@ -122,6 +127,7 @@ var allowedOperationTaskEventTypes = map[string]bool{
 	OperationTaskEventTypeExecutionStarted: true,
 	OperationTaskEventTypeDraftWritten:     true,
 	OperationTaskEventTypeExecutionFailed:  true,
+	OperationTaskEventTypeResultUnknown:    true,
 	OperationTaskEventTypeRetryRequested:   true,
 	OperationTaskEventTypeCancelled:        true,
 }

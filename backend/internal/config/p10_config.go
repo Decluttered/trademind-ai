@@ -11,55 +11,57 @@ import (
 
 const ErrCodeP10BoundaryViolation = "P10_BOUNDARY_VIOLATION"
 
-// P10Config describes repository-side controls. This release intentionally supports only L0 at runtime.
+// P10Config describes fail-closed production capability controls.
 type P10Config struct {
-	CurrentAllowedLevel        string
-	OfflineOAuthEnabled        bool
-	LocalCredentialKey         string
-	LocalCredentialKeyRef      string
-	OAuthStateTTL              time.Duration
-	RedirectAllowlist          []string
-	DouyinAPIBaseURL           string
-	ProviderRequestTimeout     time.Duration
-	ProviderConnectTimeout     time.Duration
-	ProviderResponseHeaderTime time.Duration
-	ProviderMaxResponseBytes   int64
-	ProviderConcurrency        int
-	SKUPageSize                int
-	PaginationLimit            int
-	RealProviderEnabled        bool
-	RealPlatformNetworkEnabled bool
-	RealCredentialsEnabled     bool
-	RealInventoryReadEnabled   bool
-	InventoryMutationEnabled   bool
-	BackgroundWorkerEnabled    bool
-	AutomaticRetryEnabled      bool
+	CurrentAllowedLevel          string
+	OfflineOAuthEnabled          bool
+	LocalCredentialKey           string
+	LocalCredentialKeyRef        string
+	OAuthStateTTL                time.Duration
+	RedirectAllowlist            []string
+	DouyinAPIBaseURL             string
+	ProviderRequestTimeout       time.Duration
+	ProviderConnectTimeout       time.Duration
+	ProviderResponseHeaderTime   time.Duration
+	ProviderMaxResponseBytes     int64
+	ProviderConcurrency          int
+	SKUPageSize                  int
+	PaginationLimit              int
+	RealProviderEnabled          bool
+	RealPlatformNetworkEnabled   bool
+	RealCredentialsEnabled       bool
+	RealInventoryReadEnabled     bool
+	RealProductDraftWriteEnabled bool
+	InventoryMutationEnabled     bool
+	BackgroundWorkerEnabled      bool
+	AutomaticRetryEnabled        bool
 }
 
 func loadP10Config(appEnv string) P10Config {
 	_ = appEnv
 	return P10Config{
-		CurrentAllowedLevel:        strings.ToUpper(strings.TrimSpace(firstNonEmpty(os.Getenv("P10_CURRENT_ALLOWED_LEVEL"), "L0"))),
-		OfflineOAuthEnabled:        envBool(os.Getenv("P10_OFFLINE_OAUTH_ENABLED"), false),
-		LocalCredentialKey:         strings.TrimSpace(os.Getenv("P10_LOCAL_CREDENTIAL_KEY")),
-		LocalCredentialKeyRef:      strings.TrimSpace(firstNonEmpty(os.Getenv("P10_LOCAL_CREDENTIAL_KEY_REF"), "local-development-v1")),
-		OAuthStateTTL:              time.Duration(atoiOrDefault(os.Getenv("P10_OAUTH_STATE_TTL_SECONDS"), 600)) * time.Second,
-		RedirectAllowlist:          splitCSV(os.Getenv("P10_OAUTH_REDIRECT_ALLOWLIST")),
-		DouyinAPIBaseURL:           strings.TrimRight(strings.TrimSpace(os.Getenv("P10_DOUYIN_API_BASE_URL")), "/"),
-		ProviderRequestTimeout:     time.Duration(atoiOrDefault(os.Getenv("P10_PROVIDER_REQUEST_TIMEOUT_SECONDS"), 30)) * time.Second,
-		ProviderConnectTimeout:     time.Duration(atoiOrDefault(os.Getenv("P10_PROVIDER_CONNECT_TIMEOUT_SECONDS"), 5)) * time.Second,
-		ProviderResponseHeaderTime: time.Duration(atoiOrDefault(os.Getenv("P10_PROVIDER_RESPONSE_HEADER_TIMEOUT_SECONDS"), 15)) * time.Second,
-		ProviderMaxResponseBytes:   int64(atoiOrDefault(os.Getenv("P10_PROVIDER_MAX_RESPONSE_BYTES"), 2*1024*1024)),
-		ProviderConcurrency:        atoiOrDefault(os.Getenv("P10_PROVIDER_CONCURRENCY"), 2),
-		SKUPageSize:                atoiOrDefault(os.Getenv("P10_SKU_PAGE_SIZE"), 50),
-		PaginationLimit:            atoiOrDefault(os.Getenv("P10_PAGINATION_LIMIT"), 100),
-		RealProviderEnabled:        envBool(os.Getenv("P10_REAL_PROVIDER_ENABLED"), false),
-		RealPlatformNetworkEnabled: envBool(os.Getenv("P10_REAL_PLATFORM_NETWORK_ENABLED"), false),
-		RealCredentialsEnabled:     envBool(os.Getenv("P10_REAL_CREDENTIALS_ENABLED"), false),
-		RealInventoryReadEnabled:   envBool(os.Getenv("P10_REAL_INVENTORY_READ_ENABLED"), false),
-		InventoryMutationEnabled:   envBool(os.Getenv("P10_INVENTORY_MUTATION_ENABLED"), false),
-		BackgroundWorkerEnabled:    envBool(os.Getenv("P10_BACKGROUND_WORKER_ENABLED"), false),
-		AutomaticRetryEnabled:      envBool(os.Getenv("P10_AUTOMATIC_RETRY_ENABLED"), false),
+		CurrentAllowedLevel:          strings.ToUpper(strings.TrimSpace(firstNonEmpty(os.Getenv("P10_CURRENT_ALLOWED_LEVEL"), "L0"))),
+		OfflineOAuthEnabled:          envBool(os.Getenv("P10_OFFLINE_OAUTH_ENABLED"), false),
+		LocalCredentialKey:           strings.TrimSpace(os.Getenv("P10_LOCAL_CREDENTIAL_KEY")),
+		LocalCredentialKeyRef:        strings.TrimSpace(firstNonEmpty(os.Getenv("P10_LOCAL_CREDENTIAL_KEY_REF"), "local-development-v1")),
+		OAuthStateTTL:                time.Duration(atoiOrDefault(os.Getenv("P10_OAUTH_STATE_TTL_SECONDS"), 600)) * time.Second,
+		RedirectAllowlist:            splitCSV(os.Getenv("P10_OAUTH_REDIRECT_ALLOWLIST")),
+		DouyinAPIBaseURL:             strings.TrimRight(strings.TrimSpace(os.Getenv("P10_DOUYIN_API_BASE_URL")), "/"),
+		ProviderRequestTimeout:       time.Duration(atoiOrDefault(os.Getenv("P10_PROVIDER_REQUEST_TIMEOUT_SECONDS"), 30)) * time.Second,
+		ProviderConnectTimeout:       time.Duration(atoiOrDefault(os.Getenv("P10_PROVIDER_CONNECT_TIMEOUT_SECONDS"), 5)) * time.Second,
+		ProviderResponseHeaderTime:   time.Duration(atoiOrDefault(os.Getenv("P10_PROVIDER_RESPONSE_HEADER_TIMEOUT_SECONDS"), 15)) * time.Second,
+		ProviderMaxResponseBytes:     int64(atoiOrDefault(os.Getenv("P10_PROVIDER_MAX_RESPONSE_BYTES"), 2*1024*1024)),
+		ProviderConcurrency:          atoiOrDefault(os.Getenv("P10_PROVIDER_CONCURRENCY"), 2),
+		SKUPageSize:                  atoiOrDefault(os.Getenv("P10_SKU_PAGE_SIZE"), 50),
+		PaginationLimit:              atoiOrDefault(os.Getenv("P10_PAGINATION_LIMIT"), 100),
+		RealProviderEnabled:          envBool(os.Getenv("P10_REAL_PROVIDER_ENABLED"), false),
+		RealPlatformNetworkEnabled:   envBool(os.Getenv("P10_REAL_PLATFORM_NETWORK_ENABLED"), false),
+		RealCredentialsEnabled:       envBool(os.Getenv("P10_REAL_CREDENTIALS_ENABLED"), false),
+		RealInventoryReadEnabled:     envBool(os.Getenv("P10_REAL_INVENTORY_READ_ENABLED"), false),
+		RealProductDraftWriteEnabled: envBool(os.Getenv("P10_REAL_PRODUCT_DRAFT_WRITE_ENABLED"), false),
+		InventoryMutationEnabled:     envBool(os.Getenv("P10_INVENTORY_MUTATION_ENABLED"), false),
+		BackgroundWorkerEnabled:      envBool(os.Getenv("P10_BACKGROUND_WORKER_ENABLED"), false),
+		AutomaticRetryEnabled:        envBool(os.Getenv("P10_AUTOMATIC_RETRY_ENABLED"), false),
 	}
 }
 
@@ -68,11 +70,21 @@ func (c P10Config) Validate(appEnv string) error {
 	if level == "" {
 		level = "L0"
 	}
-	if level != "L0" {
-		return fmt.Errorf("%s: only L0 is allowed before manual and external acceptance", ErrCodeP10BoundaryViolation)
+	if level != "L0" && level != "L1" && level != "L3" {
+		return fmt.Errorf("%s: allowed level must be L0, L1, or L3", ErrCodeP10BoundaryViolation)
 	}
-	if c.RealProviderEnabled || c.RealPlatformNetworkEnabled || c.RealCredentialsEnabled || c.RealInventoryReadEnabled || c.InventoryMutationEnabled || c.BackgroundWorkerEnabled || c.AutomaticRetryEnabled {
+	anyRealCapability := c.RealProviderEnabled || c.RealPlatformNetworkEnabled || c.RealCredentialsEnabled || c.RealInventoryReadEnabled || c.RealProductDraftWriteEnabled || c.InventoryMutationEnabled || c.BackgroundWorkerEnabled || c.AutomaticRetryEnabled
+	if level == "L0" && anyRealCapability {
 		return fmt.Errorf("%s: all real, mutation, worker, and retry capabilities must remain disabled at L0", ErrCodeP10BoundaryViolation)
+	}
+	if level == "L1" && (c.RealProductDraftWriteEnabled || c.InventoryMutationEnabled || c.AutomaticRetryEnabled) {
+		return fmt.Errorf("%s: write and retry capabilities are forbidden at L1", ErrCodeP10BoundaryViolation)
+	}
+	if level == "L3" && (!c.RealProviderEnabled || !c.RealPlatformNetworkEnabled || !c.RealCredentialsEnabled || !c.RealProductDraftWriteEnabled || !c.BackgroundWorkerEnabled) {
+		return fmt.Errorf("%s: L3 product draft writes require provider, network, credentials, draft-write, and worker controls", ErrCodeP10BoundaryViolation)
+	}
+	if c.RealProductDraftWriteEnabled && c.AutomaticRetryEnabled {
+		return fmt.Errorf("%s: automatic retry is forbidden for real product draft writes", ErrCodeP10BoundaryViolation)
 	}
 	if c.OfflineOAuthEnabled && IsStagingOrProduction(appEnv) {
 		return fmt.Errorf("%s: offline OAuth is development/test only", ErrCodeP10BoundaryViolation)

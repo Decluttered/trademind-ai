@@ -14,6 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/model"
@@ -44,10 +46,70 @@ func newBatchIntegrationDB(t *testing.T) *gorm.DB {
 		&ProductPublishBatch{},
 		&ProductPublishTask{},
 		&ProductPublication{},
+		&idempotency.Record{},
 	); err != nil {
 		t.Fatal(err)
 	}
 	return db
+}
+
+func TestDouyinTargetsAreRejectedBeforeAnySingleOrBatchWrite(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	svc.Idempotency = &idempotency.Service{DB: db}
+	productID, shopID := uuid.New(), uuid.New()
+	shopIDRaw := shopID.String()
+	targets := []PublishTargetRef{{Platform: "douyin_shop", ShopID: &shopIDRaw}}
+	adminID := uuid.New()
+
+	_, err := svc.CreateDraftsForTargets(testGinContext(), productID, PublishTargetsCreateDraftsRequest{Targets: targets}, &adminID)
+	require.ErrorIs(t, err, ErrDouyinOperationTaskRequired)
+	_, err = svc.CreateBatchTargetDrafts(testGinContext(), BatchTargetsCreateDraftsRequest{
+		ProductIDs: []string{productID.String()}, Targets: targets, IncludeWarnings: true,
+	}, &adminID)
+	require.ErrorIs(t, err, ErrDouyinOperationTaskRequired)
+
+	for _, modelValue := range []any{&ProductPublishBatch{}, &ProductPublishTask{}, &ProductPublication{}, &idempotency.Record{}} {
+		var count int64
+		require.NoError(t, db.Model(modelValue).Count(&count).Error)
+		require.Zero(t, count)
+	}
+}
+
+func TestDouyinRetryPathsDoNotMutateLegacyTasks(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	adminID := uuid.New()
+	productID, shopID, batchID := uuid.New(), uuid.New(), uuid.New()
+	batch := ProductPublishBatch{
+		HardDeleteBase: model.HardDeleteBase{ID: batchID}, BatchType: BatchTypeMultiProduct, Status: BatchFailed,
+		ProductCount: 1, TargetCount: 1, TaskCount: 1, FailedCount: 1, CreatedBy: &adminID,
+	}
+	require.NoError(t, db.Create(&batch).Error)
+	task := ProductPublishTask{
+		HardDeleteBase: model.HardDeleteBase{ID: uuid.New()}, ProductID: productID, ShopID: shopID, TargetStoreID: shopID,
+		BatchID: &batchID, Platform: "douyin_shop", TaskType: TaskTypeDouyinDraftCreate, Status: TaskFailed,
+		PublishStatus: StatusPubFailed, Mode: PublishModeSaveAsPlatformDraft, PublishMode: PublishModeSaveAsPlatformDraft,
+		ErrorCode: "LEGACY_FAILURE", ErrorMessage: "legacy failure", Retryable: true,
+	}
+	require.NoError(t, db.Create(&task).Error)
+
+	c := testGinContext()
+	c.Set("tenant_id", int64(0))
+	_, err := svc.RetryFailed(c, task.ID, &adminID)
+	require.ErrorIs(t, err, ErrDouyinOperationTaskRequired)
+	_, err = svc.RetryFailedBatchTasks(testGinContext(), batchID, &adminID)
+	require.ErrorIs(t, err, ErrDouyinOperationTaskRequired)
+
+	var storedTask ProductPublishTask
+	require.NoError(t, db.First(&storedTask, "id = ?", task.ID).Error)
+	require.Equal(t, TaskFailed, storedTask.Status)
+	require.Equal(t, "LEGACY_FAILURE", storedTask.ErrorCode)
+	require.True(t, storedTask.Retryable)
+	var storedBatch ProductPublishBatch
+	require.NoError(t, db.First(&storedBatch, "id = ?", batchID).Error)
+	require.Equal(t, BatchFailed, storedBatch.Status)
+	require.Equal(t, 1, storedBatch.FailedCount)
 }
 
 func newBatchTestService(db *gorm.DB) *Service {

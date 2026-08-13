@@ -220,7 +220,7 @@ export default function ProductPublishTasksPage() {
         render: (_, r) => (
           <Space>
             <a onClick={() => void openTaskDetail(r.id)}>查看</a>
-            {r.status === 'failed' ? (
+            {r.status === 'failed' && r.platform !== 'douyin_shop' && r.platform !== 'douyin' ? (
               <Popconfirm
                 title="确认重试该刊登任务？"
                 onConfirm={async () => {

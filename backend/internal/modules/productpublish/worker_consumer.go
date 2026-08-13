@@ -95,5 +95,8 @@ func runPublishWorkerLoop(ctx context.Context, log *slog.Logger, svc *Service, q
 		if err := svc.ProcessQueuedTask(jobCtx, tid, workerLeaseID); err != nil && log != nil {
 			log.Warn("product_publish_worker_task_error", "worker", slot, "taskId", tid.String(), "error", err)
 		}
+		if err := svc.ReconcileOperationTaskResult(jobCtx, tid); err != nil && log != nil {
+			log.Warn("operation_task_result_reconcile_failed", "worker", slot, "taskId", tid.String(), "error", err)
+		}
 	}
 }

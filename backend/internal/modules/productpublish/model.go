@@ -11,44 +11,47 @@ import (
 // ProductPublishTask is one async listings job.
 type ProductPublishTask struct {
 	model.HardDeleteBase
-	TenantID          int64          `gorm:"not null;default:0;index" json:"tenantId"`
-	ProductID         uuid.UUID      `gorm:"type:char(36);index;not null" json:"productId"`
-	ShopID            uuid.UUID      `gorm:"type:char(36);index;not null" json:"shopId"`
-	BatchID           *uuid.UUID     `gorm:"type:char(36);index" json:"batchId,omitempty"`
-	TargetKey         string         `gorm:"size:128;index" json:"targetKey,omitempty"`
-	Platform          string         `gorm:"size:64;index;not null" json:"platform"`
-	TargetStoreID     uuid.UUID      `gorm:"type:char(36);index" json:"targetStoreId"`
-	TaskType          string         `gorm:"size:64;index;not null" json:"taskType"`
-	Status            string         `gorm:"size:32;index;not null" json:"status"`
-	PublishStatus     string         `gorm:"size:32;index" json:"publishStatus"`
-	Mode              string         `gorm:"size:32;index;not null" json:"mode"`
-	PublishMode       string         `gorm:"size:32;index" json:"publishMode"`
-	Title             string         `gorm:"size:512" json:"title,omitempty"`
-	Description       string         `gorm:"type:text" json:"description,omitempty"`
-	Images            datatypes.JSON `gorm:"type:jsonb" json:"images,omitempty"`
-	SKUs              datatypes.JSON `gorm:"type:jsonb" json:"skus,omitempty"`
-	Price             *float64       `json:"price,omitempty"`
-	Currency          string         `gorm:"size:16" json:"currency,omitempty"`
-	CheckResult       datatypes.JSON `gorm:"type:jsonb" json:"checkResult,omitempty"`
-	MappingSnapshot   datatypes.JSON `gorm:"type:jsonb" json:"mappingSnapshot,omitempty"`
-	PlatformPayload   datatypes.JSON `gorm:"type:jsonb" json:"platformPayload,omitempty"`
-	PlatformResult    datatypes.JSON `gorm:"type:jsonb" json:"platformResult,omitempty"`
-	PlatformProductID string         `gorm:"size:512;index" json:"platformProductId,omitempty"`
-	PlatformRawError  datatypes.JSON `gorm:"type:jsonb" json:"platformRawError,omitempty"`
-	Retryable         bool           `gorm:"default:false;index" json:"retryable"`
-	RequestID         string         `gorm:"size:128;index" json:"requestId,omitempty"`
-	StartedAt         *time.Time     `json:"startedAt,omitempty"`
-	FinishedAt        *time.Time     `json:"finishedAt,omitempty"`
-	ErrorCode         string         `gorm:"size:96;index" json:"errorCode,omitempty"`
-	ErrorMessage      string         `gorm:"type:text" json:"errorMessage,omitempty"`
-	Input             datatypes.JSON `gorm:"type:jsonb" json:"input,omitempty"`
-	Output            datatypes.JSON `gorm:"type:jsonb" json:"output,omitempty"`
-	CreatedBy         *uuid.UUID     `gorm:"type:char(36);index" json:"createdBy,omitempty"`
-	LockedBy          *string        `gorm:"size:220;index" json:"lockedBy,omitempty"`
-	LockedUntil       *time.Time     `gorm:"index" json:"lockedUntil,omitempty"`
-	LockVersion       int            `gorm:"column:lock_version;default:0;not null" json:"leaseVersion"`
-	HeartbeatAt       *time.Time     `gorm:"index" json:"heartbeatAt,omitempty"`
-	ExecutionID       *string        `gorm:"size:36;index" json:"executionId,omitempty"`
+	TenantID           int64          `gorm:"not null;default:0;index" json:"tenantId"`
+	ProductID          uuid.UUID      `gorm:"type:char(36);index;not null" json:"productId"`
+	ShopID             uuid.UUID      `gorm:"type:char(36);index;not null" json:"shopId"`
+	BatchID            *uuid.UUID     `gorm:"type:char(36);index" json:"batchId,omitempty"`
+	TargetKey          string         `gorm:"size:128;index" json:"targetKey,omitempty"`
+	Platform           string         `gorm:"size:64;index;not null" json:"platform"`
+	TargetStoreID      uuid.UUID      `gorm:"type:char(36);index" json:"targetStoreId"`
+	TaskType           string         `gorm:"size:64;index;not null" json:"taskType"`
+	Status             string         `gorm:"size:32;index;not null" json:"status"`
+	PublishStatus      string         `gorm:"size:32;index" json:"publishStatus"`
+	Mode               string         `gorm:"size:32;index;not null" json:"mode"`
+	PublishMode        string         `gorm:"size:32;index" json:"publishMode"`
+	Title              string         `gorm:"size:512" json:"title,omitempty"`
+	Description        string         `gorm:"type:text" json:"description,omitempty"`
+	Images             datatypes.JSON `gorm:"type:jsonb" json:"images,omitempty"`
+	SKUs               datatypes.JSON `gorm:"type:jsonb" json:"skus,omitempty"`
+	Price              *float64       `json:"price,omitempty"`
+	Currency           string         `gorm:"size:16" json:"currency,omitempty"`
+	CheckResult        datatypes.JSON `gorm:"type:jsonb" json:"checkResult,omitempty"`
+	MappingSnapshot    datatypes.JSON `gorm:"type:jsonb" json:"mappingSnapshot,omitempty"`
+	PlatformPayload    datatypes.JSON `gorm:"type:jsonb" json:"platformPayload,omitempty"`
+	PlatformResult     datatypes.JSON `gorm:"type:jsonb" json:"platformResult,omitempty"`
+	PlatformProductID  string         `gorm:"size:512;index" json:"platformProductId,omitempty"`
+	PlatformRawError   datatypes.JSON `gorm:"type:jsonb" json:"platformRawError,omitempty"`
+	Retryable          bool           `gorm:"default:false;index" json:"retryable"`
+	RequestID          string         `gorm:"size:128;index" json:"requestId,omitempty"`
+	StartedAt          *time.Time     `json:"startedAt,omitempty"`
+	FinishedAt         *time.Time     `json:"finishedAt,omitempty"`
+	ErrorCode          string         `gorm:"size:96;index" json:"errorCode,omitempty"`
+	ErrorMessage       string         `gorm:"type:text" json:"errorMessage,omitempty"`
+	Input              datatypes.JSON `gorm:"type:jsonb" json:"input,omitempty"`
+	Output             datatypes.JSON `gorm:"type:jsonb" json:"output,omitempty"`
+	CreatedBy          *uuid.UUID     `gorm:"type:char(36);index" json:"createdBy,omitempty"`
+	LockedBy           *string        `gorm:"size:220;index" json:"lockedBy,omitempty"`
+	LockedUntil        *time.Time     `gorm:"index" json:"lockedUntil,omitempty"`
+	LockVersion        int            `gorm:"column:lock_version;default:0;not null" json:"leaseVersion"`
+	HeartbeatAt        *time.Time     `gorm:"index" json:"heartbeatAt,omitempty"`
+	ExecutionID        *string        `gorm:"size:36;index" json:"executionId,omitempty"`
+	OperationTaskID    *uuid.UUID     `gorm:"type:char(36);index" json:"operationTaskId,omitempty"`
+	ExecutionAttemptID *uuid.UUID     `gorm:"type:char(36);uniqueIndex;index" json:"executionAttemptId,omitempty"`
+	FrozenPayloadHash  string         `gorm:"size:64;index" json:"frozenPayloadHash,omitempty"`
 }
 
 func (ProductPublishTask) TableName() string { return "product_publish_tasks" }

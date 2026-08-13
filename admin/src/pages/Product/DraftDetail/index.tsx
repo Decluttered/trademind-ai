@@ -140,12 +140,11 @@ import {
   undoProductAITitle,
 } from '@/services/products';
 import { Link } from '@umijs/renderer-react';
+import { history } from '@umijs/max';
 import {
   listProductPublications,
   publishProduct,
-  createDouyinProductDraft,
   listDouyinPublishTasks,
-  retryProductPublishTask,
   getDouyinSkuBindings,
   syncDouyinSkuBindings,
   bindDouyinSku,
@@ -184,7 +183,6 @@ import InventorySyncDisabledBanner from '@/components/inventory/InventorySyncDis
 import { usePermission } from '@/hooks/usePermission';
 import {
   confirmApplyAiText,
-  confirmCreatePlatformDraft,
   confirmInventoryManualAdjust,
   confirmInventorySync,
   confirmPlatformPublishConfigSave,
@@ -1042,9 +1040,9 @@ export default function ProductDraftDetailPage() {
   const douyinMappingFormConnectedRef = useRef(false);
   const [publishSubmitting, setPublishSubmitting] = useState(false);
   const [douyinSaving, setDouyinSaving] = useState(false);
-  const [douyinConfirmingAction, setDouyinConfirmingActionState] = useState<'' | 'config' | 'mapping' | 'create'>('');
-  const douyinConfirmingActionRef = useRef<'' | 'config' | 'mapping' | 'create'>('');
-  const setDouyinConfirmingAction = useCallback((next: '' | 'config' | 'mapping' | 'create') => {
+  const [douyinConfirmingAction, setDouyinConfirmingActionState] = useState<'' | 'config' | 'mapping'>('');
+  const douyinConfirmingActionRef = useRef<'' | 'config' | 'mapping'>('');
+  const setDouyinConfirmingAction = useCallback((next: '' | 'config' | 'mapping') => {
     douyinConfirmingActionRef.current = next;
     setDouyinConfirmingActionState(next);
   }, []);
@@ -1054,7 +1052,6 @@ export default function ProductDraftDetailPage() {
   const [douyinMappingValidating, setDouyinMappingValidating] = useState(false);
   const [douyinImageUploading, setDouyinImageUploading] = useState(false);
   const [douyinImageRetryingKey, setDouyinImageRetryingKey] = useState('');
-  const [douyinDraftCreating, setDouyinDraftCreating] = useState(false);
   const [douyinPublishTasks, setDouyinPublishTasks] = useState<ProductPublishTaskDTO[]>([]);
   const [douyinPublishTasksLoading, setDouyinPublishTasksLoading] = useState(false);
   const [douyinPublishTasksError, setDouyinPublishTasksError] = useState('');
@@ -1839,6 +1836,7 @@ export default function ProductDraftDetailPage() {
 
   const eligibleShopsForPublish = useMemo(() => {
     return shopsList.filter((s) => {
+	  if ((s.platform || '').toLowerCase() === 'douyin_shop') return false;
       const m = platformsMeta.find((x) => x.platform === s.platform);
       const st = m?.capabilityStatus?.product_publish;
       return st === 'available' || st === 'beta';
@@ -1927,34 +1925,15 @@ export default function ProductDraftDetailPage() {
     return false;
   }, [douyinConfig.categoryId, douyinConfig.shopId, douyinMapping, douyinShops, publishReadiness]);
 
-  const handleCreateDouyinDraft = useCallback(() => {
+  const handleOpenDouyinOperationReview = useCallback(() => {
     const shopId = String(douyinConfig.shopId || '').trim();
     if (!shopId) {
       message.error('请选择抖店店铺');
       return;
     }
-    if (douyinConfirmingActionRef.current || douyinDraftCreating) return;
-    setDouyinConfirmingAction('create');
-    window.setTimeout(() => douyinConfirmingActionRef.current === 'create' ? setDouyinConfirmingAction('') : undefined, 800);
-    confirmCreatePlatformDraft(false, async () => {
-      setDouyinDraftCreating(true);
-      try {
-        const task = await createDouyinProductDraft(id, { shopId, publishMode: 'save_as_platform_draft' });
-        message.success('已创建抖店商品草稿，请到抖店后台确认后上架。');
-        await reloadDouyinPublishTasks();
-        await reloadPublicationSkus();
-        await reloadDouyinSkuBindings();
-        if (task.platformProductId) {
-          message.info(`抖店商品 ID：${task.platformProductId}`);
-        }
-      } catch (e: unknown) {
-        message.error((e as Error)?.message || '创建抖店商品草稿失败');
-      } finally {
-        setDouyinDraftCreating(false);
-        setDouyinConfirmingAction('');
-      }
-    });
-  }, [douyinConfig.shopId, douyinDraftCreating, id, reloadDouyinPublishTasks, reloadPublicationSkus, reloadDouyinSkuBindings, setDouyinConfirmingAction]);
+	const query = new URLSearchParams({ create: 'production', productId: id, shopId });
+	history.push(`/ops/task-center/operation-tasks?${query.toString()}`);
+  }, [douyinConfig.shopId, id]);
 
   const shopsForReadinessPlat = useMemo(() => {
     const p = readinessPlat.trim().toLowerCase();
@@ -2116,9 +2095,9 @@ export default function ProductDraftDetailPage() {
     },
     {
       label: '创建草稿',
-      status: douyinCreateDraftDisabled ? '暂不可创建' : '可以手动创建',
+      status: douyinCreateDraftDisabled ? '暂不可审核' : '可以进入审核',
       tone: douyinCreateDraftDisabled ? 'warning' : 'success',
-      detail: '创建抖店商品草稿不等于正式发布或上架。',
+      detail: '进入运营任务中心冻结内容并人工审核，不会直接创建平台草稿。',
     },
     {
       label: '最近任务',
@@ -5332,12 +5311,12 @@ export default function ProductDraftDetailPage() {
                           </div>
                           <div className="product-draft-douyin-flow__panel product-draft-douyin-flow__panel--create">
                             <div className="product-draft-douyin-flow__create-copy">
-                              <Typography.Text strong>6. 创建抖店商品草稿</Typography.Text>
-                              <Typography.Paragraph type="secondary">该操作会在抖店侧创建商品草稿，使用 save_as_platform_draft 模式；不等于正式发布，不等于商品已上线。成功后请查看下方任务记录，并到抖店后台确认后上架。</Typography.Paragraph>
+                              <Typography.Text strong>6. 进入运营任务审核</Typography.Text>
+                              <Typography.Paragraph type="secondary">在运营任务中心冻结当前商品、映射与请求内容，经人工审核后才能创建抖店平台草稿；本页不会直接调用平台写接口。</Typography.Paragraph>
                             </div>
                             <Space wrap className="product-draft-douyin-flow__panel-actions">
-                              <Button type="primary" disabled={douyinCreateDraftDisabled || !!douyinConfirmingAction} loading={douyinDraftCreating} onClick={() => void handleCreateDouyinDraft()}>
-                                创建抖店商品草稿
+                              <Button type="primary" disabled={douyinCreateDraftDisabled || !!douyinConfirmingAction} onClick={handleOpenDouyinOperationReview}>
+                                进入运营任务审核
                               </Button>
                               <Button onClick={() => openDraftLocation('publish', 'douyin-sku-bindings')}>查看 SKU 绑定状态</Button>
                             </Space>
@@ -5369,7 +5348,7 @@ export default function ProductDraftDetailPage() {
                                     { title: '抖店商品 ID', dataIndex: 'platformProductId', ellipsis: true, render: (v) => v || '—' },
                                     { title: '创建时间', dataIndex: 'createdAt', width: 168, render: (v) => formatDateTime(v) },
                                     { title: '失败原因', dataIndex: 'errorMessage', ellipsis: true, render: (v, r) => { const text = (v as string) || formatUserErrorMessage(r.errorCode); return text || '—'; } },
-                                    { title: '操作', width: 120, render: (_, r) => <Space size={4}><Link to={`/product/publish-tasks?productId=${id}`}>详情</Link>{r.status === 'failed' && r.retryable !== false ? <Button type="link" size="small" onClick={() => void retryProductPublishTask(r.id).then(() => { message.success('已重试刊登任务'); void reloadDouyinPublishTasks(); }).catch((e: Error) => message.error(e.message || '重试失败'))}>重试</Button> : null}</Space> },
+                                    { title: '操作', width: 120, render: () => <Link to={`/product/publish-tasks?productId=${id}`}>详情</Link> },
                                   ]}
                                 />
                               )}

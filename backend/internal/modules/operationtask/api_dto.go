@@ -107,12 +107,14 @@ type TaskListResponse struct {
 type DraftSummaryResponse struct {
 	ID           uuid.UUID  `json:"draftId"`
 	DraftVersion int        `json:"draftVersion"`
+	AdapterMode  string     `json:"adapterMode"`
 	PayloadHash  string     `json:"payloadHash"`
 	Status       string     `json:"status"`
 	ChangeReason string     `json:"changeReason,omitempty"`
 	CreatedBy    *uuid.UUID `json:"createdBy,omitempty"`
 	CreatedAt    time.Time  `json:"createdAt"`
 	UpdatedAt    time.Time  `json:"updatedAt"`
+	Payload      any        `json:"payload,omitempty"`
 }
 
 type DraftListResponse struct {

@@ -39,9 +39,12 @@ type RuntimeStatus struct {
 	RealPlatformNetworkEnabled    bool            `json:"realPlatformNetworkEnabled"`
 	RealCredentialsEnabled        bool            `json:"realCredentialsEnabled"`
 	RealInventoryReadEnabled      bool            `json:"realInventoryReadEnabled"`
+	RealProductDraftWriteEnabled  bool            `json:"realProductDraftWriteEnabled"`
 	RealInventoryWriteEnabled     bool            `json:"realInventoryWriteEnabled"`
 	InventoryMutationEnabled      bool            `json:"inventoryMutationEnabled"`
 	BackgroundWorkerEnabled       bool            `json:"backgroundWorkerEnabled"`
+	ProductPublishQueueEnabled    bool            `json:"productPublishQueueEnabled"`
+	ProviderWriteReady            bool            `json:"providerWriteReady"`
 	AutomaticRetryEnabled         bool            `json:"automaticRetryEnabled"`
 	ReadOnlyCapability            bool            `json:"readOnlyCapability"`
 	OfflineOAuthEnabled           bool            `json:"offlineOAuthEnabled"`
@@ -70,9 +73,10 @@ type LastReadStatus struct {
 }
 
 type Service struct {
-	DB     *gorm.DB
-	Config *config.Config
-	Now    func() time.Time
+	DB                 *gorm.DB
+	Config             *config.Config
+	ProviderWriteGuard func(context.Context, uuid.UUID) error
+	Now                func() time.Time
 }
 
 func (s *Service) now() time.Time {
@@ -128,14 +132,16 @@ func (s *Service) Status(ctx context.Context, tenantID int64, allowedShopIDs []u
 	if strings.TrimSpace(s.Config.P10.DouyinAPIBaseURL) != "" {
 		protocolStatus = "official_product_detail_with_local_binding_pagination"
 	}
+	providerWriteReady := s.providerWriteReady(ctx, allowPtr)
 	return &RuntimeStatus{
 		CurrentAllowedLevel: s.Config.P10.CurrentAllowedLevel, Environment: s.Config.AppEnv,
 		DevelopmentStatus: "completed", VerificationStatus: "repository_checks_passed_manual_acceptance_pending", ManualAcceptanceStatus: "pending", ExternalActivationStatus: "blocked_by_external_infrastructure_and_credentials",
 		ProviderProtocolMappingStatus: protocolStatus,
 		RealProviderEnabled:           s.Config.P10.RealProviderEnabled, RealPlatformNetworkEnabled: s.Config.P10.RealPlatformNetworkEnabled, RealCredentialsEnabled: s.Config.P10.RealCredentialsEnabled, RealInventoryReadEnabled: s.Config.P10.RealInventoryReadEnabled,
-		RealInventoryWriteEnabled: false, InventoryMutationEnabled: false, BackgroundWorkerEnabled: false, AutomaticRetryEnabled: false, ReadOnlyCapability: true,
+		RealProductDraftWriteEnabled: s.Config.P10.RealProductDraftWriteEnabled,
+		RealInventoryWriteEnabled:    false, InventoryMutationEnabled: s.Config.P10.InventoryMutationEnabled, BackgroundWorkerEnabled: s.Config.P10.BackgroundWorkerEnabled, ProductPublishQueueEnabled: s.Config.ProductPublishQueueEnabled, ProviderWriteReady: providerWriteReady, AutomaticRetryEnabled: s.Config.P10.AutomaticRetryEnabled, ReadOnlyCapability: !s.Config.P10.RealProductDraftWriteEnabled,
 		OfflineOAuthEnabled: s.Config.P10.OfflineOAuthEnabled, OfflineCredentialAvailable: s.Config.P10.OfflineOAuthEnabled && strings.TrimSpace(s.Config.P10.LocalCredentialKey) != "",
-		Control: control, Allowlist: allowPtr, Gray: grayPtr, LastRead: lastRead, InitialLimits: map[string]int{"maxTenant": 1, "maxShop": 1, "maxSku": 100}, ProductionReady: false, ProductionAcceptancePassed: false,
+		Control: control, Allowlist: allowPtr, Gray: grayPtr, LastRead: lastRead, InitialLimits: map[string]int{"maxTenant": 1, "maxShop": 1, "maxSku": 100}, ProductionReady: writeReady(s.Config, control, allowPtr, grayPtr, providerWriteReady), ProductionAcceptancePassed: grayPtr != nil && grayPtr.OwnerApproved && grayPtr.TechnicalLeadApproved,
 	}, nil
 }
 
@@ -211,11 +217,68 @@ func (s *Service) EvaluateRead(ctx context.Context, tenantID int64, shopID uuid.
 	return nil
 }
 
+// EvaluateWrite authorizes the only supported real mutation: saving one reviewed
+// product as a Douyin platform draft. Every check is repeated immediately before
+// the provider call; a missing row or mismatched scope fails closed.
+func (s *Service) EvaluateWrite(ctx context.Context, tenantID int64, shopID, productID uuid.UUID, skuCount int) error {
+	if s == nil || s.Config == nil || s.DB == nil || tenantID <= 0 || shopID == uuid.Nil || productID == uuid.Nil || skuCount < 1 || skuCount > 100 {
+		return ErrScopeExceeded
+	}
+	control, err := s.getOrDefaultControl(ctx, tenantID)
+	if err != nil {
+		return err
+	}
+	if control.ProviderKillActive || control.TenantKillActive || control.ShopKillActive || control.WriteKillActive {
+		return ErrBlocked
+	}
+	p10 := s.Config.P10
+	if !strings.EqualFold(p10.CurrentAllowedLevel, "L3") || !p10.RealProviderEnabled || !p10.RealPlatformNetworkEnabled || !p10.RealCredentialsEnabled || !p10.RealProductDraftWriteEnabled || !p10.BackgroundWorkerEnabled || !s.Config.ProductPublishQueueEnabled || p10.AutomaticRetryEnabled {
+		return ErrBlocked
+	}
+	if s.ProviderWriteGuard == nil || s.ProviderWriteGuard(ctx, shopID) != nil {
+		return ErrBlocked
+	}
+	var shopCount int64
+	if err := s.DB.WithContext(ctx).Table("shops").Where("id = ? AND tenant_id = ? AND platform = ? AND auth_status = ?", shopID, tenantID, "douyin_shop", "authorized").Count(&shopCount).Error; err != nil || shopCount != 1 {
+		return ErrBlocked
+	}
+	var productCount int64
+	if err := s.DB.WithContext(ctx).Table("products").Where("id = ? AND tenant_id = ?", productID, tenantID).Count(&productCount).Error; err != nil || productCount != 1 {
+		return ErrBlocked
+	}
+	var allow ScopeAllowlist
+	if err := s.DB.WithContext(ctx).Where("tenant_id = ? AND shop_id = ? AND enabled = ?", tenantID, shopID, true).First(&allow).Error; err != nil {
+		return ErrBlocked
+	}
+	var gray GrayPolicy
+	if err := s.DB.WithContext(ctx).Where("tenant_id = ? AND shop_id = ?", tenantID, shopID).First(&gray).Error; err != nil {
+		return ErrBlocked
+	}
+	if !gray.OwnerApproved || !gray.TechnicalLeadApproved || gray.Status != GrayActive || skuCount > gray.MaxSKU {
+		return ErrBlocked
+	}
+	return nil
+}
+
+func (s *Service) providerWriteReady(ctx context.Context, allow *ScopeAllowlist) bool {
+	return s != nil && s.ProviderWriteGuard != nil && allow != nil && allow.Enabled && s.ProviderWriteGuard(ctx, allow.ShopID) == nil
+}
+
+func writeReady(cfg *config.Config, control RuntimeControl, allow *ScopeAllowlist, gray *GrayPolicy, providerWriteReady bool) bool {
+	if cfg == nil || allow == nil || gray == nil {
+		return false
+	}
+	p10 := cfg.P10
+	return strings.EqualFold(p10.CurrentAllowedLevel, "L3") && p10.RealProviderEnabled && p10.RealPlatformNetworkEnabled && p10.RealCredentialsEnabled && p10.RealProductDraftWriteEnabled && p10.BackgroundWorkerEnabled && cfg.ProductPublishQueueEnabled && !p10.AutomaticRetryEnabled && providerWriteReady &&
+		!control.ProviderKillActive && !control.TenantKillActive && !control.ShopKillActive && !control.WriteKillActive && allow.Enabled && gray.Status == GrayActive && gray.OwnerApproved && gray.TechnicalLeadApproved
+}
+
 type SwitchUpdate struct {
 	ProviderKillActive bool `json:"providerKillActive"`
 	TenantKillActive   bool `json:"tenantKillActive"`
 	ShopKillActive     bool `json:"shopKillActive"`
 	ReadKillActive     bool `json:"readKillActive"`
+	WriteKillActive    bool `json:"writeKillActive"`
 	ExpectedRevision   int  `json:"expectedRevision"`
 }
 
@@ -238,14 +301,14 @@ func (s *Service) UpdateSwitches(ctx context.Context, actor Actor, input SwitchU
 			return ErrRevisionConflict
 		}
 		now := s.now()
-		updates := map[string]any{"provider_kill_active": input.ProviderKillActive, "tenant_kill_active": input.TenantKillActive, "shop_kill_active": input.ShopKillActive, "read_kill_active": input.ReadKillActive, "write_kill_active": true, "revision": out.Revision + 1, "updated_at": now}
+		updates := map[string]any{"provider_kill_active": input.ProviderKillActive, "tenant_kill_active": input.TenantKillActive, "shop_kill_active": input.ShopKillActive, "read_kill_active": input.ReadKillActive, "write_kill_active": input.WriteKillActive, "revision": out.Revision + 1, "updated_at": now}
 		res := tx.Model(&RuntimeControl{}).Where("tenant_id = ? AND revision = ?", actor.TenantID, out.Revision).Updates(updates)
 		if res.Error != nil || res.RowsAffected != 1 {
 			return ErrRevisionConflict
 		}
-		out.ProviderKillActive, out.TenantKillActive, out.ShopKillActive, out.ReadKillActive, out.WriteKillActive = input.ProviderKillActive, input.TenantKillActive, input.ShopKillActive, input.ReadKillActive, true
+		out.ProviderKillActive, out.TenantKillActive, out.ShopKillActive, out.ReadKillActive, out.WriteKillActive = input.ProviderKillActive, input.TenantKillActive, input.ShopKillActive, input.ReadKillActive, input.WriteKillActive
 		out.Revision++
-		return audit(tx, actor, "kill_switch_change", map[string]any{"provider": out.ProviderKillActive, "tenant": out.TenantKillActive, "shop": out.ShopKillActive, "read": out.ReadKillActive, "write": true})
+		return audit(tx, actor, "kill_switch_change", map[string]any{"provider": out.ProviderKillActive, "tenant": out.TenantKillActive, "shop": out.ShopKillActive, "read": out.ReadKillActive, "write": out.WriteKillActive})
 	})
 	return &out, err
 }
@@ -312,13 +375,77 @@ func (s *Service) SaveGrayDraft(ctx context.Context, actor Actor, shopID uuid.UU
 			if out.Revision != expectedRevision || out.Status == GrayActive {
 				return ErrRevisionConflict
 			}
-			res := tx.Model(&GrayPolicy{}).Where("tenant_id = ? AND revision = ?", actor.TenantID, expectedRevision).Updates(map[string]any{"shop_id": shopID, "max_sku": maxSKU, "status": GrayDraft, "owner_approved": false, "technical_lead_approved": false, "revision": expectedRevision + 1, "updated_at": s.now()})
+			res := tx.Model(&GrayPolicy{}).Where("tenant_id = ? AND revision = ?", actor.TenantID, expectedRevision).Updates(map[string]any{"shop_id": shopID, "max_sku": maxSKU, "status": GrayDraft, "owner_approved": false, "technical_lead_approved": false, "owner_approved_by": nil, "technical_lead_approved_by": nil, "owner_approved_at": nil, "technical_lead_approved_at": nil, "approved_at": nil, "activated_at": nil, "revision": expectedRevision + 1, "updated_at": s.now()})
 			if res.Error != nil || res.RowsAffected != 1 {
 				return ErrRevisionConflict
 			}
 			out.ShopID, out.MaxSKU, out.Status, out.OwnerApproved, out.TechnicalLeadApproved, out.Revision = shopID, maxSKU, GrayDraft, false, false, expectedRevision+1
 		}
 		return audit(tx, actor, "gray_scope_change", map[string]any{"shopId": shopID.String(), "maxSku": maxSKU, "approvalReset": true})
+	})
+	return &out, err
+}
+
+func (s *Service) ApproveGray(ctx context.Context, actor Actor, role string, expectedRevision int) (*GrayPolicy, error) {
+	role = strings.TrimSpace(strings.ToLower(role))
+	if actor.TenantID <= 0 || actor.UserID == uuid.Nil || expectedRevision < 1 || (role != "owner" && role != "technical_lead") {
+		return nil, ErrInvalidControl
+	}
+	var out GrayPolicy
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("tenant_id = ?", actor.TenantID).First(&out).Error; err != nil {
+			return mapConflict(err)
+		}
+		if out.Revision != expectedRevision || (out.Status != GrayDraft && out.Status != GrayPendingApproval) {
+			return ErrRevisionConflict
+		}
+		if (role == "owner" && out.TechnicalLeadApprovedBy != nil && *out.TechnicalLeadApprovedBy == actor.UserID) || (role == "technical_lead" && out.OwnerApprovedBy != nil && *out.OwnerApprovedBy == actor.UserID) {
+			return ErrBlocked
+		}
+		now := s.now()
+		updates := map[string]any{"status": GrayPendingApproval, "revision": out.Revision + 1, "updated_at": now}
+		if role == "owner" {
+			updates["owner_approved"], updates["owner_approved_by"], updates["owner_approved_at"] = true, actor.UserID, now
+			out.OwnerApproved, out.OwnerApprovedBy, out.OwnerApprovedAt = true, &actor.UserID, &now
+		} else {
+			updates["technical_lead_approved"], updates["technical_lead_approved_by"], updates["technical_lead_approved_at"] = true, actor.UserID, now
+			out.TechnicalLeadApproved, out.TechnicalLeadApprovedBy, out.TechnicalLeadApprovedAt = true, &actor.UserID, &now
+		}
+		if out.OwnerApproved && out.TechnicalLeadApproved {
+			updates["status"], updates["approved_at"] = GrayApproved, now
+			out.Status, out.ApprovedAt = GrayApproved, &now
+		} else {
+			out.Status = GrayPendingApproval
+		}
+		res := tx.Model(&GrayPolicy{}).Where("tenant_id = ? AND revision = ?", actor.TenantID, expectedRevision).Updates(updates)
+		if res.Error != nil || res.RowsAffected != 1 {
+			return ErrRevisionConflict
+		}
+		out.Revision++
+		return audit(tx, actor, "gray_"+role+"_approval", map[string]any{"shopId": out.ShopID.String(), "role": role})
+	})
+	return &out, err
+}
+
+func (s *Service) ActivateGray(ctx context.Context, actor Actor, expectedRevision int) (*GrayPolicy, error) {
+	if actor.TenantID <= 0 || actor.UserID == uuid.Nil || expectedRevision < 1 {
+		return nil, ErrInvalidControl
+	}
+	var out GrayPolicy
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("tenant_id = ?", actor.TenantID).First(&out).Error; err != nil {
+			return mapConflict(err)
+		}
+		if out.Revision != expectedRevision || out.Status != GrayApproved || !out.OwnerApproved || !out.TechnicalLeadApproved || out.OwnerApprovedBy == nil || out.TechnicalLeadApprovedBy == nil || *out.OwnerApprovedBy == *out.TechnicalLeadApprovedBy {
+			return ErrBlocked
+		}
+		now := s.now()
+		res := tx.Model(&GrayPolicy{}).Where("tenant_id = ? AND revision = ?", actor.TenantID, expectedRevision).Updates(map[string]any{"status": GrayActive, "activated_at": now, "revision": expectedRevision + 1, "updated_at": now})
+		if res.Error != nil || res.RowsAffected != 1 {
+			return ErrRevisionConflict
+		}
+		out.Status, out.ActivatedAt, out.Revision = GrayActive, &now, out.Revision+1
+		return audit(tx, actor, "gray_activate", map[string]any{"shopId": out.ShopID.String()})
 	})
 	return &out, err
 }
@@ -355,7 +482,6 @@ func (s *Service) PauseOrStopGray(ctx context.Context, actor Actor, action strin
 func (s *Service) getOrDefaultControl(ctx context.Context, tenantID int64) (RuntimeControl, error) {
 	var row RuntimeControl
 	if err := s.DB.WithContext(ctx).Where("tenant_id = ?", tenantID).First(&row).Error; err == nil {
-		row.WriteKillActive = true
 		return row, nil
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return RuntimeControl{}, err
@@ -381,7 +507,7 @@ func mapConflict(err error) error {
 func SafeErrorCode(err error) string {
 	switch {
 	case errors.Is(err, ErrBlocked):
-		return "P10_READ_BLOCKED"
+		return "P10_CAPABILITY_BLOCKED"
 	case errors.Is(err, ErrScopeExceeded):
 		return "P10_SCOPE_EXCEEDED"
 	case errors.Is(err, ErrRevisionConflict):

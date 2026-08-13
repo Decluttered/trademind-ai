@@ -2,6 +2,7 @@ import { Alert, Descriptions, Tag, Tooltip, Typography } from 'antd';
 import { TaskJsonBlock } from '@/components/ui';
 import {
   NON_PRODUCTION_BOUNDARY_COPY,
+  OPERATION_ACTOR_TYPE_LABELS,
   OPERATION_ADAPTER_MODE_LABELS,
   OPERATION_ATTEMPT_STATUS_LABELS,
   OPERATION_DRAFT_STATUS_LABELS,
@@ -19,6 +20,8 @@ import {
   type LocalizedLabel,
 } from '@/constants/operationTasks';
 import type { OperationTaskAPIError } from '@/services/operationTasks';
+import type { ProductionRuntimeStatus } from '@/services/productionControl';
+import { productionDraftBlockReason } from '@/services/productionControl';
 
 const SENSITIVE_KEY = /(token|secret|credential|password|cookie|authorization|oauth|accesskey|refresh)/i;
 
@@ -77,6 +80,17 @@ export function eventTypeLabel(value?: string | null) {
   return OPERATION_EVENT_TYPE_LABELS[key]?.zhCN ?? `未知事件（${key}）`;
 }
 
+export function actorTypeLabel(value?: string | null) {
+  return labelFromRecord(OPERATION_ACTOR_TYPE_LABELS, value);
+}
+
+const OPERATION_TASK_DETAIL_TABS = new Set(['drafts', 'attempts', 'events']);
+
+export function normalizeOperationTaskTab(value?: string | null) {
+  const key = (value ?? '').trim();
+  return OPERATION_TASK_DETAIL_TABS.has(key) ? key : 'drafts';
+}
+
 export function operationErrorMessage(error?: OperationTaskAPIError | null) {
   if (!error) return undefined;
   if (error.errorCode && OPERATION_ERROR_LABELS[error.errorCode]) return OPERATION_ERROR_LABELS[error.errorCode];
@@ -131,6 +145,40 @@ export function NonProductionBoundary() {
           </Descriptions>
         </div>
       }
+    />
+  );
+}
+
+export function ProductionRuntimeBoundary({
+  status,
+  loading = false,
+  error,
+}: {
+  status?: ProductionRuntimeStatus | null;
+  loading?: boolean;
+  error?: string;
+}) {
+  const blockedReason = productionDraftBlockReason(status);
+  const ready = !!status?.productionReady && !error;
+  return (
+    <Alert
+      type={ready ? 'success' : 'warning'}
+      showIcon
+      message={ready ? '平台草稿写入已受控启用' : '平台草稿写入未就绪'}
+      description={(
+        <div>
+          <Typography.Paragraph style={{ marginBottom: 8 }}>
+            {loading
+              ? '正在核对实时运行控制，核对完成前禁止真实平台写入。'
+              : error || blockedReason || '仅允许对人工审核冻结快照执行创建平台草稿，不会发布或上架。'}
+          </Typography.Paragraph>
+          <Descriptions size="small" column={{ xs: 1, sm: 3 }}>
+            <Descriptions.Item label="能力级别">{status?.currentAllowedLevel || '未确认'}</Descriptions.Item>
+            <Descriptions.Item label="允许店铺">{status?.allowlist?.enabled ? copyableText(status.allowlist.shopId, 12) : '无'}</Descriptions.Item>
+            <Descriptions.Item label="执行边界">仅创建平台草稿</Descriptions.Item>
+          </Descriptions>
+        </div>
+      )}
     />
   );
 }

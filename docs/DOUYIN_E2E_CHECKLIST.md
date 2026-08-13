@@ -12,6 +12,7 @@
 
 - 无 App Key / Secret、未授权店铺或缺少公网 Storage 时，结论必须记录为 **`blocked_by_real_credentials`** 或 **`blocked_by_environment`**，不得伪造通过。
 - 只读检查可由维护者在受控环境人工执行；任何真实平台写操作必须先取得明确审批。
+- 仓库默认 `L0`。只有发布工单批准的 `L3` 才允许运营任务中心创建 `save_as_platform_draft`；不允许正式发布、上架、库存写入、自动业务重试、无审核执行或多店扩容。
 - 验收结果记录在 PR 或发布工单，不向仓库提交 JSON、Markdown 报告、截图或日志产物。
 
 ### 1.2 手工检查项
@@ -27,6 +28,10 @@
 | `order_sync_enabled` | 订单同步开关 | 平台开放配置 → **启用订单同步** = 开 |
 | `inventory_sync_enabled` | 库存同步开关 | 平台开放配置 → **启用库存同步** = 开 |
 | `product_publish_enabled` | 商品草稿创建开关 | 建议开启 |
+| P10 L3 草稿写配置 | Provider/网络/凭据/草稿写/Worker=true，刊登队列和任务回收器=true，自动重试与库存 mutation=false | 后端启动校验通过，`GET /api/v1/p10/status` 与工单一致 |
+| 生产控制范围 | 单租户、单白名单已授权店铺、`maxSku<=100` | allowlist 与 active gray 指向同一店铺 |
+| 双人灰度审批 | 两名不同管理员分别承担 Owner 与 Technical Lead 职责 | 工单身份核验 + gray revision 审计 |
+| 写入 kill switch | provider / tenant / shop / write 默认阻断 | 最终 go/no-go 前保持 active，并完成逐级演练 |
 | 测试商品 | 至少 1 个可编辑草稿 | 含标题、价格 |
 | 有 SKU 的商品 | 至少 1 个规格 | 采集或手工维护 |
 | 主图 + 详情图 | 各至少 1 张 | 发布前检查会通过 |
@@ -175,12 +180,14 @@
 
 | 字段 | 内容 |
 | --- | --- |
-| **操作入口** | 刊登 Tab → **创建抖店商品草稿**（默认 `save_as_platform_draft`，不上架） |
-| **预期成功** | 返回 `platformProductId`；刊登任务 success；`product_publications` 写入 |
-| **常见失败** | 未授权；主图未上传；类目/属性缺失；SKU 价格无效；平台 API 错误 |
-| **排查位置** | 刊登任务页；商品详情刊登 Tab；失败任务中心 `DOUYIN_CREATE_PRODUCT_FAILED` |
+| **操作入口** | 商品详情的抖店操作跳转 **运营任务中心** → 创建平台草稿任务 → 核对冻结快照 → 人工审核 → 执行（`save_as_platform_draft`，不上架） |
+| **预期成功** | 创建阶段只冻结商品/映射/请求且不访问平台；批准 exact version/hash 后执行一次；返回 `platformProductId`，刊登任务 success，运营任务 `draft_written`，`product_publications` 与 SKU 映射事务写入 |
+| **常见失败** | L0/kill switch 阻断；白名单或 active gray 不一致；双人审批缺失；未授权；类目/属性/图片/SKU 无效；队列不可用；平台 API 错误或结果未知 |
+| **排查位置** | 运营任务详情的草稿/审核/执行/审计 Tab；刊登任务详情；P10 status；失败中心。旧 `.../create-draft` 固定 409 `DOUYIN_OPERATION_TASK_REQUIRED` |
 | **失败任务中心** | 是 |
-| **可重试** | 是（刊登任务重试） |
+| **可重试** | 仅已知失败且运营任务返回 `retryable=true` 时由运营任务中心人工重试；`result_unknown` 禁止重试/重建，只能人工只读恢复对账 |
+
+**人工恢复验证：** 使用具备 `operationtask.execute` 与店铺操作权限的账号，对下游任务、执行尝试和运营任务三层均为 `result_unknown` 的记录调用刊登任务 `recover-douyin-draft`（或 `douyin/recover` 别名），确认请求只执行 `product.detail`。排队中、执行中、已知失败或普通任务固定 409 `DOUYIN_RECOVERY_NOT_ALLOWED` 且状态不变；找到相同 `outer_product_id` 时两个任务中心收敛成功，未找到时保持不可重试并交人工调查。不得从传统刊登、多目标、批量、单任务重试或批次重试入口重建抖店草稿。
 
 ### 2.14 校准 SKU 绑定
 
@@ -252,6 +259,10 @@
 | 7 | 图片下载禁止内网地址 | 内网 URL 报 `private network` | 抖店图片上传前校验 |
 | 8 | 前端不直连抖店 API | 无抖店域名请求 | 浏览器 Network |
 | 9 | 抖店调用走后端 Client | 全部经 `/api/v1/*` | 代码审查 `douyinshop.Client` |
+| 10 | 抖店草稿写只有运营任务入口 | 旧直接创建固定 409；传统/多目标/批量/重试入口零写 | Browser Network + DB 前后计数 |
+| 11 | 冻结与审批绑定 | Worker 平台访问前校验 exact task/draft/approval/attempt/downstream/hash | 审计时间线 + 篡改负例 |
+| 12 | 未知结果不自动重建 | `result_unknown` 为不可重试，仅人工只读对账 | 刊登任务、运营任务与平台草稿箱 |
+| 13 | 运行时控制优先 | provider/tenant/shop/write 任一 kill switch 阻断平台调用 | 逐级 kill switch 演练 |
 
 ---
 
@@ -262,6 +273,7 @@
 | P0 | 无真实抖店凭证未完成 E2E | 无法证明线上字段对齐 | 使用真实 App + 测试店跑本清单 |
 | P0 | `public_base` 非公网 | 图片上传/抖店拉取失败 | 生产配置 HTTPS 公网前缀 |
 | P0 | `product.addV2` / `product.detail` 字段与线上一致性 | 创建草稿或 SKU 绑定失败 | 真实环境校准 payload，记录 requestId |
+| P0 | 平台成功与本地提交/回写之间进程中断 | 两个任务中心状态暂时分裂 | 事务 outbox + 任务租约/reaper + 人工只读对账，不自动重建 |
 | P1 | `order.searchList` 分页/时间字段差异 | 漏单或 partial_success | 对照官方文档与 `pageErrors` |
 | P1 | `sku.syncStock` 参数差异 | 库存同步失败 | 失败任务中心重试 + 日志 |
 | P1 | SKU 自动匹配 ambiguous 率高 | 需人工绑定才能同步库存 | 刊登 Tab 手动绑定流程 |
@@ -277,11 +289,17 @@
 
 - [ ] 本清单 2.1–2.18 全部通过或已知问题记入 PROGRESS 遗留
 - [ ] GitHub Actions 中 backend、contract、Admin build 与 Admin E2E 等受影响工作流通过
+- [ ] PostgreSQL migration/唯一约束与 Redis queue/outbox/reaper 回归在隔离 CI service container 通过
 - [ ] 生产预检、只读检查和受控写链路均由维护者在授权环境人工执行
+- [ ] 备份、隔离恢复、应用回滚、四级写 kill switch 与灰度暂停/停止演练已在发布工单记录
+- [ ] 两名不同管理员分别承担 Owner/Technical Lead 审批职责，且单租户/单店/最多 100 SKU 范围与工单一致
+- [ ] 默认 L0 配置未被提交；目标环境 L3 只允许平台草稿写，自动重试和库存 mutation 保持关闭
 - [ ] 脱敏结论已记录在 PR 或发布工单，未向仓库提交 JSON、Markdown 报告、截图或日志
 - [ ] `git diff --check` 无冲突标记
 - [ ] `P10_MANUAL_ACCEPTANCE_CHECKLIST.md` 中相关流程已人工签收
 - [ ] `docs/PROGRESS.md` 已更新阶段状态
+
+在 CI、真实凭据、备份恢复、灰度、回滚、人工验收和发布工单全部签收前，结论只能是“代码具备受控生产执行候选能力”，不得记录为“已上线”。
 
 ---
 

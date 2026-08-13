@@ -131,9 +131,9 @@ docker compose -f docker-compose.full.yml up -d --build
 | `ORDER_SYNC_*` | `ORDER_SYNC_QUEUE_ENABLED`、`ORDER_SYNC_QUEUE_NAME` | backend | 平台订单同步任务。 |
 | `CUSTOMER_MESSAGE_SYNC_*` | `CUSTOMER_MESSAGE_SYNC_QUEUE_NAME`、`CUSTOMER_MESSAGE_SYNC_WORKER_CONCURRENCY`、`CUSTOMER_MESSAGE_SYNC_TASK_TIMEOUT_SECONDS` | backend | 客服消息同步 Redis 队列基础设施；自动同步开关在 Admin「客服 / AI 自动回复」中管理。 |
 | `CUSTOMER_AUTO_REPLY_*` | `CUSTOMER_AUTO_REPLY_QUEUE_NAME`（默认 `customer:auto:reply:tasks`）、`CUSTOMER_AUTO_REPLY_WORKER_CONCURRENCY`（默认 `1`） | backend | AI 客服自动回复的独立 Redis 队列基础设施。总开关和轮询间隔改由 Admin 页面持久化管理，默认关闭；仅低风险消息可自动发送，失败不自动重试。 |
-| `PRODUCT_PUBLISH_*` | `PRODUCT_PUBLISH_QUEUE_ENABLED`、`PUBLISH_BATCH_MAX_PRODUCTS`（100）、`PUBLISH_BATCH_MAX_TARGETS`（20）、`PUBLISH_BATCH_MAX_TASKS`（300） | backend | 商品刊登任务队列与批量矩阵上限。 |
+| `PRODUCT_PUBLISH_*` | `PRODUCT_PUBLISH_QUEUE_ENABLED`、`PUBLISH_BATCH_MAX_PRODUCTS`（100）、`PUBLISH_BATCH_MAX_TARGETS`（20）、`PUBLISH_BATCH_MAX_TASKS`（300） | backend | 商品刊登任务队列与批量矩阵上限。L3 抖店草稿写要求 `PRODUCT_PUBLISH_QUEUE_ENABLED=true`。 |
 | `INVENTORY_SYNC_*` | `INVENTORY_SYNC_QUEUE_ENABLED` | backend | 库存同步任务。 |
-| `WORKER_*` | `WORKER_HEARTBEAT_ENABLED`、`WORKER_REAPER_ENABLED` | backend | 多实例 Worker 心跳、过期判断和回收。 |
+| `WORKER_*` | `WORKER_HEARTBEAT_ENABLED`、`WORKER_REAPER_ENABLED` | backend | 多实例 Worker 心跳、过期判断和回收。L3 抖店草稿写要求 `WORKER_REAPER_ENABLED=true`，以便进程中断后将未知平台结果转入人工核对。 |
 | `TASK_ALERT_*` | `TASK_ALERT_SCAN_ENABLED`、`TASK_ALERT_SCAN_INTERVAL_SECONDS` | backend | 任务告警扫描。 |
 | `BACKUP_*` | `BACKUP_ENABLED`、`BACKUP_MODE`、`BACKUP_STORAGE_PROVIDER`、`BACKUP_ENCRYPTION_ENABLED`、`BACKUP_RETENTION_DAILY` | backend | P6 备份、加密、校验、保留与恢复演练门闸。生产环境要求加密开启，且不得使用本地单副本。 |
 | `POSTGRES_*` | `POSTGRES_BACKUP_FORMAT`、`POSTGRES_PG_DUMP_PATH`、`POSTGRES_PG_RESTORE_PATH`、`POSTGRES_WAL_ARCHIVE_ENABLED`、`POSTGRES_PITR_ENABLED` | backend | PostgreSQL 逻辑备份与 PITR 基础配置。真实生产 PITR 演练保持 Deferred。 |
@@ -177,7 +177,7 @@ P10 reuses `APP_ENV=staging` as the only pre-production profile. Do not introduc
 
 For pre-production, copy `.env.example` to `.env`, set `APP_ENV=staging`, and fill the target host's non-secret identities. The P10 preflight requires explicit, pairwise-distinct identities for development/test, pre-production, and production database and Redis resources. It also requires a distinct session namespace, non-overlapping cookie domains, distinct Admin/API endpoints, a non-local staging storage mode, a matching credentialed CORS origin, explicit migration/backup/restore targets, previous immutable images, and external secret references. Inline secret values, missing or unknown environments, and production targets fail closed.
 
-`P10_PRODUCTION_RESTORE_ENABLED` must remain `false`. All real Provider/network/read/write, mutation, queue/worker, and automatic business retry flags remain disabled at L0. Run the non-secret contract check with:
+`P10_PRODUCTION_RESTORE_ENABLED` must remain `false`. All real Provider/network/read/write, mutation, queue/worker, and automatic business retry flags remain disabled at L0. L3 exists only as an externally approved single-tenant, single-allowlisted-shop Douyin platform-draft write profile; it does not allow publishing online, inventory mutation, automatic business retry, unreviewed execution, or multi-shop expansion. Run the non-secret contract check with:
 
 ```bash
 node scripts/p10-preproduction-preflight.mjs --mode config
@@ -200,7 +200,7 @@ The project is in production maintenance, while repository runtime controls rema
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `P10_CURRENT_ALLOWED_LEVEL` | `L0` | Only accepted level in this development round. |
+| `P10_CURRENT_ALLOWED_LEVEL` | `L0` | Runtime capability level. Repository default is L0; L3 is accepted only for the separately approved platform-draft write profile. |
 | `P10_OFFLINE_OAUTH_ENABLED` | `false` | Enables development/test-only offline OAuth fixtures. Forbidden in staging/production. |
 | `P10_LOCAL_CREDENTIAL_KEY` | empty | Development/test-only local key material. Never commit a value; forbidden in staging/production. |
 | `P10_LOCAL_CREDENTIAL_KEY_REF` | `local-development-v1` | Non-secret local key reference. |
@@ -218,8 +218,9 @@ The project is in production maintenance, while repository runtime controls rema
 | `P10_REAL_PLATFORM_NETWORK_ENABLED` | `false` | Real network feature flag; rejected when true at L0. |
 | `P10_REAL_CREDENTIALS_ENABLED` | `false` | Real credential feature flag; rejected when true at L0. |
 | `P10_REAL_INVENTORY_READ_ENABLED` | `false` | Real read feature flag; rejected when true at L0. |
+| `P10_REAL_PRODUCT_DRAFT_WRITE_ENABLED` | `false` | Allows only reviewed Douyin `save_as_platform_draft` writes at L3. It never permits online publish or inventory mutation. |
 | `P10_INVENTORY_MUTATION_ENABLED` | `false` | Inventory mutation guard; must remain false. |
-| `P10_BACKGROUND_WORKER_ENABLED` | `false` | P10 Worker guard; must remain false. |
-| `P10_AUTOMATIC_RETRY_ENABLED` | `false` | Automatic business retry guard; must remain false. |
+| `P10_BACKGROUND_WORKER_ENABLED` | `false` | P10 production Worker guard; required only for the approved L3 platform-draft profile. |
+| `P10_AUTOMATIC_RETRY_ENABLED` | `false` | Automatic business retry guard. It must remain false for real platform-draft writes. |
 
-No current configuration can promote the application beyond L0. Promotion requires later code/config review plus manual and external acceptance; setting any real capability flag now makes startup validation fail.
+The committed template remains L0 and fail closed. A release work order may set L3 only after CI, backup/restore/rollback rehearsal, real-platform acceptance and two different administrators acting as Owner and Technical Lead have approved the same gray scope. L3 startup additionally requires the Provider/network/credential/draft-write/Worker flags, `PRODUCT_PUBLISH_QUEUE_ENABLED=true`, `WORKER_REAPER_ENABLED=true`, an enabled one-tenant/one-shop allowlist, an active gray policy, and provider/tenant/shop/write kill switches all released. `P10_AUTOMATIC_RETRY_ENABLED` and `P10_INVENTORY_MUTATION_ENABLED` remain false. Configuration alone does not mean the feature is live; the database controls and runtime guards are re-evaluated before every platform call.

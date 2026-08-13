@@ -9,6 +9,35 @@
     { "method": "GET", "path": "/api/v1/image/providers", "auth": true, "responseData": "ImageProviderList" },
     {
       "method": "GET",
+      "path": "/api/v1/p10/status",
+      "auth": true,
+      "responseData": "ProductionRuntimeStatus",
+      "requiredResponseFields": ["providerWriteReady", "productionReady"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/operation-tasks",
+      "auth": true,
+      "requestBody": ["sourceType", "sourceReference", "taskType", "platform", "title", "summary", "payload", "priority"],
+      "responseData": "OperationTaskDetail"
+    },
+    { "method": "GET", "path": "/api/v1/operation-tasks/:id", "auth": true, "responseData": "OperationTaskDetail" },
+    {
+      "method": "POST",
+      "path": "/api/v1/operation-tasks/:id/approve",
+      "auth": true,
+      "requestBody": ["draftVersion", "draftPayloadHash", "reason", "comment", "expectedTaskRevision"],
+      "responseData": "ApprovalSummary"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/operation-tasks/:id/execute",
+      "auth": true,
+      "requestBody": ["expectedTaskRevision", "adapterMode"],
+      "responseData": "ExecutionResponse"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/observability/alerts",
       "auth": true,
       "query": ["page", "pageSize", "status", "severity", "module"],
@@ -35,17 +64,67 @@
     { "method": "GET", "path": "/api/v1/products/:id/publish-targets", "auth": true, "responseData": "PublishTargetsResponse" },
     {
       "method": "POST",
+      "path": "/api/v1/products/:id/publish-targets/create-drafts",
+      "auth": true,
+      "requestBody": ["targets", "onlyReady", "retryFailedOnly"],
+      "responseData": "PublishTargetsCreateDraftsResponse",
+      "douyinPolicy": "reject_entire_request_before_write"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/product-publish/batch-targets/create-drafts",
+      "auth": true,
+      "requestBody": ["productIds", "targets", "onlyReady", "includeWarnings", "commonConfig", "overrides", "force"],
+      "responseData": "BatchTargetsCreateDraftsResponse",
+      "douyinPolicy": "reject_entire_request_before_idempotency_or_batch_write"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/product-publish/tasks/:id/retry",
+      "auth": true,
+      "requestBody": [],
+      "responseData": "ProductPublishTaskDTO",
+      "douyinPolicy": "reject_without_task_state_change"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/product-publish/tasks/:id/recover-douyin-draft",
+      "auth": true,
+      "requestBody": [],
+      "responseData": "ProductPublishTaskDTO",
+      "requiredPermission": "operationtask.execute",
+      "douyinPolicy": "read_only_reconcile_result_unknown_only",
+      "fixedStateError": {
+        "httpStatus": 409,
+        "dataErrorCode": "DOUYIN_RECOVERY_NOT_ALLOWED"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/product-publish/batches/:id/retry-failed",
+      "auth": true,
+      "requestBody": [],
+      "responseData": "BatchTargetsCreateDraftsResponse",
+      "douyinPolicy": "reject_entire_batch_without_task_state_change"
+    },
+    {
+      "method": "POST",
       "path": "/api/v1/products/:id/platform-configs/douyin_shop/create-draft",
       "auth": true,
       "requestBody": ["shopId", "publishMode", "force"],
-      "responseData": "ProductPublishTaskDTO"
+      "responseData": "OperationTaskRequiredError",
+      "fixedError": {
+        "httpStatus": 409,
+        "dataErrorCode": "DOUYIN_OPERATION_TASK_REQUIRED"
+      }
     },
     {
       "method": "POST",
       "path": "/api/v1/products/:id/publish",
       "auth": true,
       "requestBody": ["shopId", "options", "force"],
-      "responseData": "ProductPublishTaskDTO"
+      "responseData": "ProductPublishTaskDTO",
+      "douyinPolicy": "reject_before_task_write"
     },
     { "method": "GET", "path": "/api/v1/customer/dashboard", "auth": true, "responseData": "CustomerDashboardSummary" },
     { "method": "GET", "path": "/api/v1/customer/auto-reply-setting", "auth": true, "responseData": "CustomerAutoReplySetting" },

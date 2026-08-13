@@ -9,6 +9,7 @@ export type WriteRecord = {
   url: string;
   path: string;
   query: Record<string, string>;
+  headers: Record<string, string>;
   postDataJSON: unknown;
   order: number;
 };
@@ -17,7 +18,7 @@ type AllowRule = {
   operation: string;
   method: HttpMethod;
   path: RegExp;
-  response?: unknown | ((record: WriteRecord) => unknown);
+  response?: unknown | ((record: WriteRecord) => unknown | Promise<unknown>);
   status?: number;
 };
 
@@ -78,6 +79,7 @@ export class NetworkWriteGuard {
       url: request.url(),
       path: url.pathname,
       query: Object.fromEntries(url.searchParams.entries()),
+      headers: await request.allHeaders(),
       postDataJSON,
       order: ++this.order,
     };
@@ -91,7 +93,7 @@ export class NetworkWriteGuard {
 
     record.operation = matched.operation;
     this.records.push(record);
-    const response = typeof matched.response === 'function' ? matched.response(record) : matched.response ?? ok({});
+    const response = typeof matched.response === 'function' ? await matched.response(record) : matched.response ?? ok({});
     await route.fulfill({ status: matched.status ?? 200, contentType: 'application/json', body: JSON.stringify(response) });
   }
 

@@ -188,6 +188,23 @@ func (s *DraftVersionService) createDraftVersion(ctx context.Context, in DraftVe
 			if !errors.Is(latestErr, ErrNotFound) {
 				return latestErr
 			}
+			if task.Status == OperationTaskStatusSuggested {
+				if err := sm.ValidateTransition(task.Status, OperationTaskStatusDraftPreparing); err != nil {
+					return err
+				}
+				if err := updateTaskStatusRevisionTx(tx, task, OperationTaskStatusDraftPreparing, in.ActorID); err != nil {
+					return err
+				}
+				if err := appendAuditEventTx(tx, OperationTaskEvent{
+					TenantID: in.TenantID, OperationTaskID: in.OperationTaskID, EventType: OperationTaskEventTypeDraftGenerated,
+					ActorType: OperationTaskEventActorUser, ActorID: in.ActorID, BeforeState: task.Status, AfterState: OperationTaskStatusDraftPreparing,
+					RequestID: strings.TrimSpace(in.RequestID), Reason: strings.TrimSpace(in.ChangeReason), Metadata: datatypes.JSON([]byte(`{}`)),
+				}); err != nil {
+					return err
+				}
+				task.Status = OperationTaskStatusDraftPreparing
+				task.Revision++
+			}
 			if err := sm.ValidateTransition(task.Status, OperationTaskStatusPendingReview); err != nil {
 				return err
 			}
@@ -200,7 +217,7 @@ func (s *DraftVersionService) createDraftVersion(ctx context.Context, in DraftVe
 				return err
 			}
 			return appendDraftEventsTx(tx, task, out, in, []draftEventSpec{
-				{eventType: OperationTaskEventTypeDraftGenerated, before: task.Status, after: OperationTaskStatusPendingReview},
+				{eventType: OperationTaskEventTypeDraftGenerated, before: OperationTaskStatusDraftPreparing, after: OperationTaskStatusPendingReview},
 				{eventType: OperationTaskEventTypeReviewRequested, before: OperationTaskStatusPendingReview, after: OperationTaskStatusPendingReview},
 			})
 		}

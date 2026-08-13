@@ -1,0 +1,70 @@
+.operation-tasks-page {
+  width: 100%;
+  min-width: 0;
+
+  &__pagination {
+    padding: 4px 0;
+  }
+
+  &__title-link {
+    max-width: 240px;
+    height: auto;
+    padding: 0;
+    white-space: normal;
+    text-align: start;
+    overflow-wrap: anywhere;
+  }
+
+  .ant-form-item {
+    margin-bottom: 12px;
+  }
+}
+
+.operation-task-detail {
+  width: 100%;
+  min-width: 0;
+
+  &__action-hint {
+    margin-top: 12px;
+    margin-bottom: 0;
+  }
+
+  &__long-text {
+    overflow-wrap: anywhere;
+  }
+
+  &__images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+    max-width: 720px;
+    margin: 12px 0;
+
+    img {
+      width: 100%;
+      max-width: 144px;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border: 1px solid var(--ant-color-border-secondary);
+      border-radius: 4px;
+    }
+  }
+
+  .ant-tabs,
+  .ant-tabs-content,
+  .ant-tabs-tabpane {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .ant-table-wrapper {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .operation-tasks-page__pagination {
+    align-items: flex-start;
+  }
+}

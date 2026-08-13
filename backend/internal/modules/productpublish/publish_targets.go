@@ -533,6 +533,9 @@ func (s *Service) CreateDraftsForTargets(c *gin.Context, productID uuid.UUID, re
 	if len(targets) == 0 {
 		return nil, fmt.Errorf("targets required")
 	}
+	if containsDouyinTarget(targets) {
+		return nil, ErrDouyinOperationTaskRequired
+	}
 
 	checkRes, err := s.CheckPublishTargets(ctx, productID, PublishTargetsCheckRequest{Targets: targets})
 	if err != nil {

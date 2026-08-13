@@ -3,10 +3,12 @@ package productpublish
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	douyinmetrics "github.com/trademind-ai/trademind/backend/internal/metrics/douyin"
+	"github.com/trademind-ai/trademind/backend/internal/modules/operationtask"
 	platformdouyin "github.com/trademind-ai/trademind/backend/internal/providers/platform/douyinshop"
 	"gorm.io/datatypes"
 )
@@ -65,7 +67,7 @@ func (s *Service) markDouyinStale(ctx context.Context, taskID uuid.UUID, code, r
 			"publish_status": StatusPubFailed,
 			"error_code":     code,
 			"error_message":  meta.UserMessage,
-			"retryable":      true,
+			"retryable":      false,
 			"finished_at":    &fin,
 			"output":         datatypes.JSON(out),
 			"locked_by":      nil,
@@ -102,24 +104,42 @@ func mergeTaskOutput(existing datatypes.JSON, patch map[string]any) datatypes.JS
 
 // RecoverDouyinDraftStale attempts product.detail recovery for result_unknown tasks.
 func (s *Service) RecoverDouyinDraftStale(ctx context.Context, taskID uuid.UUID) error {
-	if s == nil || s.DB == nil || s.Shops == nil {
-		return nil
+	if s == nil || s.DB == nil || taskID == uuid.Nil {
+		return ErrDouyinRecoveryNotAllowed
 	}
 	var task ProductPublishTask
 	if err := s.DB.WithContext(ctx).First(&task, "id = ?", taskID).Error; err != nil {
 		return err
 	}
-	if task.Platform != "douyin_shop" || task.Status == TaskSuccess || task.Status == TaskCancelled {
-		return nil
+	if task.Platform != "douyin_shop" || task.Status != TaskFailed || task.ExecutionAttemptID == nil || *task.ExecutionAttemptID == uuid.Nil || task.OperationTaskID == nil || *task.OperationTaskID == uuid.Nil || !isDouyinResultUnknownTask(&task) {
+		return ErrDouyinRecoveryNotAllowed
 	}
-	if err := s.guardDouyinWorker(ctx, taskID, task.ShopID, platformdouyin.FeatureProductDraft, false, task.CreatedBy); err != nil {
+	var attempt operationtask.ExecutionAttempt
+	if err := s.DB.WithContext(ctx).Where("id = ? AND tenant_id = ? AND operation_task_id = ? AND downstream_task_id = ? AND status = ?", *task.ExecutionAttemptID, task.TenantID, *task.OperationTaskID, task.ID, operationtask.ExecutionAttemptStatusResultUnknown).First(&attempt).Error; err != nil {
+		return ErrDouyinRecoveryNotAllowed
+	}
+	var operationTask operationtask.OperationTask
+	if err := s.DB.WithContext(ctx).Where("id = ? AND tenant_id = ? AND status = ?", *task.OperationTaskID, task.TenantID, operationtask.OperationTaskStatusResultUnknown).First(&operationTask).Error; err != nil {
+		return ErrDouyinRecoveryNotAllowed
+	}
+	if s.Shops == nil || s.WriteControl == nil || s.OperationResults == nil {
+		return ErrDouyinRecoveryNotAllowed
+	}
+	snap, buildRes, err := s.validateProductionDouyinTask(ctx, &task)
+	if err != nil {
+		return err
+	}
+	if guardErr := platformdouyin.GuardWorkerWithShop(ctx, task.ShopID.String(), platformdouyin.FeatureProductDraft, false, false); guardErr != nil {
+		return guardErr
+	}
+	if err := s.WriteControl.EvaluateWrite(ctx, task.TenantID, task.ShopID, task.ProductID, len(buildRes.APIReq.SpecPricesV2)); err != nil {
 		return err
 	}
 	client, _, err := s.Shops.DouyinClientForShopContext(ctx, task.ShopID, task.CreatedBy)
 	if err != nil {
 		return err
 	}
-	res, recovered, recErr := tryRecoverDouyinDraftFromPlatform(ctx, client, task.ShopID.String(), task.ProductID.String())
+	res, recovered, recErr := tryRecoverDouyinDraftFromPlatform(ctx, client, task.ShopID.String(), buildRes.APIReq.OuterProductID)
 	if recErr != nil {
 		return recErr
 	}
@@ -128,14 +148,19 @@ func (s *Service) RecoverDouyinDraftStale(ctx context.Context, taskID uuid.UUID)
 		douyinmetrics.RecordRecoveryFailed()
 		return nil
 	}
-	snap, ok := parseDouyinDraftSnapshot(task.Input)
-	if !ok {
-		return nil
-	}
-	buildRes, err := BuildDouyinProductPayload(ctx, s.DB, task.ProductID, snap.ConfigID)
-	if err != nil {
-		return err
-	}
 	douyinmetrics.RecordRecoverySuccess()
 	return s.completeDouyinDraftSuccess(ctx, &task, taskID, "", nil, snap, buildRes, res)
+}
+
+func isDouyinResultUnknownTask(task *ProductPublishTask) bool {
+	if task == nil {
+		return false
+	}
+	if task.ErrorCode == platformdouyin.CodeDouyinUnknownResult || task.ErrorCode == platformdouyin.CodeDouyinRequestTimeout {
+		return true
+	}
+	var output struct {
+		RecoveryStatus string `json:"recoveryStatus"`
+	}
+	return len(task.Output) > 0 && json.Unmarshal(task.Output, &output) == nil && strings.EqualFold(strings.TrimSpace(output.RecoveryStatus), platformdouyin.RecoveryResultUnknown)
 }

@@ -80,6 +80,12 @@ func (c *Config) Validate() error {
 	if err := c.validateP9InventorySyncSafety(); err != nil {
 		return err
 	}
+	if c.P10.RealProductDraftWriteEnabled && !c.ProductPublishQueueEnabled {
+		return fmt.Errorf("%s: P10 product draft writes require PRODUCT_PUBLISH_QUEUE_ENABLED=true", ErrCodeP10BoundaryViolation)
+	}
+	if c.P10.RealProductDraftWriteEnabled && !c.WorkerReaperEnabled {
+		return fmt.Errorf("%s: P10 product draft writes require WORKER_REAPER_ENABLED=true", ErrCodeP10BoundaryViolation)
+	}
 	if !IsProduction(c.AppEnv) {
 		return c.validateNonProduction()
 	}

@@ -1,9 +1,11 @@
 package api
 
 import (
+	"context"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/trademind-ai/trademind/backend/internal/middleware"
 	"github.com/trademind-ai/trademind/backend/internal/modules/admin"
 	"github.com/trademind-ai/trademind/backend/internal/modules/auth"
@@ -11,6 +13,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventoryreadp10"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrolp10"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
+	platformdouyin "github.com/trademind-ai/trademind/backend/internal/providers/platform/douyinshop"
 )
 
 // RegisterP10 mounts P10-owned routes without changing the frozen P9 API router.
@@ -29,7 +32,12 @@ func RegisterP10(r gin.IRouter, dep *Deps) {
 	authed := r.Group("/api/v1")
 	authed.Use(middleware.BearerAuthWithDB(dep.Config, dep.DB, sessions))
 
-	controlSvc := &productioncontrolp10.Service{DB: dep.DB, Config: dep.Config}
+	controlSvc := &productioncontrolp10.Service{DB: dep.DB, Config: dep.Config, ProviderWriteGuard: func(ctx context.Context, shopID uuid.UUID) error {
+		if guardErr := platformdouyin.GuardWorkerWithShop(ctx, shopID.String(), platformdouyin.FeatureProductDraft, true, false); guardErr != nil {
+			return guardErr
+		}
+		return nil
+	}}
 	productioncontrolp10.Register(authed, &productioncontrolp10.Handler{Service: controlSvc})
 
 	var cipher credentialp10.CredentialCipher

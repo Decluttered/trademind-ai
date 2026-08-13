@@ -198,6 +198,9 @@ func (s *Service) CheckBatchTargets(ctx context.Context, req BatchTargetsCheckRe
 	if err := s.validateBatchTargets(req.Targets); err != nil {
 		return nil, err
 	}
+	if containsDouyinTarget(req.Targets) {
+		return nil, ErrDouyinOperationTaskRequired
+	}
 	if err := s.validateBatchTaskCount(len(productIDs), len(req.Targets)); err != nil {
 		return nil, err
 	}
@@ -282,6 +285,9 @@ func (s *Service) CreateBatchTargetDrafts(c *gin.Context, req BatchTargetsCreate
 	}
 	if err := s.validateBatchTargets(req.Targets); err != nil {
 		return nil, err
+	}
+	if containsDouyinTarget(req.Targets) {
+		return nil, ErrDouyinOperationTaskRequired
 	}
 	if err := s.validateBatchTaskCount(len(productIDs), len(req.Targets)); err != nil {
 		return nil, err
@@ -752,6 +758,11 @@ func (s *Service) RetryFailedBatchTasks(c *gin.Context, batchID uuid.UUID, admin
 	if len(failedTasks) == 0 {
 		// Concurrent or duplicate retry: another caller may have already claimed failures.
 		return s.batchCreateResponseFromExisting(ctx, &batch)
+	}
+	for i := range failedTasks {
+		if strings.EqualFold(strings.TrimSpace(failedTasks[i].Platform), "douyin_shop") || strings.EqualFold(strings.TrimSpace(failedTasks[i].Platform), "douyin") {
+			return nil, ErrDouyinOperationTaskRequired
+		}
 	}
 
 	results := make([]BatchTargetTaskResult, 0, len(failedTasks))

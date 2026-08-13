@@ -61,6 +61,9 @@ func (s *Service) CreatePublishTask(c *gin.Context, productID uuid.UUID, body Pu
 	}
 
 	platKey := strings.TrimSpace(strings.ToLower(row.Platform))
+	if platKey == "douyin_shop" || platKey == "douyin" {
+		return nil, ErrDouyinOperationTaskRequired
+	}
 
 	prov := platformp.Get(platKey)
 	if prov == nil {

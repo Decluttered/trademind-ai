@@ -50,6 +50,8 @@ REDIS_PUBLISH_PORT=6379
 
 AI 客服自动回复使用 backend 已有 Redis 服务和独立 ready/processing 队列。`.env` 仅保留队列名和 Worker 并发等基础设施参数；消息同步、自动回复总开关和轮询间隔在 Admin「客服 / AI 自动回复」中管理并默认关闭。上线前先检查 `/health` 的 `customerAutoReplyQueue`：Redis、客服消息同步 Worker、轮询调度器和自动回复消费者必须均可用，再验证平台客服 Provider 的收取与发送契约、AI Provider 和店铺授权，最后在页面开启总开关并逐店确认开启。
 
+运营任务中心的真实抖店能力默认保持 `P10_CURRENT_ALLOWED_LEVEL=L0`。经独立发布工单批准的 L3 只允许人工审核后的 `save_as_platform_draft`：必须同时启用 P10 Provider/网络/凭据/草稿写/Worker 开关、`PRODUCT_PUBLISH_QUEUE_ENABLED=true` 和 `WORKER_REAPER_ENABLED=true`，自动业务重试与库存 mutation 必须关闭，并在生产控制面完成单租户、单白名单店铺、两名不同管理员分别承担 Owner/Technical Lead 审批、active 灰度和 provider/tenant/shop/write kill switch 放行。部署、迁移、备份恢复、回滚、CI、真实凭据和真实平台人工验收完成前，不得把代码部署描述为已上线。
+
 P5-V 可观测性默认使用 `OTEL_EXPORTER_OTLP_PROTOCOL=http/json`。Docker 本地试用不配置真实 telemetry backend 时，`OTEL_EXPORTER_OTLP_ENDPOINT` 保持为空并视为 Deferred；不要把 Mock Collector 验证写成生产 collector 已上线。
 
 P7 性能数据集与负载测试只能在隔离 `APP_ENV=performance` 环境执行；普通 Docker 试用与生产部署必须保持 `PERFORMANCE_TEST_MODE=false`、`ALLOW_PERFORMANCE_DATASET=false`，不得把隔离压测描述为真实生产容量验证。

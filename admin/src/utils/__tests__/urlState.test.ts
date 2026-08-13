@@ -1,6 +1,6 @@
 import { history } from '@umijs/max';
 import { describe, expect, it, vi } from 'vitest';
-import { appendSourceToUrl, parsePositiveInt, readQueryState, writeQueryState } from '../urlState';
+import { appendSourceToUrl, parsePositiveInt, parseProductionCreatePrefill, readQueryState, writeQueryState } from '../urlState';
 
 const historyMock = vi.mocked(history);
 
@@ -32,5 +32,28 @@ describe('urlState helpers', () => {
 
     expect(historyMock.replace).toHaveBeenCalledWith('/products?page=2');
     expect(historyMock.push).not.toHaveBeenCalled();
+  });
+
+  it('preserves operation-task return paths and cursor history', () => {
+    historyMock.location.pathname = '/ops/task-center/operation-tasks/task-1';
+    historyMock.location.search = '?tab=events';
+
+    writeQueryState({
+      from: '/ops/task-center/operation-tasks?status=execution_failed',
+      cursorHistory: '["","cursor-1"]',
+    }, { replace: true });
+
+    const written = new URL(historyMock.replace.mock.calls.at(-1)?.[0] as string, 'https://admin.example');
+    expect(written.searchParams.get('from')).toBe('/ops/task-center/operation-tasks?status=execution_failed');
+    expect(written.searchParams.get('cursorHistory')).toBe('["","cursor-1"]');
+  });
+
+  it('accepts safe production create prefill values and rejects unsafe links', () => {
+    expect(parseProductionCreatePrefill({
+      create: 'production', productId: 'product-123', shopId: 'shop_456',
+    })).toEqual({ productId: 'product-123', shopId: 'shop_456' });
+    expect(parseProductionCreatePrefill({ create: 'local', productId: 'product-123' })).toBeUndefined();
+    expect(parseProductionCreatePrefill({ create: 'production', productId: '../product' })).toBeUndefined();
+    expect(parseProductionCreatePrefill({ create: 'production', productId: 'p'.repeat(65) })).toBeUndefined();
   });
 });

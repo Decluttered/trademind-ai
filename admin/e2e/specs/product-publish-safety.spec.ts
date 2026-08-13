@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/admin.fixture';
 import { ok, fail } from '../mocks/envelope';
-import { e2eReadinessFailed, e2eReadinessPassed, E2E_PRODUCT_ID, E2E_PUBLICATION_NEW, E2E_SHOP_ID } from '../mocks/product.fixture';
-import { latestPublicationsResponse, skuBindingsResponse } from '../mocks/publish';
+import { e2eReadinessFailed, e2eReadinessPassed, E2E_PRODUCT_ID } from '../mocks/product.fixture';
+import { E2E_SHOPEE_SHOP_ID } from '../mocks/publish';
 import { expectRequestCount } from '../utils/assertions';
 
 async function openPublish(page: import('@playwright/test').Page) {
@@ -10,24 +10,19 @@ async function openPublish(page: import('@playwright/test').Page) {
 }
 
 async function selectFirstMultiPlatformTarget(page: import('@playwright/test').Page) {
-  await page.getByText('E2E 抖店测试店铺').first().click();
+  await page.getByRole('checkbox', { name: /E2E Shopee 测试店铺/ }).check();
 }
 
 async function selectLegacyPublishShop(page: import('@playwright/test').Page) {
   await page.locator('.product-draft-publish__legacy-form').getByRole('combobox').click();
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
-  await expect(page.locator('.product-draft-publish__legacy-form')).toContainText('E2E 抖店测试店铺');
+  await expect(page.locator('.product-draft-publish__legacy-form')).toContainText('E2E Shopee 测试店铺');
 }
 
 async function cancelSensitiveDialog(page: import('@playwright/test').Page, title: string) {
   const dialog = page.getByRole('dialog', { name: title });
   await dialog.getByRole('button', { name: /取\s*消|取消/ }).click();
-}
-
-async function confirmSensitiveDialog(page: import('@playwright/test').Page, title: string) {
-  const dialog = page.getByRole('dialog', { name: title });
-  await dialog.getByRole('button', { name: '确认执行' }).click();
 }
 
 async function submitLegacyPublish(page: import('@playwright/test').Page) {
@@ -52,49 +47,24 @@ test.describe('@publish-safety 发布写请求安全', () => {
       response: ok({ batchId: 'e2e-batch', status: 'done', statusLabel: '已完成', targetCount: 1, successCount: 1, failedCount: 0, skippedCount: 0, targets: [] }),
     });
     await openPublish(page);
+    await expect(page.getByRole('checkbox', { name: /E2E 抖店测试店铺/ })).toBeDisabled();
     await selectFirstMultiPlatformTarget(page);
     await page.getByRole('button', { name: '创建刊登草稿' }).click();
     await expectRequestCount(admin.writeGuard, 'create-multi-platform-drafts', 1);
     expect(admin.writeGuard.calls('create-multi-platform-drafts')[0].postDataJSON).toEqual({
-      targets: [{ platform: 'douyin_shop', shopId: E2E_SHOP_ID }],
+      targets: [{ platform: 'shopee', shopId: E2E_SHOPEE_SHOP_ID }],
       onlyReady: false,
       retryFailedOnly: false,
     });
     expect(admin.writeGuard.allCalls().map((call) => call.path)).not.toContain(`/api/v1/products/${E2E_PRODUCT_ID}/publish`);
   });
 
-  test('creates douyin platform draft once after confirmation and refreshes latest publication', async ({ admin, page }) => {
-    admin.writeGuard.allow({
-      operation: 'create-douyin-draft',
-      method: 'POST',
-      path: new RegExp(`/api/v1/products/${E2E_PRODUCT_ID}/platform-configs/douyin_shop/create-draft$`),
-      response: ok({
-        id: 'e2e-douyin-task',
-        productId: E2E_PRODUCT_ID,
-        shopId: E2E_SHOP_ID,
-        platform: 'douyin_shop',
-        taskType: 'create_draft',
-        status: 'success',
-        mode: 'save_as_platform_draft',
-        platformProductId: 'e2e-platform-product-new',
-        createdAt: '2026-01-01T00:00:00Z',
-        updatedAt: '2026-01-01T00:00:00Z',
-      }),
-    });
-    await page.route(`**/api/v1/products/${E2E_PRODUCT_ID}/publications`, async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(latestPublicationsResponse()) }));
-    await page.route(`**/api/v1/product-publications/${E2E_PUBLICATION_NEW}/douyin/sku-bindings`, async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(skuBindingsResponse(E2E_PUBLICATION_NEW)) }));
-
+  test('routes douyin draft creation to operation task review without a platform write', async ({ admin, page }) => {
     await openPublish(page);
-    await page.getByRole('button', { name: '创建抖店商品草稿' }).click();
-    await cancelSensitiveDialog(page, '创建平台商品草稿');
-    await expectRequestCount(admin.writeGuard, 'create-douyin-draft', 0);
-
-    await page.getByRole('button', { name: '创建抖店商品草稿' }).click();
-    await confirmSensitiveDialog(page, '创建平台商品草稿');
-    await page.getByRole('button', { name: '创建抖店商品草稿' }).click({ trial: true }).catch(() => undefined);
-    await expectRequestCount(admin.writeGuard, 'create-douyin-draft', 1);
-    expect(admin.writeGuard.calls('create-douyin-draft')[0].postDataJSON).toEqual({ shopId: E2E_SHOP_ID, publishMode: 'save_as_platform_draft' });
-    expect(admin.writeGuard.allCalls().map((call) => call.path)).not.toContain(`/api/v1/products/${E2E_PRODUCT_ID}/publish`);
+    await page.getByRole('button', { name: '进入运营任务审核' }).click();
+    await page.waitForURL((url) => url.pathname === '/ops/task-center/operation-tasks');
+    expect(admin.writeGuard.allCalls()).toHaveLength(0);
+    expect(admin.writeGuard.allCalls().map((call) => call.path)).not.toContain(`/api/v1/products/${E2E_PRODUCT_ID}/platform-configs/douyin_shop/create-draft`);
   });
 
   test('traditional publish cancellation, readiness blocking, success, duplicate click, and failure handling', async ({ admin, page }) => {
@@ -102,7 +72,7 @@ test.describe('@publish-safety 发布写请求安全', () => {
       operation: 'publish-product',
       method: 'POST',
       path: new RegExp(`/api/v1/products/${E2E_PRODUCT_ID}/publish$`),
-      response: ok({ id: 'e2e-publish-task', productId: E2E_PRODUCT_ID, shopId: E2E_SHOP_ID, platform: 'douyin_shop', taskType: 'publish', status: 'queued', mode: 'publish', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' }),
+      response: ok({ id: 'e2e-publish-task', productId: E2E_PRODUCT_ID, shopId: E2E_SHOPEE_SHOP_ID, platform: 'shopee', taskType: 'publish', status: 'queued', mode: 'publish', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' }),
     });
     await openPublish(page);
     await selectLegacyPublishShop(page);
@@ -124,7 +94,7 @@ test.describe('@publish-safety 发布写请求安全', () => {
     await submitLegacyPublish(page);
     await confirmLegacyPublish(page);
     await expectRequestCount(admin.writeGuard, 'publish-product', 1);
-    expect(admin.writeGuard.calls('publish-product')[0].postDataJSON).toEqual({ shopId: E2E_SHOP_ID, options: {} });
+    expect(admin.writeGuard.calls('publish-product')[0].postDataJSON).toEqual({ shopId: E2E_SHOPEE_SHOP_ID, options: {} });
 
     await page.route(`**/api/v1/products/${E2E_PRODUCT_ID}/publish`, async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fail('e2e publish failed', 50001, null)) }));
   });

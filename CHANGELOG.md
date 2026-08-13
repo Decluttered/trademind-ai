@@ -4,6 +4,16 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Operation task center production hardening (2026-08-13)
+
+- Added permission-aware task creation, restorable list filters and cursor history, detail Tab deep links, explicit stale/partial-error states, and responsive Admin workflows.
+- Hardened draft, review, execution, retry, and cancellation actions with duplicate-submit guards, stable idempotency keys, bound revision/draft data, and retained form input after recoverable failures.
+- Replaced per-row draft and attempt lookups with fixed-count batch queries and propagated related database failures instead of returning incomplete successful details.
+- Added a default-off, operation-task-only Douyin platform-draft path with immutable canonical-hash snapshots, human approval, transactional execution/outbox records, pre-provider binding/runtime guards, and transactional local result persistence.
+- Blocked legacy direct create, traditional publish, multi-target/batch and legacy retry bypasses before local writes; unknown platform results require manual read-only reconciliation and never trigger automatic recreation.
+- Added one-tenant/one-shop database constraints, two-distinct-admin gray approval, five fail-closed kill switches, L3 startup validation for queue/reaper availability, and persistent unit, contract, backend, smoke, write-safety, and five-viewport regression coverage.
+- Kept repository defaults at L0. This change does not include credentials, deployment, online publication, inventory mutation, automatic business retry, multi-shop rollout or production activation.
+
 ### AI customer service production hardening (2026-08-12)
 
 - Fixed manual platform-message delivery to include the backend-required client message id.

@@ -196,6 +196,9 @@ func (s *Service) RetryFailed(c *gin.Context, taskID uuid.UUID, adminID *uuid.UU
 	if err := repository.FindByID(c.Request.Context(), s.DB, &task, tid, taskID); err != nil {
 		return nil, err
 	}
+	if strings.EqualFold(strings.TrimSpace(task.Platform), "douyin_shop") || strings.EqualFold(strings.TrimSpace(task.Platform), "douyin") {
+		return nil, ErrDouyinOperationTaskRequired
+	}
 	if strings.TrimSpace(task.Status) != TaskFailed {
 		return nil, fmt.Errorf("only failed tasks can be retried")
 	}

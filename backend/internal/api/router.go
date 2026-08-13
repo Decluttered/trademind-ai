@@ -51,6 +51,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/pricing"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
+	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrolp10"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
 	"github.com/trademind-ai/trademind/backend/internal/modules/release"
 	"github.com/trademind-ai/trademind/backend/internal/modules/restore"
@@ -564,6 +565,13 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		Readiness:   readinessSvc,
 		Idempotency: idempotencySvc,
 	}
+	writeControlSvc := &productioncontrolp10.Service{DB: dep.DB, Config: dep.Config, ProviderWriteGuard: func(ctx context.Context, shopID uuid.UUID) error {
+		if guardErr := platformdouyin.GuardWorkerWithShop(ctx, shopID.String(), platformdouyin.FeatureProductDraft, true, false); guardErr != nil {
+			return guardErr
+		}
+		return nil
+	}}
+	productPublishSvc.WriteControl = writeControlSvc
 	if dep.Config != nil {
 		productPublishSvc.QueueEnabled = dep.Config.ProductPublishQueueEnabled
 		if strings.TrimSpace(dep.Config.ProductPublishQueueName) != "" {
@@ -723,6 +731,14 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	if dep.Config != nil {
 		operationTaskSvc.Executor.AppEnv = dep.Config.AppEnv
 	}
+	resultSvc := &operationtask.ProductionResultService{DB: dep.DB}
+	operationTaskSvc.SnapshotBuilder = productPublishSvc
+	operationTaskSvc.Production = &operationtask.ProductionExecutionService{
+		DB: dep.DB, Authorizer: operationTaskSvc.Authorizer, RetryAuth: operationTaskSvc.Authorizer,
+		WriteGuard: writeControlSvc, Factory: productPublishSvc,
+	}
+	productPublishSvc.OperationResults = resultSvc
+	productPublishSvc.ProductionOutbox = &operationtask.OutboxDispatcher{DB: dep.DB, Delivery: productPublishSvc}
 	operationTaskH := &operationtask.Handler{Svc: operationTaskSvc}
 	operationtask.Register(authed, operationTaskH)
 	inventorySyncP9H := &inventorysyncp9.Handler{Svc: inventorysyncp9.NewAPIService(dep.DB)}

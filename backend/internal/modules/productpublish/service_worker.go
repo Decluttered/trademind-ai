@@ -31,7 +31,7 @@ func (s *Service) ProcessQueuedTask(ctx context.Context, taskID uuid.UUID, worke
 	}
 	var peek ProductPublishTask
 	if err := s.DB.WithContext(ctx).Select("id", "platform", "task_type", "publish_mode").First(&peek, "id = ?", taskID).Error; err == nil {
-		if peek.Platform == "douyin_shop" && (peek.TaskType == TaskTypeDouyinDraftCreate || peek.PublishMode == PublishModeSaveAsPlatformDraft) {
+		if strings.EqualFold(strings.TrimSpace(peek.Platform), "douyin_shop") || strings.EqualFold(strings.TrimSpace(peek.Platform), "douyin") {
 			return s.ProcessDouyinDraftTask(ctx, taskID, workerID)
 		}
 	}

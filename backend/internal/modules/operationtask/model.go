@@ -44,6 +44,7 @@ const (
 	OperationTaskStatusExecutionQueued = "execution_queued"
 	OperationTaskStatusExecuting       = "executing"
 	OperationTaskStatusDraftWritten    = "draft_written"
+	OperationTaskStatusResultUnknown   = "result_unknown"
 	OperationTaskStatusExecutionFailed = "execution_failed"
 	OperationTaskStatusCancelled       = "cancelled"
 )
@@ -56,9 +57,10 @@ const (
 )
 
 const (
-	AdapterModeMock           = "mock"
-	AdapterModeSandbox        = "sandbox"
-	AdapterModeLocalDraftOnly = "local_draft_only"
+	AdapterModeMock            = "mock"
+	AdapterModeSandbox         = "sandbox"
+	AdapterModeLocalDraftOnly  = "local_draft_only"
+	AdapterModeProductionDraft = "production_draft"
 )
 
 const (
@@ -81,11 +83,12 @@ const (
 )
 
 const (
-	ExecutionAttemptStatusQueued    = "queued"
-	ExecutionAttemptStatusRunning   = "running"
-	ExecutionAttemptStatusSucceeded = "succeeded"
-	ExecutionAttemptStatusFailed    = "failed"
-	ExecutionAttemptStatusCancelled = "cancelled"
+	ExecutionAttemptStatusQueued        = "queued"
+	ExecutionAttemptStatusRunning       = "running"
+	ExecutionAttemptStatusSucceeded     = "succeeded"
+	ExecutionAttemptStatusFailed        = "failed"
+	ExecutionAttemptStatusResultUnknown = "result_unknown"
+	ExecutionAttemptStatusCancelled     = "cancelled"
 )
 
 const (
@@ -110,6 +113,7 @@ const (
 	OperationTaskEventTypeExecutionStarted = "execution_started"
 	OperationTaskEventTypeDraftWritten     = "draft_written"
 	OperationTaskEventTypeExecutionFailed  = "execution_failed"
+	OperationTaskEventTypeResultUnknown    = "result_unknown"
 	OperationTaskEventTypeRetryRequested   = "retry_requested"
 	OperationTaskEventTypeCancelled        = "cancelled"
 )
@@ -208,6 +212,7 @@ type ExecutionAttempt struct {
 	IdempotencyKey           *string        `gorm:"size:255;uniqueIndex:ux_execution_attempts_task_idempotency,priority:3" json:"idempotencyKey,omitempty"`
 	ResultType               string         `gorm:"size:64" json:"resultType,omitempty"`
 	ExternalReference        string         `gorm:"size:255" json:"externalReference,omitempty"`
+	DownstreamTaskID         *uuid.UUID     `gorm:"type:char(36);uniqueIndex;index" json:"downstreamTaskId,omitempty"`
 	SafeMetadata             datatypes.JSON `gorm:"type:jsonb" json:"safeMetadata,omitempty"`
 	Revision                 int            `gorm:"not null;default:1;check:chk_execution_attempts_revision,revision >= 1" json:"revision"`
 	StartedAt                *time.Time     `json:"startedAt,omitempty"`
@@ -215,6 +220,27 @@ type ExecutionAttempt struct {
 }
 
 func (ExecutionAttempt) TableName() string { return "execution_attempts" }
+
+const (
+	ExecutionOutboxStatusPending   = "pending"
+	ExecutionOutboxStatusDelivered = "delivered"
+)
+
+// ExecutionOutbox is the transactional handoff from an approved operation
+// attempt to the product publish queue. Redis is only a wake-up transport.
+type ExecutionOutbox struct {
+	model.HardDeleteBase
+	TenantID           int64      `gorm:"not null;index:idx_execution_outbox_dispatch,priority:1" json:"tenantId"`
+	ExecutionAttemptID uuid.UUID  `gorm:"type:char(36);not null;uniqueIndex;index" json:"executionAttemptId"`
+	DownstreamTaskID   uuid.UUID  `gorm:"type:char(36);not null;uniqueIndex;index" json:"downstreamTaskId"`
+	Status             string     `gorm:"size:32;not null;index:idx_execution_outbox_dispatch,priority:2" json:"status"`
+	DispatchAttempts   int        `gorm:"not null;default:0" json:"dispatchAttempts"`
+	NextDispatchAt     time.Time  `gorm:"not null;index:idx_execution_outbox_dispatch,priority:3" json:"nextDispatchAt"`
+	LastErrorCode      string     `gorm:"size:128" json:"lastErrorCode,omitempty"`
+	DeliveredAt        *time.Time `json:"deliveredAt,omitempty"`
+}
+
+func (ExecutionOutbox) TableName() string { return "execution_outbox" }
 
 // ExecutionError is an immutable sanitized error fact appended to an attempt.
 type ExecutionError struct {

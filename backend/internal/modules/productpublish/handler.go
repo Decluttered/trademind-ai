@@ -47,6 +47,23 @@ func atoiQ(c *gin.Context, key string, def int) int {
 	return n
 }
 
+func respondPublishError(c *gin.Context, err error) bool {
+	switch {
+	case errors.Is(err, ErrDouyinOperationTaskRequired):
+		response.JSON(c, http.StatusConflict, response.CodeBadRequest, ErrDouyinOperationTaskRequired.Error(), gin.H{
+			"errorCode": ErrorDouyinOperationTaskRequired,
+		})
+		return true
+	case errors.Is(err, ErrDouyinRecoveryNotAllowed):
+		response.JSON(c, http.StatusConflict, response.CodeBadRequest, ErrDouyinRecoveryNotAllowed.Error(), gin.H{
+			"errorCode": "DOUYIN_RECOVERY_NOT_ALLOWED",
+		})
+		return true
+	default:
+		return false
+	}
+}
+
 // Register mounts publish-related routes (call after product routes is fine; paths are distinct).
 func Register(g *gin.RouterGroup, h *Handler) {
 	if g == nil || h == nil {
@@ -95,6 +112,9 @@ func (h *Handler) Publish(c *gin.Context) {
 	}
 	out, err := h.Svc.CreatePublishTask(c, pid, body, adminUUID(c))
 	if err != nil {
+		if respondPublishError(c, err) {
+			return
+		}
 		var blocked *productcheck.BlockedError
 		if errors.As(err, &blocked) && blocked.Result != nil {
 			response.JSON(c, 400, response.CodeBadRequest, "product readiness check failed", productcheck.LocalizeReadinessResult(blocked.Result))
@@ -182,6 +202,9 @@ func (h *Handler) CreatePublishTargetDrafts(c *gin.Context) {
 	}
 	out, err := h.Svc.CreateDraftsForTargets(c, pid, body, adminUUID(c))
 	if err != nil {
+		if respondPublishError(c, err) {
+			return
+		}
 		var blocked *productcheck.BlockedError
 		if errors.As(err, &blocked) && blocked.Result != nil {
 			response.JSON(c, 400, response.CodeBadRequest, "product readiness check failed", productcheck.LocalizeReadinessResult(blocked.Result))
@@ -296,6 +319,9 @@ func (h *Handler) RetryTask(c *gin.Context) {
 	}
 	out, err := h.Svc.RetryFailed(c, id, adminUUID(c))
 	if err != nil {
+		if respondPublishError(c, err) {
+			return
+		}
 		response.Fail(c, 400, response.CodeBadRequest, err.Error())
 		return
 	}
@@ -307,16 +333,38 @@ func (h *Handler) RecoverDouyinDraftTask(c *gin.Context) {
 		response.Fail(c, 500, response.CodeInternalError, "product publish unavailable")
 		return
 	}
+	if !adminperm.RequireWrite(c, h.Svc.DB, adminperm.PermOperationTaskExecute) {
+		return
+	}
 	id, err := uuid.Parse(strings.TrimSpace(c.Param("id")))
 	if err != nil {
 		response.Fail(c, 400, response.CodeBadRequest, "invalid id")
 		return
 	}
+	tid, err := adminperm.TenantIDFromGin(c)
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+	current, err := h.Svc.GetDTO(c.Request.Context(), tid, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Fail(c, 404, response.CodeNotFound, "not found")
+			return
+		}
+		response.HandleError(c, err)
+		return
+	}
+	if current.ShopID != uuid.Nil && !adminperm.RequireStoreOperate(c, h.Svc.DB, current.ShopID) {
+		return
+	}
 	if err := h.Svc.RecoverDouyinDraftStale(c.Request.Context(), id); err != nil {
+		if respondPublishError(c, err) {
+			return
+		}
 		response.Fail(c, 400, response.CodeBadRequest, err.Error())
 		return
 	}
-	tid, _ := adminperm.TenantIDFromGin(c)
 	out, err := h.Svc.GetDTO(c.Request.Context(), tid, id)
 	if err != nil {
 		response.OK(c, gin.H{"recovered": true})
@@ -342,6 +390,9 @@ func (h *Handler) CreateDouyinDraft(c *gin.Context) {
 	}
 	out, err := h.Svc.CreateDouyinDraftTask(c, pid, body, adminUUID(c))
 	if err != nil {
+		if respondPublishError(c, err) {
+			return
+		}
 		var blocked *productcheck.BlockedError
 		if errors.As(err, &blocked) && blocked.Result != nil {
 			response.JSON(c, 400, response.CodeBadRequest, "product readiness check failed", productcheck.LocalizeReadinessResult(blocked.Result))
@@ -563,6 +614,9 @@ func (h *Handler) CreateBatchTargetDrafts(c *gin.Context) {
 	}
 	out, err := h.Svc.CreateBatchTargetDrafts(c, body, adminUUID(c))
 	if err != nil {
+		if respondPublishError(c, err) {
+			return
+		}
 		if pe, ok := err.(*PublishConfigInvalidError); ok {
 			response.JSON(c, 400, response.CodePublishConfigInvalid, pe.Message, gin.H{
 				"code":             ErrorPublishConfigInvalid,
@@ -640,6 +694,9 @@ func (h *Handler) RetryFailedBatch(c *gin.Context) {
 	}
 	out, err := h.Svc.RetryFailedBatchTasks(c, id, adminUUID(c))
 	if err != nil {
+		if respondPublishError(c, err) {
+			return
+		}
 		if errors.Is(err, ErrBatchAccessDenied) {
 			response.Fail(c, 403, response.CodeForbidden, "无权访问该批次")
 			return

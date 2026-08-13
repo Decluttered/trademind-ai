@@ -35,6 +35,11 @@ function targetKey(platform: string, shopId?: string | null) {
   return s ? `${p}:${s}` : p;
 }
 
+function isDouyinPlatform(platform?: string) {
+  const value = (platform || '').trim().toLowerCase();
+  return value === 'douyin_shop' || value === 'douyin';
+}
+
 function issueTag(severity: string) {
   const s = (severity || '').toLowerCase();
   if (s === 'error') return <Tag color="red">需处理</Tag>;
@@ -89,6 +94,7 @@ export default function MultiPlatformPublishCenter({
   const selectedList = useMemo(() => Object.values(selected), [selected]);
 
   const toggleShop = (platform: PublishTargetPlatform, shopId: string, shopName: string, checked: boolean) => {
+    if (isDouyinPlatform(platform.platform)) return;
     const key = targetKey(platform.platform, shopId);
     setSelected((prev) => {
       const next = { ...prev };
@@ -104,6 +110,7 @@ export default function MultiPlatformPublishCenter({
   };
 
   const togglePlatformShops = (platform: PublishTargetPlatform, checked: boolean) => {
+    if (isDouyinPlatform(platform.platform)) return;
     setSelected((prev) => {
       const next = { ...prev };
       for (const shop of platform.shops) {
@@ -130,6 +137,10 @@ export default function MultiPlatformPublishCenter({
       message.warning('请先选择要刊登的平台和店铺');
       return;
     }
+    if (selectedList.some((target) => isDouyinPlatform(target.platform))) {
+      message.error('抖店平台草稿需逐商品进入运营任务中心并人工审核');
+      return;
+    }
     setChecking(true);
     setActionError('');
     try {
@@ -149,6 +160,10 @@ export default function MultiPlatformPublishCenter({
   const runCreate = async (onlyReady: boolean, retryFailedOnly = false) => {
     if (!retryFailedOnly && !selectedList.length) {
       message.warning('请先选择要刊登的平台和店铺');
+      return;
+    }
+    if (selectedList.some((target) => isDouyinPlatform(target.platform))) {
+      message.error('抖店平台草稿需逐商品进入运营任务中心并人工审核');
       return;
     }
     setCreating(true);
@@ -239,6 +254,7 @@ export default function MultiPlatformPublishCenter({
               />
             ) : null}
             {platforms.map((plat) => {
+              const requiresOperationTask = isDouyinPlatform(plat.platform);
               const authorizedShops = plat.shops.filter((s) => s.authStatus === 'authorized' && s.enabled);
               const allSelected =
                 authorizedShops.length > 0 &&
@@ -251,7 +267,7 @@ export default function MultiPlatformPublishCenter({
                       indeterminate={
                         authorizedShops.some((s) => selected[targetKey(plat.platform, s.shopId)]) && !allSelected
                       }
-                      disabled={!authorizedShops.length}
+                      disabled={requiresOperationTask || !authorizedShops.length}
                       onChange={(e) => togglePlatformShops(plat, e.target.checked)}
                     />
                     <Space direction="vertical" size={4} style={{ minWidth: 0 }}>
@@ -269,13 +285,18 @@ export default function MultiPlatformPublishCenter({
                           暂未接入真实发布，可先生成本地刊登草稿
                         </Typography.Text>
                       ) : null}
+                      {requiresOperationTask ? (
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          需逐商品进入 <Link to={`/ops/task-center/operation-tasks?create=production&productId=${encodeURIComponent(productId)}`}>运营任务中心</Link> 冻结并人工审核
+                        </Typography.Text>
+                      ) : null}
                       {plat.shops.length ? (
                         <Space direction="vertical" size={2} style={{ paddingLeft: 8 }}>
                           {plat.shops.map((shop) => (
                             <Checkbox
                               key={shop.shopId}
                               checked={!!selected[targetKey(plat.platform, shop.shopId)]}
-                              disabled={!shop.enabled || shop.authStatus !== 'authorized'}
+                              disabled={requiresOperationTask || !shop.enabled || shop.authStatus !== 'authorized'}
                               onChange={(e) =>
                                 toggleShop(plat, shop.shopId, shop.shopName, e.target.checked)
                               }

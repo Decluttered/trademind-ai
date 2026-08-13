@@ -7,13 +7,14 @@ export type LocalizedLabel = {
 
 export const OPERATION_TASK_STATUS_LABELS: Record<string, LocalizedLabel> = {
   suggested: { zhCN: '待处理建议', enUS: 'Suggested', color: 'default', description: '任务已创建，等待准备草稿。' },
-  draft_preparing: { zhCN: '草稿准备中', enUS: 'Draft preparing', color: 'processing', description: '正在准备本地、模拟或沙箱草稿。' },
+  draft_preparing: { zhCN: '草稿准备中', enUS: 'Draft preparing', color: 'processing', description: '正在冻结待审核的草稿内容。' },
   pending_review: { zhCN: '待审核', enUS: 'Pending review', color: 'warning', description: '需要人工审核最新草稿。' },
   approved: { zhCN: '已批准', enUS: 'Approved', color: 'success', description: '最新草稿已获人工批准，可进行受控草稿生成。' },
   rejected: { zhCN: '已拒绝', enUS: 'Rejected', color: 'error', description: '审核已拒绝，任务不会继续执行。' },
   execution_queued: { zhCN: '等待执行', enUS: 'Execution queued', color: 'processing', description: '执行请求已排队，不代表真实发布。' },
-  executing: { zhCN: '执行中', enUS: 'Executing', color: 'processing', description: '正在生成本地、模拟或沙箱草稿。' },
-  draft_written: { zhCN: '草稿已生成', enUS: 'Draft written', color: 'success', description: '安全草稿生成完成，不代表商品发布或上架。' },
+  executing: { zhCN: '执行中', enUS: 'Executing', color: 'processing', description: '正在执行已批准的草稿请求。' },
+  draft_written: { zhCN: '草稿已创建', enUS: 'Draft written', color: 'success', description: '草稿创建完成，不代表商品发布或上架。' },
+  result_unknown: { zhCN: '结果待核对', enUS: 'Result unknown', color: 'warning', description: '平台结果不明确，必须人工核对，禁止直接重试。' },
   execution_failed: { zhCN: '执行失败', enUS: 'Execution failed', color: 'error', description: '执行失败，可按后端允许状态人工重试。' },
   cancelled: { zhCN: '已取消', enUS: 'Cancelled', color: 'default', description: '任务已取消。' },
 };
@@ -25,6 +26,7 @@ export const OPERATION_DRAFT_STATUS_LABELS: Record<string, LocalizedLabel> = {
   superseded: { zhCN: '历史版本', enUS: 'Superseded', color: 'default' },
   written: { zhCN: '草稿已生成', enUS: 'Written', color: 'success' },
   failed: { zhCN: '失败', enUS: 'Failed', color: 'error' },
+  result_unknown: { zhCN: '结果待核对', enUS: 'Result unknown', color: 'warning' },
 };
 
 export const OPERATION_ATTEMPT_STATUS_LABELS: Record<string, LocalizedLabel> = {
@@ -56,9 +58,9 @@ export const OPERATION_TASK_TYPE_LABELS: Record<string, string> = {
 export const OPERATION_SOURCE_TYPE_LABELS: Record<string, string> = {
   ai_suggestion: '智能建议',
   manual: '人工创建',
-  system: '系统生成',
-  import: '导入任务',
-  webhook: '回调事件',
+  rule_engine: '规则引擎',
+  order_exception: '订单异常',
+  product_content: '商品内容',
 };
 
 export const OPERATION_PLATFORM_LABELS: Record<string, string> = {
@@ -76,12 +78,15 @@ export const OPERATION_ADAPTER_MODE_LABELS: Record<string, string> = {
   local_draft_only: '仅生成本地草稿',
   mock: '模拟草稿',
   sandbox: '沙箱草稿',
+  production_draft: '平台草稿',
 };
 
 export const OPERATION_RESULT_TYPE_LABELS: Record<string, string> = {
   local_draft: '本地草稿',
   mock_draft: '模拟草稿',
   sandbox_fixture: '沙箱夹具',
+  platform_draft: '平台草稿',
+  result_unknown: '结果待核对',
 };
 
 export const OPERATION_EVENT_TYPE_LABELS: Record<string, LocalizedLabel> = {
@@ -95,10 +100,18 @@ export const OPERATION_EVENT_TYPE_LABELS: Record<string, LocalizedLabel> = {
   execution_started: { zhCN: '执行已开始', enUS: 'Execution started' },
   draft_written: { zhCN: '草稿已生成', enUS: 'Draft written' },
   execution_failed: { zhCN: '执行失败', enUS: 'Execution failed' },
+  result_unknown: { zhCN: '结果待核对', enUS: 'Result unknown' },
   retry_requested: { zhCN: '请求人工重试', enUS: 'Retry requested' },
   cancelled: { zhCN: '已取消', enUS: 'Cancelled' },
   permission_denied: { zhCN: '权限被拒绝', enUS: 'Permission denied' },
   production_capability_blocked: { zhCN: '生产能力已拦截', enUS: 'Production capability blocked' },
+};
+
+export const OPERATION_ACTOR_TYPE_LABELS: Record<string, string> = {
+  user: '后台用户',
+  system: '系统',
+  ai: '智能服务',
+  rule: '规则引擎',
 };
 
 export const OPERATION_ERROR_LABELS: Record<string, string> = {
@@ -111,6 +124,7 @@ export const OPERATION_ERROR_LABELS: Record<string, string> = {
   idempotency_payload_conflict: '该操作请求与之前提交内容不一致，请重新发起操作。',
   retry_limit_exceeded: '已达到最大重试限制。',
   production_capability_forbidden: '生产平台能力未启用，操作已被安全拦截。',
+  execution_mode_forbidden: '当前任务不允许使用该执行模式。',
   draft_not_latest: '草稿已更新，请查看最新版本后重新审核。',
   draft_version_mismatch: '草稿版本不一致，请刷新后重试。',
   draft_hash_mismatch: '草稿内容校验不一致，请刷新后重试。',

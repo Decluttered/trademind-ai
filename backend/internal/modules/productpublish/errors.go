@@ -8,6 +8,10 @@ import (
 // ErrRedisQueueUnavailable indicates LIST operations failed while queue mode is enabled.
 var ErrRedisQueueUnavailable = errors.New("Redis queue unavailable")
 
+var ErrDouyinOperationTaskRequired = errors.New("抖店平台草稿只能通过运营任务中心冻结、人工审核后执行")
+
+var ErrDouyinRecoveryNotAllowed = errors.New("仅平台结果待核对的运营任务允许人工回查")
+
 const (
 	ErrorPublishCheckFailed   = "PUBLISH_CHECK_FAILED"
 	ErrorPriceInvalid         = "PRICE_INVALID"
@@ -20,8 +24,18 @@ const (
 
 	ErrorDouyinCreateProductFailed   = "DOUYIN_CREATE_PRODUCT_FAILED"
 	ErrorDouyinProductPayloadInvalid = "DOUYIN_PRODUCT_PAYLOAD_INVALID"
+	ErrorDouyinOperationTaskRequired = "DOUYIN_OPERATION_TASK_REQUIRED"
 	ErrorUnknownDouyinPublish        = "UNKNOWN_DOUYIN_ERROR"
 )
+
+func containsDouyinTarget(targets []PublishTargetRef) bool {
+	for _, target := range targets {
+		if strings.EqualFold(strings.TrimSpace(target.Platform), "douyin_shop") || strings.EqualFold(strings.TrimSpace(target.Platform), "douyin") {
+			return true
+		}
+	}
+	return false
+}
 
 func inferPublishErrorCode(msg string) string {
 	m := strings.ToLower(strings.TrimSpace(msg))

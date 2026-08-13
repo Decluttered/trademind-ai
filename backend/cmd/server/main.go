@@ -434,6 +434,10 @@ func main() {
 		}
 		productpublish.StartWorker(workerCtx, &workerWG, log, productPublishSvc, ppQn, ppWorkerConc, workerReg)
 		log.Info("product_publish_worker_started", "concurrency", ppWorkerConc, "queue", ppQn)
+		if cfg.P10.BackgroundWorkerEnabled {
+			productpublish.StartProductionOutboxDispatcher(workerCtx, &workerWG, log, productPublishSvc, 2*time.Second)
+			log.Info("operation_task_outbox_dispatcher_started", "interval_sec", 2)
+		}
 	} else if cfg.ProductPublishQueueEnabled && redisClient == nil {
 		log.Warn("product_publish_worker_skipped", "reason", "redis unavailable while PRODUCT_PUBLISH_QUEUE_ENABLED=true")
 	}

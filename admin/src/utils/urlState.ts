@@ -14,6 +14,8 @@ const ALLOWED_QUERY_KEYS = new Set([
   'priority',
   'platform',
   'shopId',
+  'productId',
+  'create',
   'tab',
   'id',
   'drawer',
@@ -76,7 +78,9 @@ const ALLOWED_QUERY_KEYS = new Set([
   'publishMode',
   'taskId',
   'cursor',
+  'cursorHistory',
   'afterSequence',
+  'from',
   'sourcePlatform',
   'targetShopId',
 ]);
@@ -99,6 +103,17 @@ export const URL_SOURCE_VALUES = new Set([
 export function parsePositiveInt(value?: string, fallback = 1) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
+const SAFE_RESOURCE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
+
+export function parseProductionCreatePrefill(state: { create?: string; productId?: string; shopId?: string }) {
+  if (state.create !== 'production') return undefined;
+  const productId = state.productId?.trim();
+  const shopId = state.shopId?.trim();
+  if (!productId || !SAFE_RESOURCE_ID_PATTERN.test(productId)) return undefined;
+  if (shopId && !SAFE_RESOURCE_ID_PATTERN.test(shopId)) return undefined;
+  return { productId, shopId };
 }
 
 /** Parse ISO date range from URL `start`/`end` (or legacy `dateFrom`/`dateTo`) for ProTable dateTimeRange fields. */

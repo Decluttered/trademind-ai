@@ -31,6 +31,11 @@ type grayActionRequest struct {
 	ExpectedRevision int `json:"expectedRevision"`
 }
 
+type grayApprovalRequest struct {
+	Role             string `json:"role"`
+	ExpectedRevision int    `json:"expectedRevision"`
+}
+
 func (h *Handler) actor(c *gin.Context, permission string, shopID uuid.UUID) (Actor, *adminperm.Principal, bool) {
 	if h == nil || h.Service == nil || h.Service.DB == nil {
 		response.Fail(c, http.StatusServiceUnavailable, response.CodeServiceUnavailable, "P10 控制服务不可用")
@@ -71,7 +76,7 @@ func bindJSON(c *gin.Context, target any) error {
 }
 
 func (h *Handler) Status(c *gin.Context) {
-	actor, principal, ok := h.actor(c, adminperm.PermInventorySyncRead, uuid.Nil)
+	actor, principal, ok := h.statusActor(c)
 	if !ok {
 		return
 	}
@@ -81,6 +86,28 @@ func (h *Handler) Status(c *gin.Context) {
 		return
 	}
 	response.OK(c, out)
+}
+
+func (h *Handler) statusActor(c *gin.Context) (Actor, *adminperm.Principal, bool) {
+	if h == nil || h.Service == nil || h.Service.DB == nil {
+		response.Fail(c, http.StatusServiceUnavailable, response.CodeServiceUnavailable, "P10 控制服务不可用")
+		return Actor{}, nil, false
+	}
+	tenantID, err := adminperm.TenantIDFromGin(c)
+	if err != nil {
+		response.Fail(c, http.StatusUnauthorized, response.CodeUnauthorized, "未登录或租户上下文无效")
+		return Actor{}, nil, false
+	}
+	principal, err := adminperm.LoadPrincipal(c, h.Service.DB)
+	if err != nil || principal == nil || principal.Disabled || (!principal.Can(adminperm.PermInventorySyncRead) && !principal.Can(adminperm.PermOperationTaskAuditRead)) {
+		response.Fail(c, http.StatusForbidden, response.CodeForbidden, "无权查看生产运行状态")
+		return Actor{}, nil, false
+	}
+	requestID := strings.TrimSpace(c.GetHeader("X-Request-ID"))
+	if requestID == "" {
+		requestID = uuid.NewString()
+	}
+	return Actor{TenantID: tenantID, UserID: principal.UserID, RequestID: requestID}, principal, true
 }
 
 func (h *Handler) UpdateSwitches(c *gin.Context) {
@@ -140,6 +167,50 @@ func (h *Handler) SaveGrayDraft(c *gin.Context) {
 func (h *Handler) PauseGray(c *gin.Context) { h.grayAction(c, "pause") }
 func (h *Handler) StopGray(c *gin.Context)  { h.grayAction(c, "stop") }
 
+func (h *Handler) ApproveGray(c *gin.Context) {
+	var req grayApprovalRequest
+	if err := bindJSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "invalid request")
+		return
+	}
+	actor, principal, ok := h.actor(c, adminperm.PermConfigManage, uuid.Nil)
+	if !ok {
+		return
+	}
+	if principal == nil || !principal.IsAdmin() {
+		response.Fail(c, http.StatusForbidden, response.CodeForbidden, "admin approval required")
+		return
+	}
+	out, err := h.Service.ApproveGray(c.Request.Context(), actor, req.Role, req.ExpectedRevision)
+	if err != nil {
+		respondControlError(c, err)
+		return
+	}
+	response.OK(c, out)
+}
+
+func (h *Handler) ActivateGray(c *gin.Context) {
+	var req grayActionRequest
+	if err := bindJSON(c, &req); err != nil {
+		response.Fail(c, http.StatusBadRequest, response.CodeBadRequest, "invalid request")
+		return
+	}
+	actor, principal, ok := h.actor(c, adminperm.PermConfigManage, uuid.Nil)
+	if !ok {
+		return
+	}
+	if principal == nil || !principal.IsAdmin() {
+		response.Fail(c, http.StatusForbidden, response.CodeForbidden, "admin activation required")
+		return
+	}
+	out, err := h.Service.ActivateGray(c.Request.Context(), actor, req.ExpectedRevision)
+	if err != nil {
+		respondControlError(c, err)
+		return
+	}
+	response.OK(c, out)
+}
+
 func (h *Handler) grayAction(c *gin.Context, action string) {
 	var req grayActionRequest
 	if err := bindJSON(c, &req); err != nil || req.ExpectedRevision < 1 {
@@ -177,6 +248,8 @@ func Register(group *gin.RouterGroup, h *Handler) {
 	api.PUT("/controls/kill-switches", h.UpdateSwitches)
 	api.PUT("/controls/allowlist", h.SetAllowlist)
 	api.PUT("/gray", h.SaveGrayDraft)
+	api.POST("/gray/approve", h.ApproveGray)
+	api.POST("/gray/activate", h.ActivateGray)
 	api.POST("/gray/pause", h.PauseGray)
 	api.POST("/gray/stop", h.StopGray)
 }
