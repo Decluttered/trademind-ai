@@ -93,7 +93,19 @@ func (s *Service) CreateDatabaseBackup(ctx context.Context, req CreateRequest, a
 		row.CompletedAt = &now
 		return row, s.DB.WithContext(ctx).Create(row).Error
 	}
-	return s.runPgDump(ctx, row)
+	started := time.Now()
+	result, err := s.runPgDump(ctx, row)
+	if s.Metrics != nil {
+		outcome := "success"
+		var size int64
+		if err != nil {
+			outcome = "failure"
+		} else if result != nil {
+			size = result.ArtifactSize
+		}
+		s.Metrics.ObserveBackup(row.BackupType, outcome, row.Environment, time.Since(started), size)
+	}
+	return result, err
 }
 
 func (s *Service) runPgDump(ctx context.Context, row *Job) (*Job, error) {
@@ -172,6 +184,7 @@ func (s *Service) buildManifest(row *Job, name string, size int64, sum, wrappedK
 }
 
 func (s *Service) Verify(ctx context.Context, backupID string) (*Verification, error) {
+	started := time.Now()
 	row, err := s.Get(ctx, backupID)
 	if err != nil {
 		return nil, err
@@ -210,6 +223,13 @@ func (s *Service) Verify(ctx context.Context, backupID string) (*Verification, e
 	}
 	row.VerificationStatus = v.Status
 	_ = s.DB.WithContext(ctx).Save(row).Error
+	if s.Metrics != nil {
+		result := "success"
+		if v.Status != VerificationPassed {
+			result = "failure"
+		}
+		s.Metrics.ObserveBackupVerification(row.BackupType, result, row.Environment, time.Since(started))
+	}
 	return v, nil
 }
 

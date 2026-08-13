@@ -1,13 +1,14 @@
 package metrics
 
 import (
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-var defaultBuckets = []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120}
+var defaultBuckets = []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600, 1800}
 
 // Catalog holds pre-registered application metrics.
 type Catalog struct {
@@ -742,7 +743,7 @@ func (c *Catalog) registerAll() error {
 	}
 	c.TelemetryExportFailures = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "telemetry_export_failures_total",
-		Help: "Telemetry export failures",
+		Help: "Telemetry items that failed export",
 	})
 	c.TelemetryDroppedItems = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "telemetry_dropped_items_total",
@@ -1436,6 +1437,93 @@ func (c *Catalog) ObserveSLO(sloID, window string, compliance, budgetRemaining, 
 	}
 	if c.SLOBurnRate != nil {
 		c.SLOBurnRate.WithLabelValues(sloID, window).Set(burnRate)
+	}
+}
+
+// ObserveBackup records a completed backup attempt. Labels intentionally stay
+// at backup type, outcome, and environment class.
+func (c *Catalog) ObserveBackup(backupType, result, environment string, dur time.Duration, bytes int64) {
+	if c == nil {
+		return
+	}
+	result = NormalizeResult(result)
+	environment = environmentClass(environment)
+	if c.BackupJobsTotal != nil {
+		c.BackupJobsTotal.WithLabelValues(backupType, result, environment).Inc()
+	}
+	if dur > 0 && c.BackupJobDuration != nil {
+		c.BackupJobDuration.WithLabelValues(backupType, result, environment).Observe(dur.Seconds())
+	}
+	if bytes > 0 && c.BackupBytesTotal != nil {
+		c.BackupBytesTotal.WithLabelValues(backupType, result, environment).Add(float64(bytes))
+	}
+	if result == "failure" && c.BackupFailuresTotal != nil {
+		c.BackupFailuresTotal.WithLabelValues(backupType, result, environment).Inc()
+	}
+	if result == "success" {
+		now := float64(time.Now().UTC().Unix())
+		if c.BackupLastSuccess != nil {
+			c.BackupLastSuccess.WithLabelValues(backupType, environment).Set(now)
+		}
+		if c.BackupAgeSeconds != nil {
+			c.BackupAgeSeconds.WithLabelValues(backupType, environment).Set(0)
+		}
+	}
+}
+
+// ObserveBackupVerification records the verification outcome.
+func (c *Catalog) ObserveBackupVerification(backupType, result, environment string, dur time.Duration) {
+	if c == nil {
+		return
+	}
+	result = NormalizeResult(result)
+	environment = environmentClass(environment)
+	if c.BackupVerificationTotal != nil {
+		c.BackupVerificationTotal.WithLabelValues(backupType, result, environment).Inc()
+	}
+	if dur > 0 && c.BackupVerificationDuration != nil {
+		c.BackupVerificationDuration.WithLabelValues(backupType, result, environment).Observe(dur.Seconds())
+	}
+}
+
+// ObserveRestore records restore execution and validation outcomes.
+func (c *Catalog) ObserveRestore(event, result, environment string, dur time.Duration) {
+	if c == nil {
+		return
+	}
+	result = NormalizeResult(result)
+	environment = environmentClass(environment)
+	switch event {
+	case "job":
+		if c.RestoreJobsTotal != nil {
+			c.RestoreJobsTotal.WithLabelValues(result, environment).Inc()
+		}
+		if dur > 0 && c.RestoreJobDuration != nil {
+			c.RestoreJobDuration.WithLabelValues(result, environment).Observe(dur.Seconds())
+		}
+		if result == "failure" && c.RestoreFailuresTotal != nil {
+			c.RestoreFailuresTotal.WithLabelValues(result, environment).Inc()
+		}
+		if result == "success" && c.RestoreLastSuccess != nil {
+			c.RestoreLastSuccess.WithLabelValues(environment).Set(float64(time.Now().UTC().Unix()))
+		}
+	case "validation":
+		if c.RestoreValidationTotal != nil {
+			c.RestoreValidationTotal.WithLabelValues(result, environment).Inc()
+		}
+	}
+}
+
+func environmentClass(environment string) string {
+	switch strings.ToLower(strings.TrimSpace(environment)) {
+	case "production":
+		return "production"
+	case "staging", "preproduction":
+		return "staging"
+	case "test", "performance":
+		return "test"
+	default:
+		return "development"
 	}
 }
 

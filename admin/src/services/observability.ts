@@ -2,6 +2,7 @@ import { request } from '@umijs/max';
 import { getWithParams, postJSON } from '@/services/request';
 
 export type ObservabilityOverview = {
+  overallStatus: 'healthy' | 'needs_attention' | 'waiting' | 'disabled';
   enabled: boolean;
   mode: string;
   metricsEnabled: boolean;
@@ -13,10 +14,35 @@ export type ObservabilityOverview = {
   runtimeStatus?: {
     otlpExporter?: string;
     otlpProtocol?: string;
-    mockCollectorVerification?: string;
     [key: string]: string | number | undefined;
   };
+  metrics?: {
+    status: 'active' | 'disabled' | 'unavailable' | 'unprotected';
+    path: string;
+    internalOnly: boolean;
+    allowlistConfigured: boolean;
+  };
+  alerts?: {
+    status: 'active' | 'disabled' | 'unavailable';
+    active: number;
+    critical: number;
+    warning: number;
+  };
+  evaluation?: {
+    status: 'succeeded' | 'failed' | 'warming_up' | 'waiting' | 'disabled' | 'unavailable';
+    lastEvaluatedAt?: string;
+    rulesChecked: number;
+    rulesSkipped: number;
+    alertsFired: number;
+    alertsResolved: number;
+  };
+  slo?: {
+    status: 'achieved' | 'violated' | 'insufficient_data' | 'waiting' | 'disabled' | 'unavailable';
+    lastEvaluatedAt?: string;
+  };
   telemetry?: {
+    status?: string;
+    protocol?: string;
     dropped?: number;
     exportFailures?: number;
     exportSuccess?: number;

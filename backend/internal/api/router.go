@@ -188,7 +188,7 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 			metricsPath = "/internal/metrics"
 		}
 		internal := r.Group(metricsPath)
-		internal.Use(middleware.MetricsGuard(dep.Config.Observability.MetricsInternalOnly, nil))
+		internal.Use(middleware.MetricsGuard(dep.Config.Observability.MetricsInternalOnly, dep.Config.Observability.MetricsAllowlistCIDRs))
 		internal.GET("", observabilitymod.MetricsEndpoint(dep.Obs))
 	}
 
@@ -801,7 +801,7 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	backupSvc := &backup.Service{DB: dep.DB, Cfg: dep.Config, Enc: dep.Encrypter, OpLog: opLogSvc, Metrics: metricCatalog}
 	backupH := &backup.Handler{Svc: backupSvc}
 	backup.Register(authed, backupH)
-	restoreSvc := &restore.Service{DB: dep.DB, Cfg: dep.Config, Enc: dep.Encrypter, Backup: backupSvc, OpLog: opLogSvc}
+	restoreSvc := &restore.Service{DB: dep.DB, Cfg: dep.Config, Enc: dep.Encrypter, Backup: backupSvc, OpLog: opLogSvc, Metrics: metricCatalog}
 	restoreH := &restore.Handler{Svc: restoreSvc}
 	restore.Register(authed, restoreH)
 	alertSvc := alerting.NewService(dep.DB, alertCooldown, alertRecovery)

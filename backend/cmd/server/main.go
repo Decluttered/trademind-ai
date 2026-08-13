@@ -41,6 +41,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/worker"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/logging"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/observability"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/p7diag"
 	securitypkg "github.com/trademind-ai/trademind/backend/internal/pkg/security"
@@ -270,6 +271,10 @@ func main() {
 	}
 
 	engine := gin.New()
+	if err := engine.SetTrustedProxies(cfg.Observability.HTTPTrustedProxyCIDRs); err != nil {
+		log.Error("trusted_proxy_config_invalid", "error", err)
+		os.Exit(1)
+	}
 	engine.MaxMultipartMemory = cfg.MaxUploadBytes()
 	engine.Use(
 		middleware.CORS(cfg),
@@ -344,11 +349,11 @@ func main() {
 
 	taskcenter.StartAlertScanWorker(workerCtx, &workerWG, log, tcSvc, workerReg, cfg)
 	douyinruntime.StartDouyinAlertScanWorker(workerCtx, &workerWG, log, douyinRuntimeSvc, workerReg, cfg)
-	metricSamples := func() map[string]float64 {
+	metricSamples := func() metrics.Snapshot {
 		if obs == nil || obs.Metrics == nil {
-			return map[string]float64{}
+			return metrics.Snapshot{TakenAt: time.Now().UTC(), Families: map[string]metrics.FamilySnapshot{}}
 		}
-		return obs.Metrics.SnapshotValues()
+		return obs.Metrics.SnapshotNow()
 	}
 	if cfg.Observability.AlertingEnabled {
 		alertSvc := alerting.NewService(db, time.Duration(cfg.Observability.AlertDefaultCooldownSecs)*time.Second, cfg.Observability.AlertRecoveryEnabled)

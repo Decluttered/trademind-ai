@@ -4,6 +4,14 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Observability production hardening (2026-08-14)
+
+- Added explicit trusted-proxy and metrics CIDR allowlists with staging/production fail-closed validation and exact Nginx protection for `/internal/metrics`.
+- Replaced lifetime aggregate alert and SLO evaluation with bounded structured snapshots, window deltas, ratio sample guards, counter reset handling, histogram evaluation, and synchronized code-owned rule definitions that preserve administrator enablement choices.
+- Wired backup and isolated restore outcomes into the metric catalog, expanded the protected overview contract, and rebuilt the Admin observability center with operational statuses, retained-data refresh errors, responsive layout, and regression coverage.
+- Removed legacy observability sub-endpoints that only returned fixed placeholder aggregates instead of live operational data.
+- Kept real Prometheus/OTLP backends, external notification delivery, deployment, credentials, and production activation outside this code change and subject to target-environment human acceptance.
+
 ### Release recorder retirement (2026-08-13)
 
 - Removed the development-only Admin page, `/api/v1/ops/releases*` endpoints, dedicated permissions and unused `RELEASE_*` configuration.

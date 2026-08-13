@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
 	"gorm.io/gorm"
 )
 
@@ -19,6 +20,7 @@ const (
 
 	EvaluationSucceeded = "succeeded"
 	EvaluationFailed    = "failed"
+	EvaluationWarmingUp = "warming_up"
 )
 
 // AlertDelivery stores idempotent alert notification attempts.
@@ -47,6 +49,7 @@ type AlertEvaluationRun struct {
 	FinishedAt     *time.Time
 	Status         string `gorm:"size:32;index"`
 	RulesChecked   int
+	RulesSkipped   int
 	AlertsFired    int
 	AlertsResolved int
 	ErrorMessage   string `gorm:"type:text"`
@@ -56,12 +59,15 @@ type AlertEvaluationRun struct {
 
 func (AlertEvaluationRun) TableName() string { return "alert_evaluation_runs" }
 
-// EvaluateRules evaluates enabled alert rules against aggregate metric samples.
-func (s *Service) EvaluateRules(ctx context.Context, samples map[string]float64) (*AlertEvaluationRun, error) {
+// EvaluateSnapshot evaluates enabled rules against a bounded metric window.
+func (s *Service) EvaluateSnapshot(ctx context.Context, current metrics.Snapshot) (*AlertEvaluationRun, error) {
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("alerting unavailable")
 	}
-	now := time.Now().UTC()
+	if current.TakenAt.IsZero() {
+		current.TakenAt = time.Now().UTC()
+	}
+	now := current.TakenAt.UTC()
 	run := &AlertEvaluationRun{ID: uuid.New().String(), StartedAt: now, Status: EvaluationSucceeded}
 	if err := s.DB.WithContext(ctx).Create(run).Error; err != nil {
 		return nil, err
@@ -71,12 +77,22 @@ func (s *Service) EvaluateRules(ctx context.Context, samples map[string]float64)
 		s.finishEvaluation(ctx, run, EvaluationFailed, err.Error())
 		return run, err
 	}
+	history := s.recordSnapshot(current)
 	for _, rule := range rules {
+		value, sampleCount, ready, err := evaluateRule(rule, history, current)
+		if err != nil {
+			s.finishEvaluation(ctx, run, EvaluationFailed, err.Error())
+			return run, err
+		}
+		if !ready {
+			run.RulesSkipped++
+			continue
+		}
 		run.RulesChecked++
-		value := samples[strings.TrimSpace(rule.Metric)]
 		firing := compare(value, rule.Condition, rule.Threshold)
 		if firing {
-			if _, err := s.Fire(ctx, rule.ID, rule.Severity, metricModule(rule.Metric), rule.Name, fmt.Sprintf("metric=%s value=%.6f threshold=%.6f", rule.Metric, value, rule.Threshold)); err != nil {
+			details := fmt.Sprintf("metric=%s value=%.6f threshold=%.6f window=%s samples=%d", rule.Metric, value, rule.Threshold, rule.Window, sampleCount)
+			if _, err := s.Fire(ctx, rule.ID, rule.Severity, metricModule(rule.Metric), rule.Name, details); err != nil {
 				s.finishEvaluation(ctx, run, EvaluationFailed, err.Error())
 				return run, err
 			}
@@ -90,8 +106,30 @@ func (s *Service) EvaluateRules(ctx context.Context, samples map[string]float64)
 		}
 		run.AlertsResolved += resolved
 	}
+	if run.RulesChecked == 0 && run.RulesSkipped > 0 {
+		s.finishEvaluation(ctx, run, EvaluationWarmingUp, "waiting for a complete metric window")
+		return run, nil
+	}
 	s.finishEvaluation(ctx, run, EvaluationSucceeded, "")
 	return run, nil
+}
+
+func (s *Service) recordSnapshot(current metrics.Snapshot) []metrics.Snapshot {
+	s.evaluationMu.Lock()
+	defer s.evaluationMu.Unlock()
+	cutoff := current.TakenAt.Add(-time.Hour)
+	history := make([]metrics.Snapshot, 0, len(s.snapshotHistory)+1)
+	for _, snapshot := range s.snapshotHistory {
+		if !snapshot.TakenAt.Before(cutoff) && snapshot.TakenAt.Before(current.TakenAt) {
+			history = append(history, snapshot)
+		}
+	}
+	history = append(history, current)
+	if len(history) > 120 {
+		history = history[len(history)-120:]
+	}
+	s.snapshotHistory = history
+	return append([]metrics.Snapshot(nil), history...)
 }
 
 func (s *Service) finishEvaluation(ctx context.Context, run *AlertEvaluationRun, status, msg string) {
@@ -202,7 +240,7 @@ func (s *Service) channelByName(name string) Channel {
 }
 
 // StartEvaluatorWorker periodically evaluates rules with an external sample source.
-func StartEvaluatorWorker(ctx context.Context, wg *sync.WaitGroup, log *slog.Logger, svc *Service, interval time.Duration, sample func() map[string]float64) {
+func StartEvaluatorWorker(ctx context.Context, wg *sync.WaitGroup, log *slog.Logger, svc *Service, interval time.Duration, sample func() metrics.Snapshot) {
 	if wg == nil || svc == nil || sample == nil {
 		return
 	}
@@ -219,7 +257,7 @@ func StartEvaluatorWorker(ctx context.Context, wg *sync.WaitGroup, log *slog.Log
 			case <-ctx.Done():
 				return
 			case <-tick.C:
-				if _, err := svc.EvaluateRules(ctx, sample()); err != nil && log != nil {
+				if _, err := svc.EvaluateSnapshot(ctx, sample()); err != nil && log != nil {
 					log.Warn("alert_evaluator_failed", "error", err)
 				}
 			}
@@ -254,8 +292,8 @@ func StartDeliveryWorker(ctx context.Context, wg *sync.WaitGroup, log *slog.Logg
 }
 
 func compare(value float64, condition string, threshold float64) bool {
-	switch strings.ToLower(strings.TrimSpace(condition)) {
-	case ">", "gt", "rate":
+	switch condition {
+	case ">", "gt", "increase", "ratio", "p95", "gauge_max":
 		return value > threshold
 	case ">=", "gte":
 		return value >= threshold

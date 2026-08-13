@@ -17,17 +17,19 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/backup"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/backupruntime"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
 	"gorm.io/datatypes"
 	gpostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type Service struct {
-	DB     *gorm.DB
-	Cfg    *config.Config
-	Enc    *encrypt.Service
-	Backup *backup.Service
-	OpLog  *operationlog.Service
+	DB      *gorm.DB
+	Cfg     *config.Config
+	Enc     *encrypt.Service
+	Backup  *backup.Service
+	OpLog   *operationlog.Service
+	Metrics *metrics.Catalog
 }
 
 func (s *Service) List(ctx context.Context, page, pageSize int) ([]Job, int64, error) {
@@ -59,6 +61,7 @@ func (s *Service) Get(ctx context.Context, restoreID string) (*Job, error) {
 }
 
 func (s *Service) Create(ctx context.Context, req CreateRequest, actor *uuid.UUID) (*Job, error) {
+	started := time.Now()
 	if err := s.safetyGate(ctx, req); err != nil {
 		now := time.Now().UTC()
 		row := &Job{
@@ -94,11 +97,18 @@ func (s *Service) Create(ctx context.Context, req CreateRequest, actor *uuid.UUI
 		row.ErrorSummary = backupruntime.RedactCommandOutput(err.Error())
 		row.CompletedAt = ptrTime(time.Now().UTC())
 		_ = s.DB.WithContext(ctx).Save(row).Error
+		if s.Metrics != nil {
+			s.Metrics.ObserveRestore("job", "failure", req.TargetEnvironment, time.Since(started))
+		}
 		return row, err
 	}
 	row.Status = StatusCompleted
 	row.CompletedAt = ptrTime(time.Now().UTC())
-	return row, s.DB.WithContext(ctx).Save(row).Error
+	err := s.DB.WithContext(ctx).Save(row).Error
+	if err == nil && s.Metrics != nil {
+		s.Metrics.ObserveRestore("job", "success", req.TargetEnvironment, time.Since(started))
+	}
+	return row, err
 }
 
 func (s *Service) Verify(ctx context.Context, restoreID string) (*Validation, error) {
@@ -126,6 +136,13 @@ func (s *Service) Verify(ctx context.Context, restoreID string) (*Validation, er
 	}
 	row.ValidationStatus = v.Status
 	_ = s.DB.WithContext(ctx).Save(row).Error
+	if s.Metrics != nil {
+		result := "success"
+		if v.Status != "passed" {
+			result = "failure"
+		}
+		s.Metrics.ObserveRestore("validation", result, row.TargetEnvironment, 0)
+	}
 	return v, nil
 }
 

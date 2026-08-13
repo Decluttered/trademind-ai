@@ -3,19 +3,42 @@ import { ok } from './envelope';
 export function observabilityResponse(path: string) {
   if (path === '/api/v1/observability/overview') {
     return ok({
+      overallStatus: 'needs_attention',
       enabled: true,
-      mode: 'local',
+      mode: 'hybrid',
       metricsEnabled: true,
-      tracingEnabled: false,
+      tracingEnabled: true,
       alertingEnabled: true,
       metricsPath: '/internal/metrics',
       metricsInternal: true,
-      otelExportBlocked: true,
+      otelExportBlocked: false,
       runtimeStatus: {
-        otlpExporter: 'disabled',
+        otlpExporter: 'real_backend_deferred',
         otlpProtocol: 'http/json',
       },
-      telemetry: { dropped: 0, exportFailures: 0, exportSuccess: 0 },
+      metrics: {
+        status: 'active',
+        path: '/internal/metrics',
+        internalOnly: true,
+        allowlistConfigured: true,
+      },
+      alerts: { status: 'active', active: 2, critical: 1, warning: 1 },
+      evaluation: {
+        status: 'succeeded',
+        lastEvaluatedAt: '2026-08-10T12:29:00Z',
+        rulesChecked: 16,
+        rulesSkipped: 0,
+        alertsFired: 1,
+        alertsResolved: 0,
+      },
+      slo: { status: 'achieved', lastEvaluatedAt: '2026-08-10T12:29:00Z' },
+      telemetry: {
+        status: 'real_backend_deferred',
+        protocol: 'http/json',
+        dropped: 0,
+        exportFailures: 0,
+        exportSuccess: 0,
+      },
       environment: 'e2e',
       timestamp: '2026-08-10T12:30:00Z',
     });

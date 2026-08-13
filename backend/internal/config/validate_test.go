@@ -53,6 +53,36 @@ func TestValidate_developmentAllowsDefaults(t *testing.T) {
 	}
 }
 
+func TestValidateObservabilityRejectsInvalidAndUnrestrictedProductionCIDRs(t *testing.T) {
+	tests := []struct {
+		name    string
+		proxies []string
+		metrics []string
+	}{
+		{name: "invalid proxy", proxies: []string{"not-a-cidr"}, metrics: []string{"127.0.0.1/32"}},
+		{name: "unrestricted ipv4 proxy", proxies: []string{"0.0.0.0/0"}, metrics: []string{"127.0.0.1/32"}},
+		{name: "unrestricted ipv6 metrics", proxies: []string{"127.0.0.1/32"}, metrics: []string{"::/0"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{AppEnv: EnvProduction, Observability: ValidProductionObservability()}
+			cfg.Observability.HTTPTrustedProxyCIDRs = tt.proxies
+			cfg.Observability.MetricsAllowlistCIDRs = tt.metrics
+			if err := cfg.ValidateObservability(); err == nil {
+				t.Fatal("expected CIDR validation failure")
+			}
+		})
+	}
+}
+
+func TestValidateObservabilityRejectsDisabledProductionAlerting(t *testing.T) {
+	cfg := &Config{AppEnv: EnvProduction, Observability: ValidProductionObservability()}
+	cfg.Observability.AlertingEnabled = false
+	if err := cfg.ValidateObservability(); err == nil || !strings.Contains(err.Error(), "ALERTING_ENABLED") {
+		t.Fatalf("expected production alerting validation failure, got %v", err)
+	}
+}
+
 func productionP4Auth() AuthConfig {
 	return AuthConfig{
 		SessionMode:           AuthSessionModeSecure,

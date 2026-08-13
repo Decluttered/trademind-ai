@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -90,15 +91,16 @@ func ContextCorrelation() gin.HandlerFunc {
 
 // MetricsGuard protects /internal/metrics from public access.
 func MetricsGuard(internalOnly bool, allowlist []string) gin.HandlerFunc {
+	networks := parseAllowedNetworks(allowlist)
 	return func(c *gin.Context) {
 		if !internalOnly {
 			c.Next()
 			return
 		}
-		ip := strings.TrimSpace(c.ClientIP())
-		allowed := ip == "127.0.0.1" || ip == "::1" || strings.HasPrefix(ip, "10.") || strings.HasPrefix(ip, "192.168.")
-		for _, a := range allowlist {
-			if strings.TrimSpace(a) == ip {
+		clientIP := net.ParseIP(strings.TrimSpace(c.ClientIP()))
+		allowed := false
+		for _, network := range networks {
+			if clientIP != nil && network.Contains(clientIP) {
 				allowed = true
 				break
 			}
@@ -109,6 +111,17 @@ func MetricsGuard(internalOnly bool, allowlist []string) gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+func parseAllowedNetworks(values []string) []*net.IPNet {
+	networks := make([]*net.IPNet, 0, len(values))
+	for _, raw := range values {
+		_, network, err := net.ParseCIDR(strings.TrimSpace(raw))
+		if err == nil {
+			networks = append(networks, network)
+		}
+	}
+	return networks
 }
 
 // RecordHTTPPanic increments panic metric when recovery handles panic.

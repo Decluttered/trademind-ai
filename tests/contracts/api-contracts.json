@@ -9,6 +9,13 @@
     { "method": "GET", "path": "/api/v1/image/providers", "auth": true, "responseData": "ImageProviderList" },
     {
       "method": "GET",
+      "path": "/api/v1/observability/overview",
+      "auth": true,
+      "responseData": "ObservabilityOverview",
+      "requiredResponseFields": ["overallStatus", "metrics", "alerts", "evaluation", "slo", "telemetry", "environment", "timestamp"]
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/p10/status",
       "auth": true,
       "responseData": "ProductionRuntimeStatus",

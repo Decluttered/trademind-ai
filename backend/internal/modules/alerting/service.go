@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
 	"gorm.io/gorm"
 )
 
@@ -121,6 +122,8 @@ type Service struct {
 	Channels        []Channel
 	mu              sync.Mutex
 	cache           map[string]*AlertEvent
+	evaluationMu    sync.Mutex
+	snapshotHistory []metrics.Snapshot
 }
 
 // NewService creates alerting service.

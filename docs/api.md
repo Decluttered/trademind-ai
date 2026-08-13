@@ -6,7 +6,7 @@
 
 - 基础路径：`/api/v1`
 - 健康检查：`GET /health`、`GET /api/v1/health`（综合）；`GET /health/live`（存活）；`GET /health/ready`（就绪，DB/Redis/迁移/生产门闸）
-- 可观测性（P5 / P5.1 / P5-V，需权限）：`GET /api/v1/observability/overview|http|tasks|providers|security`；`overview` 会返回运行态 `runtimeStatus` 与 telemetry 导出摘要，用于区分 `standard_protocol_ready` / `mock_verified` / `real_backend_deferred` / `export_degraded` / `disabled` / `incomplete`；系统告警统一在 Admin 告警中心处置，`GET /api/v1/observability/alerts` 支持 `page`、`pageSize`（最大 200）、`status`、`severity`、`module`，并返回 `items[]` 与 `pagination`，旧 `limit` 参数继续兼容；列表字段为 `id`、`ruleId`、`severity`、`status`、`module`、`summary`、`occurrenceCount`、`lastSeenAt`；`POST /api/v1/observability/alerts/:id/ack` 确认告警，`POST /api/v1/observability/alerts/:id/silence` 必须提交 `reason` 与 1-720 小时的 `durationHours`；内部指标：`GET /internal/metrics`（默认仅内网/本机）
+- 可观测性（需权限）：`GET /api/v1/observability/overview` 返回 `overallStatus`、受保护指标端点、活跃系统告警、最近告警窗口评估、SLO 评估和 telemetry 导出摘要。OTLP 状态区分等待首次导出、最近成功和最近失败，未完成首次导出不会显示为健康。总体状态只表示当前可观测性运行情况，不表示系统已经完成生产发布。系统告警统一在 Admin 告警中心处置，`GET /api/v1/observability/alerts` 支持 `page`、`pageSize`（最大 200）、`status`、`severity`、`module`，并返回 `items[]` 与 `pagination`，旧 `limit` 参数继续兼容；列表字段为 `id`、`ruleId`、`severity`、`status`、`module`、`summary`、`occurrenceCount`、`lastSeenAt`；`POST /api/v1/observability/alerts/:id/ack` 确认告警，`POST /api/v1/observability/alerts/:id/silence` 必须提交 `reason` 与 1-720 小时的 `durationHours`；内部指标：`GET /internal/metrics`，由 Nginx 精确路径与 Gin CIDR 双层保护。固定返回聚合占位值的旧 `/http`、`/tasks`、`/providers`、`/security` 接口不再注册。
 - 鉴权：管理端受保护接口使用 `Authorization: Bearer <token>`
 - 返回格式：统一 JSON 响应，核心字段为 `code`、`message`、`data`、`traceId`
 - 敏感信息：接口不得返回完整 API Key、Token、Secret、Cookie 或密码

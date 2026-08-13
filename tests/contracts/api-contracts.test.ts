@@ -22,6 +22,7 @@ describe('TradeMind API contract registry', () => {
         'GET /api/v1/operation-tasks/:id',
         'POST /api/v1/operation-tasks/:id/approve',
         'POST /api/v1/operation-tasks/:id/execute',
+        'GET /api/v1/observability/overview',
         'GET /api/v1/observability/alerts',
         'POST /api/v1/observability/alerts/:id/ack',
         'POST /api/v1/observability/alerts/:id/silence',
@@ -124,6 +125,9 @@ describe('TradeMind API contract registry', () => {
   });
 
   it('defines filtered system alert queries and audited silence fields', () => {
+    const overview = contracts.endpoints.find(
+      (item) => routeKey(item) === 'GET /api/v1/observability/overview',
+    );
     const list = contracts.endpoints.find(
       (item) => routeKey(item) === 'GET /api/v1/observability/alerts',
     );
@@ -134,13 +138,24 @@ describe('TradeMind API contract registry', () => {
       (item) => routeKey(item) === 'POST /api/v1/observability/alerts/:id/silence',
     );
 
+    expect(overview?.requiredResponseFields).toEqual([
+      'overallStatus',
+      'metrics',
+      'alerts',
+      'evaluation',
+      'slo',
+      'telemetry',
+      'environment',
+      'timestamp',
+    ]);
+
     expect(list?.query).toEqual(['page', 'pageSize', 'status', 'severity', 'module']);
     expect(acknowledge?.requestBody).toEqual([]);
     expect(silence?.requestBody).toEqual(['reason', 'durationHours']);
   });
 
   it('marks every protected Admin endpoint as authenticated', () => {
-    expect(contracts.endpoints).toHaveLength(29);
+    expect(contracts.endpoints).toHaveLength(30);
     expect(contracts.endpoints.every((endpoint) => endpoint.auth === true)).toBe(true);
   });
 });

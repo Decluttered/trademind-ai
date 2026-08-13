@@ -206,24 +206,7 @@ func (r *Registry) IncCounter(name string, labelValues map[string]string) {
 // It intentionally drops label dimensions so alert/SLO evaluators cannot depend
 // on high-cardinality data or expose raw tenant/shop/task identifiers.
 func (r *Registry) SnapshotValues() map[string]float64 {
-	out := make(map[string]float64)
-	if r == nil || r.prom == nil {
-		return out
-	}
-	families, err := r.prom.Gather()
-	if err != nil {
-		return out
-	}
-	for _, mf := range families {
-		name := mf.GetName()
-		if name == "" {
-			continue
-		}
-		for _, m := range mf.GetMetric() {
-			out[name] += metricValue(m)
-		}
-	}
-	return out
+	return r.SnapshotNow().AggregateValues()
 }
 
 func metricValue(m *dto.Metric) float64 {

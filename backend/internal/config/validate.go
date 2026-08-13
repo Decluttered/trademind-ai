@@ -74,6 +74,9 @@ func (c *Config) Validate() error {
 	if err := c.validateTenantIsolation(); err != nil {
 		return err
 	}
+	if err := c.ValidateObservability(); err != nil {
+		return err
+	}
 	if err := c.validateP7ProductionGuards(); err != nil {
 		return err
 	}
@@ -176,9 +179,6 @@ func (c *Config) validateProduction() error {
 	}
 	if isWeakBootstrapPassword(c.BootstrapAdminPassword) {
 		return fmt.Errorf("%s: ADMIN_BOOTSTRAP_PASSWORD is too weak for production", ErrCodeConfigInsecureDefault)
-	}
-	if err := c.ValidateObservability(); err != nil {
-		return err
 	}
 	return c.validateP6ProductionGuards()
 }

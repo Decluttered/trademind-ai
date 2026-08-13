@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -43,13 +44,14 @@ type Config struct {
 
 // Provider wraps OTel tracer provider with safe shutdown.
 type Provider struct {
-	cfg            Config
-	provider       *sdktrace.TracerProvider
-	tracer         trace.Tracer
-	mu             sync.Mutex
-	closed         bool
-	exportBlocked  bool
-	exportFailures int64
+	cfg             Config
+	provider        *sdktrace.TracerProvider
+	tracer          trace.Tracer
+	mu              sync.Mutex
+	closed          bool
+	exportBlocked   atomic.Bool
+	exportAttempted atomic.Bool
+	exportFailures  atomic.Int64
 }
 
 // Init creates and installs global tracer provider.
@@ -87,9 +89,8 @@ func Init(cfg Config) (*Provider, error) {
 		exporters = append(exporters, exp)
 	}
 	if ep := strings.TrimSpace(cfg.OTLPEndpoint); ep != "" {
-		exp := newHTTPSpanExporter(cfg)
+		exp := newHTTPSpanExporter(cfg, p)
 		exporters = append(exporters, exp)
-		p.exportBlocked = false
 	}
 	var spanExporter sdktrace.SpanExporter
 	if len(exporters) == 1 {
@@ -129,12 +130,20 @@ func (p *Provider) Tracer() trace.Tracer {
 	return p.tracer
 }
 
-// ExportBlocked reports OTLP environment blocked state.
+// ExportBlocked reports whether the most recent completed OTLP export failed.
 func (p *Provider) ExportBlocked() bool {
 	if p == nil {
 		return true
 	}
-	return p.exportBlocked
+	return p.exportBlocked.Load()
+}
+
+// ExportAttempted reports whether an OTLP export completed with success or failure.
+func (p *Provider) ExportAttempted() bool {
+	if p == nil {
+		return false
+	}
+	return p.exportAttempted.Load()
 }
 
 // ExportFailures reports exporter failures observed by the lightweight HTTP exporter.
@@ -142,9 +151,7 @@ func (p *Provider) ExportFailures() int64 {
 	if p == nil {
 		return 0
 	}
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.exportFailures
+	return p.exportFailures.Load()
 }
 
 // Shutdown flushes and shuts down tracer provider.
@@ -276,15 +283,17 @@ type httpSpanExporter struct {
 	headers  http.Header
 	client   *http.Client
 	cfg      Config
+	provider *Provider
 }
 
-func newHTTPSpanExporter(cfg Config) *httpSpanExporter {
+func newHTTPSpanExporter(cfg Config, provider *Provider) *httpSpanExporter {
 	timeout := exportTimeout(cfg.ExportTimeout)
 	return &httpSpanExporter{
 		endpoint: normalizeEndpoint(cfg.OTLPEndpoint),
 		headers:  parseOTLPHeaders(cfg.OTLPHeaders),
 		client:   &http.Client{Timeout: timeout},
 		cfg:      cfg,
+		provider: provider,
 	}
 }
 
@@ -345,6 +354,10 @@ func (e *httpSpanExporter) exportOnce(ctx context.Context, body []byte, spanCoun
 	if e.cfg.OnQueueDepth != nil {
 		e.cfg.OnQueueDepth(0)
 	}
+	if e.provider != nil {
+		e.provider.exportAttempted.Store(true)
+		e.provider.exportBlocked.Store(false)
+	}
 	return nil
 }
 
@@ -354,6 +367,11 @@ func (e *httpSpanExporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *httpSpanExporter) recordFailure(n int) {
+	if e != nil && e.provider != nil {
+		e.provider.exportAttempted.Store(true)
+		e.provider.exportBlocked.Store(true)
+		e.provider.exportFailures.Add(1)
+	}
 	if e != nil && e.cfg.OnExportError != nil {
 		e.cfg.OnExportError(n)
 	}

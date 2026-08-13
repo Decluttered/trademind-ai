@@ -54,6 +54,11 @@ docker compose -f docker-compose.full.yml up -d --build
 | `OBSERVABILITY_ENABLED` | `true` | backend | 否 | 是否启用日志、指标、追踪等可观测性基础能力。 |
 | `OBSERVABILITY_MODE` | `local` / `hybrid` | backend | 否 | 本地、Prometheus、OTel 或混合模式。 |
 | `OBSERVABILITY_ENVIRONMENT` | `development` | backend | 否 | 低基数环境标签。 |
+| `METRICS_ENABLED` | `true` | backend | 否 | 是否注册并暴露 Prometheus 指标。生产环境必须开启。 |
+| `METRICS_PATH` | `/internal/metrics` | backend | 否 | 内部指标路径；部署层必须使用精确路径匹配，禁止经通用 API 代理公开。 |
+| `METRICS_INTERNAL_ONLY` | `true` | backend | 否 | 是否启用应用层 CIDR 访问控制；生产环境必须为 `true`。 |
+| `HTTP_TRUSTED_PROXY_CIDRS` | `127.0.0.1/32,::1/128` | backend | 否 | Gin 可信反向代理 CIDR。只配置实际代理地址；staging/production 拒绝无效 CIDR 与 `0.0.0.0/0`、`::/0`。 |
+| `METRICS_ALLOWLIST_CIDRS` | `127.0.0.1/32,::1/128` | backend | 否 | 允许抓取指标的客户端 CIDR，需与 Nginx `location = /internal/metrics` 的 allowlist 一致。 |
 | `TRACING_ENABLED` | `false` | backend | 否 | 是否启用 tracing。真实 OTLP backend 未配置时保持 `false` 或本地 Mock 验证。 |
 | `OTEL_SERVICE_NAME` | `trademind-api` | backend | 否 | OTLP resource `service.name`。 |
 | `OTEL_SERVICE_VERSION` | 空 | backend | 否 | OTLP resource `service.version`。 |
@@ -66,6 +71,9 @@ docker compose -f docker-compose.full.yml up -d --build
 | `OTEL_EXPORT_QUEUE_SIZE` | `1024` | backend | 否 | OTel batcher 有界队列大小。 |
 | `OTEL_EXPORT_BATCH_SIZE` | `128` | backend | 否 | 单批导出数量，不得超过队列大小。 |
 | `OTEL_EXPORT_RETRY_MAX` | `2` | backend | 否 | 429/5xx 受控重试次数，上限 5。 |
+| `ALERTING_ENABLED` | `true` | backend | 否 | 是否启用内部告警规则评估与投递重试；生产环境必须为 `true`。 |
+| `ALERT_DEFAULT_COOLDOWN_SECONDS` | `300` | backend | 否 | 同一告警指纹的默认冷却时间。 |
+| `ALERT_RECOVERY_ENABLED` | `true` | backend | 否 | 是否在告警恢复时记录恢复通知。 |
 
 ## Webhook 入站（公开 HTTP）
 

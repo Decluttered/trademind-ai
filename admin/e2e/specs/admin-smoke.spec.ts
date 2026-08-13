@@ -333,14 +333,17 @@ test.describe("@smoke Admin route smoke", () => {
     await admin.writeGuard.expectRequestCount("unexpected", 0);
   });
 
-  test("renders observability alert rows without React key warnings", async ({
+  test("renders operational observability status without writes", async ({
     admin,
     page,
   }) => {
     await admin.goto("/ops/observability");
 
-    await expect(page.getByText("http_5xx_elevated")).toBeVisible();
-    await expect(page.getByText("worker_backlog")).toBeVisible();
+    await expect(page.getByText("需要处理").first()).toBeVisible();
+    await expect(page.getByText("活跃系统告警")).toBeVisible();
+    await expect(page.getByText("最近评估成功").first()).toBeVisible();
+    await expect(page.getByText("未配置导出后端").first()).toBeVisible();
+    await expectNoRootOverflow(page);
     await admin.writeGuard.expectRequestCount("unexpected", 0);
   });
 
