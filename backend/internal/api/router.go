@@ -52,7 +52,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrolp10"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
-	"github.com/trademind-ai/trademind/backend/internal/modules/release"
 	"github.com/trademind-ai/trademind/backend/internal/modules/restore"
 	"github.com/trademind-ai/trademind/backend/internal/modules/securitymod"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
@@ -805,9 +804,6 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	restoreSvc := &restore.Service{DB: dep.DB, Cfg: dep.Config, Enc: dep.Encrypter, Backup: backupSvc, OpLog: opLogSvc}
 	restoreH := &restore.Handler{Svc: restoreSvc}
 	restore.Register(authed, restoreH)
-	releaseSvc := &release.Service{DB: dep.DB, Cfg: dep.Config, Backup: backupSvc, OpLog: opLogSvc}
-	releaseH := &release.Handler{Svc: releaseSvc}
-	release.Register(authed, releaseH)
 	alertSvc := alerting.NewService(dep.DB, alertCooldown, alertRecovery)
 	obsH := &observabilitymod.Handler{DB: dep.DB, Cfg: dep.Config, Obs: dep.Obs, Alert: alertSvc, OpLog: opLogSvc}
 	observabilitymod.Register(authed, obsH)

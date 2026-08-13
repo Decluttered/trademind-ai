@@ -166,10 +166,9 @@ type Config struct {
 
 	// P5 observability
 	Observability ObservabilityConfig
-	// P6 backup, restore, release and DR foundation.
+	// P6 backup and restore foundation.
 	Backup         BackupConfig
 	PostgresBackup PostgresBackupConfig
-	Release        ReleaseConfig
 	// P7 performance, capacity, pagination and limiting foundation.
 	P7 P7Config
 	// P10 read-only productionization foundation. Runtime remains L0 until a later approval changes code and configuration.
@@ -345,7 +344,6 @@ func Load() (*Config, error) {
 	cfg.Observability = LoadObservabilityConfig(cfg.AppEnv, cfg.AppName, cfg.AppVersion)
 	cfg.Backup = loadBackupConfig(cfg.AppEnv)
 	cfg.PostgresBackup = loadPostgresBackupConfig()
-	cfg.Release = loadReleaseConfig(cfg.AppEnv)
 	cfg.P7 = loadP7Config(cfg.AppEnv)
 	cfg.P10 = loadP10Config(cfg.AppEnv)
 	// Test verifier must never run in production regardless of env flag.

@@ -28,20 +28,6 @@ export type RestoreJob = {
   errorSummary?: string;
 };
 
-export type ReleaseRun = {
-  id: string;
-  releaseId: string;
-  version: string;
-  gitCommit?: string;
-  environment: string;
-  strategy: string;
-  state: string;
-  preBackupId?: string;
-  createdAt: string;
-  completedAt?: string;
-  errorSummary?: string;
-};
-
 type ListResult<T> = {
   items: T[];
   total: number;
@@ -85,20 +71,4 @@ export async function createRestore(data: {
 
 export async function verifyRestore(id: string) {
   return request(`/api/v1/ops/restores/${id}/verify`, { method: 'POST' });
-}
-
-export async function fetchReleases(params?: { page?: number; pageSize?: number }) {
-  return request<{ data: ListResult<ReleaseRun> }>('/api/v1/ops/releases', { method: 'GET', params });
-}
-
-export async function createRelease(data: { version: string; gitCommit?: string }) {
-  return request<{ data: ReleaseRun }>('/api/v1/ops/releases', { method: 'POST', data });
-}
-
-export async function executeRelease(id: string) {
-  return request(`/api/v1/ops/releases/${id}/execute`, { method: 'POST' });
-}
-
-export async function rollbackRelease(id: string, reason: string) {
-  return request(`/api/v1/ops/releases/${id}/rollback`, { method: 'POST', data: { reason } });
 }

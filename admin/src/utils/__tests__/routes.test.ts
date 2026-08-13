@@ -90,18 +90,17 @@ describe('Admin route menu configuration', () => {
     expect(createInternalInventorySyncRoutes(true).every((route) => route.hideInMenu)).toBe(true);
   });
 
-  it('excludes incomplete operational tools from production builds', () => {
+  it('keeps development recovery tools out of production builds', () => {
     expect(createDevelopmentOpsRoutes(false)).toEqual([]);
     expect(createDevelopmentOpsRoutes(true)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: '/ops/backups', name: '备份管理' }),
         expect.objectContaining({ path: '/ops/restores', name: '恢复验证' }),
-        expect.objectContaining({ path: '/ops/releases', name: '发布流程记录' }),
       ]),
     );
-    expect(createDevelopmentOpsRoutes(true)).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ path: '/ops/disaster-recovery' })]),
-    );
+    const paths = createDevelopmentOpsRoutes(true).map((route) => route.path);
+    expect(paths).not.toContain('/ops/releases');
+    expect(paths).not.toContain('/ops/disaster-recovery');
   });
 
   it('keeps historical AI batches outside the menu for deep-link compatibility', () => {

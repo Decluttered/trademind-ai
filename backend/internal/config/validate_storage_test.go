@@ -70,7 +70,7 @@ func TestValidate_storageDevelopmentLocalPasses(t *testing.T) {
 
 func TestValidate_storageProductionCOSPassesBase(t *testing.T) {
 	t.Parallel()
-	backupCfg, releaseCfg := productionP6BackupRelease()
+	backupCfg := productionP6Backup()
 	cfg := &Config{
 		AppEnv:                 EnvProduction,
 		StorageProvider:        "cos",
@@ -83,7 +83,6 @@ func TestValidate_storageProductionCOSPassesBase(t *testing.T) {
 		Auth:                   productionP4Auth(),
 		Observability:          ValidProductionObservability(),
 		Backup:                 backupCfg,
-		Release:                releaseCfg,
 		P7:                     productionP7(),
 		DB:                     DBConfig{Driver: "postgres", User: "u", Name: "db"},
 	}

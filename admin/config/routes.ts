@@ -69,12 +69,6 @@ export function createDevelopmentOpsRoutes(
       icon: 'SafetyCertificateOutlined',
       component: './Ops/Restores',
     },
-    {
-      path: '/ops/releases',
-      name: '发布流程记录',
-      icon: 'BranchesOutlined',
-      component: './Ops/Releases',
-    },
   ];
 }
 

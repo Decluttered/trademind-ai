@@ -165,13 +165,6 @@ type Catalog struct {
 	RestoreFailuresTotal       *prometheus.CounterVec
 	RestoreValidationTotal     *prometheus.CounterVec
 	RestoreLastSuccess         *prometheus.GaugeVec
-	ReleaseRunsTotal           *prometheus.CounterVec
-	ReleaseStepDuration        *prometheus.HistogramVec
-	ReleaseFailuresTotal       *prometheus.CounterVec
-	ReleaseRollbacksTotal      *prometheus.CounterVec
-	ReleaseLastSuccess         *prometheus.GaugeVec
-	ReleaseCurrentVersion      *prometheus.GaugeVec
-	ReleaseHealthFailures      *prometheus.CounterVec
 
 	once sync.Once
 	err  error
@@ -876,34 +869,6 @@ func (c *Catalog) registerAll() error {
 		return err
 	}
 	c.RestoreLastSuccess, err = c.reg.Gauge("restore_last_success_timestamp", "Last successful restore timestamp", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.ReleaseRunsTotal, err = c.reg.Counter("release_runs_total", "Release runs", "strategy", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.ReleaseStepDuration, err = c.reg.Histogram("release_step_duration_seconds", "Release step duration", defaultBuckets, "step", "strategy", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.ReleaseFailuresTotal, err = c.reg.Counter("release_failures_total", "Release failures", "strategy", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.ReleaseRollbacksTotal, err = c.reg.Counter("release_rollbacks_total", "Release rollbacks", "strategy", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.ReleaseLastSuccess, err = c.reg.Gauge("release_last_success_timestamp", "Last successful release timestamp", "strategy", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.ReleaseCurrentVersion, err = c.reg.Gauge("release_current_version_info", "Current release version info", "strategy", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.ReleaseHealthFailures, err = c.reg.Counter("release_health_check_failures_total", "Release health check failures", "strategy", "result", "environment_class")
 	if err != nil {
 		return err
 	}

@@ -50,8 +50,10 @@ func TestEnsureDefaultRulesRemovesRetiredRules(t *testing.T) {
 	if err := db.AutoMigrate(&AlertRule{}); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Create(&AlertRule{ID: "wal_archive_interrupted", Enabled: true}).Error; err != nil {
-		t.Fatal(err)
+	for _, id := range retiredDefaultRuleIDs {
+		if err := db.Create(&AlertRule{ID: id, Enabled: true}).Error; err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if err := EnsureDefaultRules(context.Background(), db); err != nil {
@@ -59,7 +61,7 @@ func TestEnsureDefaultRulesRemovesRetiredRules(t *testing.T) {
 	}
 
 	var retiredCount int64
-	if err := db.Model(&AlertRule{}).Where("id = ?", "wal_archive_interrupted").Count(&retiredCount).Error; err != nil {
+	if err := db.Model(&AlertRule{}).Where("id IN ?", retiredDefaultRuleIDs).Count(&retiredCount).Error; err != nil {
 		t.Fatal(err)
 	}
 	if retiredCount != 0 {

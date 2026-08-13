@@ -27,7 +27,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/performance"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
-	"github.com/trademind-ai/trademind/backend/internal/modules/release"
 	"github.com/trademind-ai/trademind/backend/internal/modules/restore"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
@@ -180,10 +179,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&backup.ObjectInventory{},
 		&restore.Job{},
 		&restore.Validation{},
-		&release.Run{},
-		&release.Artifact{},
-		&release.Step{},
-		&release.Rollback{},
 		&performance.TestRun{},
 		&performance.Regression{},
 		&performance.CapacitySnapshot{},

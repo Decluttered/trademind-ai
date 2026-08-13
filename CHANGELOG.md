@@ -4,6 +4,12 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Release recorder retirement (2026-08-13)
+
+- Removed the development-only Admin page, `/api/v1/ops/releases*` endpoints, dedicated permissions and unused `RELEASE_*` configuration.
+- Removed the self-reporting release state machine, unpopulated metrics, misleading default alerts, dashboard and module-specific runbooks while retaining external CI/CD, deployment scripts, release approval and application rollback procedures.
+- Stopped managing legacy `release_runs`, `release_artifacts`, `release_steps` and `release_rollbacks` through `AutoMigrate`; existing rows remain untouched pending an explicit retention or archival decision.
+
 ### Disaster-recovery drill recorder retirement (2026-08-13)
 
 - Removed the development-only Admin page, `/api/v1/ops/dr/*` endpoints, dedicated permissions, unused schedule configuration, unpopulated metrics and their misleading default alert.

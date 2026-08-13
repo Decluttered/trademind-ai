@@ -506,7 +506,7 @@ List endpoints return `{items, nextCursor, hasMore, limit}` and never expose off
 | `GET` | `/api/v1/ai/operation-workbench/todos/:id` | 单条待办详情 |
 | `POST` | `/api/v1/ai/operation-workbench/todos/refresh` | 重新聚合待办（只读，不写库、不调平台 API） |
 
-## P6 Backup / Restore / Release / DR API
+## P6 Backup / Restore API
 
 All P6 write operations require Bearer authentication and backend RBAC. The frontend never receives shell commands, full backup paths, storage secrets or database credentials.
 
@@ -522,13 +522,8 @@ All P6 write operations require Bearer authentication and backend RBAC. The fron
 | `POST` | `/api/v1/ops/restores` | `restore.execute` | 创建隔离恢复验证；production 目标默认拒绝。 |
 | `GET` | `/api/v1/ops/restores/:id` | `restore.read` | 恢复验证详情。 |
 | `POST` | `/api/v1/ops/restores/:id/verify` | `restore.verify` | 写入恢复完整性验证。 |
-| `GET` | `/api/v1/ops/releases` | `release.read` | 发布记录列表。 |
-| `POST` | `/api/v1/ops/releases` | `release.create` | 创建发布记录和 manifest 摘要。 |
-| `GET` | `/api/v1/ops/releases/:id` | `release.read` | 发布详情。 |
-| `POST` | `/api/v1/ops/releases/:id/execute` | `release.execute` | 执行受控发布状态机。 |
-| `POST` | `/api/v1/ops/releases/:id/rollback` | `release.rollback` | 应用层回滚；禁止自动数据库恢复。 |
 
-The standalone disaster-recovery drill record API has been retired. The current working tree keeps the reusable backup, isolated restore and application rollback paths only; this still does not mark Production Ready or perform a real production restore, PITR validation or traffic switch. Existing `dr_drills` data is not exposed and is not dropped automatically.
+The standalone release recorder and disaster-recovery drill recorder APIs have been retired because they stored self-reported state without executing deployment, traffic switching or a verified recovery workflow. The current working tree keeps reusable backup verification and isolated restore validation; real deployment and application rollback remain external, approved operations. Existing `release_*` and `dr_drills` data is not exposed and is not dropped automatically.
 
 ## P7 Performance / Capacity API Status
 

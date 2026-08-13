@@ -62,22 +62,17 @@ func productionP4Auth() AuthConfig {
 	}
 }
 
-func productionP6BackupRelease() (BackupConfig, ReleaseConfig) {
+func productionP6Backup() BackupConfig {
 	return BackupConfig{
-			Enabled:               true,
-			Mode:                  "object_storage",
-			StorageProvider:       "s3",
-			EncryptionEnabled:     true,
-			RetentionDaily:        14,
-			RetentionWeekly:       8,
-			RetentionMonthly:      12,
-			CommandTimeoutSeconds: 900,
-		}, ReleaseConfig{
-			Strategy:             "blue_green",
-			RequirePreBackup:     true,
-			HealthTimeoutSeconds: 120,
-			KeepCount:            5,
-		}
+		Enabled:               true,
+		Mode:                  "object_storage",
+		StorageProvider:       "s3",
+		EncryptionEnabled:     true,
+		RetentionDaily:        14,
+		RetentionWeekly:       8,
+		RetentionMonthly:      12,
+		CommandTimeoutSeconds: 900,
+	}
 }
 
 func productionP7() P7Config {
@@ -117,7 +112,7 @@ func productionP7() P7Config {
 
 func TestValidate_productionRequiresStrongJWT(t *testing.T) {
 	t.Parallel()
-	backupCfg, releaseCfg := productionP6BackupRelease()
+	backupCfg := productionP6Backup()
 	cfg := &Config{
 		AppEnv:                 EnvProduction,
 		JWTSecret:              strings.Repeat("a", 48),
@@ -130,7 +125,6 @@ func TestValidate_productionRequiresStrongJWT(t *testing.T) {
 		Auth:                   productionP4Auth(),
 		Observability:          ValidProductionObservability(),
 		Backup:                 backupCfg,
-		Release:                releaseCfg,
 		P7:                     productionP7(),
 		DB: DBConfig{
 			Driver: "postgres",
@@ -258,7 +252,6 @@ func TestLoad_productionFromEnv(t *testing.T) {
 	t.Setenv("BACKUP_RETENTION_DAILY", "14")
 	t.Setenv("BACKUP_RETENTION_WEEKLY", "8")
 	t.Setenv("BACKUP_RETENTION_MONTHLY", "12")
-	t.Setenv("RELEASE_REQUIRE_PRE_BACKUP", "true")
 	t.Setenv("PAGINATION_CURSOR_SIGNING_KEY", strings.Repeat("c", 48))
 
 	cfg, err := Load()

@@ -35,21 +35,6 @@ type PostgresBackupConfig struct {
 	PITREnabled       bool
 }
 
-// ReleaseConfig holds P6 controlled deployment settings.
-type ReleaseConfig struct {
-	Enabled              bool
-	Root                 string
-	ArtifactDir          string
-	CurrentLink          string
-	PreviousLink         string
-	KeepCount            int
-	HealthTimeoutSeconds int
-	RollbackOnFailure    bool
-	RequirePreBackup     bool
-	Strategy             string
-	TrafficSwitchMode    string
-}
-
 func loadBackupConfig(appEnv string) BackupConfig {
 	return BackupConfig{
 		Enabled:               envBool(os.Getenv("BACKUP_ENABLED"), false),
@@ -81,23 +66,6 @@ func loadPostgresBackupConfig() PostgresBackupConfig {
 	}
 }
 
-func loadReleaseConfig(appEnv string) ReleaseConfig {
-	root := strings.TrimSpace(firstNonEmpty(os.Getenv("RELEASE_ROOT"), "/opt/trademind/releases"))
-	return ReleaseConfig{
-		Enabled:              envBool(os.Getenv("RELEASE_ENABLED"), false),
-		Root:                 root,
-		ArtifactDir:          strings.TrimSpace(firstNonEmpty(os.Getenv("RELEASE_ARTIFACT_DIR"), "artifacts/releases")),
-		CurrentLink:          strings.TrimSpace(firstNonEmpty(os.Getenv("RELEASE_CURRENT_LINK"), root+"/current")),
-		PreviousLink:         strings.TrimSpace(firstNonEmpty(os.Getenv("RELEASE_PREVIOUS_LINK"), root+"/previous")),
-		KeepCount:            atoiOrDefault(os.Getenv("RELEASE_KEEP_COUNT"), 5),
-		HealthTimeoutSeconds: atoiOrDefault(os.Getenv("RELEASE_HEALTH_TIMEOUT_SECONDS"), 120),
-		RollbackOnFailure:    envBool(os.Getenv("RELEASE_ROLLBACK_ON_FAILURE"), true),
-		RequirePreBackup:     envBool(os.Getenv("RELEASE_REQUIRE_PRE_BACKUP"), IsStagingOrProduction(appEnv)),
-		Strategy:             strings.ToLower(strings.TrimSpace(firstNonEmpty(os.Getenv("RELEASE_STRATEGY"), "blue_green"))),
-		TrafficSwitchMode:    strings.ToLower(strings.TrimSpace(firstNonEmpty(os.Getenv("RELEASE_TRAFFIC_SWITCH_MODE"), "manual"))),
-	}
-}
-
 func (c *Config) validateP6ProductionGuards() error {
 	if c == nil {
 		return nil
@@ -108,17 +76,11 @@ func (c *Config) validateP6ProductionGuards() error {
 	if strings.TrimSpace(c.Backup.StorageProvider) == "" {
 		c.Backup.StorageProvider = "local"
 	}
-	if strings.TrimSpace(c.Release.Strategy) == "" {
-		c.Release.Strategy = "blue_green"
-	}
 	if c.Backup.CommandTimeoutSeconds == 0 {
 		c.Backup.CommandTimeoutSeconds = 900
 	}
 	if !validBackupMode(c.Backup.Mode) {
 		return fmt.Errorf("%s: BACKUP_MODE must be disabled, local, object_storage, or hybrid", ErrCodeConfigInvalid)
-	}
-	if !validReleaseStrategy(c.Release.Strategy) {
-		return fmt.Errorf("%s: RELEASE_STRATEGY must be in_place, rolling, or blue_green", ErrCodeConfigInvalid)
 	}
 	if c.Backup.CommandTimeoutSeconds <= 0 {
 		return fmt.Errorf("%s: BACKUP_COMMAND_TIMEOUT_SECONDS must be positive", ErrCodeConfigInvalid)
@@ -139,9 +101,6 @@ func (c *Config) validateP6ProductionGuards() error {
 		if !c.Backup.EncryptionEnabled {
 			return fmt.Errorf("%s: BACKUP_ENCRYPTION_ENABLED=true is required in production", ErrCodeConfigRequired)
 		}
-		if c.Release.Enabled && !c.Release.RequirePreBackup {
-			return fmt.Errorf("%s: RELEASE_REQUIRE_PRE_BACKUP=true is required for production release", ErrCodeConfigRequired)
-		}
 	}
 	return nil
 }
@@ -149,15 +108,6 @@ func (c *Config) validateP6ProductionGuards() error {
 func validBackupMode(v string) bool {
 	switch strings.ToLower(strings.TrimSpace(v)) {
 	case "disabled", "local", "object_storage", "hybrid":
-		return true
-	default:
-		return false
-	}
-}
-
-func validReleaseStrategy(v string) bool {
-	switch strings.ToLower(strings.TrimSpace(v)) {
-	case "in_place", "rolling", "blue_green":
 		return true
 	default:
 		return false

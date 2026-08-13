@@ -7,7 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-var retiredDefaultRuleIDs = []string{"wal_archive_interrupted"}
+var retiredDefaultRuleIDs = []string{
+	"automatic_rollback_failed",
+	"release_health_failed",
+	"release_migration_failed",
+	"wal_archive_interrupted",
+}
 
 // DefaultRules returns built-in alert rules.
 func DefaultRules() []AlertRule {
@@ -28,9 +33,6 @@ func DefaultRules() []AlertRule {
 		{ID: "backup_too_old", Name: "Backup too old", Metric: "backup_age_seconds", Condition: ">", Threshold: 108000, Severity: SeverityCritical, CooldownSeconds: 600, Enabled: true, RunbookURL: "docs/runbooks/BACKUP_TOO_OLD.md", ChannelGroup: "ops"},
 		{ID: "backup_verification_failed", Name: "Backup verification failed", Metric: "backup_verification_total", Condition: ">", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/BACKUP_VERIFICATION_FAILED.md", ChannelGroup: "ops"},
 		{ID: "restore_validation_failed", Name: "Restore validation failed", Metric: "restore_validation_total", Condition: ">", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/RESTORE_VALIDATION_FAILED.md", ChannelGroup: "ops"},
-		{ID: "release_migration_failed", Name: "Release migration failed", Metric: "release_failures_total", Condition: ">", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/MIGRATION_FAILED.md", ChannelGroup: "ops"},
-		{ID: "release_health_failed", Name: "Release health check failed", Metric: "release_health_check_failures_total", Condition: ">", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/DEPLOYMENT_HEALTH_FAILED.md", ChannelGroup: "ops"},
-		{ID: "automatic_rollback_failed", Name: "Automatic rollback failed", Metric: "release_rollbacks_total", Condition: ">", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/AUTOMATIC_ROLLBACK_FAILED.md", ChannelGroup: "ops"},
 	}
 }
 
