@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/trademind-ai/trademind/backend/internal/api"
 	"github.com/trademind-ai/trademind/backend/internal/config"
 	"github.com/trademind-ai/trademind/backend/internal/database"
@@ -49,19 +48,11 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/rdb"
 )
 
-func loadDotEnv() {
-	if config.NormalizeEnv(os.Getenv("APP_ENV")) == config.EnvPerformance && strings.EqualFold(strings.TrimSpace(os.Getenv("PERFORMANCE_TEST_MODE")), "true") {
-		return
-	}
-	for _, p := range []string{".env", "../.env", "../../.env"} {
-		if err := godotenv.Load(p); err == nil {
-			return
-		}
-	}
-}
-
 func main() {
-	loadDotEnv()
+	if err := loadDotEnv(); err != nil {
+		slog.Error("env_load_failed", "error", err)
+		os.Exit(1)
+	}
 
 	cfg, err := config.Load()
 	if err != nil {
