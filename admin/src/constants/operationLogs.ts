@@ -30,6 +30,7 @@ export const OPERATION_LOG_RESOURCE_LABEL: Record<string, string> = {
   task_center: '任务中心',
   task_alert: '任务告警',
   task_alert_notification: '任务告警通知',
+  alert_event: '系统告警',
   platform_app_settings: '平台应用设置',
   platform_publish_settings: '平台刊登设置',
   pricing: '定价规则',
@@ -246,6 +247,8 @@ export const OPERATION_LOG_ACTION_LABEL: Record<string, string> = {
   'task_center.alert.notify.manual': '手动发送任务告警通知',
   'task_center.alert.scan_worker.run': '任务告警扫描进程运行',
   'task_center.alert.scan_worker.failed': '任务告警扫描进程失败',
+  'alert.acknowledge': '确认系统告警',
+  'alert.silence': '静默系统告警',
 };
 
 const SEGMENT_LABEL: Record<string, string> = {

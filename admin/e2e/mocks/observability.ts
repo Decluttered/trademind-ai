@@ -44,6 +44,7 @@ export function observabilityResponse(path: string) {
           lastSeenAt: '2026-08-10T12:25:00Z',
         },
       ],
+      pagination: { page: 1, pageSize: 20, total: 2, totalPages: 1 },
     });
   }
   return null;

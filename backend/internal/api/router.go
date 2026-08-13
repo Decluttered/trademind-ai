@@ -798,7 +798,7 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	disasterrecovery.Register(authed, drH)
 
 	alertSvc := alerting.NewService(dep.DB, alertCooldown, alertRecovery)
-	obsH := &observabilitymod.Handler{DB: dep.DB, Cfg: dep.Config, Obs: dep.Obs, Alert: alertSvc}
+	obsH := &observabilitymod.Handler{DB: dep.DB, Cfg: dep.Config, Obs: dep.Obs, Alert: alertSvc, OpLog: opLogSvc}
 	observabilitymod.Register(authed, obsH)
 
 	if dep.Config != nil && dep.Config.EnableDemoSeed && !config.IsProduction(dep.Config.AppEnv) {

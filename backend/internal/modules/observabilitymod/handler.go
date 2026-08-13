@@ -9,6 +9,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/config"
 	"github.com/trademind-ai/trademind/backend/internal/database"
 	"github.com/trademind-ai/trademind/backend/internal/modules/alerting"
+	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/observability"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/response"
@@ -21,6 +22,7 @@ type Handler struct {
 	Cfg   *config.Config
 	Obs   *observability.Observability
 	Alert *alerting.Service
+	OpLog *operationlog.Service
 }
 
 // Register mounts observability routes.
@@ -34,7 +36,7 @@ func Register(r gin.IRouter, h *Handler) {
 	g.GET("/tasks", h.Tasks)
 	g.GET("/providers", h.Providers)
 	g.GET("/security", h.Security)
-	alerting.Register(r, &alerting.Handler{Svc: h.Alert})
+	alerting.Register(r, &alerting.Handler{Svc: h.Alert, OpLog: h.OpLog})
 }
 
 func (h *Handler) requireRead(c *gin.Context) bool {

@@ -458,7 +458,7 @@ test.describe("@smoke Admin route smoke", () => {
       .fill("告警中心");
     await dialog.getByRole("button", { name: /告警中心/ }).click();
 
-    await expect(page).toHaveURL(/\/ops\/task-center\/alerts$/);
+    await expect(page).toHaveURL(/\/ops\/task-center\/alerts\?source=business$/);
     await admin.writeGuard.expectRequestCount("unexpected", 0);
   });
 

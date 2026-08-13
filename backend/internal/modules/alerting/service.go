@@ -251,25 +251,38 @@ func (s *Service) Silence(ctx context.Context, alertID, reason, by string, until
 	if s == nil || s.DB == nil {
 		return fmt.Errorf("alerting unavailable")
 	}
-	if err := s.setStatus(ctx, alertID, StatusSilenced); err != nil {
-		return err
-	}
-	sil := AlertSilence{
-		ID:         uuid.New().String(),
-		AlertID:    alertID,
-		RuleID:     alertRuleID(ctx, s.DB, alertID),
-		Reason:     reason,
-		SilencedBy: by,
-		ExpiresAt:  until.UTC(),
-	}
-	return s.DB.WithContext(ctx).Create(&sil).Error
+	return s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := setAlertStatus(tx, alertID, StatusSilenced); err != nil {
+			return err
+		}
+		sil := AlertSilence{
+			ID:         uuid.New().String(),
+			AlertID:    alertID,
+			RuleID:     alertRuleID(ctx, tx, alertID),
+			Reason:     reason,
+			SilencedBy: by,
+			ExpiresAt:  until.UTC(),
+		}
+		return tx.Create(&sil).Error
+	})
 }
 
 func (s *Service) setStatus(ctx context.Context, alertID, status string) error {
-	return s.DB.WithContext(ctx).Model(&AlertEvent{}).Where("id = ?", alertID).Updates(map[string]any{
+	return setAlertStatus(s.DB.WithContext(ctx), alertID, status)
+}
+
+func setAlertStatus(db *gorm.DB, alertID, status string) error {
+	result := db.Model(&AlertEvent{}).Where("id = ?", alertID).Updates(map[string]any{
 		"status":     status,
 		"updated_at": time.Now().UTC(),
-	}).Error
+	})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (s *Service) cooldownDuration() time.Duration {

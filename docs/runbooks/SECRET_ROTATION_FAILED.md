@@ -11,7 +11,7 @@
 - 跨租户访问前先确认操作者权限
 
 ## 排查步骤
-1. 打开可观测性中心 /ops/observability
+1. 打开告警中心系统告警 `/ops/task-center/alerts?source=system`
 2. 查看相关 Dashboard（deploy/observability/dashboards/）
 3. 按 request_id / trace_id 关联结构化日志（字段约定见 `docs/P5_OBSERVABILITY_ARCHITECTURE.md`）
 

@@ -26,7 +26,7 @@
 | Image Provider | 图片任务、队列、settings.image、任务页面、`docs/provider.md` |
 | Platform Provider | 店铺授权、Token 加密、平台配置、订单/库存/客服调用方、`docs/provider.md`、`SECURITY.md` |
 | AI 客服自动回复 | `customerchat` tenant setting/policy/run model、`customersync` 动态轮询与入站触发、独立 Redis Worker、平台客服 Provider、AI Prompt/Gateway、失败事件、操作日志、Admin 运行设置与店铺策略页、`.env.example`、`docs/env.md`、`docs/CUSTOMER_AI_REPLY_SUGGESTION_DESIGN.md` |
-| 告警外部通知 | `backend/internal/modules/taskcenter/notify`、`service_notify.go`、settings `alert_notify`、Admin 告警通知配置与告警中心、`docs/api.md` |
+| 告警中心 / 外部通知 | 业务告警 `backend/internal/modules/taskcenter`、系统告警 `backend/internal/modules/alerting`、settings `alert_notify`、Admin `TaskCenter/Alerts`、可观测性概览、`adminperm`、`docs/api.md` |
 | 多平台 / 批量刊登 | `backend/internal/modules/productpublish`、`docs/MULTI_PLATFORM_PUBLISHING_DESIGN.md`、`docs/PUBLISH_BATCH_MIGRATION.md`、`docs/api.md`（batch-targets / batches）、`admin/src/pages/Product/PublishBatch*`、`admin/src/pages/Product/PublishTasks`、`admin/src/constants/publishLabels.ts`、`admin/src/constants/publishLimits.ts`、相关 CI 测试 |
 | Collector Provider | `collector/`、采集任务 API、队列、raw 原始数据、`docs/provider.md`、**1688 改解析时必读 [`docs/collector-1688-pitfalls.md`](collector-1688-pitfalls.md)** |
 | 安全 / 密钥 / Token | 加密、脱敏、日志、环境模板、`SECURITY.md`、相关 settings 文档 |
