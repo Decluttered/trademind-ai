@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/trademind-ai/trademind/backend/internal/config"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -90,8 +91,23 @@ func defaultControl(tenantID int64) RuntimeControl {
 	return RuntimeControl{TenantID: tenantID, ProviderKillActive: true, TenantKillActive: true, ShopKillActive: true, ReadKillActive: true, WriteKillActive: true, Revision: 1}
 }
 
+func (s *Service) acceptsStatusTenant(tenantID int64) bool {
+	if s == nil || s.Config == nil || tenantID < 0 {
+		return false
+	}
+	if tenantID > 0 {
+		return true
+	}
+	env := config.NormalizeEnv(s.Config.AppEnv)
+	if env != config.EnvDevelopment && env != config.EnvTest {
+		return false
+	}
+	resolved, source, err := s.Config.ResolveRequestTenantID(tenantID)
+	return err == nil && resolved == 0 && source == security.AuthSourceLegacyDevZero
+}
+
 func (s *Service) Status(ctx context.Context, tenantID int64, allowedShopIDs []uuid.UUID) (*RuntimeStatus, error) {
-	if s == nil || s.DB == nil || s.Config == nil || tenantID <= 0 {
+	if s == nil || s.DB == nil || !s.acceptsStatusTenant(tenantID) {
 		return nil, ErrInvalidControl
 	}
 	control, err := s.getOrDefaultControl(ctx, tenantID)

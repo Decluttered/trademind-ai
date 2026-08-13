@@ -436,17 +436,20 @@ export default function OperationTasksPage() {
 
   return (
     <TmPageContainer
+      className="operation-tasks-page-shell"
       title={PAGE_COPY.operationTasks.title}
       subTitle={PAGE_COPY.operationTasks.description}
       extra={(
-        <Space wrap>
+        <Space wrap className="operation-tasks-page__header-actions">
           <Button icon={<ReloadOutlined />} onClick={() => { void load(); void loadProductionStatus(); }} loading={loading || productionStatusLoading}>刷新</Button>
           {canCreate ? <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>创建运营任务</Button> : null}
         </Space>
       )}
     >
       <Space direction="vertical" size={16} className="operation-tasks-page">
-        <ProductionRuntimeBoundary status={productionStatus} loading={productionStatusLoading} error={productionStatusError} />
+        <div className="operation-tasks-page__runtime">
+          <ProductionRuntimeBoundary status={productionStatus} loading={productionStatusLoading} error={productionStatusError} />
+        </div>
         {error ? (
           <ErrorAlert
             title={operationErrorMessage(error)}
@@ -455,9 +458,14 @@ export default function OperationTasksPage() {
               : error.traceId ? `排查编号：${error.traceId}` : '请稍后重试或联系管理员。'}
           />
         ) : null}
-        <SectionCard title="筛选任务" description="按任务状态、平台和任务类型缩小处理范围。" compact>
+        <SectionCard
+          className="operation-tasks-page__filters"
+          title="筛选任务"
+          description="按任务状态、平台和任务类型缩小处理范围。"
+          compact
+        >
           <Form form={form} layout="vertical" onFinish={updateFilters}>
-            <Row gutter={[16, 8]}>
+            <Row gutter={[16, 12]}>
               <Col xs={24} md={8} lg={6}>
                 <Form.Item name="status" label="任务状态">
                   <Select allowClear options={optionsFromLabels(OPERATION_TASK_STATUS_LABELS)} placeholder="全部状态" />
@@ -473,12 +481,12 @@ export default function OperationTasksPage() {
                   <Select allowClear options={optionsFromLabels(OPERATION_TASK_TYPE_LABELS)} placeholder="全部类型" />
                 </Form.Item>
               </Col>
-              <Col xs={24} lg={6}>
-                <Form.Item label="操作">
-                  <Space wrap>
+              <Col xs={24} lg={6} className="operation-tasks-page__filter-action-column">
+                <Form.Item>
+                  <OperationToolbar className="operation-tasks-page__filter-actions">
                     <Button icon={<FilterOutlined />} htmlType="submit">应用筛选</Button>
                     <Button onClick={clearFilters}>清除筛选</Button>
-                  </Space>
+                  </OperationToolbar>
                 </Form.Item>
               </Col>
             </Row>
@@ -488,6 +496,7 @@ export default function OperationTasksPage() {
         {!error || visibleItems.length > 0 ? (
           <>
             <TmProTable<OperationTaskSummary>
+              className="operation-tasks-page__table"
               rowKey="id"
               search={false}
               loading={loading}
@@ -497,19 +506,22 @@ export default function OperationTasksPage() {
               locale={emptyLocale}
               scroll={{ x: 1560 }}
               options={false}
-              toolBarRender={false}
+              headerTitle={(
+                <div className="operation-tasks-page__table-heading">
+                  <Text strong className="operation-tasks-page__table-title">任务列表</Text>
+                  <Text type="secondary">查看任务状态、草稿进度和最近执行结果。</Text>
+                </div>
+              )}
+              toolBarRender={() => [
+                <Text key="batch-summary" type="secondary" className="operation-tasks-page__table-summary">
+                  本批 {visibleItems.length} 条{filterActive ? '，已应用筛选' : ''}{showingStaleData ? '，数据未更新' : ''}
+                </Text>,
+              ]}
             />
 
-            <OperationToolbar
-              className="operation-tasks-page__pagination"
-              extra={(
-                <Text type="secondary">
-                  本批 {visibleItems.length} 条{filterActive ? '，已应用筛选' : ''}{showingStaleData ? '，数据未更新' : ''}
-                </Text>
-              )}
-            >
-            <Button disabled={cursorStack.length === 0 || loading} onClick={goPrev}>上一批</Button>
-            <Button disabled={!hasMore || !nextCursor || loading} onClick={goNext}>下一批</Button>
+            <OperationToolbar className="operation-tasks-page__pagination">
+              <Button disabled={cursorStack.length === 0 || loading} onClick={goPrev}>上一批</Button>
+              <Button disabled={!hasMore || !nextCursor || loading} onClick={goNext}>下一批</Button>
             </OperationToolbar>
           </>
         ) : null}

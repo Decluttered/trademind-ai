@@ -97,6 +97,15 @@ function imageURL(image?: { platformImageUrl?: string; url?: string }) {
   return image?.platformImageUrl || image?.url;
 }
 
+function frozenSkuRowKey(row: NonNullable<FrozenDraftMapping['skus']>[number]) {
+  if (row.localSkuId) return row.localSkuId;
+  const attrs = Object.entries(row.attrs ?? {})
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `${key}:${String(value)}`)
+    .join('|');
+  return `${row.name || 'sku'}:${attrs}:${row.price ?? ''}:${row.stock ?? ''}`;
+}
+
 function latestDraft(drafts: PlatformDraftSummary[]) {
   return [...drafts].sort((a, b) => b.draftVersion - a.draftVersion)[0];
 }
@@ -642,7 +651,7 @@ export default function OperationTaskDetailPage() {
                           </div>
                         ) : null}
                         <Table
-                          rowKey={(row, index) => row.localSkuId || `${row.name || 'sku'}-${index}`}
+                          rowKey={frozenSkuRowKey}
                           size="small"
                           pagination={false}
                           dataSource={frozenDraft.mappingSnapshot?.skus || []}

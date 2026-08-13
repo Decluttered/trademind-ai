@@ -37,6 +37,25 @@ func openControlTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
+func TestStatusAllowsLegacyTenantZeroOnlyInDevelopment(t *testing.T) {
+	db := openControlTestDB(t)
+	ctx := context.Background()
+
+	development := &Service{DB: db, Config: &config.Config{AppEnv: config.EnvDevelopment}}
+	status, err := development.Status(ctx, 0, nil)
+	require.NoError(t, err)
+	require.Equal(t, int64(0), status.Control.TenantID)
+	require.True(t, status.Control.ProviderKillActive)
+	require.False(t, status.ProductionReady)
+
+	production := &Service{DB: db, Config: &config.Config{AppEnv: config.EnvProduction}}
+	_, err = production.Status(ctx, 0, nil)
+	require.ErrorIs(t, err, ErrInvalidControl)
+
+	_, err = development.Status(ctx, -1, nil)
+	require.ErrorIs(t, err, ErrInvalidControl)
+}
+
 func TestGrayApprovalRequiresTwoDifferentAdminsBeforeActivation(t *testing.T) {
 	db := openControlTestDB(t)
 	svc := &Service{DB: db, Config: &config.Config{P10: enabledDraftWriteConfig(), ProductPublishQueueEnabled: true}, ProviderWriteGuard: allowProviderWrite}
