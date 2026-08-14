@@ -1,11 +1,11 @@
 <h1 align="center">贸灵 TradeMind</h1>
 
 <p align="center">
-  <strong>开源 AI 跨境电商运营平台</strong>
+  <strong>开源 AI 跨境电商增长与运营平台</strong>
 </p>
 
 <p align="center">
-  聚焦 商品采集 → 商品草稿 → AI 内容优化 → 商品刊登 → 订单与库存协同
+  从一条商品链接，到可运营、可刊登、可持续协同的商品资产
 </p>
 
 <p align="center">
@@ -33,32 +33,21 @@
   <img src="docs/assets/img/readme-hero-zh.png" alt="TradeMind 产品预览" width="100%" />
 </p>
 
-TradeMind 是一个面向跨境卖家与开发团队的开源 AI 运营平台，优先解决“采集、整理、优化、刊登、同步”这条主链路。项目当前聚焦两条主线：`AI 商品运营工具` 与 `多平台跨境 ERP MVP`。
+TradeMind 是面向跨境卖家、品牌团队与开发者的开源 AI 运营平台。它把商品采集、信息整理、内容生成、图片处理、草稿协同、平台刊登、订单与库存协同串成一条可观测的工作流，让团队从“重复搬运商品”升级为“持续经营商品资产”。
 
-与传统重型 ERP 不同，TradeMind 当前不追求多仓、采购、财务、WMS / OMS 或复杂 BI 的一次性全量覆盖，而是提供一个可私有化部署、可二次开发、可通过 Provider 扩展的平台底座。
+无论是快速搭建自己的跨境运营工作台，还是为现有业务接入 AI 与平台能力，TradeMind 都提供一套可私有化部署、可审计、可二次开发的开放底座：数据掌握在自己手中，能力可以按团队流程自由组合。
 
-## Release Status
-
-| Item | Status |
-| --- | --- |
-| Lifecycle | Production Maintenance |
-| Automated Regression | GitHub Actions |
-| Product Acceptance | Human Sign-off |
-| Runtime Activation | Managed externally; repository defaults remain fail closed |
-| Local Test Database | Optional; CI provisions isolated services |
-
-
-## 项目定位
+## 为什么选择 TradeMind
 
 | 方向 | TradeMind 的做法 |
 | --- | --- |
-| AI 商品运营 | 围绕商品采集、草稿管理、AI 标题与描述、图片处理、发布前检查构建高频运营链路。 |
-| 跨平台 ERP MVP | 优先打磨店铺授权、订单同步、SKU 匹配、库存同步、商品刊登等可运行闭环。 |
-| 私有化与扩展 | 通过 AI / Storage / Image / Platform / Collector Provider 抽象扩展，适合自部署与二次开发。 |
+| AI 商品增长 | 将商品采集、草稿管理、AI 标题与描述、图片处理和发布前检查汇聚到同一个运营空间。 |
+| 多平台协同 | 店铺授权、订单同步、SKU 匹配、库存镜像与商品刊登围绕统一商品资产协同运转。 |
+| 开放与可控 | Provider 架构覆盖 AI、存储、图片、平台和采集器；权限、审计与人工确认守住关键动作。 |
 
 ## 界面预览
 
-以下截图来自本地开发环境，展示当前最成熟的主线能力：**商品采集 → 商品草稿 → AI 内容优化**。
+下面的界面预览展示 TradeMind 的核心工作流：**商品采集 → 商品草稿 → AI 内容优化**。从发现商品开始，到准备好可发布内容，每一步都清晰可追踪。
 
 <table>
   <tr>
@@ -96,9 +85,9 @@ TradeMind 是一个面向跨境卖家与开发团队的开源 AI 运营平台，
 - AI 内容：支持标题优化、描述生成、Prompt 模板、结果对比、人工应用与撤销。
 - AI 图片：支持 remove.bg、OpenAI Image、ComfyUI 等 Provider，并通过异步任务队列执行。
 
-### 多平台跨境 ERP MVP
+### 多平台业务协同
 
-- 店铺授权：已具备 Douyin Shop OAuth 闭环、敏感配置加密与连接测试。
+- 店铺授权：支持 Douyin Shop OAuth、敏感配置加密与连接测试。
 - 订单协同：支持订单同步、SKU 匹配、异常工作台等基础能力。
 - 库存协同：支持库存镜像、预警与平台同步任务。
 - 商品刊登：支持多平台刊登中心、单商品与批量草稿创建、批量发布流程、AI 标题/描述复核、AI 图片处理、草稿映射、发布任务、失败恢复与人工校正。
@@ -146,7 +135,7 @@ pnpm seed:demo-data
 pnpm seed:demo-permissions
 ```
 
-自动化回归由 GitHub Actions 执行；功能和业务流程由维护者人工验收。本地不要求创建 `trademind_test`。
+开发环境默认连接隔离的 PostgreSQL 与 Redis；完整自动化回归由 GitHub Actions 持续执行。
 
 ### Docker 部署
 
@@ -171,7 +160,7 @@ docker compose -f docker-compose.full.yml up -d --build
 | Admin | <http://127.0.0.1:8000> |
 | Backend Health | <http://127.0.0.1:8080/health> |
 
-完整 Compose 中 Collector 仅供 backend 通过内部网络访问，不发布宿主机端口；PostgreSQL 与 Redis 仅绑定宿主机回环地址。仓库默认保持真实平台能力 `L0`，非抖店链路只创建本地刊登草稿，抖店只能通过已审核运营任务执行 `save_as_platform_draft`。
+完整 Compose 中 Collector 仅供 backend 通过内部网络访问，不发布宿主机端口；PostgreSQL 与 Redis 仅绑定宿主机回环地址。平台连接默认采用安全的审核式草稿流程：非抖店链路先生成本地刊登草稿，抖店动作经过权限与运营任务审核后写入平台草稿。
 
 Admin 根路径展示公开产品首页，访客可从首页进入登录页或注册页；登录后再进入运营工作台。
 

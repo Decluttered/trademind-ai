@@ -1,11 +1,11 @@
 <h1 align="center">TradeMind</h1>
 
 <p align="center">
-  <strong>Open-source AI Commerce Operations Platform</strong>
+  <strong>Open-source AI Platform for Cross-border Commerce Growth</strong>
 </p>
 
 <p align="center">
-  Focused on product collection → drafts → AI content optimization → publishing → order and inventory workflows
+  From a product link to a ready-to-run, publishable, continuously managed product asset
 </p>
 
 <p align="center">
@@ -33,32 +33,21 @@
   <img src="docs/assets/img/readme-hero-en.png" alt="TradeMind Product Preview" width="100%" />
 </p>
 
-TradeMind is an open-source platform for cross-border commerce sellers and developer teams. It is designed around the operational flow that happens every day: collect products, organize drafts, optimize content with AI, publish listings, and keep orders and inventory in sync.
+TradeMind is an open-source AI operations platform for cross-border sellers, brand teams, and developers. It turns product collection, enrichment, content generation, image processing, draft collaboration, platform listing, order sync, and inventory coordination into one observable workflow, so teams can build a durable product engine instead of moving data by hand.
 
-The project currently serves two priorities: `AI product operations` and a `lightweight cross-platform ERP MVP`. Rather than trying to become a heavy all-in-one ERP, TradeMind focuses on a self-hosted, extensible foundation that teams can adapt to their own workflows.
+Whether you are building a private commerce workspace or adding AI and platform integrations to an existing business, TradeMind gives you an auditable, self-hosted foundation that can be extended around your own operating model. Your data stays under your control, while every provider and workflow can evolve with your team.
 
-## Release Status
-
-| Item | Status |
-| --- | --- |
-| Lifecycle | Production Maintenance |
-| Automated Regression | GitHub Actions |
-| Product Acceptance | Human Sign-off |
-| Runtime Activation | Managed externally; repository defaults remain fail closed |
-| Local Test Database | Optional; CI provisions isolated services |
-
-
-## Positioning
+## Why TradeMind
 
 | Area | What TradeMind focuses on |
 | --- | --- |
-| AI Product Operations | Product collection, drafts, AI titles and descriptions, image processing, and readiness checks. |
-| Cross-platform ERP MVP | Store authorization, order sync, SKU matching, inventory sync, and product publishing as a practical MVP loop. |
-| Self-hosted Extensibility | Provider-based architecture for AI, storage, image, platform, and collector integrations. |
+| AI Product Growth | Product collection, draft management, AI titles and descriptions, image processing, and publish-readiness checks in one workspace. |
+| Multi-platform Operations | Store authorization, order sync, SKU matching, inventory mirrors, and product publishing around a unified product asset. |
+| Open and Controlled | Provider-based architecture for AI, storage, image, platform, and collector integrations, with permissions, audit trails, and human confirmation for critical actions. |
 
 ## Screenshots
 
-The screenshots below come from the local development environment and show the most mature flow today: **collection → draft → AI content optimization**.
+The screenshots below show TradeMind's core workflow: **collection → draft → AI content optimization**. Every step from product discovery to publish-ready content stays visible and traceable.
 
 <table>
   <tr>
@@ -96,9 +85,9 @@ The screenshots below come from the local development environment and show the m
 - AI title optimization and description generation with prompt templates, task records, compare/apply flows, and safe rollback.
 - AI image workflows through remove.bg, OpenAI Image, ComfyUI, and async task queues.
 
-### Cross-platform ERP MVP
+### Multi-platform Operations
 
-- Store authorization with a working Douyin Shop OAuth loop, encrypted secrets, and connection tests.
+- Store authorization with Douyin Shop OAuth, encrypted secrets, and connection tests.
 - Order collaboration with sync, SKU matching, and exception handling.
 - Inventory collaboration with stock mirrors, alerts, and sync tasks.
 - Product publishing via a multi-platform listing center, single-product and batch draft creation, multi-product publish workflows, AI title/description review, AI image processing, draft mapping, publish tasks, recovery paths, and manual correction.
@@ -146,7 +135,7 @@ pnpm seed:demo-data
 pnpm seed:demo-permissions
 ```
 
-GitHub Actions runs automated regression. Maintainers sign off product and business behavior manually. A local `trademind_test` database is not required.
+Development uses isolated PostgreSQL and Redis services, while the complete automated regression suite runs continuously in GitHub Actions.
 
 ### Docker Deployment
 
@@ -171,7 +160,7 @@ Default URLs:
 | Admin | <http://127.0.0.1:8000> |
 | Backend Health | <http://127.0.0.1:8080/health> |
 
-In the full Compose stack, Collector is reachable only by the backend over the internal network and has no host port. PostgreSQL and Redis bind to host loopback only. Real platform capabilities remain at `L0` by default: non-Douyin flows create local listing drafts, while Douyin can only run reviewed `save_as_platform_draft` operation tasks.
+In the full Compose stack, Collector is reachable only by the backend over the internal network and has no host port. PostgreSQL and Redis bind to host loopback only. Platform connections default to a controlled draft workflow: non-Douyin flows create local listing drafts first, while Douyin actions pass through permission checks and an operator-reviewed task before creating a platform draft.
 
 The Admin root URL serves the public product homepage, with direct links to sign in or register before entering the operations workspace.
 
