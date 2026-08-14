@@ -4,8 +4,21 @@ import { describe, expect, it } from 'vitest';
 
 const root = path.resolve(__dirname, '..', '..');
 const workflow = readFileSync(path.join(root, '.github', 'workflows', 'container-images.yml'), 'utf8');
+const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')) as {
+  packageManager: string;
+};
+const pnpmVersion = packageJson.packageManager.replace(/^pnpm@/u, '');
+const nodeDockerfiles = ['admin/Dockerfile', 'collector/Dockerfile'];
 
 describe('container image release workflow', () => {
+  it('installs the repository pnpm version without relying on Corepack', () => {
+    for (const dockerfile of nodeDockerfiles) {
+      const source = readFileSync(path.join(root, dockerfile), 'utf8');
+      expect(source, dockerfile).toContain(`npm install --global pnpm@${pnpmVersion}`);
+      expect(source, dockerfile).not.toContain('corepack');
+    }
+  });
+
   it('supports branch builds and v-prefixed release tags', () => {
     expect(workflow).toContain('      - main');
     expect(workflow).toContain('      - dev');

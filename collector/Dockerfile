@@ -9,7 +9,7 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends curl \
   && rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN npm install --global pnpm@9.15.4
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY admin ./admin
