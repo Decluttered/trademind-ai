@@ -24,6 +24,7 @@ on:
       - ".dockerignore"
       - "**/Dockerfile"
       - "**/.dockerignore"
+      - "scripts/patch-pro-field-antd-select.mjs"
       - "scripts/release/validate-image-version.sh"
       - ".github/workflows/container-images.yml"
 

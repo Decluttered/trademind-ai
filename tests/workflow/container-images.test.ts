@@ -6,9 +6,14 @@ const root = path.resolve(__dirname, '..', '..');
 const workflow = readFileSync(path.join(root, '.github', 'workflows', 'container-images.yml'), 'utf8');
 const packageJson = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')) as {
   packageManager: string;
+  scripts: Record<string, string>;
 };
 const pnpmVersion = packageJson.packageManager.replace(/^pnpm@/u, '');
 const nodeDockerfiles = ['admin/Dockerfile', 'collector/Dockerfile'];
+const postinstallScript = 'scripts/patch-pro-field-antd-select.mjs';
+const dockerIgnorePatterns = readFileSync(path.join(root, '.dockerignore'), 'utf8')
+  .split(/\r?\n/u)
+  .filter(Boolean);
 
 describe('container image release workflow', () => {
   it('installs the repository pnpm version without relying on Corepack', () => {
@@ -16,6 +21,25 @@ describe('container image release workflow', () => {
       const source = readFileSync(path.join(root, dockerfile), 'utf8');
       expect(source, dockerfile).toContain(`npm install --global pnpm@${pnpmVersion}`);
       expect(source, dockerfile).not.toContain('corepack');
+    }
+  });
+
+  it('includes the root postinstall script in Node image dependency installation', () => {
+    expect(packageJson.scripts.postinstall).toBe(`node ${postinstallScript}`);
+    expect(dockerIgnorePatterns).not.toContain('scripts');
+    expect(dockerIgnorePatterns).toContain('scripts/*');
+    expect(dockerIgnorePatterns).toContain(`!${postinstallScript}`);
+    expect(workflow).toContain(`      - "${postinstallScript}"`);
+
+    for (const dockerfile of nodeDockerfiles) {
+      const source = readFileSync(path.join(root, dockerfile), 'utf8');
+      const copyIndex = source.indexOf(`COPY ${postinstallScript} ./scripts/`);
+      const installIndex = source.indexOf('RUN pnpm install --frozen-lockfile');
+
+      expect(copyIndex, `${dockerfile} must copy the root postinstall script`).toBeGreaterThanOrEqual(0);
+      expect(installIndex, `${dockerfile} must install dependencies after copying lifecycle scripts`).toBeGreaterThan(
+        copyIndex,
+      );
     }
   });
 

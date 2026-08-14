@@ -14,6 +14,7 @@ RUN npm install --global pnpm@9.15.4
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY admin ./admin
 COPY collector ./collector
+COPY scripts/patch-pro-field-antd-select.mjs ./scripts/
 
 RUN pnpm install --frozen-lockfile
 
