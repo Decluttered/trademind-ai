@@ -28,8 +28,11 @@ git switch -c feat/your-feature-name
 - 说明变更、影响范围、风险、本地实际检查、交由 CI 的测试和人工验收。
 - Go 改动执行 `gofmt`；前端/Collector 改动完成相关构建或说明未执行原因。
 - API、部署、环境变量、配置或 Provider 变更同步相关文档。
+- 容器版本由 `deploy/IMAGE_VERSION` 管理；版本变更使用不含 `+build` 元数据、最长 48 字符的 Docker tag 安全 SemVer，并同步 Changelog、部署说明和回滚引用。
 - 不提交 `.env`、密钥、Token、Cookie、真实平台凭据或生产数据。
 - 不新增一次性阶段 gate、长期运行证据或自动扩大的 baseline。
+
+应用源码和镜像配置推送到受支持分支后，GitHub Actions 会发布 backend、admin、collector 的分支验证镜像，但不更新 `latest`。版本 PR 合并到 `main` 且 CI 与人工验收完成后，维护者推送与 `deploy/IMAGE_VERSION` 一致的 `v<version>` Tag；工作流校验 Tag 位于 `main` 后发布正式版本标签和 `latest`。预生产和正式部署必须使用工作流输出的 `image@sha256:<manifest-digest>` 引用。镜像发布不代表已经部署或启用真实平台能力。
 
 ## Commit Message
 

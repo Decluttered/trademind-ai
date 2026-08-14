@@ -43,6 +43,7 @@ services:
       retries: 10
 
   collector:
+    image: ${TRADEMIND_COLLECTOR_IMAGE:-local/trademind-collector:local}
     build:
       context: .
       dockerfile: collector/Dockerfile
@@ -79,6 +80,7 @@ services:
       start_period: 40s
 
   backend:
+    image: ${TRADEMIND_BACKEND_IMAGE:-local/trademind-backend:local}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -143,6 +145,7 @@ services:
       start_period: 60s
 
   admin:
+    image: ${TRADEMIND_ADMIN_IMAGE:-local/trademind-admin:local}
     build:
       context: .
       dockerfile: admin/Dockerfile

@@ -158,7 +158,17 @@ docker compose -f docker-compose.full.yml up -d --build
 
 数据库自动备份、加密、保留、PITR、备份告警和恢复演练由云数据库与运维平台配置，不再通过 TradeMind backend 环境变量管理。仓库内 P10 预生产备份/隔离恢复目标变量只服务于外部部署级发布验收，不会恢复已退役的应用内管理能力。
 
-## Docker 端口覆盖
+## Docker 镜像与端口
+
+完整 Compose 默认构建并使用 `local/trademind-*:local`。切换到 GitHub Actions 发布的预构建镜像时设置：
+
+| 变量 | 默认 | 说明 |
+| --- | --- | --- |
+| `TRADEMIND_BACKEND_IMAGE` | `local/trademind-backend:local` | backend 完整镜像引用；受控部署使用 `image@sha256:<manifest-digest>`。 |
+| `TRADEMIND_ADMIN_IMAGE` | `local/trademind-admin:local` | admin 完整镜像引用；受控部署使用 `image@sha256:<manifest-digest>`。 |
+| `TRADEMIND_COLLECTOR_IMAGE` | `local/trademind-collector:local` | collector 完整镜像引用；受控部署使用 `image@sha256:<manifest-digest>`。 |
+
+这三个变量只供 Docker Compose 解析镜像地址，不会作为业务配置传入容器。GHCR 标签、manifest digest 和版本来源见 [Docker 部署说明](docker-deployment.md#ghcr-预构建镜像)。
 
 `.env.example` 支持以下宿主机端口覆盖：
 

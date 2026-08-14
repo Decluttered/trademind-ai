@@ -43,6 +43,7 @@
 
 - [ ] 已按 `docs/module-map.md` 同步关联内容
 - [ ] 环境变量、API、Provider、Docker、部署或 CI 变更已同步文档
+- [ ] 如需发布新容器版本，已更新 `deploy/IMAGE_VERSION`、Changelog 和不可变镜像/回滚引用；合并、CI 与人工验收完成前不创建正式 Tag
 - [ ] 没有提交 `.env`、密钥、Token、Cookie、真实凭据或生产数据
 - [ ] 没有提交 Playwright 报告、测试结果、截图报告、临时日志或阶段证据
 - [ ] 已按 `docs/task-checklist.md` 完成自查

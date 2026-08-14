@@ -4,6 +4,13 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Multi-architecture container publishing (2026-08-14)
+
+- Added a single `deploy/IMAGE_VERSION` source and automated GHCR publishing for backend, Admin and Collector images.
+- Published normalized branch, full-SHA and branch-version tags for validation builds; validated `v<version>` tags on `main` publish stable version tags and `latest`.
+- Added Linux AMD64/ARM64 manifests, OCI metadata, SBOM, provenance and Compose selectors for local builds or prebuilt images.
+- Kept image publication separate from deployment, traffic changes, database operations and real-platform activation.
+
 ### Application backup and restore retirement (2026-08-14)
 
 - Removed application-level backup management and restore validation Admin pages, APIs, permissions, configuration, services, metrics, default alerts, dashboard and module-specific runbooks.

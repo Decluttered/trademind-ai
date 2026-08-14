@@ -1,0 +1,206 @@
+name: Container Images
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+      - "feat/**"
+      - "fix/**"
+      - "release/**"
+    tags:
+      - "v*"
+    paths:
+      - "deploy/IMAGE_VERSION"
+      - "backend/**"
+      - "admin/**"
+      - "collector/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".npmrc"
+      - "docker-compose.full.yml"
+      - ".dockerignore"
+      - "**/Dockerfile"
+      - "**/.dockerignore"
+      - "scripts/release/validate-image-version.sh"
+      - ".github/workflows/container-images.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: container-images-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  image_metadata:
+    name: Resolve image metadata
+    runs-on: ubuntu-latest
+    outputs:
+      build_version: ${{ steps.image.outputs.build_version }}
+      is_release: ${{ steps.image.outputs.is_release }}
+      namespace: ${{ steps.image.outputs.namespace }}
+      ref_slug: ${{ steps.image.outputs.ref_slug }}
+      version: ${{ steps.image.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve branch and version
+        id: image
+        shell: bash
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          set -Eeuo pipefail
+
+          if [[ "$REF_TYPE" != "branch" && "$REF_TYPE" != "tag" ]]; then
+            echo "::error::Container images can only be published from branches or version tags"
+            exit 1
+          fi
+
+          version="$(bash scripts/release/validate-image-version.sh)"
+          ref_slug="$(printf '%s' "$GITHUB_REF_NAME" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed -E 's/[^a-z0-9_.-]+/-/g; s/^[.-]+//; s/[.-]+$//; s/-+/-/g' \
+            | cut -c1-72)"
+          namespace="$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+
+          if [[ -z "$ref_slug" || -z "$namespace" ]]; then
+            echo "::error::Unable to resolve a valid image ref or namespace"
+            exit 1
+          fi
+
+          short_sha="${GITHUB_SHA:0:12}"
+          is_release=false
+          build_version="${ref_slug}-v${version}-${short_sha}"
+
+          if [[ "$REF_TYPE" == "tag" ]]; then
+            expected_tag="v${version}"
+            if [[ "$GITHUB_REF_NAME" != "$expected_tag" ]]; then
+              echo "::error::Release tag $GITHUB_REF_NAME must exactly match deploy/IMAGE_VERSION as $expected_tag"
+              exit 1
+            fi
+
+            git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+            release_commit="$(git rev-parse "${GITHUB_REF}^{commit}")"
+            if ! git merge-base --is-ancestor "$release_commit" refs/remotes/origin/main; then
+              echo "::error::Release tag $GITHUB_REF_NAME must point to a commit contained in main"
+              exit 1
+            fi
+
+            is_release=true
+            build_version="$expected_tag"
+          fi
+
+          echo "build_version=$build_version" >> "$GITHUB_OUTPUT"
+          echo "is_release=$is_release" >> "$GITHUB_OUTPUT"
+          echo "namespace=$namespace" >> "$GITHUB_OUTPUT"
+          echo "ref_slug=$ref_slug" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Container image metadata"
+            echo "- Source ref: \`$GITHUB_REF_NAME\` (\`$REF_TYPE\`)"
+            echo "- Image version: \`v$version\`"
+            echo "- Build version: \`$build_version\`"
+            echo "- Stable release: \`$is_release\`"
+            echo "- Commit tag: \`sha-$GITHUB_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    name: Publish ${{ matrix.service }} image
+    needs: image_metadata
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            title: TradeMind Backend
+            description: TradeMind Go API and background workers
+            image: trademind-backend
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+          - service: admin
+            title: TradeMind Admin
+            description: TradeMind React operations workspace
+            image: trademind-admin
+            context: .
+            dockerfile: ./admin/Dockerfile
+          - service: collector
+            title: TradeMind Collector
+            description: TradeMind Playwright collection service
+            image: trademind-collector
+            context: .
+            dockerfile: ./collector/Dockerfile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ needs.image_metadata.outputs.namespace }}/${{ matrix.image }}
+          tags: |
+            type=raw,value=${{ needs.image_metadata.outputs.ref_slug }},enable=${{ needs.image_metadata.outputs.is_release != 'true' }}
+            type=raw,value=sha-${{ github.sha }}
+            type=raw,value=${{ needs.image_metadata.outputs.ref_slug }}-v${{ needs.image_metadata.outputs.version }},enable=${{ needs.image_metadata.outputs.is_release != 'true' }}
+            type=raw,value=v${{ needs.image_metadata.outputs.version }},enable=${{ needs.image_metadata.outputs.is_release == 'true' }}
+            type=raw,value=${{ needs.image_metadata.outputs.version }},enable=${{ needs.image_metadata.outputs.is_release == 'true' }}
+            type=raw,value=latest,enable=${{ needs.image_metadata.outputs.is_release == 'true' }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.title }}
+            org.opencontainers.image.description=${{ matrix.description }}
+            org.opencontainers.image.version=${{ needs.image_metadata.outputs.build_version }}
+            org.opencontainers.image.licenses=Apache-2.0
+
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          pull: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}-${{ needs.image_metadata.outputs.ref_slug }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}-${{ needs.image_metadata.outputs.ref_slug }}
+          provenance: mode=max
+          sbom: true
+
+      - name: Publish summary
+        shell: bash
+        run: |
+          {
+            echo "### ${{ matrix.title }}"
+            echo '```text'
+            echo '${{ steps.meta.outputs.tags }}'
+            echo '```'
+            echo "- Immutable reference: \`${{ env.REGISTRY }}/${{ needs.image_metadata.outputs.namespace }}/${{ matrix.image }}@${{ steps.build.outputs.digest }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

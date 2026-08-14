@@ -153,6 +153,19 @@ Copy-Item .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
+GitHub Actions publishes multi-architecture GHCR images for backend, admin, and collector. To use prebuilt images:
+
+```bash
+# Set COLLECTOR_SERVICE_TOKEN in .env, then override the image references below
+TRADEMIND_BACKEND_IMAGE=ghcr.io/lien0219/trademind-backend:dev-v0.2.0
+TRADEMIND_ADMIN_IMAGE=ghcr.io/lien0219/trademind-admin:dev-v0.2.0
+TRADEMIND_COLLECTOR_IMAGE=ghcr.io/lien0219/trademind-collector:dev-v0.2.0
+docker compose -f docker-compose.full.yml pull backend admin collector
+docker compose -f docker-compose.full.yml up -d --no-build
+```
+
+Branch builds update branch, branch-version, and `sha-<commit>` tags without moving `latest`. After the release change is merged into `main`, push a `v<version>` Git tag matching `deploy/IMAGE_VERSION`; only that validated release publishes `v<version>`, `version`, and `latest`. Pin the workflow's `image@sha256:<manifest-digest>` reference for controlled deployments. See [Docker deployment](docs/docker-deployment.md) for the release procedure and package URLs.
+
 Default URLs:
 
 | Service | URL |

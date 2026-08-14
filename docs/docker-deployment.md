@@ -28,6 +28,71 @@ Copy-Item .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
+## GHCR 预构建镜像
+
+`Container Images` GitHub Actions 工作流负责分支验证构建与正式 Tag 发布。`main`、`dev`、`feat/*`、`fix/*` 和 `release/*` 在镜像相关源码变化时生成分支镜像；`v<version>` Git Tag 通过版本与 `main` 归属校验后生成正式镜像。三个容器包为：
+
+| 服务 | GHCR 包 |
+| --- | --- |
+| backend | `ghcr.io/lien0219/trademind-backend` |
+| admin | `ghcr.io/lien0219/trademind-admin` |
+| collector | `ghcr.io/lien0219/trademind-collector` |
+
+所有镜像均构建 `linux/amd64` 与 `linux/arm64`，并附带 OCI 元数据、SBOM 和 provenance。镜像版本的唯一来源是 [`deploy/IMAGE_VERSION`](../deploy/IMAGE_VERSION)，格式为不含 `+build` 元数据、最长 48 字符的 Docker tag 安全 SemVer。
+
+| 标签 | 更新规则 | 用途 |
+| --- | --- | --- |
+| `<branch>` | 分支每次构建更新 | 开发或集成环境跟随分支，例如 `dev`。 |
+| `<branch>-v<version>` | 分支每次构建更新；版本文件变化后切换标签 | 标识当前分支版本，例如 `main-v0.2.0`。 |
+| `sha-<full-commit>` | 分支与正式 Tag 构建均写入 | 按提交定位镜像；它仍是可变 tag，不替代 manifest digest。 |
+| `v<version>`、`<version>` | 仅通过校验的同名 Git Tag 发布 | 正式版本标签，例如 `v0.2.0` 与 `0.2.0`。 |
+| `latest` | 仅通过校验的正式 Git Tag 更新 | 最新正式版本，不由普通 `main` 合并更新。 |
+
+分支名会转换为小写 Docker 标签，`/` 等非法字符转换为 `-`，例如 `release/0.3` 对应 `release-0.3`。使用 Compose 拉取同一标签下的完整服务组：
+
+```env
+TRADEMIND_BACKEND_IMAGE=ghcr.io/lien0219/trademind-backend:dev-v0.2.0
+TRADEMIND_ADMIN_IMAGE=ghcr.io/lien0219/trademind-admin:dev-v0.2.0
+TRADEMIND_COLLECTOR_IMAGE=ghcr.io/lien0219/trademind-collector:dev-v0.2.0
+```
+
+```bash
+docker compose -f docker-compose.full.yml pull backend admin collector
+docker compose -f docker-compose.full.yml up -d --no-build
+```
+
+### 正式发布
+
+1. 在 `release/*` 更新 `deploy/IMAGE_VERSION`、Changelog 和部署说明，经 PR 合并到 `main`。
+2. 等待 `main` 的 CI 完成并完成人工验收。
+3. 从已更新的 `main` 提交创建与版本文件完全一致的 annotated Tag 并推送：
+
+```bash
+git switch main
+git pull --ff-only origin main
+git tag -a v0.2.0 -m "TradeMind v0.2.0"
+git push origin v0.2.0
+```
+
+Tag 必须严格为 `v<deploy/IMAGE_VERSION>`，并指向已包含在远程 `main` 中的提交；否则工作流直接失败。正式 Tag 发布 `v0.2.0`、`0.2.0`、`sha-<full-commit>` 和 `latest`，不会自动部署、切流或创建 GitHub Release。应为 `v*` 配置 Tag 保护，禁止强制移动或删除已发布版本。
+
+Docker tag 均可移动。需要严格可复现的部署时，从工作流 Summary 或 GHCR Package 页面取得三个 manifest digest，并使用完整 `image@sha256:<digest>` 引用：
+
+```env
+TRADEMIND_BACKEND_IMAGE=ghcr.io/lien0219/trademind-backend@sha256:<backend-manifest-digest>
+TRADEMIND_ADMIN_IMAGE=ghcr.io/lien0219/trademind-admin@sha256:<admin-manifest-digest>
+TRADEMIND_COLLECTOR_IMAGE=ghcr.io/lien0219/trademind-collector@sha256:<collector-manifest-digest>
+```
+
+P10 预生产使用同一组 backend/Admin digest：
+
+```env
+P10_API_IMAGE=ghcr.io/lien0219/trademind-backend@sha256:<backend-manifest-digest>
+P10_ADMIN_IMAGE=ghcr.io/lien0219/trademind-admin@sha256:<admin-manifest-digest>
+```
+
+公开仓库首次生成 Package 后，维护者需要在三个 Package 的设置中确认可见性为 Public；工作流只使用仓库自带的 `GITHUB_TOKEN` 写入 GHCR，不保存 PAT 或镜像仓库密码。若 Package 仍为私有，拉取前使用具有 `read:packages` 权限的凭据登录 `ghcr.io`。
+
 ## 默认访问地址
 
 | 服务 | 地址 |
@@ -140,10 +205,11 @@ Collector 的 `/health` 保持无鉴权供容器编排探活，其余接口在 T
 CI 会执行轻量 Docker 配置检查：
 
 ```bash
+bash scripts/release/validate-image-version.sh
 docker compose -f docker-compose.full.yml config
 ```
 
-本地修改 Dockerfile、Compose 或 `.env.example` 后，建议先执行同样命令确认语法和变量引用正确。
+本地修改镜像版本、Dockerfile、Compose 或 `.env.example` 后，建议先执行同样命令确认版本格式、语法和变量引用正确。真实多架构构建与 GHCR 推送由 `Container Images` 工作流执行。
 # P10 Independent Pre-production
 
 P10 maps pre-production to the existing `staging` profile and uses the separate `trademind-preproduction` Compose project. It does not reuse `docker-compose.yml`, `docker-compose.full.yml`, or production resources.

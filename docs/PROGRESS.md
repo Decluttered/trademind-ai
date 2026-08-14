@@ -18,6 +18,8 @@ TradeMind 已由项目所有者确认进入生产维护阶段。当前工作重�
 
 ## 仓库整理
 
+2026-08-14 增加统一容器镜像发布：`deploy/IMAGE_VERSION` 作为镜像版本来源，GitHub Actions 为 backend、admin、collector 发布 `linux/amd64` 与 `linux/arm64` GHCR 镜像。分支构建生成规范化分支、完整提交 SHA 与分支版本标签；只有与版本文件一致且指向 `main` 已包含提交的 `v<version>` Tag 才生成正式版本标签和 `latest`。工作流同时输出不可变 manifest digest，完整 Compose 可在本地构建和预构建镜像之间切换；P10 预生产继续要求 `image@sha256:<digest>`。镜像发布只提供部署输入，不自动部署、切流、修改数据库、启用真实平台能力、创建 Git Tag 或发布 GitHub Release。
+
 2026-08-14 完成采集到刊登链路的生产候选加固：backend 与 Collector 增加内部 Bearer 鉴权，Collector 增加请求体/HTTP 超时与 URL、DNS、浏览器请求出站保护，完整 Compose 不再发布 Collector 端口且 PostgreSQL/Redis 仅绑定宿主机回环地址。采集任务、商品导入、刊登任务、publication 与批次查询按 tenant/store scope 收敛，采集导入成功与任务终态、本地 publication 与任务、多商品本地草稿、批次重试替代和 pending 取消均使用事务保护；历史刊登数据只对可确定归属的行幂等回填 tenant。Admin 在 production 构建隐藏传统直发并按只读/权限状态关闭写操作，backend 在 staging/production 同步拒绝传统直发。抖店仍只能通过已审核运营任务执行 `save_as_platform_draft`，仓库默认保持 L0；当前结论仅为代码生产候选，仍等待 CI、独立 PostgreSQL/Redis/Docker 部署、备份恢复/回滚和维护者人工签收。
 
 2026-08-14 将数据库备份管理与恢复验证完整移交云数据库和运维平台：删除 Admin 页面、应用 API、专用权限、backend 配置、任务服务、应用指标、默认告警、看板及专用 Runbook，并停止通过 `AutoMigrate` 管理 `backup_jobs`、`backup_verifications` 和 `restore_jobs`。已有历史表和数据不自动删除。目标环境必须在外部平台落实自动备份、加密、保留、PITR、告警和隔离恢复演练；数据库回滚边界、灾难恢复计划及 P10 部署级预生产备份/隔离恢复/回滚门槛继续保留。

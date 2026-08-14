@@ -153,6 +153,19 @@ Copy-Item .env.example .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
+GitHub Actions 会为 backend、admin 和 collector 自动发布 GHCR 多架构镜像。使用预构建镜像：
+
+```bash
+# 在 .env 中设置 COLLECTOR_SERVICE_TOKEN，并覆盖以下镜像引用
+TRADEMIND_BACKEND_IMAGE=ghcr.io/lien0219/trademind-backend:dev-v0.2.0
+TRADEMIND_ADMIN_IMAGE=ghcr.io/lien0219/trademind-admin:dev-v0.2.0
+TRADEMIND_COLLECTOR_IMAGE=ghcr.io/lien0219/trademind-collector:dev-v0.2.0
+docker compose -f docker-compose.full.yml pull backend admin collector
+docker compose -f docker-compose.full.yml up -d --no-build
+```
+
+分支构建会更新分支、分支版本和 `sha-<commit>` 标签，但不会更新 `latest`。正式版本合并到 `main` 后，推送与 `deploy/IMAGE_VERSION` 一致的 `v<version>` Git Tag，工作流才会发布 `v<version>`、`version` 和 `latest`。正式部署应使用工作流输出的 `image@sha256:<manifest-digest>` 不可变引用。完整发布步骤与包地址见 [Docker 部署](docs/docker-deployment.md)。
+
 默认访问地址：
 
 | 服务 | 地址 |
