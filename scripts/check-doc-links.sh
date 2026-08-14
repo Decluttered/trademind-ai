@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Production-maintenance documentation consistency check wrapper.
+# Public documentation consistency check wrapper.
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 if command -v pwsh >/dev/null 2>&1; then

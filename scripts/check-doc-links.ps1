@@ -1,4 +1,4 @@
-# Production-maintenance documentation consistency checks.
+# Public documentation consistency checks.
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -25,9 +25,11 @@ Write-Host "Documentation consistency check..."
 
 $readme = Get-Content (Join-Path $repoRoot "README.md") -Raw -Encoding UTF8
 $readmeEn = Get-Content (Join-Path $repoRoot "README.en.md") -Raw -Encoding UTF8
-Add-Check "README lifecycle" ($readme -match 'Production Maintenance' -and $readmeEn -match 'Production Maintenance') "production maintenance"
+$productPositioningZh = '\u5f00\u6e90 AI \u8de8\u5883\u7535\u5546\u589e\u957f\u4e0e\u8fd0\u8425\u5e73\u53f0'
+Add-Check "README product positioning" ($readme -match $productPositioningZh -and $readmeEn -match 'Open-source AI Platform for Cross-border Commerce Growth') "bilingual public homepage"
 Add-Check "README automated regression" ($readme -match 'GitHub Actions' -and $readmeEn -match 'GitHub Actions') "workflow-owned"
-Add-Check "README human acceptance" ($readme -match 'Human Sign-off' -and $readmeEn -match 'Human Sign-off') "manual product sign-off"
+$internalReadmeTerms = 'Production Maintenance|Human Sign-off|Runtime Activation|Local Test Database|\bMVP\b|\u5f85\u5b8c\u6210|\u89c4\u5212|\u8ba1\u5212|pending|planned'
+Add-Check "README public copy" ($readme -notmatch $internalReadmeTerms -and $readmeEn -notmatch $internalReadmeTerms) "no internal lifecycle or roadmap labels"
 Add-Check "README has no deleted commands" ($readme -notmatch 'verify:demo|check:p4-r|test:p[789]|tests/gates|tests/load') "current pnpm commands only"
 
 $wrongRouteHits = @()
