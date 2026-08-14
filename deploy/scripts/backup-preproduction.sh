@@ -7,7 +7,7 @@ ENV_FILE="$ROOT/.env"
 source "$ROOT/deploy/scripts/load-env-defaults.sh"
 load_env_defaults "$ENV_FILE"
 COMPOSE=(docker compose --project-name trademind-preproduction --env-file "$ENV_FILE" -f "$ROOT/deploy/preproduction/compose.yml")
-node "$ROOT/scripts/p10-preproduction-preflight.mjs" --mode backup >/dev/null
+node "$ROOT/scripts/preproduction-preflight.mjs" --mode backup >/dev/null
 
 OUT_DIR="${P10_PREPRODUCTION_BACKUP_DIR:?set a protected preproduction backup directory}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"

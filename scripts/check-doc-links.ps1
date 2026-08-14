@@ -97,8 +97,8 @@ Add-Check "Task-center API docs" ($apiContent -match '/api/v1/task-center/failur
 Add-Check "Operation-workbench API docs" ($apiContent -match '/api/v1/ai/operation-workbench/summary') "api.md"
 
 $operationalScripts = @(
-    "scripts/p10-preproduction-contract.mjs",
-    "scripts/p10-preproduction-preflight.mjs"
+    "scripts/preproduction-contract.mjs",
+    "scripts/preproduction-preflight.mjs"
 )
 $missingOperational = @($operationalScripts | Where-Object { -not (Test-Path -LiteralPath (Join-Path $repoRoot $_)) })
 Add-Check "Preproduction safety scripts" ($missingOperational.Count -eq 0) $(if ($missingOperational.Count -eq 0) { "present" } else { $missingOperational -join ", " })

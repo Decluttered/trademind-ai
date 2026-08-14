@@ -10,7 +10,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
-	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrolp10"
+	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrol"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
@@ -29,7 +29,7 @@ type Service struct {
 	OpLog            *operationlog.Service
 	Readiness        *productcheck.Service
 	Idempotency      *idempotency.Service
-	WriteControl     *productioncontrolp10.Service
+	WriteControl     *productioncontrol.Service
 	OperationResults OperationTaskResultSink
 	ProductionOutbox ProductionOutboxDispatcher
 	Environment      string

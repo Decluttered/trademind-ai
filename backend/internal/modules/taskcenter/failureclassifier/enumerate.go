@@ -42,7 +42,7 @@ func AllCategories() []string {
 		"ai_image_storage_public_url_missing",
 		"ai_image_download_failed",
 		"ai_image_unsupported_operation",
-		// P3 Douyin adapter task types
+		// Douyin adapter task types
 		"douyin_draft_create_failed",
 		"douyin_draft_unknown_result",
 		"douyin_draft_recover_failed",

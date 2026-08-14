@@ -13,145 +13,145 @@ var defaultBuckets = []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5,
 type Catalog struct {
 	reg *Registry
 
-	HTTPRequestsTotal          *prometheus.CounterVec
-	HTTPRequestDuration        *prometheus.HistogramVec
-	HTTPRequestsInFlight       prometheus.Gauge
-	HTTPPanicsTotal            prometheus.Counter
-	ProviderRequestsTotal      *prometheus.CounterVec
-	ProviderRequestDuration    *prometheus.HistogramVec
-	ProviderRetriesTotal       *prometheus.CounterVec
-	ProviderTimeoutsTotal      *prometheus.CounterVec
-	ProviderRateLimitedTotal   *prometheus.CounterVec
-	ProviderUnknownResults     *prometheus.CounterVec
-	ProviderContractMismatch   *prometheus.CounterVec
-	ProviderCircuitState       *prometheus.GaugeVec
-	ProviderCircuitChanges     *prometheus.CounterVec
-	P10ProviderErrorsTotal     *prometheus.CounterVec
-	P10OAuthFailuresTotal      *prometheus.CounterVec
-	P10CredentialExpiringTotal *prometheus.CounterVec
-	P10InventorySyncRuns       *prometheus.CounterVec
-	P10InventorySyncFailures   *prometheus.CounterVec
-	P10ManualBindingBacklog    *prometheus.GaugeVec
-	TasksCreatedTotal          *prometheus.CounterVec
-	TasksClaimedTotal          *prometheus.CounterVec
-	TasksCompletedTotal        *prometheus.CounterVec
-	TasksFailedTotal           *prometheus.CounterVec
-	TasksRetriedTotal          *prometheus.CounterVec
-	TasksDeadLetterTotal       *prometheus.CounterVec
-	TasksManualReviewTotal     *prometheus.CounterVec
-	TasksInProgress            *prometheus.GaugeVec
-	TaskDurationSeconds        *prometheus.HistogramVec
-	TaskQueueAgeSeconds        *prometheus.HistogramVec
-	TaskLeaseLostTotal         *prometheus.CounterVec
-	TaskHeartbeatMissedTotal   *prometheus.CounterVec
-	TaskReaperRecoveredTotal   *prometheus.CounterVec
-	TaskUnknownResultTotal     *prometheus.CounterVec
-	WebhookRequestsTotal       *prometheus.CounterVec
-	WebhookSignatureFailures   *prometheus.CounterVec
-	WebhookReplayRejected      *prometheus.CounterVec
-	WebhookPayloadRejected     *prometheus.CounterVec
-	WebhookEventsPersisted     *prometheus.CounterVec
-	WebhookEventsProcessed     *prometheus.CounterVec
-	WebhookProcessingDuration  *prometheus.HistogramVec
-	WebhookProcessingLag       *prometheus.HistogramVec
-	WebhookUnknownEvents       *prometheus.CounterVec
-	WebhookShopResolutionFail  *prometheus.CounterVec
-	WebhookTenantMismatch      *prometheus.CounterVec
-	WebhookDuplicateEvents     *prometheus.CounterVec
-	OrderSyncRunsTotal         *prometheus.CounterVec
-	OrderSyncOrdersReceived    *prometheus.CounterVec
-	OrderSyncOrdersCreated     *prometheus.CounterVec
-	OrderSyncOrdersUpdated     *prometheus.CounterVec
-	OrderSyncStaleUpdates      *prometheus.CounterVec
-	OrderSyncDuplicates        *prometheus.CounterVec
-	OrderSyncFailuresTotal     *prometheus.CounterVec
-	OrderSyncDuration          *prometheus.HistogramVec
-	OrderSyncCursorLag         *prometheus.HistogramVec
-	OrderSyncLastSuccess       *prometheus.GaugeVec
-	InventoryAdjustmentsTotal  *prometheus.CounterVec
-	InventoryDeductionsTotal   *prometheus.CounterVec
-	InventoryCompensations     *prometheus.CounterVec
-	InventoryPushTotal         *prometheus.CounterVec
-	InventoryPushFailures      *prometheus.CounterVec
-	InventoryUnknownResults    *prometheus.CounterVec
-	InventoryVersionConflicts  *prometheus.CounterVec
-	InventoryNegativePrevent   *prometheus.CounterVec
-	InventorySyncDuration      *prometheus.HistogramVec
-	AITextRequestsTotal        *prometheus.CounterVec
-	AITextRequestDuration      *prometheus.HistogramVec
-	AITextProviderTimeouts     *prometheus.CounterVec
-	AITextProviderFailures     *prometheus.CounterVec
-	AITextEnvironmentBlocked   *prometheus.CounterVec
-	AITextBatchesTotal         *prometheus.CounterVec
-	AITextBatchDuration        *prometheus.HistogramVec
-	AITextApplyTotal           *prometheus.CounterVec
-	AITextApplyConflicts       *prometheus.CounterVec
-	AITextReconciliation       *prometheus.CounterVec
-	AIImageRequestsTotal       *prometheus.CounterVec
-	AIImageRequestDuration     *prometheus.HistogramVec
-	AIImageProviderTimeouts    *prometheus.CounterVec
-	AIImageProviderFailures    *prometheus.CounterVec
-	AIImageEnvironmentBlocked  *prometheus.CounterVec
-	AIImageBatchesTotal        *prometheus.CounterVec
-	AIImageBatchDuration       *prometheus.HistogramVec
-	AIImageTaskStageDuration   *prometheus.HistogramVec
-	AIImageTaskStuckTotal      *prometheus.CounterVec
-	AIImageAssetsCreated       *prometheus.CounterVec
-	AIImageScanWaitSeconds     *prometheus.HistogramVec
-	AIImageApplyTotal          *prometheus.CounterVec
-	AIImageReconciliation      *prometheus.CounterVec
-	FileScanTasksTotal         *prometheus.CounterVec
-	FileScanDurationSeconds    *prometheus.HistogramVec
-	FileScanResultsTotal       *prometheus.CounterVec
-	FileScanQueueAgeSeconds    *prometheus.HistogramVec
-	FileScanFailuresTotal      *prometheus.CounterVec
-	FileQuarantinedTotal       *prometheus.CounterVec
-	FileRejectedTotal          *prometheus.CounterVec
-	FileScanStuckTotal         *prometheus.CounterVec
-	FileAssetsByStatus         *prometheus.GaugeVec
-	SecretRotationJobsTotal    *prometheus.CounterVec
-	SecretRotationFailures     *prometheus.CounterVec
-	SecretRotationUnknown      *prometheus.CounterVec
-	SecretRotationOldKeyRefs   *prometheus.CounterVec
-	AuthorizationDeniedTotal   *prometheus.CounterVec
-	AuthLoginAttemptsTotal     *prometheus.CounterVec
-	AuthLoginFailuresTotal     *prometheus.CounterVec
-	AuthLoginRateLimited       *prometheus.CounterVec
-	AuthAccountLocked          *prometheus.CounterVec
-	AuthSessionsActive         *prometheus.GaugeVec
-	AuthSessionsRevoked        *prometheus.CounterVec
-	AuthRefreshTotal           *prometheus.CounterVec
-	AuthRefreshReuseTotal      prometheus.Counter
-	AuthTokenValidationFail    *prometheus.CounterVec
-	AuthReauthRequired         *prometheus.CounterVec
-	TenantAccessDeniedTotal    *prometheus.CounterVec
-	ShopAccessDeniedTotal      *prometheus.CounterVec
-	IDORAttemptsTotal          *prometheus.CounterVec
-	SystemContextDenied        *prometheus.CounterVec
-	CSRFRejectedTotal          *prometheus.CounterVec
-	OriginRejectedTotal        *prometheus.CounterVec
-	OpenRedirectRejected       *prometheus.CounterVec
-	AuditChainMismatchTotal    prometheus.Counter
-	SecurityEventsTotal        *prometheus.CounterVec
-	TelemetryExportFailures    prometheus.Counter
-	TelemetryDroppedItems      prometheus.Counter
-	TelemetryExportSuccess     prometheus.Counter
-	TelemetryQueueDepth        prometheus.Gauge
-	SLOComplianceRatio         *prometheus.GaugeVec
-	SLOErrorBudgetRemaining    *prometheus.GaugeVec
-	SLOBurnRate                *prometheus.GaugeVec
-	DBConnectionsOpen          *prometheus.GaugeVec
-	DBConnectionsInUse         *prometheus.GaugeVec
-	DBConnectionsIdle          *prometheus.GaugeVec
-	DBMaxOpenConnections       *prometheus.GaugeVec
-	DBConnectionWaitCount      *prometheus.CounterVec
-	DBConnectionWaitDuration   *prometheus.CounterVec
-	DBQueryDuration            *prometheus.HistogramVec
-	DBQueryErrors              *prometheus.CounterVec
-	DBTransactionDuration      *prometheus.HistogramVec
-	DBTransactionRollbacks     *prometheus.CounterVec
-	once                       sync.Once
-	err                        error
+	HTTPRequestsTotal                             *prometheus.CounterVec
+	HTTPRequestDuration                           *prometheus.HistogramVec
+	HTTPRequestsInFlight                          prometheus.Gauge
+	HTTPPanicsTotal                               prometheus.Counter
+	ProviderRequestsTotal                         *prometheus.CounterVec
+	ProviderRequestDuration                       *prometheus.HistogramVec
+	ProviderRetriesTotal                          *prometheus.CounterVec
+	ProviderTimeoutsTotal                         *prometheus.CounterVec
+	ProviderRateLimitedTotal                      *prometheus.CounterVec
+	ProviderUnknownResults                        *prometheus.CounterVec
+	ProviderContractMismatch                      *prometheus.CounterVec
+	ProviderCircuitState                          *prometheus.GaugeVec
+	ProviderCircuitChanges                        *prometheus.CounterVec
+	ProductionCapabilitiesProviderErrorsTotal     *prometheus.CounterVec
+	ProductionCapabilitiesOAuthFailuresTotal      *prometheus.CounterVec
+	ProductionCapabilitiesCredentialExpiringTotal *prometheus.CounterVec
+	ProductionCapabilitiesInventorySyncRuns       *prometheus.CounterVec
+	ProductionCapabilitiesInventorySyncFailures   *prometheus.CounterVec
+	ProductionCapabilitiesManualBindingBacklog    *prometheus.GaugeVec
+	TasksCreatedTotal                             *prometheus.CounterVec
+	TasksClaimedTotal                             *prometheus.CounterVec
+	TasksCompletedTotal                           *prometheus.CounterVec
+	TasksFailedTotal                              *prometheus.CounterVec
+	TasksRetriedTotal                             *prometheus.CounterVec
+	TasksDeadLetterTotal                          *prometheus.CounterVec
+	TasksManualReviewTotal                        *prometheus.CounterVec
+	TasksInProgress                               *prometheus.GaugeVec
+	TaskDurationSeconds                           *prometheus.HistogramVec
+	TaskQueueAgeSeconds                           *prometheus.HistogramVec
+	TaskLeaseLostTotal                            *prometheus.CounterVec
+	TaskHeartbeatMissedTotal                      *prometheus.CounterVec
+	TaskReaperRecoveredTotal                      *prometheus.CounterVec
+	TaskUnknownResultTotal                        *prometheus.CounterVec
+	WebhookRequestsTotal                          *prometheus.CounterVec
+	WebhookSignatureFailures                      *prometheus.CounterVec
+	WebhookReplayRejected                         *prometheus.CounterVec
+	WebhookPayloadRejected                        *prometheus.CounterVec
+	WebhookEventsPersisted                        *prometheus.CounterVec
+	WebhookEventsProcessed                        *prometheus.CounterVec
+	WebhookProcessingDuration                     *prometheus.HistogramVec
+	WebhookProcessingLag                          *prometheus.HistogramVec
+	WebhookUnknownEvents                          *prometheus.CounterVec
+	WebhookShopResolutionFail                     *prometheus.CounterVec
+	WebhookTenantMismatch                         *prometheus.CounterVec
+	WebhookDuplicateEvents                        *prometheus.CounterVec
+	OrderSyncRunsTotal                            *prometheus.CounterVec
+	OrderSyncOrdersReceived                       *prometheus.CounterVec
+	OrderSyncOrdersCreated                        *prometheus.CounterVec
+	OrderSyncOrdersUpdated                        *prometheus.CounterVec
+	OrderSyncStaleUpdates                         *prometheus.CounterVec
+	OrderSyncDuplicates                           *prometheus.CounterVec
+	OrderSyncFailuresTotal                        *prometheus.CounterVec
+	OrderSyncDuration                             *prometheus.HistogramVec
+	OrderSyncCursorLag                            *prometheus.HistogramVec
+	OrderSyncLastSuccess                          *prometheus.GaugeVec
+	InventoryAdjustmentsTotal                     *prometheus.CounterVec
+	InventoryDeductionsTotal                      *prometheus.CounterVec
+	InventoryCompensations                        *prometheus.CounterVec
+	InventoryPushTotal                            *prometheus.CounterVec
+	InventoryPushFailures                         *prometheus.CounterVec
+	InventoryUnknownResults                       *prometheus.CounterVec
+	InventoryVersionConflicts                     *prometheus.CounterVec
+	InventoryNegativePrevent                      *prometheus.CounterVec
+	InventorySyncDuration                         *prometheus.HistogramVec
+	AITextRequestsTotal                           *prometheus.CounterVec
+	AITextRequestDuration                         *prometheus.HistogramVec
+	AITextProviderTimeouts                        *prometheus.CounterVec
+	AITextProviderFailures                        *prometheus.CounterVec
+	AITextEnvironmentBlocked                      *prometheus.CounterVec
+	AITextBatchesTotal                            *prometheus.CounterVec
+	AITextBatchDuration                           *prometheus.HistogramVec
+	AITextApplyTotal                              *prometheus.CounterVec
+	AITextApplyConflicts                          *prometheus.CounterVec
+	AITextReconciliation                          *prometheus.CounterVec
+	AIImageRequestsTotal                          *prometheus.CounterVec
+	AIImageRequestDuration                        *prometheus.HistogramVec
+	AIImageProviderTimeouts                       *prometheus.CounterVec
+	AIImageProviderFailures                       *prometheus.CounterVec
+	AIImageEnvironmentBlocked                     *prometheus.CounterVec
+	AIImageBatchesTotal                           *prometheus.CounterVec
+	AIImageBatchDuration                          *prometheus.HistogramVec
+	AIImageTaskStageDuration                      *prometheus.HistogramVec
+	AIImageTaskStuckTotal                         *prometheus.CounterVec
+	AIImageAssetsCreated                          *prometheus.CounterVec
+	AIImageScanWaitSeconds                        *prometheus.HistogramVec
+	AIImageApplyTotal                             *prometheus.CounterVec
+	AIImageReconciliation                         *prometheus.CounterVec
+	FileScanTasksTotal                            *prometheus.CounterVec
+	FileScanDurationSeconds                       *prometheus.HistogramVec
+	FileScanResultsTotal                          *prometheus.CounterVec
+	FileScanQueueAgeSeconds                       *prometheus.HistogramVec
+	FileScanFailuresTotal                         *prometheus.CounterVec
+	FileQuarantinedTotal                          *prometheus.CounterVec
+	FileRejectedTotal                             *prometheus.CounterVec
+	FileScanStuckTotal                            *prometheus.CounterVec
+	FileAssetsByStatus                            *prometheus.GaugeVec
+	SecretRotationJobsTotal                       *prometheus.CounterVec
+	SecretRotationFailures                        *prometheus.CounterVec
+	SecretRotationUnknown                         *prometheus.CounterVec
+	SecretRotationOldKeyRefs                      *prometheus.CounterVec
+	AuthorizationDeniedTotal                      *prometheus.CounterVec
+	AuthLoginAttemptsTotal                        *prometheus.CounterVec
+	AuthLoginFailuresTotal                        *prometheus.CounterVec
+	AuthLoginRateLimited                          *prometheus.CounterVec
+	AuthAccountLocked                             *prometheus.CounterVec
+	AuthSessionsActive                            *prometheus.GaugeVec
+	AuthSessionsRevoked                           *prometheus.CounterVec
+	AuthRefreshTotal                              *prometheus.CounterVec
+	AuthRefreshReuseTotal                         prometheus.Counter
+	AuthTokenValidationFail                       *prometheus.CounterVec
+	AuthReauthRequired                            *prometheus.CounterVec
+	TenantAccessDeniedTotal                       *prometheus.CounterVec
+	ShopAccessDeniedTotal                         *prometheus.CounterVec
+	IDORAttemptsTotal                             *prometheus.CounterVec
+	SystemContextDenied                           *prometheus.CounterVec
+	CSRFRejectedTotal                             *prometheus.CounterVec
+	OriginRejectedTotal                           *prometheus.CounterVec
+	OpenRedirectRejected                          *prometheus.CounterVec
+	AuditChainMismatchTotal                       prometheus.Counter
+	SecurityEventsTotal                           *prometheus.CounterVec
+	TelemetryExportFailures                       prometheus.Counter
+	TelemetryDroppedItems                         prometheus.Counter
+	TelemetryExportSuccess                        prometheus.Counter
+	TelemetryQueueDepth                           prometheus.Gauge
+	SLOComplianceRatio                            *prometheus.GaugeVec
+	SLOErrorBudgetRemaining                       *prometheus.GaugeVec
+	SLOBurnRate                                   *prometheus.GaugeVec
+	DBConnectionsOpen                             *prometheus.GaugeVec
+	DBConnectionsInUse                            *prometheus.GaugeVec
+	DBConnectionsIdle                             *prometheus.GaugeVec
+	DBMaxOpenConnections                          *prometheus.GaugeVec
+	DBConnectionWaitCount                         *prometheus.CounterVec
+	DBConnectionWaitDuration                      *prometheus.CounterVec
+	DBQueryDuration                               *prometheus.HistogramVec
+	DBQueryErrors                                 *prometheus.CounterVec
+	DBTransactionDuration                         *prometheus.HistogramVec
+	DBTransactionRollbacks                        *prometheus.CounterVec
+	once                                          sync.Once
+	err                                           error
 }
 
 // RegisterCatalog registers all standard metrics on the registry.
@@ -242,27 +242,27 @@ func (c *Catalog) registerAll() error {
 	if err != nil {
 		return err
 	}
-	c.P10ProviderErrorsTotal, err = c.reg.Counter("provider_errors_total", "P10 read-only provider errors", "environment", "provider", "operation", "status")
+	c.ProductionCapabilitiesProviderErrorsTotal, err = c.reg.Counter("provider_errors_total", "Production read-only provider errors", "environment", "provider", "operation", "status")
 	if err != nil {
 		return err
 	}
-	c.P10OAuthFailuresTotal, err = c.reg.Counter("oauth_failures_total", "P10 OAuth failures", "environment", "provider", "operation", "status")
+	c.ProductionCapabilitiesOAuthFailuresTotal, err = c.reg.Counter("oauth_failures_total", "Production OAuth failures", "environment", "provider", "operation", "status")
 	if err != nil {
 		return err
 	}
-	c.P10CredentialExpiringTotal, err = c.reg.Counter("credential_expiring_total", "P10 credentials observed near expiration", "environment", "provider", "operation", "status")
+	c.ProductionCapabilitiesCredentialExpiringTotal, err = c.reg.Counter("credential_expiring_total", "Production credentials observed near expiration", "environment", "provider", "operation", "status")
 	if err != nil {
 		return err
 	}
-	c.P10InventorySyncRuns, err = c.reg.Counter("inventory_sync_runs", "P10 manual inventory read runs", "environment", "provider", "operation", "status")
+	c.ProductionCapabilitiesInventorySyncRuns, err = c.reg.Counter("inventory_sync_runs", "Production manual inventory read runs", "environment", "provider", "operation", "status")
 	if err != nil {
 		return err
 	}
-	c.P10InventorySyncFailures, err = c.reg.Counter("inventory_sync_failures", "P10 manual inventory read failures", "environment", "provider", "operation", "status")
+	c.ProductionCapabilitiesInventorySyncFailures, err = c.reg.Counter("inventory_sync_failures", "Production manual inventory read failures", "environment", "provider", "operation", "status")
 	if err != nil {
 		return err
 	}
-	c.P10ManualBindingBacklog, err = c.reg.Gauge("manual_binding_backlog", "P10 manual SKU binding backlog", "environment", "provider", "operation", "status")
+	c.ProductionCapabilitiesManualBindingBacklog, err = c.reg.Gauge("manual_binding_backlog", "Production manual SKU binding backlog", "environment", "provider", "operation", "status")
 	if err != nil {
 		return err
 	}
@@ -840,29 +840,29 @@ func (c *Catalog) ObserveProviderRetry(provider, operation, result, errorClass s
 	c.ProviderRetriesTotal.WithLabelValues(provider, operation, NormalizeResult(result), NormalizeResult(errorClass)).Inc()
 }
 
-// ObserveP10 records the bounded low-cardinality P10 readiness metrics.
-func (c *Catalog) ObserveP10(environment, provider, operation, status string, providerError, oauthFailure, credentialExpiring, syncRun, syncFailure bool, manualBacklog int) {
+// ObserveProductionCapabilities records bounded low-cardinality production readiness metrics.
+func (c *Catalog) ObserveProductionCapabilities(environment, provider, operation, status string, providerError, oauthFailure, credentialExpiring, syncRun, syncFailure bool, manualBacklog int) {
 	if c == nil {
 		return
 	}
 	labels := []string{NormalizeResult(environment), NormalizeResult(provider), NormalizeResult(operation), NormalizeResult(status)}
-	if providerError && c.P10ProviderErrorsTotal != nil {
-		c.P10ProviderErrorsTotal.WithLabelValues(labels...).Inc()
+	if providerError && c.ProductionCapabilitiesProviderErrorsTotal != nil {
+		c.ProductionCapabilitiesProviderErrorsTotal.WithLabelValues(labels...).Inc()
 	}
-	if oauthFailure && c.P10OAuthFailuresTotal != nil {
-		c.P10OAuthFailuresTotal.WithLabelValues(labels...).Inc()
+	if oauthFailure && c.ProductionCapabilitiesOAuthFailuresTotal != nil {
+		c.ProductionCapabilitiesOAuthFailuresTotal.WithLabelValues(labels...).Inc()
 	}
-	if credentialExpiring && c.P10CredentialExpiringTotal != nil {
-		c.P10CredentialExpiringTotal.WithLabelValues(labels...).Inc()
+	if credentialExpiring && c.ProductionCapabilitiesCredentialExpiringTotal != nil {
+		c.ProductionCapabilitiesCredentialExpiringTotal.WithLabelValues(labels...).Inc()
 	}
-	if syncRun && c.P10InventorySyncRuns != nil {
-		c.P10InventorySyncRuns.WithLabelValues(labels...).Inc()
+	if syncRun && c.ProductionCapabilitiesInventorySyncRuns != nil {
+		c.ProductionCapabilitiesInventorySyncRuns.WithLabelValues(labels...).Inc()
 	}
-	if syncFailure && c.P10InventorySyncFailures != nil {
-		c.P10InventorySyncFailures.WithLabelValues(labels...).Inc()
+	if syncFailure && c.ProductionCapabilitiesInventorySyncFailures != nil {
+		c.ProductionCapabilitiesInventorySyncFailures.WithLabelValues(labels...).Inc()
 	}
-	if manualBacklog >= 0 && c.P10ManualBindingBacklog != nil {
-		c.P10ManualBindingBacklog.WithLabelValues(labels...).Set(float64(manualBacklog))
+	if manualBacklog >= 0 && c.ProductionCapabilitiesManualBindingBacklog != nil {
+		c.ProductionCapabilitiesManualBindingBacklog.WithLabelValues(labels...).Set(float64(manualBacklog))
 	}
 }
 

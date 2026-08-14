@@ -39,9 +39,9 @@ func (s *Service) MatchOrderItemToSKU(ctx context.Context, o *Order, it *OrderIt
 	if it.ExternalItemID != nil {
 		extItem = strings.TrimSpace(*it.ExternalItemID)
 	}
-	extSku := ""
+	extSKU := ""
 	if it.ExternalSKUID != nil {
-		extSku = strings.TrimSpace(*it.ExternalSKUID)
+		extSKU = strings.TrimSpace(*it.ExternalSKUID)
 	}
 	seller := strings.TrimSpace(it.SellerSKU)
 	code := strings.TrimSpace(it.SKUCode)
@@ -52,14 +52,14 @@ func (s *Service) MatchOrderItemToSKU(ctx context.Context, o *Order, it *OrderIt
 
 	baseRaw := map[string]any{
 		"externalItemId": extItem,
-		"externalSkuId":  extSku,
+		"externalSkuId":  extSKU,
 		"sellerSku":      seller,
 		"skuCode":        code,
 	}
 
 	// Priority 1: publication external_sku_id
-	if extSku != "" && o.ShopID != nil && *o.ShopID != uuid.Nil {
-		hits, err := s.findPublicationSKUsByExternalSKUID(ctx, plat, *o.ShopID, extSku)
+	if extSKU != "" && o.ShopID != nil && *o.ShopID != uuid.Nil {
+		hits, err := s.findPublicationSKUsByExternalSKUID(ctx, plat, *o.ShopID, extSKU)
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +170,7 @@ func (s *Service) MatchOrderItemToSKU(ctx context.Context, o *Order, it *OrderIt
 		}
 	}
 
-	if extSku == "" && codeOrSeller == "" {
+	if extSKU == "" && codeOrSeller == "" {
 		return &MatchOrderItemResult{
 			MatchType:   MatchTypeNone,
 			MatchStatus: MatchStatusSkipped,
@@ -331,10 +331,10 @@ func matchRowFromResult(o *Order, it *OrderItem, r *MatchOrderItemResult, admin 
 		v := strings.TrimSpace(*it.ExternalItemID)
 		extItem = &v
 	}
-	var extSku *string
+	var extSKU *string
 	if it.ExternalSKUID != nil && strings.TrimSpace(*it.ExternalSKUID) != "" {
 		v := strings.TrimSpace(*it.ExternalSKUID)
-		extSku = &v
+		extSKU = &v
 	}
 	rawJSON, err := json.Marshal(trimRawDataMap(r.RawData))
 	if err != nil {
@@ -346,7 +346,7 @@ func matchRowFromResult(o *Order, it *OrderItem, r *MatchOrderItemResult, admin 
 		Platform:        strings.TrimSpace(o.Platform),
 		ExternalOrderID: extOrder,
 		ExternalItemID:  extItem,
-		ExternalSKUID:   extSku,
+		ExternalSKUID:   extSKU,
 		SellerSKU:       strings.TrimSpace(it.SellerSKU),
 		SKUCode:         strings.TrimSpace(it.SKUCode),
 		ProductID:       r.ProductID,
@@ -429,7 +429,7 @@ func (s *Service) readOrderSKUSettings(ctx context.Context) (OrderSKUSettings, e
 		AutoMatchOrderSKUs:                true,
 		AutoDeductAfterSKUMatch:           false,
 		AutoSyncInventoryAfterOrderDeduct: false,
-		AllowManualSkuBindAfterDeduct:     true,
+		AllowManualSKUBindAfterDeduct:     true,
 	}
 	if s == nil || s.Settings == nil {
 		return def, nil
@@ -462,7 +462,7 @@ func (s *Service) readOrderSKUSettings(ctx context.Context) (OrderSKUSettings, e
 		AutoMatchOrderSKUs:                flagOr("auto_match_order_skus", true),
 		AutoDeductAfterSKUMatch:           truthy("auto_deduct_after_sku_match"),
 		AutoSyncInventoryAfterOrderDeduct: syncEffective,
-		AllowManualSkuBindAfterDeduct:     flagOr("allow_manual_sku_bind_after_deduct", true),
+		AllowManualSKUBindAfterDeduct:     flagOr("allow_manual_sku_bind_after_deduct", true),
 	}, nil
 }
 

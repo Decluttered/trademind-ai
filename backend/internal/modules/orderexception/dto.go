@@ -54,13 +54,13 @@ type OrderExceptionDTO struct {
 	ShopName        string    `json:"shopName,omitempty"`
 	OrderItemID     string    `json:"orderItemId,omitempty"`
 	ExternalItemID  string    `json:"externalItemId,omitempty"`
-	ExternalSkuID   string    `json:"externalSkuId,omitempty"`
+	ExternalSKUID   string    `json:"externalSkuId,omitempty"`
 	SKUCode         string    `json:"skuCode,omitempty"`
 	SKUName         string    `json:"skuName,omitempty"`
 	ProductID       string    `json:"productId,omitempty"`
-	ProductSkuID    string    `json:"productSkuId,omitempty"`
+	ProductSKUID    string    `json:"productSkuId,omitempty"`
 	ProductTitle    string    `json:"productTitle,omitempty"`
-	LocalSkuCode    string    `json:"localSkuCode,omitempty"`
+	LocalSKUCode    string    `json:"localSkuCode,omitempty"`
 	Quantity        int       `json:"quantity,omitempty"`
 	ErrorMessage    string    `json:"errorMessage,omitempty"`
 	SuggestedAction string    `json:"suggestedAction,omitempty"`

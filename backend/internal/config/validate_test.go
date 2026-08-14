@@ -83,7 +83,7 @@ func TestValidateObservabilityRejectsDisabledProductionAlerting(t *testing.T) {
 	}
 }
 
-func productionP4Auth() AuthConfig {
+func productionAuthConfig() AuthConfig {
 	return AuthConfig{
 		SessionMode:           AuthSessionModeSecure,
 		SecureCookie:          true,
@@ -92,8 +92,8 @@ func productionP4Auth() AuthConfig {
 	}
 }
 
-func productionP7() P7Config {
-	return P7Config{
+func productionRuntimeLimits() RuntimeLimitsConfig {
+	return RuntimeLimitsConfig{
 		PaginationDefaultLimit:     50,
 		PaginationMaxLimit:         200,
 		PaginationMaxOffset:        10000,
@@ -139,9 +139,9 @@ func TestValidate_productionRequiresStrongJWT(t *testing.T) {
 		BootstrapAdminPassword: "StrongPass!2026",
 		StorageProvider:        "cos",
 		CORSAllowedOrigins:     []string{"https://admin.example.com"},
-		Auth:                   productionP4Auth(),
+		Auth:                   productionAuthConfig(),
 		Observability:          ValidProductionObservability(),
-		P7:                     productionP7(),
+		RuntimeLimits:          productionRuntimeLimits(),
 		DB: DBConfig{
 			Driver: "postgres",
 			User:   "u",
@@ -166,9 +166,9 @@ func TestValidate_productionRequiresStrongCollectorServiceToken(t *testing.T) {
 			BootstrapAdminPassword: "StrongPass!2026",
 			StorageProvider:        "cos",
 			CORSAllowedOrigins:     []string{"https://admin.example.com"},
-			Auth:                   productionP4Auth(),
+			Auth:                   productionAuthConfig(),
 			Observability:          ValidProductionObservability(),
-			P7:                     productionP7(),
+			RuntimeLimits:          productionRuntimeLimits(),
 			DB: DBConfig{
 				Driver: "postgres",
 				User:   "u",
@@ -226,7 +226,7 @@ func TestValidate_stagingRejectsDouyinWebhookDemoFallback(t *testing.T) {
 	}
 }
 
-func TestValidateP9InventorySyncSafetyRejectsDangerousEnv(t *testing.T) {
+func TestValidateInventorySyncSafetyRejectsDangerousEnv(t *testing.T) {
 	cases := []struct {
 		key   string
 		value string
@@ -243,8 +243,8 @@ func TestValidateP9InventorySyncSafetyRejectsDangerousEnv(t *testing.T) {
 			cfg := &Config{AppEnv: EnvDevelopment, DB: DBConfig{Driver: "postgres", User: "u", Name: "db"}}
 			t.Setenv(tc.key, tc.value)
 			err := cfg.Validate()
-			if err == nil || !strings.Contains(err.Error(), ErrCodeP9ProductionCapabilityForbidden) {
-				t.Fatalf("expected P9 safety rejection, got %v", err)
+			if err == nil || !strings.Contains(err.Error(), ErrCodeInventorySyncProductionCapabilityForbidden) {
+				t.Fatalf("expected inventory sync safety rejection, got %v", err)
 			}
 		})
 	}

@@ -101,7 +101,7 @@ func Require(t testing.TB) *Harness {
 
 func (h *Harness) EmitMetadata(t testing.TB) {
 	t.Helper()
-	fmt.Printf("P9PG_META driver=%s hostCategory=%s databaseNameHash=%s serverVersion=%s sqliteFallbackUsed=%t schemaIsolated=%t\n",
+	fmt.Printf("INVENTORY_PG_META driver=%s hostCategory=%s databaseNameHash=%s serverVersion=%s sqliteFallbackUsed=%t schemaIsolated=%t\n",
 		h.Driver,
 		h.HostCategory,
 		h.DatabaseNameHash,
@@ -114,7 +114,7 @@ func (h *Harness) EmitMetadata(t testing.TB) {
 func uniqueSchemaName() string {
 	var entropy [8]byte
 	_, _ = rand.Read(entropy[:])
-	return "p9pg_" + hex.EncodeToString(entropy[:])
+	return "inventorypg_" + hex.EncodeToString(entropy[:])
 }
 
 func databaseURLWithSearchPath(raw, schema string) (string, error) {

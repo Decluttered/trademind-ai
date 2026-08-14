@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
-	"github.com/trademind-ai/trademind/backend/internal/pkg/p7diag"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/runtimediag"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/tasktenant"
 	"gorm.io/gorm"
 )
@@ -145,8 +145,8 @@ func (s *Service) processEventRow(ctx context.Context, ev *Event) error {
 	businessApplicable := ev.Platform == "douyin_shop" || ev.Platform == "douyin"
 	if err := s.handlePlatformEvent(ctx, ev); err != nil {
 		if businessApplicable {
-			p7diag.ObserveStage(p7diag.RouteWebhookIngestion, "business_upsert", p7diag.OutcomeError, businessStart)
-			p7diag.ObserveStage(p7diag.RouteWebhookIngestion, "order_or_entity_upsert", p7diag.OutcomeError, businessStart)
+			runtimediag.ObserveStage(runtimediag.RouteWebhookIngestion, "business_upsert", runtimediag.OutcomeError, businessStart)
+			runtimediag.ObserveStage(runtimediag.RouteWebhookIngestion, "order_or_entity_upsert", runtimediag.OutcomeError, businessStart)
 		}
 		_ = s.markFailed(ctx, ev.ID, StatusFailedRetryable, "WEBHOOK_PROCESS_FAILED", err.Error())
 		s.failProcess(ctx, idemJob, "WEBHOOK_PROCESS_FAILED", true)
@@ -154,10 +154,10 @@ func (s *Service) processEventRow(ctx context.Context, ev *Event) error {
 		return err
 	}
 	if businessApplicable {
-		p7diag.ObserveStage(p7diag.RouteWebhookIngestion, "business_upsert", p7diag.OutcomeSuccess, businessStart)
-		p7diag.ObserveStage(p7diag.RouteWebhookIngestion, "order_or_entity_upsert", p7diag.OutcomeSuccess, businessStart)
-		p7diag.Path(p7diag.RouteWebhookIngestion, "business_upsert")
-		p7diag.Count(p7diag.RouteWebhookIngestion, "businessUpsertCount", 1)
+		runtimediag.ObserveStage(runtimediag.RouteWebhookIngestion, "business_upsert", runtimediag.OutcomeSuccess, businessStart)
+		runtimediag.ObserveStage(runtimediag.RouteWebhookIngestion, "order_or_entity_upsert", runtimediag.OutcomeSuccess, businessStart)
+		runtimediag.Path(runtimediag.RouteWebhookIngestion, "business_upsert")
+		runtimediag.Count(runtimediag.RouteWebhookIngestion, "businessUpsertCount", 1)
 	}
 
 	processedAt := s.now()

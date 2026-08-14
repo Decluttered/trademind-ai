@@ -4,6 +4,13 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Naming consistency (2026-08-14)
+
+- Normalized Go identifiers to standard initialisms such as `ID`, `SKU`, `URL`, `API`, `HTTP`, `JSON`, `UUID` and `OAuth` without changing JSON fields or API payloads.
+- Renamed `ai_image_task_items` to `image_task_items` and removed the `p7` phase marker from nine production performance index names through transactional, fail-closed upgrades that preserve existing data.
+- Replaced phase-numbered source paths with responsibility-based names across backend migrations/modules, Admin inventory sync, integration tests, pre-production scripts, and production documentation; compatibility environment variables, routes, and legacy schema inputs remain unchanged.
+- Added affected quality checks for Go initialisms and lowercase, domain-oriented table, index, constraint, trigger and function names.
+
 ### Multi-architecture container publishing (2026-08-14)
 
 - Added a single `deploy/IMAGE_VERSION` source and automated GHCR publishing for backend, Admin and Collector images.

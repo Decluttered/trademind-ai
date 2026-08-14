@@ -37,11 +37,11 @@ func (d *douyinEventDispatcher) DispatchDouyinEvent(ctx context.Context, ev *dou
 			"eventType", ev.EventType, "msgId", ev.MsgID)
 		return nil
 	case "inventory_alert":
-		slog.InfoContext(ctx, "douyin inventory_alert received — handler not implemented in P3",
+		slog.InfoContext(ctx, "douyin inventory_alert received; handler is not implemented",
 			"msgId", ev.MsgID)
 		return nil
 	case "product_status_changed":
-		slog.InfoContext(ctx, "douyin product_status_changed received — handler not implemented in P3",
+		slog.InfoContext(ctx, "douyin product_status_changed received; handler is not implemented",
 			"msgId", ev.MsgID)
 		return nil
 	default:

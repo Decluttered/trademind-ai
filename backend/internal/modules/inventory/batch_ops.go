@@ -61,10 +61,10 @@ func batchScopePresent(body CreateInventorySyncBatchBody) bool {
 	if strings.TrimSpace(body.ProductID) != "" {
 		return true
 	}
-	if len(body.PublicationSkuIds) > 0 {
+	if len(body.PublicationSKUIDs) > 0 {
 		return true
 	}
-	if len(body.ProductSkuIds) > 0 {
+	if len(body.ProductSKUIDs) > 0 {
 		return true
 	}
 	if body.OnlyAlerts {
@@ -90,7 +90,7 @@ func effectiveAlertTypesForBatch(body CreateInventorySyncBatchBody) []string {
 	return out
 }
 
-func publicationSkuMatchesAlerts(localStock int, warningStock int, safetyStock int, platformStock *int,
+func publicationSKUMatchesAlerts(localStock int, warningStock int, safetyStock int, platformStock *int,
 	mismatchTh int, mismatchEnabled bool, latest latestTaskScan, alertTypes []string,
 ) bool {
 	if len(alertTypes) == 0 {
@@ -195,14 +195,14 @@ func joinSkippedReason(lines []string, maxLen int) string {
 }
 
 type batchCandScan struct {
-	PublicationSkuID  uuid.UUID  `gorm:"column:publication_sku_id"`
+	PublicationSKUID  uuid.UUID  `gorm:"column:publication_sku_id"`
 	PublicationID     uuid.UUID  `gorm:"column:publication_id"`
 	ProductID         uuid.UUID  `gorm:"column:product_id"`
 	ShopID            uuid.UUID  `gorm:"column:shop_id"`
 	PlatformRaw       string     `gorm:"column:platform_raw"`
 	ExternalProductID string     `gorm:"column:external_product_id"`
-	ExternalSkuID     string     `gorm:"column:external_sku_id"`
-	ProductSkuID      *uuid.UUID `gorm:"column:product_sku_id"`
+	ExternalSKUID     string     `gorm:"column:external_sku_id"`
+	ProductSKUID      *uuid.UUID `gorm:"column:product_sku_id"`
 	LocalStock        *int       `gorm:"column:local_stock"`
 	PlatformStock     *int       `gorm:"column:platform_stock"`
 	WarningStock      int        `gorm:"column:warning_stock"`
@@ -243,9 +243,9 @@ func (s *Service) queryInventoryBatchCandidates(ctx context.Context, body Create
 			SELECT 1 FROM product_publications ppx WHERE ppx.id = pps.publication_id AND ppx.deleted_at IS NULL
 		)`)
 	}
-	if len(body.ProductSkuIds) > 0 {
-		uuids := make([]uuid.UUID, 0, len(body.ProductSkuIds))
-		for _, raw := range body.ProductSkuIds {
+	if len(body.ProductSKUIDs) > 0 {
+		uuids := make([]uuid.UUID, 0, len(body.ProductSKUIDs))
+		for _, raw := range body.ProductSKUIDs {
 			u, err := uuid.Parse(strings.TrimSpace(raw))
 			if err != nil {
 				continue
@@ -257,9 +257,9 @@ func (s *Service) queryInventoryBatchCandidates(ctx context.Context, body Create
 		}
 		tx = tx.Where("pps.product_sku_id IN ?", uuids)
 	}
-	if len(body.PublicationSkuIds) > 0 {
-		uuids := make([]uuid.UUID, 0, len(body.PublicationSkuIds))
-		for _, raw := range body.PublicationSkuIds {
+	if len(body.PublicationSKUIDs) > 0 {
+		uuids := make([]uuid.UUID, 0, len(body.PublicationSKUIDs))
+		for _, raw := range body.PublicationSKUIDs {
 			u, err := uuid.Parse(strings.TrimSpace(raw))
 			if err != nil {
 				continue
@@ -313,11 +313,11 @@ func trimBatchInputSummary(body CreateInventorySyncBatchBody) map[string]any {
 	if strings.TrimSpace(body.ProductID) != "" {
 		m["productId"] = strings.TrimSpace(body.ProductID)
 	}
-	if len(body.ProductSkuIds) > 0 {
-		m["productSkuIdsCount"] = len(body.ProductSkuIds)
+	if len(body.ProductSKUIDs) > 0 {
+		m["productSkuIdsCount"] = len(body.ProductSKUIDs)
 	}
-	if len(body.PublicationSkuIds) > 0 {
-		m["publicationSkuIdsCount"] = len(body.PublicationSkuIds)
+	if len(body.PublicationSKUIDs) > 0 {
+		m["publicationSkuIdsCount"] = len(body.PublicationSKUIDs)
 	}
 	m["onlyAlerts"] = body.OnlyAlerts
 	if len(body.AlertTypes) > 0 {
@@ -512,9 +512,9 @@ func (s *Service) CreateInventorySyncBatch(ctx context.Context, body CreateInven
 	alertTypes := effectiveAlertTypesForBatch(body)
 	pubIDs := make([]uuid.UUID, 0, len(cands))
 	for _, c := range cands {
-		pubIDs = append(pubIDs, c.PublicationSkuID)
+		pubIDs = append(pubIDs, c.PublicationSKUID)
 	}
-	latestMap := s.loadLatestTasksByPubSku(ctx, pubIDs)
+	latestMap := s.loadLatestTasksByPubSKU(ctx, pubIDs)
 
 	type planned struct {
 		scan batchCandScan
@@ -527,14 +527,14 @@ func (s *Service) CreateInventorySyncBatch(ctx context.Context, body CreateInven
 		localStock := derefStock(c.LocalStock)
 
 		if body.OnlyAlerts {
-			if !publicationSkuMatchesAlerts(localStock, c.WarningStock, c.SafetyStock, c.PlatformStock,
-				pol.PlatformStockMismatchThresh, pol.AlertPlatformStockMismatch, latestMap[c.PublicationSkuID], alertTypes) {
+			if !publicationSKUMatchesAlerts(localStock, c.WarningStock, c.SafetyStock, c.PlatformStock,
+				pol.PlatformStockMismatchThresh, pol.AlertPlatformStockMismatch, latestMap[c.PublicationSKUID], alertTypes) {
 				skipReasons = appendSkippedReason(skipReasons, "alert_filter_no_match", 12)
 				continue
 			}
 		}
 
-		if strings.TrimSpace(c.ExternalSkuID) == "" {
+		if strings.TrimSpace(c.ExternalSKUID) == "" {
 			skipReasons = appendSkippedReason(skipReasons, "missing_external_sku_id", 12)
 			continue
 		}
@@ -543,7 +543,7 @@ func (s *Service) CreateInventorySyncBatch(ctx context.Context, body CreateInven
 			skipReasons = appendSkippedReason(skipReasons, "missing_external_product_id", 12)
 			continue
 		}
-		if c.ProductSkuID == nil || *c.ProductSkuID == uuid.Nil {
+		if c.ProductSKUID == nil || *c.ProductSKUID == uuid.Nil {
 			skipReasons = appendSkippedReason(skipReasons, "missing_product_sku_link", 12)
 			continue
 		}
@@ -571,7 +571,7 @@ func (s *Service) CreateInventorySyncBatch(ctx context.Context, body CreateInven
 	if !body.Force && len(plannedRows) > 0 {
 		ids := make([]uuid.UUID, 0, len(plannedRows))
 		for _, p := range plannedRows {
-			ids = append(ids, p.scan.PublicationSkuID)
+			ids = append(ids, p.scan.PublicationSKUID)
 		}
 		blocking, err = s.blockingPublicationSKUSet(ctx, ids)
 		if err != nil {
@@ -581,7 +581,7 @@ func (s *Service) CreateInventorySyncBatch(ctx context.Context, body CreateInven
 
 	toCreate := make([]planned, 0, len(plannedRows))
 	for _, p := range plannedRows {
-		if _, blocked := blocking[p.scan.PublicationSkuID]; blocked && !body.Force {
+		if _, blocked := blocking[p.scan.PublicationSKUID]; blocked && !body.Force {
 			skipReasons = appendSkippedReason(skipReasons, "duplicate_pending_running_task", 12)
 			continue
 		}
@@ -643,22 +643,22 @@ func (s *Service) CreateInventorySyncBatch(ctx context.Context, body CreateInven
 			pl := strings.TrimSpace(strings.ToLower(c.PlatformRaw))
 			target := localStockFromScan(c)
 			pubID := c.PublicationID
-			pskuID := c.PublicationSkuID
+			pskuID := c.PublicationSKUID
 
 			task := InventorySyncTask{
 				BatchID:          &bid,
 				BatchNo:          batchNo,
 				ProductID:        c.ProductID,
-				ProductSKUID:     c.ProductSkuID,
+				ProductSKUID:     c.ProductSKUID,
 				PublicationID:    &pubID,
-				PublicationSkuID: &pskuID,
+				PublicationSKUID: &pskuID,
 				ShopID:           c.ShopID,
 				Platform:         pl,
 				TaskType:         TaskTypeInventorySync,
 				Status:           StatusPending,
 				Mode:             ModeBatch,
 				TargetStock:      target,
-				Input:            taskInputSnap(ModeBatch, target, pskuID, c.ProductSkuID, pubID, c.ShopID, optCopy, &bid, batchNo),
+				Input:            taskInputSnap(ModeBatch, target, pskuID, c.ProductSKUID, pubID, c.ShopID, optCopy, &bid, batchNo),
 				CreatedBy:        admin,
 			}
 			if err := tx.Create(&task).Error; err != nil {

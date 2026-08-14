@@ -89,7 +89,7 @@ func (h *Handler) List(c *gin.Context) {
 		Status:                c.Query("status"),
 		PaymentStatus:         c.Query("paymentStatus"),
 		FulfillmentStatus:     c.Query("fulfillmentStatus"),
-		SkuMatchStatus:        c.Query("skuMatchStatus"),
+		SKUMatchStatus:        c.Query("skuMatchStatus"),
 		InventoryDeductStatus: c.Query("inventoryDeductStatus"),
 		SyncStatus:            c.Query("syncStatus"),
 		HasException: strings.EqualFold(strings.TrimSpace(c.Query("hasException")), "true") ||

@@ -13,7 +13,7 @@ import {
   type CreateRunRequest,
   type InventorySyncAPIError,
   type InventorySyncRun,
-} from '@/services/inventorySyncP9';
+} from '@/services/inventorySync';
 import { formatDateTime } from '@/utils/formatTime';
 import {
   ActionSourceHint,
@@ -208,12 +208,12 @@ export default function InventorySyncDashboardPage() {
 
   return (
     <TmPageContainer
-      title="P9 库存同步与绑定中心"
+      title="库存同步与绑定中心"
       subTitle="夹具库存同步运行、SKU 校准、人工绑定和审计查看"
       extra={
         <Space wrap>
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>刷新</Button>
-          <Button data-testid="p9-create-run" type="primary" icon={<PlayCircleOutlined />} onClick={() => setCreateOpen(true)}>创建夹具运行</Button>
+          <Button data-testid="inventory-sync-create-run" type="primary" icon={<PlayCircleOutlined />} onClick={() => setCreateOpen(true)}>创建夹具运行</Button>
         </Space>
       }
     >
@@ -278,12 +278,12 @@ export default function InventorySyncDashboardPage() {
         confirmLoading={actionLoading}
         okText="创建"
         cancelText="取消"
-        okButtonProps={{ 'data-testid': 'p9-create-run-submit' } as never}
+        okButtonProps={{ 'data-testid': 'inventory-sync-create-run-submit' } as never}
         destroyOnHidden
       >
         <Form form={createForm} layout="vertical" style={{ marginTop: 16 }} initialValues={{ platform: 'douyin', providerMode: 'mock', fixtureScenario: 'success_single_page' }}>
           <Form.Item name="shopConnectionId" label="店铺连接 ID" rules={[{ required: true, whitespace: true, message: '请输入店铺连接 ID' }]}>
-            <Input data-testid="p9-create-run-shop" placeholder="后端按登录态校验店铺权限" />
+            <Input data-testid="inventory-sync-create-run-shop" placeholder="后端按登录态校验店铺权限" />
           </Form.Item>
           <Form.Item name="platform" label="平台">
             <Input disabled />

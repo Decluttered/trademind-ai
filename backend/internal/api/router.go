@@ -38,7 +38,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
 	"github.com/trademind-ai/trademind/backend/internal/modules/imagetask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventory"
-	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysyncp9"
+	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/observabilitymod"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationdashboard"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
@@ -49,7 +49,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/pricing"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
-	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrolp10"
+	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrol"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
 	"github.com/trademind-ai/trademind/backend/internal/modules/securitymod"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
@@ -160,7 +160,7 @@ type Deps struct {
 	MigrationsReady bool
 	// OpLog optional; when nil Register creates a default operation log service from DB.
 	OpLog *operationlog.Service
-	// Obs optional P5 observability facade.
+	// Obs is the optional observability facade.
 	Obs *observability.Observability
 }
 
@@ -353,12 +353,12 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		collectSvc.RetryBaseDelaySec = dep.Config.CollectRetryBaseDelaySeconds
 		collectSvc.RetryMaxDelaySec = dep.Config.CollectRetryMaxDelaySeconds
 		collectSvc.TaskLeaseTimeoutSeconds = dep.Config.CollectTaskTimeoutSeconds
-		collectSvc.Batch1688Concurrency = dep.Config.CollectBatchConcurrency1688
-		collectSvc.Batch1688DelayMinMs = dep.Config.CollectBatchDelayMinMs1688
-		collectSvc.Batch1688DelayMaxMs = dep.Config.CollectBatchDelayMaxMs1688
+		collectSvc.Source1688BatchConcurrency = dep.Config.CollectBatchConcurrency1688
+		collectSvc.Source1688BatchDelayMinMs = dep.Config.CollectBatchDelayMinMs1688
+		collectSvc.Source1688BatchDelayMaxMs = dep.Config.CollectBatchDelayMaxMs1688
 		collectSvc.BatchRetryOnBlocked = dep.Config.CollectBatchRetryOnBlocked
 		collectSvc.BatchRetryOnTimeout = dep.Config.CollectBatchRetryOnTimeout
-		collectSvc.Batch1688MaxRetries = dep.Config.CollectBatchMaxRetries1688
+		collectSvc.Source1688BatchMaxRetries = dep.Config.CollectBatchMaxRetries1688
 		collectSvc.Settings = settingsSvc
 	}
 	collectH := &collect.Handler{Svc: collectSvc}
@@ -568,7 +568,7 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	if dep.Config != nil {
 		productPublishSvc.Environment = dep.Config.AppEnv
 	}
-	writeControlSvc := &productioncontrolp10.Service{DB: dep.DB, Config: dep.Config, ProviderWriteGuard: func(ctx context.Context, shopID uuid.UUID) error {
+	writeControlSvc := &productioncontrol.Service{DB: dep.DB, Config: dep.Config, ProviderWriteGuard: func(ctx context.Context, shopID uuid.UUID) error {
 		if guardErr := platformdouyin.GuardWorkerWithShop(ctx, shopID.String(), platformdouyin.FeatureProductDraft, true, false); guardErr != nil {
 			return guardErr
 		}
@@ -744,8 +744,8 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	productPublishSvc.ProductionOutbox = &operationtask.OutboxDispatcher{DB: dep.DB, Delivery: productPublishSvc}
 	operationTaskH := &operationtask.Handler{Svc: operationTaskSvc}
 	operationtask.Register(authed, operationTaskH)
-	inventorySyncP9H := &inventorysyncp9.Handler{Svc: inventorysyncp9.NewAPIService(dep.DB)}
-	inventorysyncp9.Register(authed, inventorySyncP9H)
+	inventorySyncH := &inventorysync.Handler{Svc: inventorysync.NewAPIService(dep.DB)}
+	inventorysync.Register(authed, inventorySyncH)
 
 	tcSvc := &taskcenter.Service{
 		DB:             dep.DB,

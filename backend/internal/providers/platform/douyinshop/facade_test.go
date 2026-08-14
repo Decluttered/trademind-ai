@@ -25,7 +25,7 @@ func TestFacadeCompile(t *testing.T) {
 	// Verify BrandStatus returns unsupported
 	bs := f2.BrandStatus()
 	if bs.Supported {
-		t.Error("brand list should be unsupported in P3")
+		t.Error("brand list should be unsupported by the provider contract")
 	}
 	if bs.Reason == "" {
 		t.Error("expected non-empty brand status reason")

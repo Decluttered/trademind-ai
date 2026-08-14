@@ -36,7 +36,7 @@ const (
 	StatusObsolete            = "obsolete"
 )
 
-// ImageTask records one AI image processing job (ai_image_tasks in product docs).
+// ImageTask records one AI image processing job in image_tasks.
 type ImageTask struct {
 	model.HardDeleteBase
 	TaskType        string         `gorm:"size:64;index;not null" json:"taskType"`
@@ -74,7 +74,7 @@ type ImageTask struct {
 
 func (ImageTask) TableName() string { return "image_tasks" }
 
-// ImageTaskItem is one source→result row within a task (ai_image_task_items).
+// ImageTaskItem is one source-to-result row within an image task.
 type ImageTaskItem struct {
 	model.HardDeleteBase
 	TaskID           uuid.UUID      `gorm:"type:char(36);index;not null" json:"taskId"`
@@ -90,7 +90,7 @@ type ImageTaskItem struct {
 	ErrorMessage     string         `gorm:"type:text" json:"errorMessage,omitempty"`
 }
 
-func (ImageTaskItem) TableName() string { return "ai_image_task_items" }
+func (ImageTaskItem) TableName() string { return "image_task_items" }
 
 const (
 	ItemStatusPending = "pending"

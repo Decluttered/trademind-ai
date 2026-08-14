@@ -14,14 +14,14 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// RateLimit applies a conservative local token bucket. P7 keeps Redis-backed
+// RateLimit applies a conservative local token bucket. The runtime policy keeps Redis-backed
 // multi-instance limiting as a separately verified closure item.
 func RateLimit(cfg *config.Config) gin.HandlerFunc {
-	if cfg == nil || !cfg.P7.RateLimitEnabled {
+	if cfg == nil || !cfg.RuntimeLimits.RateLimitEnabled {
 		return func(c *gin.Context) { c.Next() }
 	}
 	policy := ratelimit.Policy{
-		ID:        strings.TrimSpace(cfg.P7.RateLimitPolicyVersion),
+		ID:        strings.TrimSpace(cfg.RuntimeLimits.RateLimitPolicyVersion),
 		Rate:      rate.Limit(20),
 		Burst:     40,
 		TTL:       10 * time.Minute,

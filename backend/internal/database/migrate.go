@@ -17,7 +17,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/files"
 	"github.com/trademind-ai/trademind/backend/internal/modules/imagetask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventory"
-	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysyncp9"
+	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationtask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/order"
@@ -103,7 +103,13 @@ func AutoMigrate(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("auto migrate: db is nil")
 	}
-	if err := migrateLegacyPhaseTableNames(db, inventoryPhaseTableRenames); err != nil {
+	if err := migrateLegacyTableNames(db, inventoryLegacyTableRenames); err != nil {
+		return err
+	}
+	if err := migrateLegacyTableNames(db, imageTaskTableRenames); err != nil {
+		return err
+	}
+	if err := migrateLegacyDatabaseObjectNames(db); err != nil {
 		return err
 	}
 	if err := migrateLegacyPublicationSKUColumns(db); err != nil {
@@ -184,46 +190,46 @@ func AutoMigrate(db *gorm.DB) error {
 	if err := migrateProductPublishTenant(db); err != nil {
 		return err
 	}
-	if err := inventorysyncp9.Migrate(db); err != nil {
+	if err := inventorysync.Migrate(db); err != nil {
 		return err
 	}
-	if err := migrateDouyinPhase102Indexes(db); err != nil {
+	if err := migrateDouyinOrderIdempotencyIndexes(db); err != nil {
 		return err
 	}
-	if err := migratePublishBatchA21(db); err != nil {
+	if err := migratePublishBatchIndexes(db); err != nil {
 		return err
 	}
-	if err := migrateP2Reliability(db); err != nil {
+	if err := migrateReliabilitySchema(db); err != nil {
 		return err
 	}
-	if err := migrateP21Reliability(db); err != nil {
+	if err := migrateTaskExecutionTracking(db); err != nil {
 		return err
 	}
-	if err := migrateP22Reliability(db); err != nil {
+	if err := migrateWorkerRecoveryIndexes(db); err != nil {
 		return err
 	}
-	if err := migrateP3Douyin(db); err != nil {
+	if err := migrateDouyinPlatform(db); err != nil {
 		return err
 	}
-	if err := migrateP31Douyin(db); err != nil {
+	if err := migrateDouyinOrderRevision(db); err != nil {
 		return err
 	}
-	if err := migrateP32Webhook(db); err != nil {
+	if err := migrateWebhookRouting(db); err != nil {
 		return err
 	}
-	if err := migrateP4Security(db); err != nil {
+	if err := migrateAuthAuditSecurity(db); err != nil {
 		return err
 	}
-	if err := migrateP41Security(db); err != nil {
+	if err := migrateKeyRotationSecurity(db); err != nil {
 		return err
 	}
-	if err := migrateP42Security(db); err != nil {
+	if err := migrateTenantSecurity(db); err != nil {
 		return err
 	}
-	if err := migrateP5Observability(db); err != nil {
+	if err := migrateObservability(db); err != nil {
 		return err
 	}
-	if err := migrateP7Performance(db); err != nil {
+	if err := migratePerformance(db); err != nil {
 		return err
 	}
 	return migrateCustomerAutoReplyReliability(db)

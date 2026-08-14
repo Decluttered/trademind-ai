@@ -38,7 +38,7 @@ func (s *Service) ListSKUMatchRowsForOrder(c *gin.Context, orderID uuid.UUID) ([
 		if it.ProductSKUID != nil && *it.ProductSKUID != uuid.Nil {
 			var loc product.ProductSKU
 			if err := s.DB.WithContext(c.Request.Context()).First(&loc, "id = ? AND deleted_at IS NULL", *it.ProductSKUID).Error; err == nil {
-				dto.LocalSkuCode = strings.TrimSpace(loc.SKUCode)
+				dto.LocalSKUCode = strings.TrimSpace(loc.SKUCode)
 			}
 		}
 		out = append(out, dto)
@@ -154,7 +154,7 @@ func (s *Service) ListSKUMatchGlobal(c *gin.Context, q SKUMatchListQuery) ([]SKU
 		if m.ProductSKUID != nil && *m.ProductSKUID != uuid.Nil {
 			var psku product.ProductSKU
 			if err := s.DB.WithContext(c.Request.Context()).First(&psku, "id = ? AND deleted_at IS NULL", *m.ProductSKUID).Error; err == nil {
-				row.LocalSkuCode = strings.TrimSpace(psku.SKUCode)
+				row.LocalSKUCode = strings.TrimSpace(psku.SKUCode)
 			}
 		}
 		out = append(out, row)

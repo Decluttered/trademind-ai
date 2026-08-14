@@ -79,7 +79,7 @@ func ptrUUID(id uuid.UUID) *uuid.UUID {
 	return &id
 }
 
-func taskInputSnap(mode string, target int, publicationSkuID uuid.UUID, productSkuID *uuid.UUID, pubID uuid.UUID,
+func taskInputSnap(mode string, target int, publicationSKUID uuid.UUID, productSKUID *uuid.UUID, pubID uuid.UUID,
 	shop uuid.UUID, options map[string]any, batchID *uuid.UUID, batchNo string,
 ) datatypes.JSON {
 	m := map[string]any{
@@ -89,14 +89,14 @@ func taskInputSnap(mode string, target int, publicationSkuID uuid.UUID, productS
 		"stockVersion": target,
 		"shopId":       shop.String(),
 	}
-	if publicationSkuID != uuid.Nil {
-		m["publicationSkuId"] = publicationSkuID.String()
+	if publicationSKUID != uuid.Nil {
+		m["publicationSkuId"] = publicationSKUID.String()
 	}
 	if pubID != uuid.Nil {
 		m["publicationId"] = pubID.String()
 	}
-	if productSkuID != nil && *productSkuID != uuid.Nil {
-		m["productSkuId"] = productSkuID.String()
+	if productSKUID != nil && *productSKUID != uuid.Nil {
+		m["productSkuId"] = productSKUID.String()
 	}
 	if batchID != nil && *batchID != uuid.Nil {
 		m["batchId"] = batchID.String()
@@ -144,13 +144,13 @@ func (s *Service) persistTaskAndMaybeRun(ctx context.Context, t *InventorySyncTa
 	return s.enqueueOrRunInventoryTask(ctx, t.ID)
 }
 
-func (s *Service) hasDuplicateInventorySync(ctx context.Context, pubSkuID uuid.UUID, target int) (bool, error) {
-	if s == nil || s.DB == nil || pubSkuID == uuid.Nil {
+func (s *Service) hasDuplicateInventorySync(ctx context.Context, pubSKUID uuid.UUID, target int) (bool, error) {
+	if s == nil || s.DB == nil || pubSKUID == uuid.Nil {
 		return false, nil
 	}
 	var n int64
 	err := s.DB.WithContext(ctx).Model(&InventorySyncTask{}).
-		Where("publication_sku_id = ? AND target_stock = ? AND status IN ?", pubSkuID, target, []string{StatusPending, StatusRunning}).
+		Where("publication_sku_id = ? AND target_stock = ? AND status IN ?", pubSKUID, target, []string{StatusPending, StatusRunning}).
 		Count(&n).Error
 	return n > 0, err
 }

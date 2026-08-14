@@ -396,7 +396,7 @@ var rules = []rule{
 		reason:  "抖店商品或规格尚未完成平台绑定。",
 		suggest: "请先在商品详情完成抖店刊登草稿创建，并确认规格映射已写入平台规格编号。",
 	},
-	// P3.1 Douyin closure categories
+	// Douyin capability-closure categories
 	{
 		id: "sub:douyin_webhook_shop_not_resolved", substrs: []string{"DOUYIN_WEBHOOK_SHOP_NOT_RESOLVED", "DOUYIN_WEBHOOK_UNTRUSTED_SHOP_IDENTIFIER"},
 		category: "douyin_webhook_shop_not_resolved", severity: SeverityHigh,

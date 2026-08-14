@@ -166,7 +166,7 @@ func (s *Service) enqueueSKUPublicationSyncTasks(ctx context.Context, productID 
 			ProductID:        productID,
 			ProductSKUID:     ptrUUID(skuID),
 			PublicationID:    &pubIDCopy,
-			PublicationSkuID: &pskuIDCopy,
+			PublicationSKUID: &pskuIDCopy,
 			ShopID:           pub.ShopID,
 			Platform:         pl,
 			TaskType:         TaskTypeInventorySync,
@@ -189,7 +189,7 @@ func (s *Service) enqueueSKUPublicationSyncTasks(ctx context.Context, productID 
 }
 
 // CreatePublicationSKUInventoryTask submits one outbound task for linked listing SKU.
-func (s *Service) CreatePublicationSKUInventoryTask(c *gin.Context, publicationSkuID uuid.UUID, body PublicationSkuSyncBody, admin *uuid.UUID) (*TaskDTO, error) {
+func (s *Service) CreatePublicationSKUInventoryTask(c *gin.Context, publicationSKUID uuid.UUID, body PublicationSKUSyncBody, admin *uuid.UUID) (*TaskDTO, error) {
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("inventory: no db")
 	}
@@ -202,7 +202,7 @@ func (s *Service) CreatePublicationSKUInventoryTask(c *gin.Context, publicationS
 	}
 	ctx := c.Request.Context()
 	var psku productpublish.ProductPublicationSKU
-	if err := s.DB.WithContext(ctx).First(&psku, "id = ?", publicationSkuID).Error; err != nil {
+	if err := s.DB.WithContext(ctx).First(&psku, "id = ?", publicationSKUID).Error; err != nil {
 		return nil, err
 	}
 	var pub productpublish.ProductPublication
@@ -226,9 +226,9 @@ func (s *Service) CreatePublicationSKUInventoryTask(c *gin.Context, publicationS
 	if err := ValidateShopInventoryPush(shopRow, auth, prov); err != nil {
 		return nil, err
 	}
-	var prodSku uuid.UUID
+	var prodSKU uuid.UUID
 	if psku.ProductSKUID != nil {
-		prodSku = *psku.ProductSKUID
+		prodSKU = *psku.ProductSKUID
 	} else {
 		return nil, fmt.Errorf("listing sku is not linked to a local sku id")
 	}
@@ -243,7 +243,7 @@ func (s *Service) CreatePublicationSKUInventoryTask(c *gin.Context, publicationS
 		ProductID:        pub.ProductID,
 		ProductSKUID:     psku.ProductSKUID,
 		PublicationID:    &pub.ID,
-		PublicationSkuID: &psku.ID,
+		PublicationSKUID: &psku.ID,
 		ShopID:           pub.ShopID,
 		Platform:         strings.TrimSpace(strings.ToLower(pub.Platform)),
 		TaskType:         TaskTypeInventorySync,
@@ -261,13 +261,13 @@ func (s *Service) CreatePublicationSKUInventoryTask(c *gin.Context, publicationS
 			AdminUserID: admin,
 			Action:      "inventory.alert.sync_inventory",
 			Resource:    "product_publication_sku",
-			ResourceID:  publicationSkuID.String(),
+			ResourceID:  publicationSKUID.String(),
 			Status:      "success",
 			Message: fmt.Sprintf("taskId=%s productSkuId=%s targetStock=%d",
-				task.ID.String(), prodSku.String(), body.Stock),
+				task.ID.String(), prodSKU.String(), body.Stock),
 		})
 	}
-	out, err := s.GetDTO(ctx, task.TenantID, task.ID, prodSku, psku.SKUCode)
+	out, err := s.GetDTO(ctx, task.TenantID, task.ID, prodSKU, psku.SKUCode)
 	return &out, err
 }
 
@@ -321,7 +321,7 @@ func (s *Service) CreateProductShopInventoryTasks(c *gin.Context, productID uuid
 			ProductID:        productID,
 			ProductSKUID:     ptrUUID(sku.ID),
 			PublicationID:    &pub.ID,
-			PublicationSkuID: &psku.ID,
+			PublicationSKUID: &psku.ID,
 			ShopID:           shopID,
 			Platform:         strings.TrimSpace(strings.ToLower(pub.Platform)),
 			TaskType:         TaskTypeInventorySync,

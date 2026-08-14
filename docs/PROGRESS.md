@@ -12,7 +12,7 @@ TradeMind 已由项目所有者确认进入生产维护阶段。当前工作重�
 
 - GitHub Actions 是唯一持续保留的自动化测试执行入口。
 - 前端、后端、契约、架构、数据库、Redis 和 Admin E2E 核心测试继续作为工作流依赖保留。
-- 功能和业务签收由维护者人工完成，参考 `P10_MANUAL_ACCEPTANCE_CHECKLIST.md`。
+- 功能和业务签收由维护者人工完成，参考 `PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`。
 - 本地 `trademind_test` 已由项目所有者删除，不要求重建；数据库集成测试由 CI 创建隔离 service container 执行。
 - 本地生成的 Playwright 报告、测试结果、截图、临时日志和运行证据不纳入版本控制，完成诊断后可直接清理。
 
@@ -33,6 +33,10 @@ TradeMind 已由项目所有者确认进入生产维护阶段。当前工作重�
 ## 数据库命名维护
 
 2026-08-10 将库存读取、SKU 绑定、平台凭据、OAuth 和生产保护控制表从阶段编号命名迁移为业务领域命名。升级路径在自动建表前事务化重命名现有 `p9_*` / `p10_*` 表及关联数据库对象，保留数据并在旧新表并存时 fail closed；API、权限、状态机、P10 `L0` 边界和真实平台能力开关均未改变。PostgreSQL 原地升级回归由现有数据库 CI 在隔离 service container 中执行。
+
+2026-08-14 将图像任务子表从 `ai_image_task_items` 统一为与 `image_tasks` 一致的 `image_task_items`，并移除 9 个生产性能索引名中的 `p7` 阶段号。启动迁移会在 `AutoMigrate` 前原地重命名旧表和旧索引并保留数据；旧新对象同时存在时 fail closed，现有图像任务 API、状态和任务处理语义不变。
+
+2026-08-14 将后端迁移、配置、路由、库存同步、平台凭据、生产控制和运行诊断等文件/目录从阶段编号改为职责命名，并同步 Admin 库存服务、E2E、集成测试、预生产脚本及文档路径。`quality:naming` 增加全仓文件名扫描；兼容所需的 `P10_*` 环境变量、`/api/v1/p10/*` 路由、旧数据库对象名和升级映射保持不变。
 
 ## Admin 体验
 

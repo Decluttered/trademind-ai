@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationtask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
-	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrolp10"
+	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrol"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/model"
 	platformdouyin "github.com/trademind-ai/trademind/backend/internal/providers/platform/douyinshop"
@@ -57,11 +57,11 @@ func seedBoundProductionDouyinTask(t *testing.T, db *gorm.DB) (*Service, Product
 	stock := 5
 	mapping := product.DouyinDraftMapping{
 		Platform: "douyin_shop", ProductID: productID.String(), ShopID: shopID.String(), CategoryID: "20219", Title: "Frozen title",
-		SKUs: []product.DouyinDraftSKU{{LocalSkuID: uuid.NewString(), Name: "Default", Price: 99, Stock: &stock}},
+		SKUs: []product.DouyinDraftSKU{{LocalSKUID: uuid.NewString(), Name: "Default", Price: 99, Stock: &stock}},
 	}
 	request := platformdouyin.CreateProductDraftRequest{
 		OuterProductID: productID.String(), Name: "Frozen title", CategoryLeafID: "20219",
-		SpecPricesV2: []map[string]any{{"outer_sku_id": mapping.SKUs[0].LocalSkuID, "price": int64(9900), "stock_num": stock}},
+		SpecPricesV2: []map[string]any{{"outer_sku_id": mapping.SKUs[0].LocalSKUID, "price": int64(9900), "stock_num": stock}},
 	}
 	mappingRaw, err := json.Marshal(mapping)
 	require.NoError(t, err)
@@ -120,7 +120,7 @@ func seedBoundProductionDouyinTask(t *testing.T, db *gorm.DB) (*Service, Product
 	}
 	require.NoError(t, db.Create(&task).Error)
 	require.NoError(t, db.Model(&operationtask.ExecutionAttempt{}).Where("id = ?", attemptID).Update("downstream_task_id", task.ID).Error)
-	return &Service{DB: db, WriteControl: &productioncontrolp10.Service{}, OperationResults: &recordingOperationResultSink{}}, task, frozen
+	return &Service{DB: db, WriteControl: &productioncontrol.Service{}, OperationResults: &recordingOperationResultSink{}}, task, frozen
 }
 
 type recordingOperationResultSink struct{}
@@ -183,7 +183,7 @@ func TestProcessDouyinDraftTaskRejectsUnboundLegacyTaskBeforePlatformAccess(t *t
 		Mode: PublishModeSaveAsPlatformDraft, PublishMode: PublishModeSaveAsPlatformDraft,
 	}
 	require.NoError(t, db.Create(&task).Error)
-	svc := &Service{DB: db, WriteControl: &productioncontrolp10.Service{}, OperationResults: &recordingOperationResultSink{}}
+	svc := &Service{DB: db, WriteControl: &productioncontrol.Service{}, OperationResults: &recordingOperationResultSink{}}
 	err := svc.ProcessQueuedTask(context.Background(), task.ID, "test-worker")
 	require.ErrorIs(t, err, ErrDouyinOperationTaskRequired)
 
@@ -262,7 +262,7 @@ func TestBuildDouyinDraftSnapshotFreezesMappedContent(t *testing.T) {
 	})
 	require.NoError(t, err)
 	skus, err := json.Marshal([]product.DouyinDraftSKU{{
-		LocalSkuID: uuid.NewString(), Name: "Default", Price: 88.8, Stock: ptrInt(3),
+		LocalSKUID: uuid.NewString(), Name: "Default", Price: 88.8, Stock: ptrInt(3),
 	}})
 	require.NoError(t, err)
 	require.NoError(t, db.Create(&product.ProductPlatformPublishConfig{
@@ -301,7 +301,7 @@ func TestBuildDouyinProductPayloadRejectsUnuploadedImages(t *testing.T) {
 		"detailImages": []any{},
 	})
 	skus, _ := json.Marshal([]product.DouyinDraftSKU{{
-		LocalSkuID: uuid.NewString(), Name: "Default", Price: 99, Stock: ptrInt(10),
+		LocalSKUID: uuid.NewString(), Name: "Default", Price: 99, Stock: ptrInt(10),
 	}})
 	price, _ := json.Marshal(product.DouyinDraftPrice{Currency: "CNY", Min: ptrFloat(99)})
 	stock, _ := json.Marshal(product.DouyinDraftStock{Total: ptrInt(10)})
@@ -341,7 +341,7 @@ func TestBuildDouyinProductPayloadUsesUploadedImagesNotRaw(t *testing.T) {
 		"detailImages": []any{},
 	})
 	skus, _ := json.Marshal([]product.DouyinDraftSKU{{
-		LocalSkuID: uuid.NewString(), Name: "Red", Price: 88.8, Stock: ptrInt(3), Attrs: map[string]any{"颜色": "红"},
+		LocalSKUID: uuid.NewString(), Name: "Red", Price: 88.8, Stock: ptrInt(3), Attrs: map[string]any{"颜色": "红"},
 	}})
 	price, _ := json.Marshal(product.DouyinDraftPrice{Currency: "CNY", Min: ptrFloat(88.8)})
 	stock, _ := json.Marshal(product.DouyinDraftStock{Total: ptrInt(3)})
@@ -377,7 +377,7 @@ func TestBuildDouyinProductPayloadRejectsInvalidSKUPrice(t *testing.T) {
 			"platformImageUrl": "https://p3-aio.ecombdimg.com/obj/test.jpg", "uploadStatus": "uploaded",
 		}},
 	})
-	skus, _ := json.Marshal([]product.DouyinDraftSKU{{LocalSkuID: uuid.NewString(), Name: "Bad", Price: 0, Stock: ptrInt(1)}})
+	skus, _ := json.Marshal([]product.DouyinDraftSKU{{LocalSKUID: uuid.NewString(), Name: "Bad", Price: 0, Stock: ptrInt(1)}})
 	price, _ := json.Marshal(product.DouyinDraftPrice{Currency: "CNY", Min: ptrFloat(0)})
 	if err := db.Create(&product.ProductPlatformPublishConfig{
 		ProductID: pid, Platform: "douyin_shop", CategoryID: "20219",

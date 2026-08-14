@@ -22,7 +22,7 @@ const (
 	PermOperationLogView   = "operationlog.view"
 	PermStoreView          = "store.view"
 	PermStoreOperate       = "store.operate"
-	// P4 security permissions
+	// Security permissions
 	PermSecuritySessionManage = "security.session.manage"
 	PermSecurityKeyRotate     = "security.key.rotate"
 	PermAuditRead             = "audit.read"
@@ -34,7 +34,7 @@ const (
 	PermConfigManage          = "config.manage"
 	PermExportRead            = "export.read"
 	PermExportCreate          = "export.create"
-	// P5 observability permissions
+	// Observability permissions
 	PermObservabilityRead   = "observability.read"
 	PermObservabilityManage = "observability.manage"
 	PermAlertsRead          = "alerts.read"
@@ -42,13 +42,13 @@ const (
 	PermAlertsSilence       = "alerts.silence"
 	PermSLORead             = "slo.read"
 	PermSLOManage           = "slo.manage"
-	// P8 operation task permissions
+	// Operation task permissions
 	PermOperationTaskEdit      = "operationtask.edit"
 	PermOperationTaskReview    = "operationtask.review"
 	PermOperationTaskExecute   = "operationtask.execute"
 	PermOperationTaskRetry     = "operationtask.retry"
 	PermOperationTaskAuditRead = "operationtask.audit.read"
-	// P9 inventory sync permissions
+	// Inventory sync permissions
 	PermInventorySyncRead       = "inventory_sync.read"
 	PermInventorySyncRun        = "inventory_sync.run"
 	PermInventorySyncRerun      = "inventory_sync.rerun"

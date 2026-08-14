@@ -340,7 +340,7 @@ func (s *Service) ListPublicationsByProduct(c *gin.Context, productID uuid.UUID)
 			PublishStatus:      rows[i].PublishStatus,
 			PublishedAt:        rows[i].PublishedAt,
 			LastSyncedAt:       rows[i].LastSyncedAt,
-			SkuBindingSyncedAt: rows[i].SkuBindingSyncedAt,
+			SKUBindingSyncedAt: rows[i].SKUBindingSyncedAt,
 			SKUMappingSummary:  sum,
 		})
 	}

@@ -6,7 +6,7 @@
 ## 上线前检查顺序
 
 1. 备份 PostgreSQL（`orders` / `order_items`）
-2. 启动应用：`migrateDouyinPhase102Indexes` **自动**检测重复订单；有重复则启动失败并输出 `sample_ids`（见 [`DOUYIN_DUPLICATE_DATA_REPAIR.md`](DOUYIN_DUPLICATE_DATA_REPAIR.md)）
+2. 启动应用：`migrateDouyinOrderIdempotencyIndexes` **自动**检测重复订单；有重复则启动失败并输出 `sample_ids`（见 [`DOUYIN_DUPLICATE_DATA_REPAIR.md`](DOUYIN_DUPLICATE_DATA_REPAIR.md)）
 3. 设置 → 存储 → **测试公网访问**
 4. 设置 → 平台开放配置 → 抖店 → **生产预检**
 5. 确认 `real_api_enabled`、订单/库存/商品草稿开关符合预期
@@ -87,6 +87,6 @@ API：`GET/POST /api/v1/platform/douyin/runtime-status/*`
 ## 相关文档
 
 - [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md)
-- [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md)
+- [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md)
 - [`DOUYIN_DUPLICATE_DATA_REPAIR.md`](DOUYIN_DUPLICATE_DATA_REPAIR.md)
 - [`DOUYIN_ROLLBACK_RUNBOOK.md`](DOUYIN_ROLLBACK_RUNBOOK.md)

@@ -51,7 +51,7 @@ type ConversationOrderSummary struct {
 	Currency              string         `json:"currency"`
 	TotalAmount           float64        `json:"totalAmount"`
 	ItemCount             int            `json:"itemCount"`
-	SkuMatchStatus        string         `json:"skuMatchStatus,omitempty"`
+	SKUMatchStatus        string         `json:"skuMatchStatus,omitempty"`
 	InventoryDeductStatus string         `json:"inventoryDeductStatus,omitempty"`
 	OrderedAt             *time.Time     `json:"orderedAt,omitempty"`
 	LatestShipmentStatus  string         `json:"latestShipmentStatus,omitempty"`
@@ -83,7 +83,7 @@ type ListQuery struct {
 	Status                string
 	PaymentStatus         string
 	FulfillmentStatus     string
-	SkuMatchStatus        string
+	SKUMatchStatus        string
 	InventoryDeductStatus string
 	SyncStatus            string
 	HasException          bool
@@ -107,9 +107,9 @@ type ListOrderRow struct {
 	Currency              string     `json:"currency"`
 	TotalAmount           float64    `json:"totalAmount"`
 	ItemCount             int        `json:"itemCount"`
-	SkuMatchStatus        string     `json:"skuMatchStatus,omitempty"`
-	SkuMatchedCount       int        `json:"skuMatchedCount"`
-	SkuTotalCount         int        `json:"skuTotalCount"`
+	SKUMatchStatus        string     `json:"skuMatchStatus,omitempty"`
+	SKUMatchedCount       int        `json:"skuMatchedCount"`
+	SKUTotalCount         int        `json:"skuTotalCount"`
 	InventoryDeductStatus string     `json:"inventoryDeductStatus,omitempty"`
 	SyncStatus            string     `json:"syncStatus,omitempty"`
 	OpenExceptionCount    int        `json:"openExceptionCount"`
@@ -169,7 +169,7 @@ func orderCursorScope(c *gin.Context, db *gorm.DB, q ListQuery, tenantID int64) 
 		"status":                q.Status,
 		"paymentStatus":         q.PaymentStatus,
 		"fulfillmentStatus":     q.FulfillmentStatus,
-		"skuMatchStatus":        q.SkuMatchStatus,
+		"skuMatchStatus":        q.SKUMatchStatus,
 		"inventoryDeductStatus": q.InventoryDeductStatus,
 		"syncStatus":            q.SyncStatus,
 		"hasException":          q.HasException,
@@ -589,7 +589,7 @@ func (s *Service) List(c *gin.Context, q ListQuery) (*ListResult, error) {
 	}
 	enrichListRows(c.Request.Context(), s.DB, rows, out)
 
-	if q.SkuMatchStatus != "" || q.InventoryDeductStatus != "" || q.HasException || q.SyncStatus != "" {
+	if q.SKUMatchStatus != "" || q.InventoryDeductStatus != "" || q.HasException || q.SyncStatus != "" {
 		out = applyListPostFilters(out, q)
 		total = int64(len(out))
 	}
@@ -704,7 +704,7 @@ func (s *Service) ConversationSummary(c *gin.Context, orderID uuid.UUID) (*Conve
 	skuSt := ""
 	invSt := ""
 	if len(outRows) > 0 {
-		skuSt = outRows[0].SkuMatchStatus
+		skuSt = outRows[0].SKUMatchStatus
 		invSt = outRows[0].InventoryDeductStatus
 	}
 
@@ -718,7 +718,7 @@ func (s *Service) ConversationSummary(c *gin.Context, orderID uuid.UUID) (*Conve
 		Currency:              o.Currency,
 		TotalAmount:           o.TotalAmount,
 		ItemCount:             int(itemCount),
-		SkuMatchStatus:        skuSt,
+		SKUMatchStatus:        skuSt,
 		InventoryDeductStatus: invSt,
 		OrderedAt:             o.OrderedAt,
 		LatestShipmentStatus:  lat,

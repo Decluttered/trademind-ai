@@ -16,7 +16,7 @@ const (
 	ErrCodeKeyringConfigInvalid        = "KEYRING_CONFIGURATION_INVALID"
 )
 
-// AuthConfig holds Phase P4 authentication and session settings.
+// AuthConfig holds authentication and session settings.
 type AuthConfig struct {
 	SessionMode                  string
 	AccessTokenTTLMinutes        int

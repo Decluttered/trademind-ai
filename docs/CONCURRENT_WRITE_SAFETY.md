@@ -32,7 +32,7 @@
 | `product_publish_batches.idempotency_key` | 刊登批次 |
 | `webhook_events (platform, event_id)` | Webhook |
 
-P2.1 迁移：`migrate_p2_1.go` 增加 `business_event_key` 部分唯一索引。
+任务执行跟踪迁移：`migrate_task_execution_tracking.go` 增加 `business_event_key` 部分唯一索引。
 
 ### L3：任务 execution 身份
 

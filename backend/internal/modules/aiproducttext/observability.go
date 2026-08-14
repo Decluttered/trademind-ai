@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// ObserveAIText records AI text metrics through the shared P5 catalog.
+// ObserveAIText records AI text metrics through the shared metrics catalog.
 func (s *Service) ObserveAIText(provider, operation, event, result, errorClass string, dur time.Duration) {
 	if s == nil || s.Metrics == nil {
 		return

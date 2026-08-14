@@ -136,7 +136,7 @@ func ensureBootstrapAdminPrivileges(ctx context.Context, db *gorm.DB, cfg *confi
 		}
 	}
 	if !found {
-		if cfg.P7.PerformanceTestMode && cfg.AppEnv == "performance" {
+		if cfg.RuntimeLimits.PerformanceTestMode && cfg.AppEnv == "performance" {
 			return createBootstrapAdmin(ctx, db, cfg, id, log)
 		}
 		return nil
@@ -149,7 +149,7 @@ func ensureBootstrapAdminPrivileges(ctx context.Context, db *gorm.DB, cfg *confi
 	if st := strings.TrimSpace(strings.ToLower(u.Status)); st == "disabled" || st == "inactive" {
 		updates["status"] = StatusActive
 	}
-	if cfg.P7.PerformanceTestMode && cfg.AppEnv == config.EnvPerformance {
+	if cfg.RuntimeLimits.PerformanceTestMode && cfg.AppEnv == config.EnvPerformance {
 		password := strings.TrimSpace(cfg.BootstrapAdminPassword)
 		if password == "" {
 			password = perfSystemAdminPassword()

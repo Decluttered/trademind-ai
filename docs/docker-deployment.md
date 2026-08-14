@@ -217,7 +217,7 @@ P10 maps pre-production to the existing `staging` profile and uses the separate 
 ```bash
 cp .env.example .env
 # edit .env: APP_ENV=staging and fill this host's non-secret identifiers
-node scripts/p10-preproduction-preflight.mjs --mode config
+node scripts/preproduction-preflight.mjs --mode config
 deploy/scripts/deploy-preproduction.sh
 ```
 
@@ -225,7 +225,7 @@ Inject `PREPRODUCTION_DB_PASSWORD`, `PREPRODUCTION_REDIS_PASSWORD`, `PREPRODUCTI
 
 The deployment waits for PostgreSQL and Redis health, starts the backend migration path with its advisory lock, and accepts the deployment only after `/health/ready` reports database, Redis, migrations, and `staging` as ready. Backup, isolated restore, application rollback, and non-destructive teardown entry points are under `deploy/scripts/*-preproduction.sh`.
 
-External infrastructure status must be supplied at runtime to `node scripts/p10-preproduction-preflight.mjs --mode external`; generated evidence JSON is not retained in the working tree. Until host, PostgreSQL, Redis, domain, credential availability, deployment rehearsal, and teardown rehearsal are all proven, pre-production remains blocked.
+External infrastructure status must be supplied at runtime to `node scripts/preproduction-preflight.mjs --mode external`; generated evidence JSON is not retained in the working tree. Until host, PostgreSQL, Redis, domain, credential availability, deployment rehearsal, and teardown rehearsal are all proven, pre-production remains blocked.
 
 The full-stack development Compose explicitly passes the P10 L0 variables listed in [`env.md`](env.md). It rejects non-L0 and all real Provider/network/credential/read, mutation, Worker, and automatic-retry flags. It is only suitable for repository-side/manual fixture checks and must not be treated as the independent pre-production environment.
 

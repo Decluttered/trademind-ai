@@ -6,7 +6,7 @@ import (
 
 // CalculateBody binds POST /api/v1/pricing/calculate.
 type CalculateBody struct {
-	ProductSkuID *uuid.UUID `json:"productSkuId"`
+	ProductSKUID *uuid.UUID `json:"productSkuId"`
 	BasePrice    *float64   `json:"basePrice"`
 	CostPrice    *float64   `json:"costPrice"`
 	Platform     string     `json:"platform"`
@@ -32,7 +32,7 @@ type CalculateResponse struct {
 type ProductApplyBody struct {
 	Platform string      `json:"platform"`
 	Rule     Rule        `json:"rule"`
-	SkuIDs   []uuid.UUID `json:"skuIds"`
+	SKUIDs   []uuid.UUID `json:"skuIds"`
 	Confirm  bool        `json:"confirm"`
 }
 
@@ -55,7 +55,7 @@ type BatchApplyBody struct {
 
 // PreviewLine is one SKU row in apply preview.
 type PreviewLine struct {
-	ProductSkuID        string   `json:"productSkuId"`
+	ProductSKUID        string   `json:"productSkuId"`
 	ProductID           string   `json:"productId"`
 	SKUCode             string   `json:"skuCode"`
 	SKUName             string   `json:"skuName"`
@@ -72,7 +72,7 @@ type PreviewLine struct {
 // ApplySummary is returned after apply operations.
 type ApplySummary struct {
 	ProductCount int           `json:"productCount"`
-	SkuCount     int           `json:"skuCount"`
+	SKUCount     int           `json:"skuCount"`
 	Updated      int           `json:"updated"`
 	Skipped      int           `json:"skipped"`
 	Preview      []PreviewLine `json:"preview,omitempty"`

@@ -7,7 +7,7 @@ import (
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
 )
 
-// DouyinProvider is a thin facade exposing all P3 capability groups.
+// DouyinProvider is a thin facade exposing the supported capability groups.
 // All methods delegate to *Client — no business logic lives here.
 type DouyinProvider interface {
 	// Auth / token
@@ -34,18 +34,18 @@ type DouyinProvider interface {
 	GetOrderDetail(ctx context.Context, shopOrderID string) (*OrderDetail, error)
 
 	// Inventory
-	SyncStock(ctx context.Context, req SkuSyncStockRequest) error
+	SyncStock(ctx context.Context, req SKUSyncStockRequest) error
 	GetSKUStock(ctx context.Context, shopID, platformProductID, platformSKUID string) (int, error)
 
 	// Customer messaging — gated by contract verification
 	CustomerCapability() CustomerCapability
 
-	// Brand — explicitly unsupported in P3
+	// Brand is explicitly unsupported by the current provider contract.
 	BrandStatus() BrandSupportStatus
 }
 
 // SkuSyncStockRequest is the normalized sku.syncStock input.
-type SkuSyncStockRequest struct {
+type SKUSyncStockRequest struct {
 	ShopID            string
 	PlatformProductID string
 	PlatformSKUID     string
@@ -115,7 +115,7 @@ func (f *clientFacade) GetOrderDetail(ctx context.Context, shopOrderID string) (
 	return f.c.GetOrderDetail(ctx, shopOrderID)
 }
 
-func (f *clientFacade) SyncStock(ctx context.Context, req SkuSyncStockRequest) error {
+func (f *clientFacade) SyncStock(ctx context.Context, req SKUSyncStockRequest) error {
 	params := map[string]any{
 		"product_id":  req.PlatformProductID,
 		"sku_id":      req.PlatformSKUID,
@@ -123,7 +123,7 @@ func (f *clientFacade) SyncStock(ctx context.Context, req SkuSyncStockRequest) e
 		"incremental": false,
 	}
 	var out map[string]any
-	return f.c.Do(ctx, MethodSkuSyncStock, params, &out)
+	return f.c.Do(ctx, MethodSKUSyncStock, params, &out)
 }
 
 func (f *clientFacade) GetSKUStock(ctx context.Context, shopID, platformProductID, platformSKUID string) (int, error) {

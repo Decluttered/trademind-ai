@@ -1,6 +1,6 @@
 import { Alert, Button, Space, Tag, Tooltip, Typography } from 'antd';
 import { TaskJsonBlock } from '@/components/ui';
-import type { InventorySyncAPIError } from '@/services/inventorySyncP9';
+import type { InventorySyncAPIError } from '@/services/inventorySync';
 
 const { Text } = Typography;
 

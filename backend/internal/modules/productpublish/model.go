@@ -75,7 +75,7 @@ type ProductPublication struct {
 	ExternalURL        string         `gorm:"type:text" json:"externalUrl,omitempty"`
 	PublishedAt        *time.Time     `json:"publishedAt,omitempty"`
 	LastSyncedAt       *time.Time     `json:"lastSyncedAt,omitempty"`
-	SkuBindingSyncedAt *time.Time     `json:"skuBindingSyncedAt,omitempty"`
+	SKUBindingSyncedAt *time.Time     `json:"skuBindingSyncedAt,omitempty"`
 	RawData            datatypes.JSON `gorm:"type:jsonb" json:"rawData,omitempty"`
 	CreatedBy          *uuid.UUID     `gorm:"type:char(36);index" json:"createdBy,omitempty"`
 }

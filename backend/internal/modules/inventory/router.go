@@ -9,9 +9,9 @@ func Register(g *gin.RouterGroup, h *Handler) {
 	}
 	g.POST("/products/:id/skus/:skuId/adjust-stock", h.AdjustStock)
 	g.GET("/products/:id/skus/:skuId/inventory-logs", h.ListSKULogs)
-	g.GET("/products/:id/publication-skus", h.ListPublicationSkuRows)
+	g.GET("/products/:id/publication-skus", h.ListPublicationSKURows)
 
-	g.POST("/product-publication-skus/:id/sync-inventory", h.SyncPublicationSku)
+	g.POST("/product-publication-skus/:id/sync-inventory", h.SyncPublicationSKU)
 	g.POST("/products/:id/sync-inventory", h.BatchSyncProduct)
 
 	g.GET("/inventory", h.ListCenter)

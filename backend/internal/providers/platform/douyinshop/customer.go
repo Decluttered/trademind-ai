@@ -9,7 +9,7 @@ import (
 // CapCustomerMessage is the capability identifier for Douyin customer messaging.
 const CapCustomerMessage = "customer_message"
 
-// CustomerCapability is the P3 customer messaging facade.
+// CustomerCapability is the customer messaging facade.
 // All live methods are gated behind contract verification.
 type CustomerCapability interface {
 	// IsEnabled returns true only when the platform has confirmed the IM API contract.

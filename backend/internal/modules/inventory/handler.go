@@ -145,8 +145,8 @@ func (h *Handler) ListSKULogs(c *gin.Context) {
 	})
 }
 
-// ListPublicationSkuRows GET /products/:id/publication-skus
-func (h *Handler) ListPublicationSkuRows(c *gin.Context) {
+// ListPublicationSKURows GET /products/:id/publication-skus
+func (h *Handler) ListPublicationSKURows(c *gin.Context) {
 	if h == nil || h.Svc == nil {
 		response.Fail(c, 500, response.CodeInternalError, "inventory unavailable")
 		return
@@ -162,7 +162,7 @@ func (h *Handler) ListPublicationSkuRows(c *gin.Context) {
 			filter = &u
 		}
 	}
-	rows, err := h.Svc.ListPublicationSkus(c.Request.Context(), pid, filter)
+	rows, err := h.Svc.ListPublicationSKUs(c.Request.Context(), pid, filter)
 	if err != nil {
 		response.HandleError(c, err)
 		return
@@ -170,8 +170,8 @@ func (h *Handler) ListPublicationSkuRows(c *gin.Context) {
 	response.OK(c, gin.H{"list": rows})
 }
 
-// SyncPublicationSku POST /product-publication-skus/:id/sync-inventory
-func (h *Handler) SyncPublicationSku(c *gin.Context) {
+// SyncPublicationSKU POST /product-publication-skus/:id/sync-inventory
+func (h *Handler) SyncPublicationSKU(c *gin.Context) {
 	if h == nil || h.Svc == nil {
 		response.Fail(c, 500, response.CodeInternalError, "inventory unavailable")
 		return
@@ -184,7 +184,7 @@ func (h *Handler) SyncPublicationSku(c *gin.Context) {
 		response.Fail(c, 400, response.CodeBadRequest, "invalid id")
 		return
 	}
-	var body PublicationSkuSyncBody
+	var body PublicationSKUSyncBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.Fail(c, 400, response.CodeBadRequest, "invalid json body")
 		return
@@ -343,7 +343,7 @@ func (h *Handler) ListCenter(c *gin.Context) {
 		Platform:      strings.TrimSpace(c.Query("platform")),
 		StockStatus:   strings.TrimSpace(c.Query("stockStatus")),
 		AlertStatus:   strings.TrimSpace(c.Query("alertStatus")),
-		SkuBindStatus: strings.TrimSpace(c.Query("skuBindStatus")),
+		SKUBindStatus: strings.TrimSpace(c.Query("skuBindStatus")),
 		SyncStatus:    strings.TrimSpace(c.Query("syncStatus")),
 		HasException:  parseBoolQuery(c, "hasException"),
 		Page:          atoiQ(c, "page", 1),
@@ -360,7 +360,7 @@ func (h *Handler) ListCenter(c *gin.Context) {
 	}
 	if raw := strings.TrimSpace(c.Query("productSkuId")); raw != "" {
 		if u, err := uuid.Parse(raw); err == nil {
-			q.ProductSkuID = &u
+			q.ProductSKUID = &u
 		}
 	}
 	if raw := strings.TrimSpace(c.Query("shopId")); raw != "" {
@@ -415,7 +415,7 @@ func (h *Handler) ListAlerts(c *gin.Context) {
 	}
 	if raw := strings.TrimSpace(c.Query("productSkuId")); raw != "" {
 		if u, err := uuid.Parse(raw); err == nil {
-			q.ProductSkuID = &u
+			q.ProductSKUID = &u
 		}
 	}
 	if raw := strings.TrimSpace(c.Query("shopId")); raw != "" {
@@ -731,12 +731,12 @@ func (h *Handler) RetryInventorySyncTasksBatch(c *gin.Context) {
 		response.Fail(c, 400, response.CodeBadRequest, "invalid json body")
 		return
 	}
-	if len(body.TaskIds) == 0 {
+	if len(body.TaskIDs) == 0 {
 		response.Fail(c, 400, response.CodeBadRequest, "taskIds required")
 		return
 	}
-	ids := make([]uuid.UUID, 0, len(body.TaskIds))
-	for _, raw := range body.TaskIds {
+	ids := make([]uuid.UUID, 0, len(body.TaskIDs))
+	for _, raw := range body.TaskIDs {
 		u, err := uuid.Parse(strings.TrimSpace(raw))
 		if err != nil {
 			response.Fail(c, 400, response.CodeBadRequest, "invalid task id")

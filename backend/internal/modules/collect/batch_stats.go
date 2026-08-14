@@ -345,7 +345,7 @@ func (s *Service) enrichTaskDTO(ctx context.Context, t *CollectTask) TaskDTO {
 	}
 	if t.Status == StatusFailed || t.Status == StatusRetrying {
 		sameOK := s.sameURLCollectSucceeded(ctx, t.TenantID, t.Source, t.SourceURL, t.ID)
-		dto.SameUrlSucceededElsewhere = sameOK
+		dto.SameURLSucceededElsewhere = sameOK
 		dto.FailureHint = collectFailureHint(code, t.Source, sameOK)
 	}
 	return dto

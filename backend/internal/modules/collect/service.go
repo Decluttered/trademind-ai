@@ -50,12 +50,12 @@ type Service struct {
 	RetryMaxDelaySec  int
 
 	// 1688 batch throttling (env defaults; settings group collector overrides at runtime).
-	Batch1688Concurrency int
-	Batch1688DelayMinMs  int
-	Batch1688DelayMaxMs  int
-	BatchRetryOnBlocked  bool
-	BatchRetryOnTimeout  bool
-	Batch1688MaxRetries  int
+	Source1688BatchConcurrency int
+	Source1688BatchDelayMinMs  int
+	Source1688BatchDelayMaxMs  int
+	BatchRetryOnBlocked        bool
+	BatchRetryOnTimeout        bool
+	Source1688BatchMaxRetries  int
 
 	Settings *settings.Service
 

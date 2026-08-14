@@ -64,7 +64,7 @@ func TestInventorySyncMissingProductBinding(t *testing.T) {
 	}
 }
 
-func TestInventorySyncMissingSkuBinding(t *testing.T) {
+func TestInventorySyncMissingSKUBinding(t *testing.T) {
 	p := provider{}
 	_, err := p.SyncInventory(context.Background(), platformp.SyncInventoryRequest{
 		ShopID:            uuid.New(),
@@ -119,7 +119,7 @@ func TestClientSyncStockSuccess(t *testing.T) {
 	}
 
 	var data map[string]any
-	if err := client.Do(context.Background(), MethodSkuSyncStock, map[string]any{
+	if err := client.Do(context.Background(), MethodSKUSyncStock, map[string]any{
 		"product_id":  "3539925204033339668",
 		"sku_id":      "1737398770243598",
 		"stock_num":   42,
@@ -213,7 +213,7 @@ func TestInventorySyncTokenRefreshPath(t *testing.T) {
 	}
 
 	var data map[string]any
-	if err := client.Do(context.Background(), MethodSkuSyncStock, map[string]any{
+	if err := client.Do(context.Background(), MethodSKUSyncStock, map[string]any{
 		"product_id": "1", "sku_id": "2", "stock_num": 3, "incremental": false,
 	}, &data); err != nil {
 		t.Fatalf("expected refresh then sync success, got %v", err)
@@ -244,7 +244,7 @@ func TestInventorySyncLogsDoNotLeakSecrets(t *testing.T) {
 			}, nil
 		}),
 	}
-	_ = client.Do(context.Background(), MethodSkuSyncStock, map[string]any{
+	_ = client.Do(context.Background(), MethodSKUSyncStock, map[string]any{
 		"product_id": "1", "sku_id": "2", "stock_num": 1, "incremental": false,
 	}, &map[string]any{})
 	raw := logged.Method + logged.ErrorCode

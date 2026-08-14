@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// ObserveInventory records inventory metrics through the shared P5 catalog.
+// ObserveInventory records inventory metrics through the shared metrics catalog.
 func (s *Service) ObserveInventory(platform, operation, event, result, errorClass string, count int, dur time.Duration) {
 	if s == nil || s.Metrics == nil {
 		return

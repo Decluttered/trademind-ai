@@ -8,7 +8,7 @@ import (
 
 	"github.com/trademind-ai/trademind/backend/internal/config"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/authutil"
-	"github.com/trademind-ai/trademind/backend/internal/pkg/p7diag"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/runtimediag"
 	"gorm.io/gorm"
 )
 
@@ -39,14 +39,14 @@ func (g *LoginGuard) CheckAllowed(ctx context.Context, account, ip string) error
 		}
 		var row AuthLoginAttempt
 		stageStart := time.Now()
-		timing, err := p7diag.TimedGorm(g.DB, func() error {
+		timing, err := runtimediag.TimedGorm(g.DB, func() error {
 			return g.DB.WithContext(ctx).Where("account_key = ?", key).First(&row).Error
 		})
 		outcome := authOutcome(err)
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "failed_attempt_read", outcome, stageStart)
-		p7diag.ObserveDBOperation(p7diag.RouteAuthInvalidLogin, "failed_attempt_read", outcome, stageStart)
-		p7diag.ObserveSQL(p7diag.RouteAuthInvalidLogin, "auth", "auth.failed_attempt_read", "select", "auth_login_attempts", outcome, false, timing)
-		p7diag.Count(p7diag.RouteAuthInvalidLogin, "failedAttemptReadCount", 1)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "failed_attempt_read", outcome, stageStart)
+		runtimediag.ObserveDBOperation(runtimediag.RouteAuthInvalidLogin, "failed_attempt_read", outcome, stageStart)
+		runtimediag.ObserveSQL(runtimediag.RouteAuthInvalidLogin, "auth", "auth.failed_attempt_read", "select", "auth_login_attempts", outcome, false, timing)
+		runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "failedAttemptReadCount", 1)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			continue
 		}
@@ -77,14 +77,14 @@ func (g *LoginGuard) RecordFailure(ctx context.Context, account, ip string) erro
 		}
 		var row AuthLoginAttempt
 		stageStart := time.Now()
-		timing, err := p7diag.TimedGorm(g.DB, func() error {
+		timing, err := runtimediag.TimedGorm(g.DB, func() error {
 			return g.DB.WithContext(ctx).Where("account_key = ?", key).First(&row).Error
 		})
 		outcome := authOutcome(err)
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "failed_attempt_read", outcome, stageStart)
-		p7diag.ObserveDBOperation(p7diag.RouteAuthInvalidLogin, "failed_attempt_read", outcome, stageStart)
-		p7diag.ObserveSQL(p7diag.RouteAuthInvalidLogin, "auth", "auth.failed_attempt_read", "select", "auth_login_attempts", outcome, false, timing)
-		p7diag.Count(p7diag.RouteAuthInvalidLogin, "failedAttemptReadCount", 1)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "failed_attempt_read", outcome, stageStart)
+		runtimediag.ObserveDBOperation(runtimediag.RouteAuthInvalidLogin, "failed_attempt_read", outcome, stageStart)
+		runtimediag.ObserveSQL(runtimediag.RouteAuthInvalidLogin, "auth", "auth.failed_attempt_read", "select", "auth_login_attempts", outcome, false, timing)
+		runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "failedAttemptReadCount", 1)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			row = AuthLoginAttempt{
 				AccountKey:   key,
@@ -93,18 +93,18 @@ func (g *LoginGuard) RecordFailure(ctx context.Context, account, ip string) erro
 				LastFailedAt: &now,
 			}
 			stageStart = time.Now()
-			writeTiming, writeErr := p7diag.TimedGormRows(g.DB, func() (int64, error) {
+			writeTiming, writeErr := runtimediag.TimedGormRows(g.DB, func() (int64, error) {
 				res := g.DB.WithContext(ctx).Create(&row)
 				return res.RowsAffected, res.Error
 			})
 			writeOutcome := authOutcome(writeErr)
-			p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "failed_attempt_write", writeOutcome, stageStart)
-			p7diag.ObserveDBOperation(p7diag.RouteAuthInvalidLogin, "failed_attempt_write", writeOutcome, stageStart)
-			p7diag.ObserveSQL(p7diag.RouteAuthInvalidLogin, "auth", "auth.failed_attempt_update", "insert", "auth_login_attempts", writeOutcome, false, writeTiming)
+			runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "failed_attempt_write", writeOutcome, stageStart)
+			runtimediag.ObserveDBOperation(runtimediag.RouteAuthInvalidLogin, "failed_attempt_write", writeOutcome, stageStart)
+			runtimediag.ObserveSQL(runtimediag.RouteAuthInvalidLogin, "auth", "auth.failed_attempt_update", "insert", "auth_login_attempts", writeOutcome, false, writeTiming)
 			if writeErr != nil {
 				return writeErr
 			}
-			p7diag.Count(p7diag.RouteAuthInvalidLogin, "failedAttemptWriteCount", 1)
+			runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "failedAttemptWriteCount", 1)
 			continue
 		}
 		if err != nil {
@@ -120,18 +120,18 @@ func (g *LoginGuard) RecordFailure(ctx context.Context, account, ip string) erro
 			row.LockedUntil = &lockUntil
 		}
 		stageStart = time.Now()
-		writeTiming, writeErr := p7diag.TimedGormRows(g.DB, func() (int64, error) {
+		writeTiming, writeErr := runtimediag.TimedGormRows(g.DB, func() (int64, error) {
 			res := g.DB.WithContext(ctx).Save(&row)
 			return res.RowsAffected, res.Error
 		})
 		writeOutcome := authOutcome(writeErr)
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "failed_attempt_write", writeOutcome, stageStart)
-		p7diag.ObserveDBOperation(p7diag.RouteAuthInvalidLogin, "failed_attempt_write", writeOutcome, stageStart)
-		p7diag.ObserveSQL(p7diag.RouteAuthInvalidLogin, "auth", "auth.failed_attempt_update", "update", "auth_login_attempts", writeOutcome, false, writeTiming)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "failed_attempt_write", writeOutcome, stageStart)
+		runtimediag.ObserveDBOperation(runtimediag.RouteAuthInvalidLogin, "failed_attempt_write", writeOutcome, stageStart)
+		runtimediag.ObserveSQL(runtimediag.RouteAuthInvalidLogin, "auth", "auth.failed_attempt_update", "update", "auth_login_attempts", writeOutcome, false, writeTiming)
 		if writeErr != nil {
 			return writeErr
 		}
-		p7diag.Count(p7diag.RouteAuthInvalidLogin, "failedAttemptWriteCount", 1)
+		runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "failedAttemptWriteCount", 1)
 	}
 	return nil
 }

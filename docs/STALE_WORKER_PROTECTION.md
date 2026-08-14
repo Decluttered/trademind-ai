@@ -65,7 +65,7 @@ WHERE id = ? AND locked_by = ? AND execution_id = ? AND lock_version = ?
 | `/health` workers 块 | 进程级心跳是否正常 |
 | `ix_*_heartbeat_at` 索引 | 支持 Reaper 扫描 |
 
-配置状态中心 **P2.1 任务行级心跳与租约** 项（`configstatus/p21_status.go`）标记为 configured。
+配置状态中心 **任务行级心跳与租约** 项（`configstatus/domain_idempotency_status.go`）标记为 configured。
 
 ## 与「Production Ready」边界
 

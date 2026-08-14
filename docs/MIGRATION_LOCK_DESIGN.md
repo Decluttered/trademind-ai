@@ -67,7 +67,7 @@ MIGRATION_RUN_ON_STARTUP=false
 
 ## P2 迁移内容
 
-`migrateP2Reliability` 在 `AutoMigrate` 链中：
+`migrateReliabilitySchema` 在 `AutoMigrate` 链中：
 
 - 表：`idempotency_records`、`webhook_events`
 - 索引：客服 `client_message_id`、webhook 唯一、幂等状态/租约索引

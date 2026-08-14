@@ -14,7 +14,7 @@ import (
 
 type stockSettingsFilter struct {
 	ProductID     *uuid.UUID
-	ProductSkuIDs []uuid.UUID
+	ProductSKUIDs []uuid.UUID
 	Platform      string
 	ShopID        *uuid.UUID
 	Keyword       string
@@ -62,20 +62,20 @@ func parseStockSettingsFilter(body StockSettingsBatchPreviewBody) (stockSettings
 			f.AlertTypes = append(f.AlertTypes, t)
 		}
 	}
-	for _, raw := range body.ProductSkuIDs {
+	for _, raw := range body.ProductSKUIDs {
 		u, err := uuid.Parse(strings.TrimSpace(raw))
 		if err != nil {
 			return f, fmt.Errorf("invalid productSkuIds entry")
 		}
 		if u != uuid.Nil {
-			f.ProductSkuIDs = append(f.ProductSkuIDs, u)
+			f.ProductSKUIDs = append(f.ProductSKUIDs, u)
 		}
 	}
 	return f, nil
 }
 
 func stockSettingsNeedsConfirmAll(f stockSettingsFilter) bool {
-	if len(f.ProductSkuIDs) > 0 {
+	if len(f.ProductSKUIDs) > 0 {
 		return false
 	}
 	if f.ProductID != nil && *f.ProductID != uuid.Nil {
@@ -148,7 +148,7 @@ func (s *Service) buildStockSettingsGroupedTX(ctx context.Context, f stockSettin
 	base := s.buildSKUAlertBaseTX(ctx, skuAlertBaseQuery{
 		Keyword:       f.Keyword,
 		ProductID:     f.ProductID,
-		ProductSkuIDs: f.ProductSkuIDs,
+		ProductSKUIDs: f.ProductSKUIDs,
 		Platform:      f.Platform,
 		ShopID:        f.ShopID,
 		StockStatus:   f.StockStatus,
@@ -189,14 +189,14 @@ func (s *Service) PreviewStockSettingsBatch(ctx context.Context, body StockSetti
 	for _, r := range scans {
 		out = append(out, StockSettingsSampleSKU{
 			ProductID:    r.ProductID,
-			ProductSkuID: r.ID,
+			ProductSKUID: r.ID,
 			SKUCode:      r.SKUCode,
 			ProductTitle: r.ProductTitle,
 		})
 	}
 	return &StockSettingsBatchPreviewResult{
 		MatchedCount: total,
-		SampleSkus:   out,
+		SampleSKUs:   out,
 		Page:         page,
 		PageSize:     ps,
 		TotalPages:   pagesOf(total, ps),

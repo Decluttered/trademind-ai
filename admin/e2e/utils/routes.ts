@@ -5,7 +5,7 @@ import { productsResponse } from '../mocks/products';
 import { readinessResponse } from '../mocks/readiness';
 import { publishResponse, skuBindingsResponse } from '../mocks/publish';
 import { inventoryResponse } from '../mocks/inventory';
-import { inventorySyncP9Response } from '../mocks/inventory-sync-p9';
+import { inventorySyncResponse } from '../mocks/inventory-sync';
 import { imageProviderCapabilities } from '../mocks/image-providers';
 import { observabilityResponse } from '../mocks/observability';
 import { operationTaskResponse } from '../mocks/operation-tasks';
@@ -41,7 +41,7 @@ export async function routeAdminApi(page: Page) {
       observabilityResponse(path) ??
       platformRuntimeResponse(path) ??
       operationTaskResponse(path) ??
-      inventorySyncP9Response(path) ??
+      inventorySyncResponse(path) ??
       productsResponse(path) ??
       readinessResponse(path) ??
       publishResponse(path) ??

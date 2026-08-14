@@ -8,7 +8,7 @@ import (
 )
 
 func TestCustomerCapability_BlockedByContractVerification(t *testing.T) {
-	// Customer messaging is explicitly blocked in P3
+	// Customer messaging is explicitly blocked by the provider contract.
 	cap := douyinshop.NewFacade(nil)
 	if cap != nil {
 		t.Fatal("expected nil facade for nil client")

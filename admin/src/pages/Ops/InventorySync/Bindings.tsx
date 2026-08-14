@@ -10,7 +10,7 @@ import {
   listInventoryBindings,
   type InventorySyncAPIError,
   type SKUBinding,
-} from '@/services/inventorySyncP9';
+} from '@/services/inventorySync';
 import { formatDateTime } from '@/utils/formatTime';
 import {
   ActionSourceHint,
@@ -123,7 +123,7 @@ export default function InventorySyncBindingsPage() {
   return (
     <TmPageContainer
       title="SKU 绑定列表"
-      subTitle="查看 P9 fixture 绑定记录并进入历史"
+      subTitle="查看库存同步绑定记录并进入历史"
       extra={<Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>刷新</Button>}
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>

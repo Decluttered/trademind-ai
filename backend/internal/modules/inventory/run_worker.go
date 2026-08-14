@@ -142,11 +142,11 @@ func (s *Service) ProcessQueuedTask(ctx context.Context, taskID uuid.UUID, worke
 		return fail("product sku not found")
 	}
 
-	if taskRow.PublicationSkuID == nil || *taskRow.PublicationSkuID == uuid.Nil {
+	if taskRow.PublicationSKUID == nil || *taskRow.PublicationSKUID == uuid.Nil {
 		return fail("missing publication sku id")
 	}
 	var psku productpublish.ProductPublicationSKU
-	if err := s.DB.WithContext(ctx).First(&psku, "id = ?", *taskRow.PublicationSkuID).Error; err != nil {
+	if err := s.DB.WithContext(ctx).First(&psku, "id = ?", *taskRow.PublicationSKUID).Error; err != nil {
 		return fail("listing sku row not found")
 	}
 	var pub productpublish.ProductPublication
@@ -288,11 +288,11 @@ type skuStockSnap struct {
 
 func snapshotPublicationSKUStock(ctx context.Context, s *Service, task *InventorySyncTask) skuStockSnap {
 	out := skuStockSnap{}
-	if s == nil || task == nil || task.PublicationSkuID == nil {
+	if s == nil || task == nil || task.PublicationSKUID == nil {
 		return out
 	}
 	var psku productpublish.ProductPublicationSKU
-	if err := s.DB.WithContext(ctx).First(&psku, "id = ?", *task.PublicationSkuID).Error; err != nil {
+	if err := s.DB.WithContext(ctx).First(&psku, "id = ?", *task.PublicationSKUID).Error; err != nil {
 		return out
 	}
 	out.stockPtr = psku.Stock

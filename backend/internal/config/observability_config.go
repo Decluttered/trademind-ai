@@ -17,7 +17,7 @@ const (
 	ObsModeHybrid     = "hybrid"
 )
 
-// ObservabilityConfig holds P5 observability settings.
+// ObservabilityConfig holds observability settings.
 type ObservabilityConfig struct {
 	Enabled                  bool
 	Mode                     string

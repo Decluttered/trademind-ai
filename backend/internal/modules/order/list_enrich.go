@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	ListSkuMatchAllMatched = "all_matched"
-	ListSkuMatchPartial    = "partial"
-	ListSkuMatchUnmatched  = "unmatched"
-	ListSkuMatchAmbiguous  = "ambiguous"
-	ListSkuMatchNone       = "none"
+	ListSKUMatchAllMatched = "all_matched"
+	ListSKUMatchPartial    = "partial"
+	ListSKUMatchUnmatched  = "unmatched"
+	ListSKUMatchAmbiguous  = "ambiguous"
+	ListSKUMatchNone       = "none"
 
 	ListInvDeductNone    = "none"
 	ListInvDeductSuccess = "success"
@@ -105,38 +105,38 @@ func enrichListRows(ctx context.Context, db *gorm.DB, rows []Order, out []ListOr
 		out[i].DetailURL = "/orders/" + r.ID.String()
 
 		sa := skuAgg[r.ID]
-		out[i].SkuMatchedCount = sa.Matched
-		out[i].SkuTotalCount = sa.Total
-		out[i].SkuMatchStatus = deriveSkuMatchStatus(sa, itemCnt[r.ID])
+		out[i].SKUMatchedCount = sa.Matched
+		out[i].SKUTotalCount = sa.Total
+		out[i].SKUMatchStatus = deriveSKUMatchStatus(sa, itemCnt[r.ID])
 
 		ia := invAgg[r.ID]
-		out[i].InventoryDeductStatus = deriveInvDeductStatus(ia, out[i].SkuMatchStatus)
+		out[i].InventoryDeductStatus = deriveInvDeductStatus(ia, out[i].SKUMatchStatus)
 		out[i].OpenExceptionCount = countOpenExceptions(sa, ia)
 		out[i].SyncStatus = deriveSyncStatus(r)
 	}
 }
 
-func deriveSkuMatchStatus(sa skuAggRow, itemCount int) string {
+func deriveSKUMatchStatus(sa skuAggRow, itemCount int) string {
 	if itemCount == 0 {
-		return ListSkuMatchNone
+		return ListSKUMatchNone
 	}
 	if sa.Total == 0 {
-		return ListSkuMatchNone
+		return ListSKUMatchNone
 	}
 	if sa.Ambiguous > 0 {
-		return ListSkuMatchAmbiguous
+		return ListSKUMatchAmbiguous
 	}
 	if sa.Unmatched > 0 {
-		return ListSkuMatchUnmatched
+		return ListSKUMatchUnmatched
 	}
 	if sa.Matched >= sa.Total {
-		return ListSkuMatchAllMatched
+		return ListSKUMatchAllMatched
 	}
-	return ListSkuMatchPartial
+	return ListSKUMatchPartial
 }
 
 func deriveInvDeductStatus(ia invAggRow, skuStatus string) string {
-	if skuStatus == ListSkuMatchUnmatched || skuStatus == ListSkuMatchAmbiguous || skuStatus == ListSkuMatchNone {
+	if skuStatus == ListSKUMatchUnmatched || skuStatus == ListSKUMatchAmbiguous || skuStatus == ListSKUMatchNone {
 		if ia.SuccessCnt == 0 && ia.FailedCnt == 0 {
 			return ListInvDeductBlocked
 		}
@@ -173,12 +173,12 @@ func deriveSyncStatus(o Order) string {
 }
 
 func applyListPostFilters(items []ListOrderRow, q ListQuery) []ListOrderRow {
-	if q.SkuMatchStatus == "" && q.InventoryDeductStatus == "" && !q.HasException && q.SyncStatus == "" {
+	if q.SKUMatchStatus == "" && q.InventoryDeductStatus == "" && !q.HasException && q.SyncStatus == "" {
 		return items
 	}
 	out := make([]ListOrderRow, 0, len(items))
 	for _, r := range items {
-		if q.SkuMatchStatus != "" && r.SkuMatchStatus != q.SkuMatchStatus {
+		if q.SKUMatchStatus != "" && r.SKUMatchStatus != q.SKUMatchStatus {
 			continue
 		}
 		if q.InventoryDeductStatus != "" && r.InventoryDeductStatus != q.InventoryDeductStatus {

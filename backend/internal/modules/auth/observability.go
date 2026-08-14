@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-// ObserveAuth records auth metrics through the shared P5 catalog.
+// ObserveAuth records auth metrics through the shared metrics catalog.
 func (s *SessionService) ObserveAuth(event, result, reason, authMode string) {
 	if s == nil || s.Metrics == nil {
 		return
@@ -12,7 +12,7 @@ func (s *SessionService) ObserveAuth(event, result, reason, authMode string) {
 	s.Metrics.ObserveAuth(event, result, safeAuthReason(reason), safeAuthMode(authMode))
 }
 
-// ObserveAuth records auth metrics through the shared P5 catalog.
+// ObserveAuth records auth metrics through the shared metrics catalog.
 func (s *LoginService) ObserveAuth(event, result, reason, authMode string) {
 	if s == nil {
 		return

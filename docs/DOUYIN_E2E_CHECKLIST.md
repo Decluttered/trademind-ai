@@ -2,7 +2,7 @@
 
 > 用于 **真实抖店凭证 + 公网 Storage** 环境下的人工端到端验收。
 > 自动化回归由 GitHub Actions 在隔离环境执行；真实平台写链路必须获得外部生产审批，不由仓库脚本自动触发。
-> 通用人工签收见 [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md)。验收结论记录在 PR 或发布工单，不向仓库提交测试报告、截图或日志产物。
+> 通用人工签收见 [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md)。验收结论记录在 PR 或发布工单，不向仓库提交测试报告、截图或日志产物。
 
 ---
 
@@ -296,7 +296,7 @@
 - [ ] 默认 L0 配置未被提交；目标环境 L3 只允许平台草稿写，自动重试和库存 mutation 保持关闭
 - [ ] 脱敏结论已记录在 PR 或发布工单，未向仓库提交 JSON、Markdown 报告、截图或日志
 - [ ] `git diff --check` 无冲突标记
-- [ ] `P10_MANUAL_ACCEPTANCE_CHECKLIST.md` 中相关流程已人工签收
+- [ ] `PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md` 中相关流程已人工签收
 - [ ] `docs/PROGRESS.md` 已更新阶段状态
 
 在 CI、真实凭据、备份恢复、灰度、回滚、人工验收和发布工单全部签收前，结论只能是“代码具备受控生产执行候选能力”，不得记录为“已上线”。
@@ -305,7 +305,7 @@
 
 ## 6. 相关文档
 
-- [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md) — 当前人工验收清单
+- [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md) — 当前人工验收清单
 - [`DOUYIN_E2E_PRECHECK_GUIDE.md`](DOUYIN_E2E_PRECHECK_GUIDE.md) — 人工验收前置检查
 - [`DOUYIN_PRODUCTION_RUNBOOK.md`](DOUYIN_PRODUCTION_RUNBOOK.md) — 生产操作与灰度观察
 - [`docs/PROGRESS.md`](PROGRESS.md) — 阶段进度与遗留

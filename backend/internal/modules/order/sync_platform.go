@@ -140,7 +140,7 @@ func compactSyncedItemRaw(it SyncedOrderItemPayload) datatypes.JSON {
 	return b
 }
 
-func extSkuPtrFromPayload(it SyncedOrderItemPayload) *string {
+func extSKUPtrFromPayload(it SyncedOrderItemPayload) *string {
 	s := strings.TrimSpace(it.ExternalSKUID)
 	if s == "" {
 		return nil
@@ -363,7 +363,7 @@ func replaceSyncedChildren(tx *gorm.DB, orderID uuid.UUID, p SyncedOrderPayload)
 				"sku_name":        strings.TrimSpace(it.SKUName),
 				"sku_code":        strings.TrimSpace(it.SKUCode),
 				"seller_sku":      strings.TrimSpace(it.SellerSKU),
-				"external_sku_id": extSkuPtrFromPayload(it),
+				"external_sku_id": extSKUPtrFromPayload(it),
 				"quantity":        qty,
 				"unit_price":      it.UnitPrice,
 				"total_price":     it.TotalPrice,
@@ -381,7 +381,7 @@ func replaceSyncedChildren(tx *gorm.DB, orderID uuid.UUID, p SyncedOrderPayload)
 		row := OrderItem{
 			OrderID:        orderID,
 			ExternalItemID: &extCopy,
-			ExternalSKUID:  extSkuPtrFromPayload(it),
+			ExternalSKUID:  extSKUPtrFromPayload(it),
 			SellerSKU:      strings.TrimSpace(it.SellerSKU),
 			ProductTitle:   title,
 			SKUName:        strings.TrimSpace(it.SKUName),
@@ -434,7 +434,7 @@ func replaceSyncedChildren(tx *gorm.DB, orderID uuid.UUID, p SyncedOrderPayload)
 		lineRaw := compactSyncedItemRaw(it)
 		row := OrderItem{
 			OrderID:       orderID,
-			ExternalSKUID: extSkuPtrFromPayload(it),
+			ExternalSKUID: extSKUPtrFromPayload(it),
 			SellerSKU:     strings.TrimSpace(it.SellerSKU),
 			ProductTitle:  title,
 			SKUName:       strings.TrimSpace(it.SKUName),

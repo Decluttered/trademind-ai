@@ -125,7 +125,7 @@ const (
 	OperationTaskEventActorRule   = "rule"
 )
 
-// OperationTask is the P8 persisted operation task aggregate root.
+// OperationTask is the persisted operation task aggregate root.
 type OperationTask struct {
 	model.HardDeleteBase
 	TenantID        int64          `gorm:"not null;index:idx_operation_tasks_tenant_status_updated,priority:1;index:idx_operation_tasks_tenant_platform_status_updated,priority:1;index:idx_operation_tasks_tenant_task_type_created,priority:1;index:idx_operation_tasks_tenant_source,priority:1" json:"tenantId"`
@@ -262,7 +262,7 @@ func (ExecutionError) TableName() string { return "execution_errors" }
 func (ExecutionError) BeforeUpdate(tx *gorm.DB) error { return ErrImmutableRecord }
 func (ExecutionError) BeforeDelete(tx *gorm.DB) error { return ErrImmutableRecord }
 
-// OperationTaskEvent is the P8 domain timeline event for one operation task.
+// OperationTaskEvent is the domain timeline event for one operation task.
 type OperationTaskEvent struct {
 	model.HardDeleteBase
 	TenantID        int64          `gorm:"not null;index:idx_operation_task_events_task_sequence,priority:1;uniqueIndex:ux_operation_task_events_task_sequence,priority:1" json:"tenantId"`

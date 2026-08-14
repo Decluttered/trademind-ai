@@ -8,17 +8,17 @@ import (
 
 // Config error codes (API / logs).
 const (
-	ErrCodeConfigRequired                     = "CONFIG_REQUIRED"
-	ErrCodeConfigInvalid                      = "CONFIG_INVALID"
-	ErrCodeConfigInsecureDefault              = "CONFIG_INSECURE_DEFAULT"
-	ErrCodeProductionDevRouteEnabled          = "PRODUCTION_DEV_ROUTE_ENABLED"
-	ErrCodeStorageProviderInvalid             = "STORAGE_PROVIDER_INVALID"
-	ErrCodeStoragePublicBaseInvalid           = "STORAGE_PUBLIC_BASE_INVALID"
-	ErrCodeSecretKeyRequired                  = "SECRET_KEY_REQUIRED"
-	ErrCodeDatabaseNotReady                   = "DATABASE_NOT_READY"
-	ErrCodeRedisNotReady                      = "REDIS_NOT_READY"
-	ErrCodeProductionWebhookFallbackForbidden = "PRODUCTION_WEBHOOK_FALLBACK_FORBIDDEN"
-	ErrCodeP9ProductionCapabilityForbidden    = "production_capability_forbidden"
+	ErrCodeConfigRequired                             = "CONFIG_REQUIRED"
+	ErrCodeConfigInvalid                              = "CONFIG_INVALID"
+	ErrCodeConfigInsecureDefault                      = "CONFIG_INSECURE_DEFAULT"
+	ErrCodeProductionDevRouteEnabled                  = "PRODUCTION_DEV_ROUTE_ENABLED"
+	ErrCodeStorageProviderInvalid                     = "STORAGE_PROVIDER_INVALID"
+	ErrCodeStoragePublicBaseInvalid                   = "STORAGE_PUBLIC_BASE_INVALID"
+	ErrCodeSecretKeyRequired                          = "SECRET_KEY_REQUIRED"
+	ErrCodeDatabaseNotReady                           = "DATABASE_NOT_READY"
+	ErrCodeRedisNotReady                              = "REDIS_NOT_READY"
+	ErrCodeProductionWebhookFallbackForbidden         = "PRODUCTION_WEBHOOK_FALLBACK_FORBIDDEN"
+	ErrCodeInventorySyncProductionCapabilityForbidden = "production_capability_forbidden"
 )
 
 const defaultJWTSecret = "change-me-in-development"
@@ -61,10 +61,10 @@ func (c *Config) Validate() error {
 		if env != EnvDevelopment && env != EnvTest && env != EnvPerformance {
 			return fmt.Errorf("%s: WEBHOOK_ENABLE_TEST_VERIFIER only allowed in development, test, or performance", ErrCodeProductionDevRouteEnabled)
 		}
-		if env == EnvPerformance && !c.P7.PerformanceTestMode {
+		if env == EnvPerformance && !c.RuntimeLimits.PerformanceTestMode {
 			return fmt.Errorf("%s: WEBHOOK_ENABLE_TEST_VERIFIER in performance requires PERFORMANCE_TEST_MODE=true", ErrCodeProductionDevRouteEnabled)
 		}
-		if env == EnvPerformance && c.P7.ExternalProviderMode != "mock" {
+		if env == EnvPerformance && c.RuntimeLimits.ExternalProviderMode != "mock" {
 			return fmt.Errorf("%s: WEBHOOK_ENABLE_TEST_VERIFIER in performance requires EXTERNAL_PROVIDER_MODE=mock", ErrCodeProductionDevRouteEnabled)
 		}
 	}
@@ -77,17 +77,17 @@ func (c *Config) Validate() error {
 	if err := c.ValidateObservability(); err != nil {
 		return err
 	}
-	if err := c.validateP7ProductionGuards(); err != nil {
+	if err := c.validateRuntimeLimitsProductionGuards(); err != nil {
 		return err
 	}
-	if err := c.validateP9InventorySyncSafety(); err != nil {
+	if err := c.validateInventorySyncSafety(); err != nil {
 		return err
 	}
-	if c.P10.RealProductDraftWriteEnabled && !c.ProductPublishQueueEnabled {
-		return fmt.Errorf("%s: P10 product draft writes require PRODUCT_PUBLISH_QUEUE_ENABLED=true", ErrCodeP10BoundaryViolation)
+	if c.ProductionCapabilities.RealProductDraftWriteEnabled && !c.ProductPublishQueueEnabled {
+		return fmt.Errorf("%s: production product draft writes require PRODUCT_PUBLISH_QUEUE_ENABLED=true", ErrCodeProductionBoundaryViolation)
 	}
-	if c.P10.RealProductDraftWriteEnabled && !c.WorkerReaperEnabled {
-		return fmt.Errorf("%s: P10 product draft writes require WORKER_REAPER_ENABLED=true", ErrCodeP10BoundaryViolation)
+	if c.ProductionCapabilities.RealProductDraftWriteEnabled && !c.WorkerReaperEnabled {
+		return fmt.Errorf("%s: production product draft writes require WORKER_REAPER_ENABLED=true", ErrCodeProductionBoundaryViolation)
 	}
 	if !IsProduction(c.AppEnv) {
 		return c.validateNonProduction()
@@ -245,31 +245,31 @@ func (c *Config) AllowsLocalStorageProvider() bool {
 	return AllowsLocalStorage(c.AppEnv)
 }
 
-func (c *Config) validateP9InventorySyncSafety() error {
-	for _, key := range p9InventorySyncDangerousBoolEnvKeys {
+func (c *Config) validateInventorySyncSafety() error {
+	for _, key := range inventorySyncDangerousBoolEnvKeys {
 		if envBool(os.Getenv(key), false) {
-			return fmt.Errorf("%s: %s is forbidden for P9 inventory sync", ErrCodeP9ProductionCapabilityForbidden, key)
+			return fmt.Errorf("%s: %s is forbidden for inventory sync", ErrCodeInventorySyncProductionCapabilityForbidden, key)
 		}
 	}
-	for _, key := range p9InventorySyncCredentialEnvKeys {
+	for _, key := range inventorySyncCredentialEnvKeys {
 		if strings.TrimSpace(os.Getenv(key)) != "" {
-			return fmt.Errorf("%s: %s is forbidden for P9 inventory sync", ErrCodeP9ProductionCapabilityForbidden, key)
+			return fmt.Errorf("%s: %s is forbidden for inventory sync", ErrCodeInventorySyncProductionCapabilityForbidden, key)
 		}
 	}
-	for _, key := range p9InventorySyncProviderModeEnvKeys {
+	for _, key := range inventorySyncProviderModeEnvKeys {
 		mode := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
 		switch mode {
 		case "production", "prod", "real", "live", "online", "remote", "oauth":
-			return fmt.Errorf("%s: %s=%s is forbidden for P9 inventory sync", ErrCodeP9ProductionCapabilityForbidden, key, mode)
+			return fmt.Errorf("%s: %s=%s is forbidden for inventory sync", ErrCodeInventorySyncProductionCapabilityForbidden, key, mode)
 		}
 	}
 	if c.InventorySyncWorkerConcurrency > 0 && envBool(os.Getenv("AUTO_INVENTORY_SYNC"), false) {
-		return fmt.Errorf("%s: AUTO_INVENTORY_SYNC is forbidden for P9 inventory sync", ErrCodeP9ProductionCapabilityForbidden)
+		return fmt.Errorf("%s: AUTO_INVENTORY_SYNC is forbidden for inventory sync", ErrCodeInventorySyncProductionCapabilityForbidden)
 	}
 	return nil
 }
 
-var p9InventorySyncDangerousBoolEnvKeys = []string{
+var inventorySyncDangerousBoolEnvKeys = []string{
 	"REAL_DOUYIN_ENABLED",
 	"REAL_PLATFORM_READ",
 	"REAL_PLATFORM_WRITE",
@@ -283,7 +283,7 @@ var p9InventorySyncDangerousBoolEnvKeys = []string{
 	"INVENTORY_SYNC_NETWORK_ACCESS",
 }
 
-var p9InventorySyncCredentialEnvKeys = []string{
+var inventorySyncCredentialEnvKeys = []string{
 	"INVENTORY_SYNC_ACCESS_TOKEN",
 	"INVENTORY_SYNC_REFRESH_TOKEN",
 	"INVENTORY_SYNC_OAUTH_CODE",
@@ -299,7 +299,7 @@ var p9InventorySyncCredentialEnvKeys = []string{
 	"DOUYIN_INVENTORY_APP_SECRET",
 }
 
-var p9InventorySyncProviderModeEnvKeys = []string{
+var inventorySyncProviderModeEnvKeys = []string{
 	"INVENTORY_SYNC_PROVIDER_MODE",
 	"DOUYIN_INVENTORY_PROVIDER_MODE",
 }

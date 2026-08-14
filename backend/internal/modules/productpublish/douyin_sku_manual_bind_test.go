@@ -70,21 +70,21 @@ func TestValidateDouyinSKUBindingForInventorySync(t *testing.T) {
 	}
 }
 
-func TestAnnotatePlatformSkuCandidates(t *testing.T) {
-	pubSku := uuid.New()
+func TestAnnotatePlatformSKUCandidates(t *testing.T) {
+	pubSKU := uuid.New()
 	cands := []DouyinPlatformSKUCandidate{{PlatformSKUID: "p1", SpecName: "红色 / L"}}
-	rows := []DouyinSKUBindingRow{{PublicationSKUID: pubSku, ExternalSKUID: "p1", BindStatus: BindStatusBound}}
-	out := annotatePlatformSkuCandidates(cands, rows)
-	if out[0].BoundToPublicationSkuID == nil || *out[0].BoundToPublicationSkuID != pubSku {
-		t.Fatalf("expected bound annotation, got %+v", out[0].BoundToPublicationSkuID)
+	rows := []DouyinSKUBindingRow{{PublicationSKUID: pubSKU, ExternalSKUID: "p1", BindStatus: BindStatusBound}}
+	out := annotatePlatformSKUCandidates(cands, rows)
+	if out[0].BoundToPublicationSKUID == nil || *out[0].BoundToPublicationSKUID != pubSKU {
+		t.Fatalf("expected bound annotation, got %+v", out[0].BoundToPublicationSKUID)
 	}
 }
 
-func TestPlatformSkusFromPublicationRaw(t *testing.T) {
-	raw := mergePublicationRawPlatformSkus(nil, []platformdouyin.PlatformProductSKU{
+func TestPlatformSKUsFromPublicationRaw(t *testing.T) {
+	raw := mergePublicationRawPlatformSKUs(nil, []platformdouyin.PlatformProductSKU{
 		{PlatformSKUID: "111", SpecName: "红色 / L", PriceYuan: 99, Stock: 10},
 	})
-	cands := platformSkusFromPublicationRaw(raw)
+	cands := platformSKUsFromPublicationRaw(raw)
 	if len(cands) != 1 || cands[0].PlatformSKUID != "111" {
 		t.Fatalf("unexpected candidates: %+v", cands)
 	}

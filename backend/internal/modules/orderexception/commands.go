@@ -45,7 +45,7 @@ func (c *Commands) BindSKU(ctx context.Context, sourceType, sourceID string, bod
 	if err != nil {
 		return nil, err
 	}
-	if has && !pol.AllowManualSkuBindAfterDeduct {
+	if has && !pol.AllowManualSKUBindAfterDeduct {
 		return nil, fmt.Errorf("manual sku bind after deduct is disabled in settings")
 	}
 

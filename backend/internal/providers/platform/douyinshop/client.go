@@ -77,7 +77,7 @@ func (c *Client) httpClient() HTTPDoer {
 	if c != nil && c.HTTP != nil {
 		return c.HTTP
 	}
-	// P3: reuse unified httpclient + circuit breaker (tests inject HTTPDoer).
+	// Reuse the unified HTTP client and circuit breaker; tests inject HTTPDoer.
 	return SharedHTTPDoer()
 }
 

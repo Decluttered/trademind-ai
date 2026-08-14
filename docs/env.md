@@ -202,7 +202,7 @@ For pre-production, copy `.env.example` to `.env`, set `APP_ENV=staging`, and fi
 `P10_PRODUCTION_RESTORE_ENABLED` must remain `false`. All real Provider/network/read/write, mutation, queue/worker, and automatic business retry flags remain disabled at L0. L3 exists only as an externally approved single-tenant, single-allowlisted-shop Douyin platform-draft write profile; it does not allow publishing online, inventory mutation, automatic business retry, unreviewed execution, or multi-shop expansion. Run the non-secret contract check with:
 
 ```bash
-node scripts/p10-preproduction-preflight.mjs --mode config
+node scripts/preproduction-preflight.mjs --mode config
 ```
 
 Operational values must be supplied by the target host or managed secret system and must never be committed or printed in evidence.

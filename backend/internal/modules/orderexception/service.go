@@ -35,13 +35,13 @@ type aggRow struct {
 	orderNo         string
 	externalOrderID string
 	externalItemID  string
-	externalSkuID   string
+	externalSKUID   string
 	skuCode         string
 	skuName         string
 	productID       string
-	productSkuID    string
+	productSKUID    string
 	productTitle    string
-	localSkuCode    string
+	localSKUCode    string
 	quantity        int
 	errorMessage    string
 	suggestedAction string
@@ -268,8 +268,8 @@ func filterAggRows(rows []aggRow, marks map[string]markPair, req ListOrderExcept
 		}
 		if kw != "" {
 			hay := strings.ToLower(strings.Join([]string{
-				r.orderNo, r.externalOrderID, r.externalItemID, r.externalSkuID,
-				r.skuCode, r.productTitle, r.localSkuCode, r.errorMessage,
+				r.orderNo, r.externalOrderID, r.externalItemID, r.externalSKUID,
+				r.skuCode, r.productTitle, r.localSKUCode, r.errorMessage,
 			}, " "))
 			if !strings.Contains(hay, kw) {
 				continue
@@ -311,13 +311,13 @@ func exceptionToDTO(ctx context.Context, s *Service, r aggRow) OrderExceptionDTO
 		ShopName:        "",
 		OrderItemID:     "",
 		ExternalItemID:  r.externalItemID,
-		ExternalSkuID:   r.externalSkuID,
+		ExternalSKUID:   r.externalSKUID,
 		SKUCode:         r.skuCode,
 		SKUName:         r.skuName,
 		ProductID:       r.productID,
-		ProductSkuID:    r.productSkuID,
+		ProductSKUID:    r.productSKUID,
 		ProductTitle:    r.productTitle,
-		LocalSkuCode:    r.localSkuCode,
+		LocalSKUCode:    r.localSKUCode,
 		Quantity:        r.quantity,
 		ErrorMessage:    r.errorMessage,
 		SuggestedAction: r.suggestedAction,
@@ -337,14 +337,14 @@ func exceptionToDTO(ctx context.Context, s *Service, r aggRow) OrderExceptionDTO
 		d.SyncTaskID = r.sourceID.String()
 		d.TaskCenterURL = "/ops/task-center/failures?taskType=inventory_sync&jumpId=" + r.sourceID.String()
 		d.DetailURL = "/inventory/sync-tasks?id=" + r.sourceID.String()
-		if r.productSkuID != "" {
-			d.InventoryURL = "/inventory?productSkuId=" + r.productSkuID
+		if r.productSKUID != "" {
+			d.InventoryURL = "/inventory?productSkuId=" + r.productSKUID
 		}
 	} else if r.sourceType == SourceOrderInventoryEffect {
 		d.DetailURL = "/inventory/deductions?orderId=" + r.orderID.String()
 		d.TaskCenterURL = "/ops/task-center/failures?taskType=inventory_sync"
-		if r.productSkuID != "" {
-			d.InventoryURL = "/inventory?productSkuId=" + r.productSkuID
+		if r.productSKUID != "" {
+			d.InventoryURL = "/inventory?productSkuId=" + r.productSKUID
 		}
 	} else if r.orderID != uuid.Nil {
 		d.DetailURL = "/orders/" + r.orderID.String()
@@ -382,7 +382,7 @@ func (s *Service) collectSKUUnmatched(ctx context.Context, req ListOrderExceptio
 		OrderNo      string     `gorm:"column:order_no"`
 		ExternalOID  *string    `gorm:"column:external_order_id"`
 		ExternalItem *string    `gorm:"column:external_item_id"`
-		ExternalSku  *string    `gorm:"column:external_sku_id"`
+		ExternalSKU  *string    `gorm:"column:external_sku_id"`
 		SKUCodeCol   string     `gorm:"column:sku_code"`
 		SellerSKU    string     `gorm:"column:seller_sku"`
 		ProductTitle string     `gorm:"column:product_title"`
@@ -469,7 +469,7 @@ WHERE LOWER(TRIM(o.platform)) NOT IN ('', 'manual')
 			orderNo:         strings.TrimSpace(h.OrderNo),
 			externalOrderID: extOid,
 			externalItemID:  derefStr(h.ExternalItem),
-			externalSkuID:   derefStr(h.ExternalSku),
+			externalSKUID:   derefStr(h.ExternalSKU),
 			skuCode:         sc,
 			productTitle:    strings.TrimSpace(h.ProductTitle),
 			quantity:        h.Quantity,
@@ -529,7 +529,7 @@ func (s *Service) collectSKUAmbiguous(ctx context.Context, req ListOrderExceptio
 			orderNo:         strings.TrimSpace(o.OrderNo),
 			externalOrderID: extOid,
 			externalItemID:  derefStr(m.ExternalItemID),
-			externalSkuID:   derefStr(m.ExternalSKUID),
+			externalSKUID:   derefStr(m.ExternalSKUID),
 			skuCode:         sc,
 			productTitle:    strings.TrimSpace(oi.ProductTitle),
 			quantity:        oi.Quantity,
@@ -598,7 +598,7 @@ func (s *Service) collectInventoryEffects(ctx context.Context, req ListOrderExce
 			orderNo:         strings.TrimSpace(o.OrderNo),
 			externalOrderID: extOid,
 			externalItemID:  derefStr(oi.ExternalItemID),
-			externalSkuID:   derefStr(oi.ExternalSKUID),
+			externalSKUID:   derefStr(oi.ExternalSKUID),
 			skuCode:         strings.TrimSpace(oi.SKUCode),
 			productTitle:    strings.TrimSpace(oi.ProductTitle),
 			quantity:        e.Quantity,
@@ -609,10 +609,10 @@ func (s *Service) collectInventoryEffects(ctx context.Context, req ListOrderExce
 		}
 		if e.ProductSKUID != uuid.Nil && e.ProductSKUID != inventory.NilInventorySKUUID {
 			psku = e.ProductSKUID.String()
-			ar.productSkuID = psku
+			ar.productSKUID = psku
 			var loc product.ProductSKU
 			if err := s.DB.WithContext(ctx).First(&loc, "id = ? AND deleted_at IS NULL", e.ProductSKUID).Error; err == nil {
-				ar.localSkuCode = strings.TrimSpace(loc.SKUCode)
+				ar.localSKUCode = strings.TrimSpace(loc.SKUCode)
 				ar.productID = loc.ProductID.String()
 			}
 		}
@@ -686,9 +686,9 @@ func (s *Service) collectInventorySyncFailed(ctx context.Context, req ListOrderE
 			platform:        strings.TrimSpace(t.Platform),
 			shopID:          &t.ShopID,
 			productID:       pid,
-			productSkuID:    psku,
+			productSKUID:    psku,
 			productTitle:    ptitle,
-			localSkuCode:    lcode,
+			localSKUCode:    lcode,
 			errorMessage:    clampExcMsg(t.ErrorMessage),
 			suggestedAction: "请检查平台库存同步配置或在库存同步任务页重试。",
 			createdAt:       t.CreatedAt,
@@ -849,7 +849,7 @@ func (s *Service) rowFromSKUMatch(ctx context.Context, m order.OrderItemSKUMatch
 			orderNo:         strings.TrimSpace(o.OrderNo),
 			externalOrderID: extOid,
 			externalItemID:  derefStr(m.ExternalItemID),
-			externalSkuID:   derefStr(m.ExternalSKUID),
+			externalSKUID:   derefStr(m.ExternalSKUID),
 			skuCode:         sc,
 			productTitle:    strings.TrimSpace(oi.ProductTitle),
 			quantity:        oi.Quantity,
@@ -870,7 +870,7 @@ func (s *Service) rowFromSKUMatch(ctx context.Context, m order.OrderItemSKUMatch
 			orderNo:         strings.TrimSpace(o.OrderNo),
 			externalOrderID: extOid,
 			externalItemID:  derefStr(m.ExternalItemID),
-			externalSkuID:   derefStr(m.ExternalSKUID),
+			externalSKUID:   derefStr(m.ExternalSKUID),
 			skuCode:         sc,
 			productTitle:    strings.TrimSpace(oi.ProductTitle),
 			quantity:        oi.Quantity,
@@ -907,7 +907,7 @@ func (s *Service) rowFromOrderItem(ctx context.Context, oi order.OrderItem) (agg
 		orderNo:         strings.TrimSpace(o.OrderNo),
 		externalOrderID: extOid,
 		externalItemID:  derefStr(oi.ExternalItemID),
-		externalSkuID:   derefStr(oi.ExternalSKUID),
+		externalSKUID:   derefStr(oi.ExternalSKUID),
 		skuCode:         sc,
 		productTitle:    strings.TrimSpace(oi.ProductTitle),
 		quantity:        oi.Quantity,

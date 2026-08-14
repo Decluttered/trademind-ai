@@ -40,7 +40,7 @@ func TestAITextFailureCategoryQualityWarning(t *testing.T) {
 	}
 }
 
-func TestAITextDetailURLIncludesItemId(t *testing.T) {
+func TestAITextDetailURLIncludesItemID(t *testing.T) {
 	batchID := uuid.New().String()
 	itemID := uuid.New().String()
 	url := aiTextDetailURL(batchID, itemID)

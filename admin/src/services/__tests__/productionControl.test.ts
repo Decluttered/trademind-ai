@@ -5,7 +5,7 @@ import { getProductionRuntimeStatus, productionDraftBlockReason } from '../produ
 const requestMock = vi.mocked(request);
 
 describe('production control service', () => {
-  it('reads the authenticated P10 runtime status', async () => {
+  it('reads the authenticated production runtime status', async () => {
     requestMock.mockResolvedValueOnce({ code: 0, message: 'ok', data: { productionReady: false } });
 
     await getProductionRuntimeStatus();

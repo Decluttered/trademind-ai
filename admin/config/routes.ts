@@ -10,7 +10,7 @@ export function createInternalInventorySyncRoutes(
   return [
     {
       path: '/ops/inventory-sync',
-      name: 'P9 库存同步',
+      name: '库存同步',
       icon: 'InboxOutlined',
       component: './Ops/InventorySync',
       hideInMenu: true,

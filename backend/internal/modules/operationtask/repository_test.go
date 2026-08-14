@@ -698,7 +698,7 @@ func TestOperationTaskEventRepositoryAppendPaginationValidationAndImmutable(t *t
 	require.ErrorIs(t, db.Delete(&operationtask.OperationTaskEvent{}, "id = ?", first.ID).Error, operationtask.ErrImmutableRecord)
 }
 
-func TestBatch2ConcurrentConstraints(t *testing.T) {
+func TestRepositoryConcurrentConstraints(t *testing.T) {
 	db := openOperationTaskTestDB(t)
 	ctx := context.Background()
 	task, draft, approval := createTaskDraftApproval(t, db)

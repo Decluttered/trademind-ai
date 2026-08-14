@@ -55,7 +55,7 @@ func TestEnsurePerformanceBootstrap_idempotent(t *testing.T) {
 	db := perfBootstrapDB(t)
 	cfg := &config.Config{
 		AppEnv: config.EnvPerformance,
-		P7: config.P7Config{
+		RuntimeLimits: config.RuntimeLimitsConfig{
 			PerformanceTestMode:     true,
 			AllowPerformanceDataset: true,
 			ExternalProviderMode:    "mock",
@@ -102,7 +102,7 @@ func TestEnsurePerformanceBootstrap_idempotent(t *testing.T) {
 
 func TestEnsurePerformanceBootstrap_rejectsProduction(t *testing.T) {
 	t.Parallel()
-	cfg := &config.Config{AppEnv: config.EnvProduction, P7: config.P7Config{PerformanceTestMode: true}}
+	cfg := &config.Config{AppEnv: config.EnvProduction, RuntimeLimits: config.RuntimeLimitsConfig{PerformanceTestMode: true}}
 	_, err := EnsurePerformanceBootstrap(context.Background(), perfBootstrapDB(t), cfg, nil)
 	if err == nil {
 		t.Fatal("expected production rejection")

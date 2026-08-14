@@ -63,7 +63,7 @@ type InventorySyncTask struct {
 	ProductID        uuid.UUID      `gorm:"type:char(36);index;not null" json:"productId"`
 	ProductSKUID     *uuid.UUID     `gorm:"column:product_sku_id;type:char(36);index" json:"productSkuId,omitempty"`
 	PublicationID    *uuid.UUID     `gorm:"type:char(36);index" json:"publicationId,omitempty"`
-	PublicationSkuID *uuid.UUID     `gorm:"type:char(36);index" json:"publicationSkuId,omitempty"`
+	PublicationSKUID *uuid.UUID     `gorm:"type:char(36);index" json:"publicationSkuId,omitempty"`
 	ShopID           uuid.UUID      `gorm:"type:char(36);index;not null" json:"shopId"`
 	Platform         string         `gorm:"size:64;index;not null" json:"platform"`
 	TaskType         string         `gorm:"size:64;index;not null" json:"taskType"`

@@ -19,7 +19,7 @@ import (
 // --- Service-layer cross-tenant denial via tenant-scoped data access patterns ---
 
 func TestIDOR_InventoryListTasksExcludesOtherTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	shopA := seedShopForTenant(t, db, tenantA, "a")
 	shopB := seedShopForTenant(t, db, tenantB, "b")
 	pidA := seedProductForTenant(t, db, tenantA, "a")
@@ -44,7 +44,7 @@ func TestIDOR_InventoryListTasksExcludesOtherTenant(t *testing.T) {
 }
 
 func TestIDOR_OrderSyncListExcludesOtherTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	shopA := seedShopForTenant(t, db, tenantA, "a")
 	shopB := seedShopForTenant(t, db, tenantB, "b")
 	seedOrderSyncTask(t, db, tenantA, shopA)
@@ -64,7 +64,7 @@ func TestIDOR_OrderSyncListExcludesOtherTenant(t *testing.T) {
 }
 
 func TestIDOR_ProductPublishListExcludesOtherTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	shopA := seedShopForTenant(t, db, tenantA, "a")
 	shopB := seedShopForTenant(t, db, tenantB, "b")
 	pidA := seedProductForTenant(t, db, tenantA, "a")
@@ -86,7 +86,7 @@ func TestIDOR_ProductPublishListExcludesOtherTenant(t *testing.T) {
 }
 
 func TestIDOR_AITextBatchListExcludesOtherTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	seedAITextBatch(t, db, tenantA)
 	seedAITextBatch(t, db, tenantB)
 	c := ginWithTenant(tenantA, uuid.New())
@@ -104,7 +104,7 @@ func TestIDOR_AITextBatchListExcludesOtherTenant(t *testing.T) {
 }
 
 func TestIDOR_AIImageBatchListExcludesOtherTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	seedAIImageBatch(t, db, tenantA)
 	seedAIImageBatch(t, db, tenantB)
 	c := ginWithTenant(tenantA, uuid.New())
@@ -122,7 +122,7 @@ func TestIDOR_AIImageBatchListExcludesOtherTenant(t *testing.T) {
 }
 
 func TestIDOR_CustomerChatListExcludesOtherTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	shopA := seedShopForTenant(t, db, tenantA, "a")
 	shopB := seedShopForTenant(t, db, tenantB, "b")
 	seedCustomerConversation(t, db, tenantA, shopA, "alice")
@@ -145,7 +145,7 @@ func TestIDOR_CustomerChatListExcludesOtherTenant(t *testing.T) {
 }
 
 func TestIDOR_ExportServiceListNoCrossTenantLeak(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	svc := &exportmod.Service{DB: db}
 	seedExportJob(t, db, tenantA, exportmod.ExportTypeOrders)
 	seedExportJob(t, db, tenantB, exportmod.ExportTypeCustomers)

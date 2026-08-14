@@ -2,7 +2,7 @@ package securitymod
 
 import "strings"
 
-// ObserveSecurity records security metrics through the shared P5 catalog.
+// ObserveSecurity records security metrics through the shared metrics catalog.
 func (s *Service) ObserveSecurity(module, event, result, severity string) {
 	if s == nil || s.Metrics == nil {
 		return

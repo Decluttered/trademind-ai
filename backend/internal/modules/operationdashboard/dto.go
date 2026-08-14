@@ -22,7 +22,7 @@ type Summary struct {
 	AiPendingProducts            int64 `json:"aiPendingProducts"`
 	ReadinessBlocked             int64 `json:"readinessBlockedProducts"`
 	PublishFailedTasks           int64 `json:"publishFailedTasks"`
-	LowStockSkus                 int64 `json:"lowStockSkus"`
+	LowStockSKUs                 int64 `json:"lowStockSkus"`
 	CustomerPendingConversations int64 `json:"customerPendingConversations"`
 	FailedTasks                  int64 `json:"failedTasks"`
 
@@ -36,7 +36,7 @@ type Summary struct {
 	PublishPendingTasks           int64 `json:"publishPendingTasks"`
 	PublishRunningTasks           int64 `json:"publishRunningTasks"`
 	PublishedPublicationCount     int64 `json:"publishedPublicationCount"`
-	OutOfStockSkus                int64 `json:"outOfStockSkus"`
+	OutOfStockSKUs                int64 `json:"outOfStockSkus"`
 	PlatformStockMismatchCount    int64 `json:"platformStockMismatchCount"`
 	InventorySyncFailedCount      int64 `json:"inventorySyncFailedCount"`
 	CustomerOpenConversations     int64 `json:"customerOpenConversations"`

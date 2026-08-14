@@ -43,7 +43,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/pkg/logging"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/observability"
-	"github.com/trademind-ai/trademind/backend/internal/pkg/p7diag"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/runtimediag"
 	securitypkg "github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/tracing"
 	"github.com/trademind-ai/trademind/backend/internal/rdb"
@@ -120,22 +120,22 @@ func main() {
 	}
 	defer func() { _ = database.Close(db) }()
 	if sqlDB, sqlErr := db.DB(); sqlErr == nil {
-		p7diag.BindSamplingDB(sqlDB)
+		runtimediag.BindSamplingDB(sqlDB)
 	}
 	defer func() {
 		shCtx, shCancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer shCancel()
-		p7diag.Shutdown(shCtx)
+		runtimediag.Shutdown(shCtx)
 	}()
 
 	migrateCtx, migrateCancel := context.WithTimeout(context.Background(), time.Duration(cfg.MigrationLockTimeoutSeconds)*time.Second)
 	defer migrateCancel()
 	if cfg.MigrationRunOnStartup {
-		if err := database.RunMigrateWithLock(migrateCtx, db, time.Duration(cfg.MigrationLockTimeoutSeconds)*time.Second, database.AutoMigrateWithP10); err != nil {
+		if err := database.RunMigrateWithLock(migrateCtx, db, time.Duration(cfg.MigrationLockTimeoutSeconds)*time.Second, database.AutoMigrateProductionSchema); err != nil {
 			log.Error("database_migrate_failed", "error", err)
 			os.Exit(1)
 		}
-	} else if err := database.AutoMigrateWithP10(db); err != nil {
+	} else if err := database.AutoMigrateProductionSchema(db); err != nil {
 		log.Error("database_migrate_failed", "error", err)
 		os.Exit(1)
 	}
@@ -253,7 +253,7 @@ func main() {
 		log.Error("performance_bootstrap_failed", "error", err)
 		os.Exit(1)
 	}
-	if cfg.AppEnv == config.EnvPerformance && cfg.P7.PerformanceTestMode {
+	if cfg.AppEnv == config.EnvPerformance && cfg.RuntimeLimits.PerformanceTestMode {
 		if ids, err := admin.PerformanceBootstrapUserIDs(bootCtx, db); err == nil {
 			for _, id := range ids {
 				adminperm.InvalidateUserPermissionCache(id)
@@ -298,7 +298,7 @@ func main() {
 		MigrationsReady: true,
 		Obs:             obs,
 	})
-	api.RegisterP10(engine, &api.Deps{Config: cfg, DB: db, Obs: obs})
+	api.RegisterProductionRoutes(engine, &api.Deps{Config: cfg, DB: db, Obs: obs})
 
 	workerReg := worker.NewRegistryFromConfig(db, opLogSvc, cfg, log)
 
@@ -430,7 +430,7 @@ func main() {
 		}
 		productpublish.StartWorker(workerCtx, &workerWG, log, productPublishSvc, ppQn, ppWorkerConc, workerReg)
 		log.Info("product_publish_worker_started", "concurrency", ppWorkerConc, "queue", ppQn)
-		if cfg.P10.BackgroundWorkerEnabled {
+		if cfg.ProductionCapabilities.BackgroundWorkerEnabled {
 			productpublish.StartProductionOutboxDispatcher(workerCtx, &workerWG, log, productPublishSvc, 2*time.Second)
 			log.Info("operation_task_outbox_dispatcher_started", "interval_sec", 2)
 		}

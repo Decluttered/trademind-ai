@@ -1,5 +1,5 @@
 {
-  "title": "P7 Worker Capacity",
+  "title": "Worker Capacity",
   "tags": ["trademind", "p7", "worker"],
   "panels": [
     { "title": "Queue Age", "type": "timeseries" },

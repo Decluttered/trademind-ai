@@ -7,7 +7,7 @@ import (
 
 	"github.com/trademind-ai/trademind/backend/internal/providers/ai/deepseek"
 	"github.com/trademind-ai/trademind/backend/internal/providers/ai/openai"
-	openaicompat "github.com/trademind-ai/trademind/backend/internal/providers/ai/openai_compatible"
+	openaicompat "github.com/trademind-ai/trademind/backend/internal/providers/ai/openaicompatible"
 	"github.com/trademind-ai/trademind/backend/internal/providers/ai/qwen"
 )
 

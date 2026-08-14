@@ -54,7 +54,7 @@ const (
 	CodeUnknownDouyinInventoryError         = "UNKNOWN_DOUYIN_INVENTORY_ERROR"
 	CodeUnknownDouyinError                  = "UNKNOWN_DOUYIN_ERROR"
 
-	// P3 additions
+	// Provider capability errors
 	CodeDouyinUnknownResult                = "DOUYIN_UNKNOWN_RESULT"
 	CodeDouyinNotConfigured                = "DOUYIN_NOT_CONFIGURED"
 	CodeDouyinReauthorizationRequired      = "DOUYIN_REAUTHORIZATION_REQUIRED"
@@ -98,7 +98,7 @@ type Error struct {
 	RateLimited      bool
 	PermissionDenied bool
 	AuthExpired      bool
-	// P3 fields
+	// Provider error metadata
 	SafeRetry            bool   // true = re-send is safe (idempotent read-side or idempotent write with confirmed dedup)
 	ManualReviewRequired bool   // operator must check platform before retry
 	UnknownResult        bool   // write sent, outcome unknown (timeout/network after write)
@@ -145,7 +145,7 @@ func NewError(code, msg, platformCode, platformMsg, requestID string) *Error {
 		CodeDouyinSKUBindingConflict, CodeDouyinSKUBindingRequired,
 		CodeDouyinGrayReleaseNotEnabled, CodeDouyinShopNotInGrayList, CodeDouyinWriteOperationDisabled:
 		e.Retryable = false
-	// P3 codes
+	// Provider error codes
 	case CodeDouyinUnknownResult:
 		e.UnknownResult = true
 		e.SafeRetry = false
@@ -184,7 +184,7 @@ func NewError(code, msg, platformCode, platformMsg, requestID string) *Error {
 		e.Retryable = true
 		e.ErrorClass = ErrorClassAuthError
 	}
-	// Set ErrorClass from existing flags if not already set by P3 switch
+	// Set ErrorClass from existing flags if capability mapping did not set it.
 	if e.ErrorClass == "" {
 		switch {
 		case e.AuthExpired:

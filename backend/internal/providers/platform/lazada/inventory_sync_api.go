@@ -12,9 +12,9 @@ import (
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
 )
 
-func buildLazadaPriceQuantityPayload(itemID string, sellerSku string, qty int, warehouseCode string) (string, error) {
+func buildLazadaPriceQuantityPayload(itemID string, sellerSKU string, qty int, warehouseCode string) (string, error) {
 	pl := strings.TrimSpace(itemID)
-	ss := strings.TrimSpace(sellerSku)
+	ss := strings.TrimSpace(sellerSKU)
 	if pl == "" || ss == "" {
 		return "", fmt.Errorf("product publication sku mapping incomplete")
 	}

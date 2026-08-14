@@ -297,13 +297,13 @@ func (s *Service) completeDouyinDraftSuccess(ctx context.Context, taskRow *Produ
 				Price:         &sku.Price,
 				Stock:         sku.Stock,
 			}
-			if uid, parseErr := uuid.Parse(strings.TrimSpace(sku.LocalSkuID)); parseErr == nil {
+			if uid, parseErr := uuid.Parse(strings.TrimSpace(sku.LocalSKUID)); parseErr == nil {
 				row.ProductSKUID = &uid
 			}
-			if sm, ok := skuMap[sku.LocalSkuID]; ok {
+			if sm, ok := skuMap[sku.LocalSKUID]; ok {
 				row.ExternalSKUID = strings.TrimSpace(sm.PlatformSKUID)
 			}
-			rdm, marshalErr := json.Marshal(map[string]any{"outerSkuId": sku.LocalSkuID})
+			rdm, marshalErr := json.Marshal(map[string]any{"outerSkuId": sku.LocalSKUID})
 			if marshalErr != nil {
 				return marshalErr
 			}

@@ -13,8 +13,8 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/authutil"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/ctxkey"
-	"github.com/trademind-ai/trademind/backend/internal/pkg/p7diag"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/pagination"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/runtimediag"
 	"gorm.io/gorm"
 )
 
@@ -167,40 +167,40 @@ func (s *Service) writeWithDiagnostics(ctx context.Context, row *OperationLog, o
 	defer unlock()
 	txStart := time.Now()
 	if authDiag {
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "transaction_begin", p7diag.OutcomeSuccess, txStart)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "transaction_begin", runtimediag.OutcomeSuccess, txStart)
 	}
 	var commitStart time.Time
 	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		chainStart := time.Now()
-		chainTiming, chainErr := p7diag.TimedGorm(tx, func() error {
+		chainTiming, chainErr := runtimediag.TimedGorm(tx, func() error {
 			return s.appendHashChain(tx, row)
 		})
 		chainTiming.TransactionState = "open"
 		if authDiag {
-			outcome := p7diag.OutcomeSuccess
+			outcome := runtimediag.OutcomeSuccess
 			if chainErr != nil {
-				outcome = p7diag.OutcomeError
+				outcome = runtimediag.OutcomeError
 			}
-			p7diag.ObserveSQL(p7diag.RouteAuthInvalidLogin, "auth", "auth.operation_log_chain_lookup", "select", "operation_logs", outcome, true, chainTiming)
-			p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "security_audit", outcome, chainStart)
+			runtimediag.ObserveSQL(runtimediag.RouteAuthInvalidLogin, "auth", "auth.operation_log_chain_lookup", "select", "operation_logs", outcome, true, chainTiming)
+			runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "security_audit", outcome, chainStart)
 		}
 		if chainErr != nil {
 			return chainErr
 		}
 		insertStart := time.Now()
-		insertTiming, insertErr := p7diag.TimedGormRows(tx, func() (int64, error) {
+		insertTiming, insertErr := runtimediag.TimedGormRows(tx, func() (int64, error) {
 			res := tx.Create(row)
 			return res.RowsAffected, res.Error
 		})
 		insertTiming.TransactionState = "open"
 		if authDiag {
-			outcome := p7diag.OutcomeSuccess
+			outcome := runtimediag.OutcomeSuccess
 			if insertErr != nil {
-				outcome = p7diag.OutcomeError
+				outcome = runtimediag.OutcomeError
 			}
-			p7diag.ObserveSQL(p7diag.RouteAuthInvalidLogin, "auth", "auth.operation_log_insert", "insert", "operation_logs", outcome, true, insertTiming)
-			p7diag.ObserveSQL(p7diag.RouteAuthInvalidLogin, "auth", "auth.security_audit_insert", "insert", "operation_logs", outcome, true, insertTiming)
-			p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "operation_log", outcome, insertStart)
+			runtimediag.ObserveSQL(runtimediag.RouteAuthInvalidLogin, "auth", "auth.operation_log_insert", "insert", "operation_logs", outcome, true, insertTiming)
+			runtimediag.ObserveSQL(runtimediag.RouteAuthInvalidLogin, "auth", "auth.security_audit_insert", "insert", "operation_logs", outcome, true, insertTiming)
+			runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "operation_log", outcome, insertStart)
 		}
 		commitStart = time.Now()
 		return insertErr
@@ -208,20 +208,20 @@ func (s *Service) writeWithDiagnostics(ctx context.Context, row *OperationLog, o
 	if !authDiag {
 		return err
 	}
-	txOutcome := p7diag.OutcomeSuccess
+	txOutcome := runtimediag.OutcomeSuccess
 	state := "committed"
 	if err != nil {
-		txOutcome = p7diag.OutcomeError
+		txOutcome = runtimediag.OutcomeError
 		state = "rolled_back"
 	}
 	commitMs := 0.0
 	if !commitStart.IsZero() {
 		commitMs = float64(time.Since(commitStart).Nanoseconds()) / float64(time.Millisecond)
 	}
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "transaction_commit", txOutcome, commitStart)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "transaction_commit", txOutcome, commitStart)
 	// Emit commit/transaction envelope without a second fingerprint call count.
 	if commitMs > 0 || !txStart.IsZero() {
-		p7diag.ObserveSQL(p7diag.RouteAuthInvalidLogin, "auth", "auth.operation_log_insert", "insert", "operation_logs", txOutcome, true, p7diag.SQLTiming{
+		runtimediag.ObserveSQL(runtimediag.RouteAuthInvalidLogin, "auth", "auth.operation_log_insert", "insert", "operation_logs", txOutcome, true, runtimediag.SQLTiming{
 			TransactionMs:    float64(time.Since(txStart).Nanoseconds()) / float64(time.Millisecond),
 			CommitMs:         commitMs,
 			TransactionState: state,

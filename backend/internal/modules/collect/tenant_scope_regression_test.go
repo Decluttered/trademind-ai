@@ -74,7 +74,7 @@ func TestSameURLSuccessHintIsTenantScoped(t *testing.T) {
 	require.NoError(t, db.Create(&otherTenantSuccess).Error)
 
 	dto := svc.enrichTaskDTO(context.Background(), &failed)
-	require.False(t, dto.SameUrlSucceededElsewhere)
+	require.False(t, dto.SameURLSucceededElsewhere)
 
 	sameTenantSuccess := CollectTask{
 		HardDeleteBase: model.HardDeleteBase{ID: uuid.New()}, TenantID: 11,
@@ -82,7 +82,7 @@ func TestSameURLSuccessHintIsTenantScoped(t *testing.T) {
 	}
 	require.NoError(t, db.Create(&sameTenantSuccess).Error)
 	dto = svc.enrichTaskDTO(context.Background(), &failed)
-	require.True(t, dto.SameUrlSucceededElsewhere)
+	require.True(t, dto.SameURLSucceededElsewhere)
 }
 
 func TestCancelRemainingBatchTasksDoesNotCrossTenant(t *testing.T) {

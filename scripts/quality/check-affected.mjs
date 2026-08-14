@@ -19,6 +19,7 @@ const checks = new Map([
   ['admin', { command: ['pnpm', ['quality:admin']], reason: 'Admin TS/TSX、样式、UI、API service 或 package 变更' }],
   ['collector', { command: ['pnpm', ['quality:collector']], reason: 'Collector TypeScript、采集逻辑或 package 变更' }],
   ['backend', { command: ['pnpm', ['quality:backend']], reason: 'Go backend、数据库、Redis、队列、worker、adapter 或 Go 配置变更' }],
+  ['naming', { command: ['pnpm', ['quality:naming']], reason: 'Go 标识符、数据库模型、迁移或原始 SQL 命名变更' }],
   ['contracts', { command: ['pnpm', ['quality:contracts']], reason: 'API route、DTO、service、contract、Admin mock 或 envelope 变更' }],
   ['affected-tests', { command: ['pnpm', ['test:affected']], reason: '与 project-testing 联动运行受影响测试选择' }],
   ['ui-copy', { command: ['pnpm', ['check:ui-copy', '--strict']], reason: 'Admin 文案、TSX、页面或 UI 规则变更' }],
@@ -92,9 +93,11 @@ function classify(file, selected) {
   if (file.startsWith('backend/') || file === 'go.work') {
     add(selected, 'backend');
     add(selected, 'affected-tests');
+    if (file.endsWith('.go')) add(selected, 'naming');
   }
   if (file.startsWith('backend/internal/database/') || file.startsWith('backend/migrations/') || file.toLowerCase().includes('migration') || file.toLowerCase().includes('repository')) {
     add(selected, 'db');
+    add(selected, 'naming');
     add(selected, 'contracts');
     add(selected, 'architecture');
   }
@@ -112,12 +115,14 @@ function classify(file, selected) {
     add(selected, 'admin');
     add(selected, 'collector');
     add(selected, 'backend');
+    add(selected, 'naming');
     add(selected, 'contracts');
     add(selected, 'affected-tests');
   }
   if (file.startsWith('.agents/skills/') || file.startsWith('.cursor/rules/') || file.startsWith('scripts/quality/') || file.startsWith('scripts/testing/')) {
     add(selected, 'sensitive');
     add(selected, 'affected-tests');
+    if (file.includes('naming')) add(selected, 'naming');
   }
   if (file.startsWith('scripts/architecture/') || file.startsWith('tests/architecture/') || file === 'vitest.architecture.config.ts' || file === '.agents/skills/modular-architecture/SKILL.md') {
     add(selected, 'architecture');
@@ -163,7 +168,7 @@ for (const [name, reasons] of selected) {
   console.log(`- ${name}: ${[...reasons].join('; ')}`);
 }
 
-const order = ['sensitive', 'architecture', 'admin', 'collector', 'backend', 'contracts', 'ui-copy', 'db', 'redis', 'e2e-smoke', 'affected-tests'];
+const order = ['sensitive', 'architecture', 'admin', 'collector', 'backend', 'naming', 'contracts', 'ui-copy', 'db', 'redis', 'e2e-smoke', 'affected-tests'];
 const failures = [];
 for (const name of order.filter((item) => selected.has(item))) {
   try {

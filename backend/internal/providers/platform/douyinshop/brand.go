@@ -1,6 +1,6 @@
 package douyinshop
 
-// BrandListStatus explicitly describes the brand list capability status for P3.
+// BrandListStatus explicitly describes the brand list capability status.
 // Brand list API requires additional contract verification with Douyin Open Platform.
 // This is NOT a bug — it is a deliberate placeholder pending real credential verification.
 //
@@ -19,7 +19,7 @@ func BrandListUnsupportedError() *Error {
 	return e
 }
 
-// GetBrandList is explicitly unsupported in P3.
+// GetBrandList is explicitly unsupported by the current provider contract.
 // Returns CodeDouyinContractMismatch with explanation.
 // Callers should use standard_brand_id from category attribute mappings.
 func (c *Client) GetBrandList() ([]map[string]any, error) {

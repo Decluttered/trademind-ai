@@ -16,7 +16,7 @@ import {
   type InventorySnapshot,
   type InventorySyncAPIError,
   type InventorySyncRun,
-} from '@/services/inventorySyncP9';
+} from '@/services/inventorySync';
 import { formatDateTime } from '@/utils/formatTime';
 import {
   ActionSourceHint,

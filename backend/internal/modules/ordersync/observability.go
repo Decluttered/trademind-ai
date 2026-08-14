@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// ObserveOrder records order sync metrics through the shared P5 catalog.
+// ObserveOrder records order sync metrics through the shared metrics catalog.
 func (s *Service) ObserveOrder(platform, source, event, result, errorClass string, count int, dur time.Duration, cursorLag time.Duration) {
 	if s == nil || s.Metrics == nil {
 		return

@@ -1,5 +1,5 @@
 {
-  "title": "P7 Performance Overview",
+  "title": "Performance Overview",
   "tags": ["trademind", "p7", "performance"],
   "panels": [
     { "title": "API p50 / p95 / p99", "type": "timeseries" },

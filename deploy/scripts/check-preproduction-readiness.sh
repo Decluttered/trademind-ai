@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 ENV_FILE="$ROOT/.env"
 source "$ROOT/deploy/scripts/load-env-defaults.sh"
 load_env_defaults "$ENV_FILE"
-node "$ROOT/scripts/p10-preproduction-preflight.mjs" --mode startup >/dev/null
+node "$ROOT/scripts/preproduction-preflight.mjs" --mode startup >/dev/null
 
 BASE_URL="http://127.0.0.1:${P10_BACKEND_BIND_PORT:-18080}"
 BODY="$(mktemp)"
