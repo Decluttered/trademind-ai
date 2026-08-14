@@ -1,14 +1,15 @@
 # Disaster Recovery Plan
 
-The reusable disaster-recovery foundation consists of:
+TradeMind does not execute or record database backups and restore validation inside the application. The cloud database and operations platform own:
 
-- backup and verification records
-- isolated restore safety gates and validation records
-- backup, restore and WAL/PITR runbooks
-- externally approved application rollback and deployment procedures
-- backup and restore dashboards backed by runtime metrics
+- automatic backups, encryption, retention and cross-region or cross-zone redundancy
+- point-in-time recovery capability and backup failure or age alerts
+- isolated restore drills with recorded RPO/RTO results
+- access control, approval, audit evidence and escalation for production recovery
 
-The standalone release recorder and drill recorder were retired because they only stored self-declared state and did not execute deployment, traffic switching or a verified recovery workflow. Existing `release_*` and `dr_drills` rows are preserved for retention review, are no longer exposed by an API, and are not managed by `AutoMigrate`.
+Application rollback remains separate from database recovery. Release approval must reference a recovery point that the external platform has verified and a recent isolated restore drill; a self-reported application record is not acceptable evidence.
 
-Production disaster-recovery validation remains an externally controlled operation. A real production restore, PITR validation or traffic switch requires an approved runbook, verified backups, an isolated target where applicable, explicit authorization and human sign-off.
+The P10 pre-production backup, isolated restore and rollback scripts remain deployment-level acceptance tools. They do not expose an Admin page or application API and must not target production. A real production restore, PITR operation or traffic switch requires the approved external runbook, explicit authorization and human sign-off.
+
+Historical application backup, restore, release and drill tables are no longer exposed or managed by `AutoMigrate`. Existing rows remain untouched until a separate retention or archival decision is approved.
 

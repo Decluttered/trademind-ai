@@ -23,7 +23,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/aitask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/alerting"
 	"github.com/trademind-ai/trademind/backend/internal/modules/auth"
-	"github.com/trademind-ai/trademind/backend/internal/modules/backup"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collect"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectbrowserprofile"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectrule"
@@ -52,7 +51,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrolp10"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
-	"github.com/trademind-ai/trademind/backend/internal/modules/restore"
 	"github.com/trademind-ai/trademind/backend/internal/modules/securitymod"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
@@ -798,12 +796,6 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	exportH := &exportmod.Handler{Svc: exportSvc}
 	exportmod.RegisterRoutes(authed, exportH)
 
-	backupSvc := &backup.Service{DB: dep.DB, Cfg: dep.Config, Enc: dep.Encrypter, OpLog: opLogSvc, Metrics: metricCatalog}
-	backupH := &backup.Handler{Svc: backupSvc}
-	backup.Register(authed, backupH)
-	restoreSvc := &restore.Service{DB: dep.DB, Cfg: dep.Config, Enc: dep.Encrypter, Backup: backupSvc, OpLog: opLogSvc, Metrics: metricCatalog}
-	restoreH := &restore.Handler{Svc: restoreSvc}
-	restore.Register(authed, restoreH)
 	alertSvc := alerting.NewService(dep.DB, alertCooldown, alertRecovery)
 	obsH := &observabilitymod.Handler{DB: dep.DB, Cfg: dep.Config, Obs: dep.Obs, Alert: alertSvc, OpLog: opLogSvc}
 	observabilitymod.Register(authed, obsH)

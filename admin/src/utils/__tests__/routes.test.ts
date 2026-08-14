@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import routes, {
-  createDevelopmentOpsRoutes,
-  createInternalInventorySyncRoutes,
-} from '../../../config/routes';
+import routes, { createInternalInventorySyncRoutes } from '../../../config/routes';
 
 type RouteNode = {
   path?: string;
@@ -33,6 +30,18 @@ function collectVisibleMenuNames(nodes: RouteNode[], names: string[] = []): stri
     }
   }
   return names;
+}
+
+function collectRoutePaths(nodes: RouteNode[], paths: string[] = []): string[] {
+  for (const node of nodes) {
+    if (node.path) {
+      paths.push(node.path);
+    }
+    if (node.routes) {
+      collectRoutePaths(node.routes, paths);
+    }
+  }
+  return paths;
 }
 
 describe('Admin route menu configuration', () => {
@@ -90,17 +99,11 @@ describe('Admin route menu configuration', () => {
     expect(createInternalInventorySyncRoutes(true).every((route) => route.hideInMenu)).toBe(true);
   });
 
-  it('keeps development recovery tools out of production builds', () => {
-    expect(createDevelopmentOpsRoutes(false)).toEqual([]);
-    expect(createDevelopmentOpsRoutes(true)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ path: '/ops/backups', name: '备份管理' }),
-        expect.objectContaining({ path: '/ops/restores', name: '恢复验证' }),
-      ]),
-    );
-    const paths = createDevelopmentOpsRoutes(true).map((route) => route.path);
-    expect(paths).not.toContain('/ops/releases');
-    expect(paths).not.toContain('/ops/disaster-recovery');
+  it('does not register retired application backup and restore routes', () => {
+    const paths = collectRoutePaths(routes);
+
+    expect(paths.filter((path) => path.startsWith('/ops/backups'))).toEqual([]);
+    expect(paths.filter((path) => path.startsWith('/ops/restores'))).toEqual([]);
   });
 
   it('keeps historical AI batches outside the menu for deep-link compatibility', () => {

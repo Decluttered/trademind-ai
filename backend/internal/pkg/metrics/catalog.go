@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"strings"
 	"sync"
 	"time"
 
@@ -151,24 +150,8 @@ type Catalog struct {
 	DBQueryErrors              *prometheus.CounterVec
 	DBTransactionDuration      *prometheus.HistogramVec
 	DBTransactionRollbacks     *prometheus.CounterVec
-	BackupJobsTotal            *prometheus.CounterVec
-	BackupJobDuration          *prometheus.HistogramVec
-	BackupBytesTotal           *prometheus.CounterVec
-	BackupFailuresTotal        *prometheus.CounterVec
-	BackupVerificationTotal    *prometheus.CounterVec
-	BackupVerificationDuration *prometheus.HistogramVec
-	BackupLastSuccess          *prometheus.GaugeVec
-	BackupAgeSeconds           *prometheus.GaugeVec
-	BackupUploadFailures       *prometheus.CounterVec
-	BackupRetentionDeletions   *prometheus.CounterVec
-	RestoreJobsTotal           *prometheus.CounterVec
-	RestoreJobDuration         *prometheus.HistogramVec
-	RestoreFailuresTotal       *prometheus.CounterVec
-	RestoreValidationTotal     *prometheus.CounterVec
-	RestoreLastSuccess         *prometheus.GaugeVec
-
-	once sync.Once
-	err  error
+	once                       sync.Once
+	err                        error
 }
 
 // RegisterCatalog registers all standard metrics on the registry.
@@ -813,66 +796,6 @@ func (c *Catalog) registerAll() error {
 	if err != nil {
 		return err
 	}
-	c.BackupJobsTotal, err = c.reg.Counter("backup_jobs_total", "Backup jobs", "backup_type", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.BackupJobDuration, err = c.reg.Histogram("backup_job_duration_seconds", "Backup job duration", defaultBuckets, "backup_type", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.BackupBytesTotal, err = c.reg.Counter("backup_bytes_total", "Backup bytes written", "backup_type", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.BackupFailuresTotal, err = c.reg.Counter("backup_failures_total", "Backup failures", "backup_type", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.BackupVerificationTotal, err = c.reg.Counter("backup_verification_total", "Backup verifications", "backup_type", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.BackupVerificationDuration, err = c.reg.Histogram("backup_verification_duration_seconds", "Backup verification duration", defaultBuckets, "backup_type", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.BackupLastSuccess, err = c.reg.Gauge("backup_last_success_timestamp", "Last successful backup timestamp", "backup_type", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.BackupAgeSeconds, err = c.reg.Gauge("backup_age_seconds", "Backup age seconds", "backup_type", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.BackupUploadFailures, err = c.reg.Counter("backup_storage_upload_failures_total", "Backup storage upload failures", "backup_type", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.BackupRetentionDeletions, err = c.reg.Counter("backup_retention_deletions_total", "Backup retention deletions", "backup_type", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.RestoreJobsTotal, err = c.reg.Counter("restore_jobs_total", "Restore jobs", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.RestoreJobDuration, err = c.reg.Histogram("restore_job_duration_seconds", "Restore job duration", defaultBuckets, "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.RestoreFailuresTotal, err = c.reg.Counter("restore_failures_total", "Restore failures", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.RestoreValidationTotal, err = c.reg.Counter("restore_validation_total", "Restore validations", "result", "environment_class")
-	if err != nil {
-		return err
-	}
-	c.RestoreLastSuccess, err = c.reg.Gauge("restore_last_success_timestamp", "Last successful restore timestamp", "environment_class")
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -1437,93 +1360,6 @@ func (c *Catalog) ObserveSLO(sloID, window string, compliance, budgetRemaining, 
 	}
 	if c.SLOBurnRate != nil {
 		c.SLOBurnRate.WithLabelValues(sloID, window).Set(burnRate)
-	}
-}
-
-// ObserveBackup records a completed backup attempt. Labels intentionally stay
-// at backup type, outcome, and environment class.
-func (c *Catalog) ObserveBackup(backupType, result, environment string, dur time.Duration, bytes int64) {
-	if c == nil {
-		return
-	}
-	result = NormalizeResult(result)
-	environment = environmentClass(environment)
-	if c.BackupJobsTotal != nil {
-		c.BackupJobsTotal.WithLabelValues(backupType, result, environment).Inc()
-	}
-	if dur > 0 && c.BackupJobDuration != nil {
-		c.BackupJobDuration.WithLabelValues(backupType, result, environment).Observe(dur.Seconds())
-	}
-	if bytes > 0 && c.BackupBytesTotal != nil {
-		c.BackupBytesTotal.WithLabelValues(backupType, result, environment).Add(float64(bytes))
-	}
-	if result == "failure" && c.BackupFailuresTotal != nil {
-		c.BackupFailuresTotal.WithLabelValues(backupType, result, environment).Inc()
-	}
-	if result == "success" {
-		now := float64(time.Now().UTC().Unix())
-		if c.BackupLastSuccess != nil {
-			c.BackupLastSuccess.WithLabelValues(backupType, environment).Set(now)
-		}
-		if c.BackupAgeSeconds != nil {
-			c.BackupAgeSeconds.WithLabelValues(backupType, environment).Set(0)
-		}
-	}
-}
-
-// ObserveBackupVerification records the verification outcome.
-func (c *Catalog) ObserveBackupVerification(backupType, result, environment string, dur time.Duration) {
-	if c == nil {
-		return
-	}
-	result = NormalizeResult(result)
-	environment = environmentClass(environment)
-	if c.BackupVerificationTotal != nil {
-		c.BackupVerificationTotal.WithLabelValues(backupType, result, environment).Inc()
-	}
-	if dur > 0 && c.BackupVerificationDuration != nil {
-		c.BackupVerificationDuration.WithLabelValues(backupType, result, environment).Observe(dur.Seconds())
-	}
-}
-
-// ObserveRestore records restore execution and validation outcomes.
-func (c *Catalog) ObserveRestore(event, result, environment string, dur time.Duration) {
-	if c == nil {
-		return
-	}
-	result = NormalizeResult(result)
-	environment = environmentClass(environment)
-	switch event {
-	case "job":
-		if c.RestoreJobsTotal != nil {
-			c.RestoreJobsTotal.WithLabelValues(result, environment).Inc()
-		}
-		if dur > 0 && c.RestoreJobDuration != nil {
-			c.RestoreJobDuration.WithLabelValues(result, environment).Observe(dur.Seconds())
-		}
-		if result == "failure" && c.RestoreFailuresTotal != nil {
-			c.RestoreFailuresTotal.WithLabelValues(result, environment).Inc()
-		}
-		if result == "success" && c.RestoreLastSuccess != nil {
-			c.RestoreLastSuccess.WithLabelValues(environment).Set(float64(time.Now().UTC().Unix()))
-		}
-	case "validation":
-		if c.RestoreValidationTotal != nil {
-			c.RestoreValidationTotal.WithLabelValues(result, environment).Inc()
-		}
-	}
-}
-
-func environmentClass(environment string) string {
-	switch strings.ToLower(strings.TrimSpace(environment)) {
-	case "production":
-		return "production"
-	case "staging", "preproduction":
-		return "staging"
-	case "test", "performance":
-		return "test"
-	default:
-		return "development"
 	}
 }
 

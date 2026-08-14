@@ -70,7 +70,6 @@ func TestValidate_storageDevelopmentLocalPasses(t *testing.T) {
 
 func TestValidate_storageProductionCOSPassesBase(t *testing.T) {
 	t.Parallel()
-	backupCfg := productionP6Backup()
 	cfg := &Config{
 		AppEnv:                 EnvProduction,
 		StorageProvider:        "cos",
@@ -82,7 +81,6 @@ func TestValidate_storageProductionCOSPassesBase(t *testing.T) {
 		CORSAllowedOrigins:     []string{"https://admin.example.com"},
 		Auth:                   productionP4Auth(),
 		Observability:          ValidProductionObservability(),
-		Backup:                 backupCfg,
 		P7:                     productionP7(),
 		DB:                     DBConfig{Driver: "postgres", User: "u", Name: "db"},
 	}

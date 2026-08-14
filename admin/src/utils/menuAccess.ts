@@ -15,8 +15,6 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionKey | PermissionKey[]> 
   '/ops/task-center/alerts': [PERMISSIONS.TASK_RETRY, PERMISSIONS.ALERTS_READ],
   '/ops/task-center/operation-tasks': PERMISSIONS.OPERATION_TASK_AUDIT_READ,
   '/ops/observability': PERMISSIONS.OBSERVABILITY_READ,
-  '/ops/backups': PERMISSIONS.BACKUP_READ,
-  '/ops/restores': PERMISSIONS.RESTORE_READ,
   '/ops/platform-runtime': PERMISSIONS.STORE_VIEW,
   '/files': PERMISSIONS.PRODUCT_VIEW,
   '/ai/prompts': PERMISSIONS.SETTINGS_MANAGE,

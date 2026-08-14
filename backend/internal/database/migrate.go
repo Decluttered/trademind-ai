@@ -9,7 +9,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/aiproducttext"
 	"github.com/trademind-ai/trademind/backend/internal/modules/aiprompt"
 	"github.com/trademind-ai/trademind/backend/internal/modules/aitask"
-	"github.com/trademind-ai/trademind/backend/internal/modules/backup"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collect"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectbrowserprofile"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectrule"
@@ -27,7 +26,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/performance"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
-	"github.com/trademind-ai/trademind/backend/internal/modules/restore"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
 	"github.com/trademind-ai/trademind/backend/internal/modules/taskcenter"
@@ -172,13 +170,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&taskcenter.TaskFailureMark{},
 		&taskcenter.TaskAlert{},
 		&taskcenter.TaskAlertNotification{},
-		&backup.Job{},
-		&backup.Artifact{},
-		&backup.Verification{},
-		&backup.RetentionHold{},
-		&backup.ObjectInventory{},
-		&restore.Job{},
-		&restore.Validation{},
 		&performance.TestRun{},
 		&performance.Regression{},
 		&performance.CapacitySnapshot{},

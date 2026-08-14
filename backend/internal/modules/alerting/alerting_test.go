@@ -191,42 +191,6 @@ func TestCounterResetWarmsInsteadOfFiring(t *testing.T) {
 	}
 }
 
-func TestBackupVerificationSuccessDoesNotFireFailureAlert(t *testing.T) {
-	db := alertTestDB(t)
-	rule := defaultRuleByID(t, "backup_verification_failed")
-	if err := db.Create(&rule).Error; err != nil {
-		t.Fatal(err)
-	}
-	svc := NewService(db, time.Second, true)
-	start := time.Date(2026, 8, 14, 10, 0, 0, 0, time.UTC)
-	before := labeledCounterSnapshot(start, rule.Metric, map[string]float64{"success": 3, "failure": 0})
-	afterSuccess := labeledCounterSnapshot(start.Add(30*time.Minute), rule.Metric, map[string]float64{"success": 4, "failure": 0})
-	_, _ = svc.EvaluateSnapshot(context.Background(), before)
-	run, err := svc.EvaluateSnapshot(context.Background(), afterSuccess)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if run.AlertsFired != 0 {
-		t.Fatalf("successful verification must not fire: %+v", run)
-	}
-	afterFailure := labeledCounterSnapshot(start.Add(time.Hour), rule.Metric, map[string]float64{"success": 4, "failure": 1})
-	run, err = svc.EvaluateSnapshot(context.Background(), afterFailure)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if run.AlertsFired != 1 {
-		t.Fatalf("failed verification must fire: %+v", run)
-	}
-	afterStable := labeledCounterSnapshot(start.Add(90*time.Minute), rule.Metric, map[string]float64{"success": 5, "failure": 1})
-	run, err = svc.EvaluateSnapshot(context.Background(), afterStable)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if run.AlertsResolved != 1 {
-		t.Fatalf("stable failure counter must resolve: %+v", run)
-	}
-}
-
 func alertTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
@@ -253,16 +217,6 @@ func defaultRuleByID(t *testing.T, id string) AlertRule {
 func counterSnapshot(at time.Time, name string, labels map[string]string, value float64) metrics.Snapshot {
 	return metrics.Snapshot{TakenAt: at, Families: map[string]metrics.FamilySnapshot{
 		name: {Type: dto.MetricType_COUNTER, Samples: []metrics.Sample{{Labels: labels, Value: value}}},
-	}}
-}
-
-func labeledCounterSnapshot(at time.Time, name string, values map[string]float64) metrics.Snapshot {
-	samples := make([]metrics.Sample, 0, len(values))
-	for result, value := range values {
-		samples = append(samples, metrics.Sample{Labels: map[string]string{"result": result}, Value: value})
-	}
-	return metrics.Snapshot{TakenAt: at, Families: map[string]metrics.FamilySnapshot{
-		name: {Type: dto.MetricType_COUNTER, Samples: samples},
 	}}
 }
 

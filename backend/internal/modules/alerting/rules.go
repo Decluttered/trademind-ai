@@ -12,6 +12,10 @@ var retiredDefaultRuleIDs = []string{
 	"release_health_failed",
 	"release_migration_failed",
 	"wal_archive_interrupted",
+	"backup_consecutive_failures",
+	"backup_too_old",
+	"backup_verification_failed",
+	"restore_validation_failed",
 }
 
 // DefaultRules returns built-in alert rules.
@@ -29,10 +33,6 @@ func DefaultRules() []AlertRule {
 		{ID: "file_scan_backlog", Name: "File scan backlog", Metric: "file_scan_queue_age_seconds", Condition: "p95", Window: "10m", Threshold: 300, Severity: SeverityWarning, CooldownSeconds: 600, Enabled: true, RunbookURL: "docs/runbooks/FILE_SCAN_BACKLOG.md", ChannelGroup: "security"},
 		{ID: "secret_rotation_failed", Name: "Secret rotation failed", Metric: "secret_rotation_failures_total", Condition: "increase", Window: "5m", Threshold: 0, Severity: SeverityWarning, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/SECRET_ROTATION_FAILED.md", ChannelGroup: "security"},
 		{ID: "tenant_access_denial_spike", Name: "Tenant access denial spike", Metric: "tenant_access_denied_total", Condition: "ratio", Window: "5m", Threshold: 0.2, Severity: SeverityWarning, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/TENANT_ACCESS_DENIAL_SPIKE.md", ChannelGroup: "security"},
-		{ID: "backup_consecutive_failures", Name: "Backup consecutive failures", Metric: "backup_failures_total", Condition: "increase", Window: "30m", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/BACKUP_FAILED.md", ChannelGroup: "ops"},
-		{ID: "backup_too_old", Name: "Backup too old", Metric: "backup_last_success_timestamp", Condition: "gauge_max", Window: "current", Threshold: 108000, Severity: SeverityCritical, CooldownSeconds: 600, Enabled: true, RunbookURL: "docs/runbooks/BACKUP_TOO_OLD.md", ChannelGroup: "ops"},
-		{ID: "backup_verification_failed", Name: "Backup verification failed", Metric: "backup_verification_total", Condition: "increase", Window: "30m", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/BACKUP_VERIFICATION_FAILED.md", ChannelGroup: "ops"},
-		{ID: "restore_validation_failed", Name: "Restore validation failed", Metric: "restore_validation_total", Condition: "increase", Window: "30m", Threshold: 0, Severity: SeverityCritical, CooldownSeconds: 300, Enabled: true, RunbookURL: "docs/runbooks/RESTORE_VALIDATION_FAILED.md", ChannelGroup: "ops"},
 	}
 }
 

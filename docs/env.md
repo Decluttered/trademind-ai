@@ -143,8 +143,6 @@ docker compose -f docker-compose.full.yml up -d --build
 | `INVENTORY_SYNC_*` | `INVENTORY_SYNC_QUEUE_ENABLED` | backend | 库存同步任务。 |
 | `WORKER_*` | `WORKER_HEARTBEAT_ENABLED`、`WORKER_REAPER_ENABLED` | backend | 多实例 Worker 心跳、过期判断和回收。L3 抖店草稿写要求 `WORKER_REAPER_ENABLED=true`，以便进程中断后将未知平台结果转入人工核对。 |
 | `TASK_ALERT_*` | `TASK_ALERT_SCAN_ENABLED`、`TASK_ALERT_SCAN_INTERVAL_SECONDS` | backend | 任务告警扫描。 |
-| `BACKUP_*` | `BACKUP_ENABLED`、`BACKUP_MODE`、`BACKUP_STORAGE_PROVIDER`、`BACKUP_ENCRYPTION_ENABLED`、`BACKUP_RETENTION_DAILY` | backend | P6 备份、加密、校验与保留配置。生产环境要求加密开启，且不得使用本地单副本。 |
-| `POSTGRES_*` | `POSTGRES_BACKUP_FORMAT`、`POSTGRES_PG_DUMP_PATH`、`POSTGRES_PG_RESTORE_PATH`、`POSTGRES_WAL_ARCHIVE_ENABLED`、`POSTGRES_PITR_ENABLED` | backend | PostgreSQL 逻辑备份与 PITR 基础配置。真实生产 PITR 验证必须按 Runbook 和外部审批执行。 |
 | `PERFORMANCE_*` | `PERFORMANCE_TEST_MODE`、`PERFORMANCE_DATASET_MAX_ROWS`、`PERFORMANCE_TEST_MAX_VUS`、`PERFORMANCE_TEST_MAX_DURATION_SECONDS` | backend / scripts | P7 隔离性能测试与数据集保护；production 禁止开启测试模式。 |
 | `PAGINATION_*` | `PAGINATION_DEFAULT_LIMIT`、`PAGINATION_MAX_LIMIT`、`PAGINATION_MAX_OFFSET`、`PAGINATION_CURSOR_SIGNING_KEY` | backend | P7 列表分页默认值、最大 limit、深 offset 保护与 Cursor HMAC 签名密钥；production 必须显式配置签名密钥。 |
 | `RATE_LIMIT_*` | `RATE_LIMIT_ENABLED`、`RATE_LIMIT_MODE`、`RATE_LIMIT_FAIL_MODE`、`RATE_LIMIT_POLICY_VERSION` | backend | P7 HTTP 限流配置；production 禁用需显式审批变量。 |
@@ -153,6 +151,8 @@ docker compose -f docker-compose.full.yml up -d --build
 | `PPROF_*` | `PPROF_ENABLED`、`PPROF_INTERNAL_ONLY` | backend | P7 Profiling 安全开关；production 禁止 public pprof。 |
 
 新增队列变量时，还要同步健康检查说明、任务中心页面和 `docs/PROGRESS.md`。
+
+数据库自动备份、加密、保留、PITR、备份告警和恢复演练由云数据库与运维平台配置，不再通过 TradeMind backend 环境变量管理。仓库内 P10 预生产备份/隔离恢复目标变量只服务于外部部署级发布验收，不会恢复已退役的应用内管理能力。
 
 ## Docker 端口覆盖
 

@@ -506,24 +506,9 @@ List endpoints return `{items, nextCursor, hasMore, limit}` and never expose off
 | `GET` | `/api/v1/ai/operation-workbench/todos/:id` | 单条待办详情 |
 | `POST` | `/api/v1/ai/operation-workbench/todos/refresh` | 重新聚合待办（只读，不写库、不调平台 API） |
 
-## P6 Backup / Restore API
+## Operations API retirement
 
-All P6 write operations require Bearer authentication and backend RBAC. The frontend never receives shell commands, full backup paths, storage secrets or database credentials.
-
-| 方法 | 路径 | 权限 | 说明 |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/ops/backups` | `backup.read` | 备份记录列表；不返回完整对象路径。 |
-| `POST` | `/api/v1/ops/backups` | `backup.create` | 创建备份任务；未启用备份时生成待复核记录。 |
-| `GET` | `/api/v1/ops/backups/:id` | `backup.read` | 备份详情。 |
-| `POST` | `/api/v1/ops/backups/:id/verify` | `backup.verify` | 执行备份校验。 |
-| `POST` | `/api/v1/ops/backups/:id/hold` | `backup.hold` | 添加手动保留。 |
-| `DELETE` | `/api/v1/ops/backups/:id` | `backup.delete` | 删除非运行、非 hold 的备份记录。 |
-| `GET` | `/api/v1/ops/restores` | `restore.read` | 恢复验证列表。 |
-| `POST` | `/api/v1/ops/restores` | `restore.execute` | 创建隔离恢复验证；production 目标默认拒绝。 |
-| `GET` | `/api/v1/ops/restores/:id` | `restore.read` | 恢复验证详情。 |
-| `POST` | `/api/v1/ops/restores/:id/verify` | `restore.verify` | 写入恢复完整性验证。 |
-
-The standalone release recorder and disaster-recovery drill recorder APIs have been retired because they stored self-reported state without executing deployment, traffic switching or a verified recovery workflow. The current working tree keeps reusable backup verification and isolated restore validation; real deployment and application rollback remain external, approved operations. Existing `release_*` and `dr_drills` data is not exposed and is not dropped automatically.
+The application-level backup management, restore validation, release recorder and disaster-recovery drill recorder APIs have been retired. Backup execution, retention, encryption, point-in-time recovery, monitoring and restore drills are owned by the cloud database and operations platform. Existing historical operation tables are not exposed and are not dropped automatically.
 
 ## P7 Performance / Capacity API Status
 

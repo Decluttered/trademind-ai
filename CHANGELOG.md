@@ -4,11 +4,17 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Application backup and restore retirement (2026-08-14)
+
+- Removed application-level backup management and restore validation Admin pages, APIs, permissions, configuration, services, metrics, default alerts, dashboard and module-specific runbooks.
+- Delegated automatic backups, encryption, retention, PITR, alerting and isolated restore drills to the cloud database and operations platform while retaining external disaster-recovery, database rollback and P10 pre-production release gates.
+- Stopped managing legacy `backup_jobs`, `backup_verifications` and `restore_jobs` through `AutoMigrate`; existing tables and rows remain untouched pending an explicit retention or archival decision.
+
 ### Observability production hardening (2026-08-14)
 
 - Added explicit trusted-proxy and metrics CIDR allowlists with staging/production fail-closed validation and exact Nginx protection for `/internal/metrics`.
 - Replaced lifetime aggregate alert and SLO evaluation with bounded structured snapshots, window deltas, ratio sample guards, counter reset handling, histogram evaluation, and synchronized code-owned rule definitions that preserve administrator enablement choices.
-- Wired backup and isolated restore outcomes into the metric catalog, expanded the protected overview contract, and rebuilt the Admin observability center with operational statuses, retained-data refresh errors, responsive layout, and regression coverage.
+- Expanded the protected overview contract and rebuilt the Admin observability center with operational statuses, retained-data refresh errors, responsive layout, and regression coverage. Backup and isolated restore metrics added during this work were subsequently removed with the application-level module retirement above.
 - Removed legacy observability sub-endpoints that only returned fixed placeholder aggregates instead of live operational data.
 - Kept real Prometheus/OTLP backends, external notification delivery, deployment, credentials, and production activation outside this code change and subject to target-environment human acceptance.
 
@@ -21,7 +27,7 @@ All notable changes to TradeMind are documented here.
 ### Disaster-recovery drill recorder retirement (2026-08-13)
 
 - Removed the development-only Admin page, `/api/v1/ops/dr/*` endpoints, dedicated permissions, unused schedule configuration, unpopulated metrics and their misleading default alert.
-- Retained backup verification, isolated restore validation, application rollback, WAL/PITR checks and operational runbooks.
+- Retained application rollback and the disaster-recovery boundary. Application-level backup verification, isolated restore validation and WAL/PITR checks were subsequently delegated to the external platforms described above.
 - Stopped managing the legacy `dr_drills` table through `AutoMigrate`; existing rows remain untouched pending an explicit retention or archival decision.
 
 ### Operation task center production hardening (2026-08-13)

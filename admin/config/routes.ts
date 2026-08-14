@@ -51,27 +51,6 @@ export function createInternalInventorySyncRoutes(
   ];
 }
 
-export function createDevelopmentOpsRoutes(
-  enabled = process.env.NODE_ENV !== 'production',
-) {
-  if (!enabled) return [];
-
-  return [
-    {
-      path: '/ops/backups',
-      name: '备份管理',
-      icon: 'DatabaseOutlined',
-      component: './Ops/Backups',
-    },
-    {
-      path: '/ops/restores',
-      name: '恢复验证',
-      icon: 'SafetyCertificateOutlined',
-      component: './Ops/Restores',
-    },
-  ];
-}
-
 export default [
   {
     path: '/user/login',
@@ -154,7 +133,6 @@ export default [
         icon: 'LineChartOutlined',
         component: './Ops/Observability',
       },
-      ...createDevelopmentOpsRoutes(),
       {
         path: '/ops/platform-runtime',
         name: '平台运行状态',

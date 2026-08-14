@@ -42,16 +42,6 @@ const (
 	PermAlertsSilence       = "alerts.silence"
 	PermSLORead             = "slo.read"
 	PermSLOManage           = "slo.manage"
-	// P6 backup / restore permissions
-	PermBackupRead     = "backup.read"
-	PermBackupCreate   = "backup.create"
-	PermBackupVerify   = "backup.verify"
-	PermBackupDownload = "backup.download"
-	PermBackupDelete   = "backup.delete"
-	PermBackupHold     = "backup.hold"
-	PermRestoreRead    = "restore.read"
-	PermRestoreExecute = "restore.execute"
-	PermRestoreVerify  = "restore.verify"
 	// P8 operation task permissions
 	PermOperationTaskEdit      = "operationtask.edit"
 	PermOperationTaskReview    = "operationtask.review"
@@ -106,15 +96,6 @@ var allPermissions = []string{
 	PermAlertsSilence,
 	PermSLORead,
 	PermSLOManage,
-	PermBackupRead,
-	PermBackupCreate,
-	PermBackupVerify,
-	PermBackupDownload,
-	PermBackupDelete,
-	PermBackupHold,
-	PermRestoreRead,
-	PermRestoreExecute,
-	PermRestoreVerify,
 	PermOperationTaskEdit,
 	PermOperationTaskReview,
 	PermOperationTaskExecute,
@@ -170,8 +151,6 @@ var operatorPermissions = []string{
 	PermObservabilityRead,
 	PermAlertsRead,
 	PermSLORead,
-	PermBackupRead,
-	PermRestoreRead,
 	PermOperationTaskEdit,
 	PermOperationTaskAuditRead,
 	PermInventorySyncRead,
@@ -195,8 +174,6 @@ var readonlyPermissions = []string{
 	PermObservabilityRead,
 	PermAlertsRead,
 	PermSLORead,
-	PermBackupRead,
-	PermRestoreRead,
 	PermOperationTaskAuditRead,
 	PermInventorySyncRead,
 	PermInventorySnapshotRead,
