@@ -3,6 +3,7 @@ package productpublish
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -42,6 +43,9 @@ func (s *Service) ManualBindDouyinSKU(c *gin.Context, publicationSkuID uuid.UUID
 	if err != nil {
 		return nil, err
 	}
+	if err := s.ensureStoreOperate(c, pub.ShopID); err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(pub.ExternalProductID) == "" {
 		return nil, fmt.Errorf("%s: platform product id missing", platformdouyin.CodeDouyinProductNotBound)
 	}
@@ -71,7 +75,9 @@ func (s *Service) ManualBindDouyinSKU(c *gin.Context, publicationSkuID uuid.UUID
 		"last_synced_at":  &now,
 		"updated_at":      now,
 	}
-	if err := s.DB.WithContext(ctx).Model(&ProductPublicationSKU{}).Where("id = ?", publicationSkuID).Updates(updates).Error; err != nil {
+	if err := s.DB.WithContext(ctx).Model(&ProductPublicationSKU{}).
+		Where("id = ? AND publication_id = ?", publicationSkuID, pub.ID).
+		Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("%s: %s", platformdouyin.CodeDouyinSKUManualBindFailed, err.Error())
 	}
 
@@ -112,6 +118,9 @@ func (s *Service) UnbindDouyinSKU(c *gin.Context, publicationSkuID uuid.UUID, bo
 	if err != nil {
 		return nil, err
 	}
+	if err := s.ensureStoreOperate(c, pub.ShopID); err != nil {
+		return nil, err
+	}
 
 	oldExt := strings.TrimSpace(psku.ExternalSKUID)
 	now := time.Now().UTC()
@@ -123,7 +132,9 @@ func (s *Service) UnbindDouyinSKU(c *gin.Context, publicationSkuID uuid.UUID, bo
 		"last_synced_at":  &now,
 		"updated_at":      now,
 	}
-	if err := s.DB.WithContext(ctx).Model(&ProductPublicationSKU{}).Where("id = ?", publicationSkuID).Updates(updates).Error; err != nil {
+	if err := s.DB.WithContext(ctx).Model(&ProductPublicationSKU{}).
+		Where("id = ? AND publication_id = ?", publicationSkuID, pub.ID).
+		Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("%s: %s", platformdouyin.CodeDouyinSKUManualUnbindFailed, err.Error())
 	}
 
@@ -177,7 +188,10 @@ func (s *Service) checkDouyinSKUBindingConflict(ctx context.Context, publication
 	if err == nil {
 		return fmt.Errorf("%s: platform sku already bound to another local spec", platformdouyin.CodeDouyinSKUBindingConflict)
 	}
-	return nil
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil
+	}
+	return fmt.Errorf("check douyin sku binding conflict: %w", err)
 }
 
 func (s *Service) buildDouyinBindingRow(ctx context.Context, pub *ProductPublication, publicationSkuID uuid.UUID) (*DouyinSKUBindingRow, error) {
@@ -196,7 +210,7 @@ func (s *Service) buildDouyinBindingRow(ctx context.Context, pub *ProductPublica
 		return nil, fmt.Errorf("publication sku not found")
 	}
 	var row ProductPublicationSKU
-	if err := s.DB.WithContext(ctx).First(&row, "id = ?", publicationSkuID).Error; err != nil {
+	if err := s.DB.WithContext(ctx).First(&row, "id = ? AND publication_id = ?", publicationSkuID, pub.ID).Error; err != nil {
 		return nil, err
 	}
 	out := DouyinSKUBindingRow{

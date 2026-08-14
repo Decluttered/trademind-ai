@@ -1,35 +1,57 @@
 package collect
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
+)
 
 // Register mounts authenticated collect routes on g (already under /api/v1).
 func Register(g *gin.RouterGroup, h *Handler) {
 	if g == nil || h == nil {
 		return
 	}
-	g.GET("/collect/providers", h.ListProviders)
-	g.POST("/collect/tasks", h.Create)
-	g.GET("/collect/tasks", h.List)
-	g.GET("/collect/monitor", h.Monitor)
-	g.GET("/collect/tasks/:id/events", h.ListTaskEvents)
-	g.GET("/collect/tasks/:id", h.Get)
-	g.POST("/collect/tasks/:id/retry", h.Retry)
+	requirePermission := func(permission string, write bool) gin.HandlerFunc {
+		return func(c *gin.Context) {
+			allowed := false
+			if write {
+				allowed = adminperm.RequireWrite(c, h.Svc.DB, permission)
+			} else {
+				allowed = adminperm.RequirePermission(c, h.Svc.DB, permission)
+			}
+			if !allowed {
+				c.Abort()
+				return
+			}
+			c.Next()
+		}
+	}
+	viewProduct := requirePermission(adminperm.PermProductView, false)
+	writeProduct := requirePermission(adminperm.PermProductWrite, true)
+	retryTask := requirePermission(adminperm.PermTaskRetry, true)
 
-	g.POST("/collect/batches", h.CreateBatch)
-	g.GET("/collect/batches", h.ListBatches)
-	g.GET("/collect/batches/:id/tasks", h.ListBatchTasks)
-	g.GET("/collect/batches/:id", h.GetBatch)
-	g.POST("/collect/batches/:id/retry-failed", h.RetryBatchFailed)
+	g.GET("/collect/providers", viewProduct, h.ListProviders)
+	g.POST("/collect/tasks", writeProduct, h.Create)
+	g.GET("/collect/tasks", viewProduct, h.List)
+	g.GET("/collect/monitor", viewProduct, h.Monitor)
+	g.GET("/collect/tasks/:id/events", viewProduct, h.ListTaskEvents)
+	g.GET("/collect/tasks/:id", viewProduct, h.Get)
+	g.POST("/collect/tasks/:id/retry", retryTask, h.Retry)
 
-	g.GET("/collector/providers/1688/auth-status", h.Get1688AuthStatus)
-	g.POST("/collector/providers/1688/open-login-browser", h.Open1688LoginBrowser)
-	g.GET("/collector/providers/pinduoduo/auth-status", h.GetPinduoduoAuthStatus)
-	g.POST("/collector/providers/pinduoduo/check-login", h.CheckPinduoduoLogin)
-	g.POST("/collect/providers/pinduoduo/check-login", h.CheckPinduoduoLogin)
-	g.POST("/collector/providers/pinduoduo/open-login-browser", h.OpenPinduoduoLoginBrowser)
+	g.POST("/collect/batches", writeProduct, h.CreateBatch)
+	g.GET("/collect/batches", viewProduct, h.ListBatches)
+	g.GET("/collect/batches/:id/tasks", viewProduct, h.ListBatchTasks)
+	g.GET("/collect/batches/:id", viewProduct, h.GetBatch)
+	g.POST("/collect/batches/:id/retry-failed", retryTask, h.RetryBatchFailed)
 
-	g.POST("/collector/providers/taobao_tmall/check-login", h.CheckTaobaoTmallLogin)
-	g.POST("/collect/providers/taobao_tmall/check-login", h.CheckTaobaoTmallLogin)
-	g.POST("/collector/providers/taobao_tmall/open-login-browser", h.OpenTaobaoTmallLoginBrowser)
-	g.POST("/collect/providers/taobao_tmall/open-login-browser", h.OpenTaobaoTmallLoginBrowser)
+	g.GET("/collector/providers/1688/auth-status", viewProduct, h.Get1688AuthStatus)
+	g.POST("/collector/providers/1688/open-login-browser", writeProduct, h.Open1688LoginBrowser)
+	g.GET("/collector/providers/pinduoduo/auth-status", viewProduct, h.GetPinduoduoAuthStatus)
+	g.POST("/collector/providers/pinduoduo/check-login", viewProduct, h.CheckPinduoduoLogin)
+	g.POST("/collect/providers/pinduoduo/check-login", viewProduct, h.CheckPinduoduoLogin)
+	g.POST("/collector/providers/pinduoduo/open-login-browser", writeProduct, h.OpenPinduoduoLoginBrowser)
+
+	g.POST("/collector/providers/taobao_tmall/check-login", viewProduct, h.CheckTaobaoTmallLogin)
+	g.POST("/collect/providers/taobao_tmall/check-login", viewProduct, h.CheckTaobaoTmallLogin)
+	g.POST("/collector/providers/taobao_tmall/open-login-browser", writeProduct, h.OpenTaobaoTmallLoginBrowser)
+	g.POST("/collect/providers/taobao_tmall/open-login-browser", writeProduct, h.OpenTaobaoTmallLoginBrowser)
 }

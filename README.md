@@ -152,6 +152,7 @@ pnpm seed:demo-permissions
 
 ```bash
 cp .env.example .env
+# 在 .env 中设置独立随机的 COLLECTOR_SERVICE_TOKEN（至少 32 字符）
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
@@ -159,6 +160,7 @@ Windows PowerShell：
 
 ```powershell
 Copy-Item .env.example .env
+# 在 .env 中设置独立随机的 COLLECTOR_SERVICE_TOKEN（至少 32 字符）
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
@@ -168,7 +170,8 @@ docker compose -f docker-compose.full.yml up -d --build
 | --- | --- |
 | Admin | <http://127.0.0.1:8000> |
 | Backend Health | <http://127.0.0.1:8080/health> |
-| Collector Health | <http://127.0.0.1:3001/health> |
+
+完整 Compose 中 Collector 仅供 backend 通过内部网络访问，不发布宿主机端口；PostgreSQL 与 Redis 仅绑定宿主机回环地址。仓库默认保持真实平台能力 `L0`，非抖店链路只创建本地刊登草稿，抖店只能通过已审核运营任务执行 `save_as_platform_draft`。
 
 Admin 根路径展示公开产品首页，访客可从首页进入登录页或注册页；登录后再进入运营工作台。
 

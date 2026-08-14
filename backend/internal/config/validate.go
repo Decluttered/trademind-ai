@@ -162,6 +162,9 @@ func (c *Config) validateProduction() error {
 	if strings.TrimSpace(c.AdminPublicURL) == "" {
 		return fmt.Errorf("%s: ADMIN_PUBLIC_URL is required in production", ErrCodeConfigRequired)
 	}
+	if isInsecureSecret(c.CollectorServiceToken) {
+		return fmt.Errorf("%s: COLLECTOR_SERVICE_TOKEN must be set to a strong unique value in production", ErrCodeSecretKeyRequired)
+	}
 	if c.EnableDemoSeed {
 		return fmt.Errorf("%s: ENABLE_DEMO_SEED must be false in production", ErrCodeProductionDevRouteEnabled)
 	}

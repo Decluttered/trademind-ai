@@ -14,7 +14,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-trademind}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trademind_dev_password}
     ports:
-      - "${POSTGRES_PUBLISH_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PUBLISH_PORT:-5432}:5432"
     volumes:
       - trademind_full_pg_data:/var/lib/postgresql/data
     healthcheck:
@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "${REDIS_PUBLISH_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_PUBLISH_PORT:-6379}:6379"
     volumes:
       - trademind_full_redis_data:/data
     healthcheck:
@@ -47,19 +47,26 @@ services:
       context: .
       dockerfile: collector/Dockerfile
     restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
     env_file:
       - .env
     environment:
-      # 编排约定：容器内固定监听 3001，宿主机端口见 COLLECTOR_PUBLISH_PORT
+      # Collector only listens on the Compose network and is not published to the host.
       COLLECTOR_HTTP_ADDR: ":3001"
+      COLLECTOR_SERVICE_TOKEN: ${COLLECTOR_SERVICE_TOKEN:?COLLECTOR_SERVICE_TOKEN is required}
+      COLLECTOR_MAX_REQUEST_BODY_BYTES: ${COLLECTOR_MAX_REQUEST_BODY_BYTES:-1048576}
+      COLLECTOR_REQUEST_TIMEOUT_MS: ${COLLECTOR_REQUEST_TIMEOUT_MS:-15000}
+      COLLECTOR_HEADERS_TIMEOUT_MS: ${COLLECTOR_HEADERS_TIMEOUT_MS:-10000}
       COLLECTOR_BROWSER_PROFILE_DIR: /workspace/data/browser-profiles
       COLLECTOR_STORAGE_STATE_DIR: /workspace/data/storage-states
       NODE_ENV: production
-    ports:
-      - "${COLLECTOR_PUBLISH_PORT:-3001}:3001"
+    expose:
+      - "3001"
     volumes:
-      - ./data/browser-profiles:/workspace/data/browser-profiles
-      - ./data/storage-states:/workspace/data/storage-states
+      - trademind_full_collector_profiles:/workspace/data/browser-profiles
+      - trademind_full_collector_storage_states:/workspace/data/storage-states
     healthcheck:
       test:
         [
@@ -85,6 +92,7 @@ services:
       DB_HOST: postgres
       REDIS_ADDR: redis:6379
       COLLECTOR_BASE_URL: http://collector:3001
+      COLLECTOR_SERVICE_TOKEN: ${COLLECTOR_SERVICE_TOKEN:?COLLECTOR_SERVICE_TOKEN is required}
       DOUYIN_WEBHOOK_TEST_SHOP_BINDING_ID: ${DOUYIN_WEBHOOK_TEST_SHOP_BINDING_ID:-}
       ENABLE_DOUYIN_WEBHOOK_DEMO_FALLBACK: ${ENABLE_DOUYIN_WEBHOOK_DEMO_FALLBACK:-false}
       P7_DIAGNOSTICS_ENABLED: ${P7_DIAGNOSTICS_ENABLED:-false}
@@ -149,3 +157,5 @@ volumes:
   trademind_full_pg_data:
   trademind_full_redis_data:
   trademind_full_uploads:
+  trademind_full_collector_profiles:
+  trademind_full_collector_storage_states:

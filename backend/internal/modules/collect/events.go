@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"strings"
@@ -226,12 +228,17 @@ func cloneTimePtr(t *time.Time) *time.Time {
 }
 
 // ListTaskEvents paginates timeline for one task by created_at ASC.
-func (s *Service) ListTaskEvents(ctx context.Context, taskID uuid.UUID, q TaskEventsListQuery) (*TaskEventsListResult, error) {
+func (s *Service) ListTaskEvents(c *gin.Context, taskID uuid.UUID, q TaskEventsListQuery) (*TaskEventsListResult, error) {
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("collect: no db")
 	}
+	tenantID, err := adminperm.TenantIDFromGin(c)
+	if err != nil {
+		return nil, err
+	}
+	ctx := c.Request.Context()
 	var exists int64
-	if err := s.DB.WithContext(ctx).Model(&CollectTask{}).Where("id = ?", taskID).Limit(1).Count(&exists).Error; err != nil {
+	if err := s.DB.WithContext(ctx).Model(&CollectTask{}).Where("id = ? AND tenant_id = ?", taskID, tenantID).Limit(1).Count(&exists).Error; err != nil {
 		return nil, err
 	}
 	if exists == 0 {

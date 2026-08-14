@@ -64,6 +64,7 @@ ms-playwright/
 .cache/
 .gocache/
 .gocache-*/
+/.tmp-gocache-*/
 .gomodcache/
 /backend/bin/
 /backend/tmp/
@@ -90,6 +91,7 @@ __debug_bin*
 .DS_Store
 
 # Local validation outputs (CI results stay in GitHub Actions)
+/.tmp/
 /docs/*.auto.json
 /docs/*.auto.md
 /docs/*.run[0-9]*.json

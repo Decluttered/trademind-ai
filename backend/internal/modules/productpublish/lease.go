@@ -101,7 +101,7 @@ func (s *Service) RecoverLeaseExpired(ctx context.Context, taskID uuid.UUID) err
 			UserMessage:    platformdouyin.UserMessageForRecovery(recovery),
 			TechnicalCode:  code,
 		})
-		_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+		_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, task.TenantID).
 			Updates(map[string]any{
 				"status":        TaskFailed,
 				"error_code":    code,
@@ -114,7 +114,7 @@ func (s *Service) RecoverLeaseExpired(ctx context.Context, taskID uuid.UUID) err
 				"updated_at":    fin,
 			}).Error
 	} else {
-		_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+		_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, task.TenantID).
 			Updates(map[string]any{
 				"status":        TaskFailed,
 				"error_message": msg,
@@ -125,7 +125,8 @@ func (s *Service) RecoverLeaseExpired(ctx context.Context, taskID uuid.UUID) err
 			}).Error
 	}
 	if rid, ok := snapshotPublicationFromTask(&task); ok {
-		_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).Where("id = ?", rid).
+		_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).
+			Where("id = ? AND tenant_id = ? AND product_id = ? AND shop_id = ?", rid, task.TenantID, task.ProductID, task.ShopID).
 			Updates(map[string]any{
 				"status":         StatusPubFailed,
 				"publish_status": StatusPubFailed,
@@ -164,7 +165,7 @@ func (s *Service) RecoverLegacyRunning(ctx context.Context, taskID uuid.UUID, le
 	}
 	fin := time.Now().UTC()
 	msg := "legacy running publish task recovered (no lease)"
-	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, task.TenantID).
 		Updates(map[string]any{
 			"status":        TaskFailed,
 			"error_message": msg,

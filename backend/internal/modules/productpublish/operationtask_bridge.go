@@ -129,7 +129,7 @@ func (s *Service) CreateFrozenDouyinDraftTask(ctx context.Context, tx *gorm.DB, 
 		return uuid.Nil, operationtask.ErrExecutionInProgress
 	}
 	var existing ProductPublication
-	err = tx.Where("product_id = ? AND shop_id = ? AND platform = ? AND external_product_id <> ''", in.FrozenDraft.ProductID, in.FrozenDraft.ShopID, "douyin_shop").First(&existing).Error
+	err = tx.Where("tenant_id = ? AND product_id = ? AND shop_id = ? AND platform = ? AND external_product_id <> ''", in.TenantID, in.FrozenDraft.ProductID, in.FrozenDraft.ShopID, "douyin_shop").First(&existing).Error
 	if err == nil {
 		return uuid.Nil, operationtask.ErrStateConflict
 	}
@@ -137,7 +137,7 @@ func (s *Service) CreateFrozenDouyinDraftTask(ctx context.Context, tx *gorm.DB, 
 		return uuid.Nil, err
 	}
 
-	publication := ProductPublication{ProductID: in.FrozenDraft.ProductID, ShopID: in.FrozenDraft.ShopID, Platform: "douyin_shop", Status: StatusDraft, PublishStatus: StatusChecking, Title: request.Name, Currency: "CNY", CreatedBy: &in.ActorID}
+	publication := ProductPublication{TenantID: in.TenantID, ProductID: in.FrozenDraft.ProductID, ShopID: in.FrozenDraft.ShopID, Platform: "douyin_shop", Status: StatusDraft, PublishStatus: StatusChecking, Title: request.Name, Currency: "CNY", CreatedBy: &in.ActorID}
 	if err := tx.Create(&publication).Error; err != nil {
 		return uuid.Nil, err
 	}
@@ -168,7 +168,7 @@ func (s *Service) CreateFrozenDouyinDraftTask(ctx context.Context, tx *gorm.DB, 
 	if err := tx.Create(&task).Error; err != nil {
 		return uuid.Nil, err
 	}
-	if err := tx.Model(&ProductPublication{}).Where("id = ?", publication.ID).Update("publish_task_id", task.ID).Error; err != nil {
+	if err := tx.Model(&ProductPublication{}).Where("id = ? AND tenant_id = ?", publication.ID, in.TenantID).Update("publish_task_id", task.ID).Error; err != nil {
 		return uuid.Nil, err
 	}
 	return task.ID, nil

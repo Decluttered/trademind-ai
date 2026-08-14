@@ -183,12 +183,14 @@
 | `POST` | `/api/v1/product-publish/batch-targets/create-drafts` | 多商品批量创建非抖店刊登草稿；请求只要包含 `douyin_shop` 就在任何本地写入前整单拒绝。 |
 | `GET` | `/api/v1/product-publish/batches` | 多商品刊登批次列表 |
 | `GET` | `/api/v1/product-publish/batches/:id` | 批次详情与子任务（仅创建者可访问，历史无 `createdBy` 批次兼容） |
-| `POST` | `/api/v1/product-publish/batches/:id/retry-failed` | 只重试失败的非抖店子任务；批次含抖店任务时整批拒绝且不修改任务状态。 |
-| `POST` | `/api/v1/product-publish/batches/:id/cancel-pending` | 只取消 pending 子任务 |
+| `POST` | `/api/v1/product-publish/batches/:id/retry-failed` | 只重试失败的非抖店子任务；批次含抖店任务时整批拒绝且不修改任务状态。每个旧任务的认领与替代任务创建在同一事务中，替代失败时旧任务保持 `failed`。 |
+| `POST` | `/api/v1/product-publish/batches/:id/cancel-pending` | 只取消 pending 子任务；任务状态、批次计数与批次状态在同一事务中更新。 |
 
 **批量规模限制（Phase A2.1）**：环境变量 `PUBLISH_BATCH_MAX_PRODUCTS`（默认 100）、`PUBLISH_BATCH_MAX_TARGETS`（默认 20）、`PUBLISH_BATCH_MAX_TASKS`（默认 300，即商品数 × 目标数）。超限时 HTTP 400，message：`本次选择的商品和刊登目标较多，请分批创建刊登草稿。`
 
-**幂等**：`create-drafts` 对相同 admin + 商品 + 目标 + 配置 hash 返回已有活跃批次；任务级 dedup 按 `product + platform + shop + config hash` 跳过已成功项。
+**权限与隔离**：采集/刊登读取需要 `product.view`，采集写入需要 `product.write`，创建刊登草稿需要 `publish.create_draft`，任务重试需要 `task.retry`，刊登 SKU 同步/绑定/解绑需要 `sku.bind`。商品、采集任务、刊登任务、publication 和批次均按当前 tenant 查询；店铺目标还要求对应店铺查看或操作授权，越权资源按未找到处理。
+
+**幂等与原子性**：`create-drafts` 对相同 tenant + admin + 商品 + 目标 + 配置 hash 返回已有活跃批次；任务级 dedup 按 `tenant + product + platform + shop + config hash` 跳过已成功项。本地 publication、刊登任务和反向关联在同一事务中创建，多商品批次与其本地草稿也整体提交或回滚。
 
 **配置校验（Phase A2.2）**：`batch-targets/check` 与 `create-drafts` 校验 `commonConfig` / `overrides`（数值非负、策略枚举、商品 / 平台 / 店铺越权与匹配）。失败时 HTTP 400，`code=40004`（`PUBLISH_CONFIG_INVALID`），`data` 含 `title`、`message`、`technicalDetails.field`。
 
@@ -200,7 +202,7 @@
 
 详见 [`docs/MULTI_PLATFORM_PUBLISHING_DESIGN.md`](MULTI_PLATFORM_PUBLISHING_DESIGN.md)。
 
-刊登任务 `POST /api/v1/products/:id/publish` 只为非抖店平台保存 `product_publish_tasks`。`douyin_shop` 在任务写入前固定拒绝并返回 `DOUYIN_OPERATION_TASK_REQUIRED`。非抖店任务字段包括 `productId`、`targetPlatform`、`targetStoreId`、`status`（队列态，兼容旧值）、`publishStatus`（业务态：`draft` / `checking` / `ready` / `publishing` / `success` / `failed` / `cancelled`）、`publishMode`、`title`、`description`、`images`、`skus`、`price`、`currency`、`checkResult`、`platformPayload`、`platformResult`、`errorCode`、`errorMessage`、`createdAt`、`updatedAt`。平台字段映射快照包含 `platformTitle`、`platformDescription`、`platformImages`、`platformSkus`、`platformPrice`、`platformStock`、`platformCategory`、`platformAttributes`。
+刊登任务 `POST /api/v1/products/:id/publish` 只为非抖店平台保存 `product_publish_tasks`，并在 `APP_ENV=staging|production` 固定拒绝传统直发，返回 `TRADITIONAL_PUBLISH_PRODUCTION_DISABLED`。`douyin_shop` 在任务写入前固定拒绝并返回 `DOUYIN_OPERATION_TASK_REQUIRED`。非抖店任务字段包括 `productId`、`targetPlatform`、`targetStoreId`、`status`（队列态，兼容旧值）、`publishStatus`（业务态：`draft` / `checking` / `ready` / `publishing` / `success` / `failed` / `cancelled`）、`publishMode`、`title`、`description`、`images`、`skus`、`price`、`currency`、`checkResult`、`platformPayload`、`platformResult`、`errorCode`、`errorMessage`、`createdAt`、`updatedAt`。平台字段映射快照包含 `platformTitle`、`platformDescription`、`platformImages`、`platformSkus`、`platformPrice`、`platformStock`、`platformCategory`、`platformAttributes`。
 
 ## AI
 
@@ -249,6 +251,8 @@
 | `POST` | `/api/v1/collect/providers/taobao_tmall/check-login` | 淘宝/天猫登录态检测（批量采集开始前也会调用）。body 可选 `{ "url": "商品详情链接", "testUrl": "设置页检测链接" }`；未登录返回业务错误文案；需安全验证时阻止批量开始。 |
 | `POST` | `/api/collector/providers/taobao_tmall/check-login` | 同上（`/api/collector` 别名）。 |
 | `POST` | `/api/collector/providers/taobao_tmall/open-login-browser` | 打开淘宝/天猫采集浏览器手动登录；body 可选 `{ "url": "商品链接" }`。 |
+
+以上是 backend 鉴权代理接口。Collector 原生 `/v1/*` 不对浏览器或公网开放，除 `/health` 外均要求 backend 使用 `COLLECTOR_SERVICE_TOKEN` Bearer 鉴权；完整 Compose 不发布 Collector 宿主机端口。采集 URL 仅允许公网 HTTP/HTTPS，解析到私网、回环、链路本地、保留地址或在浏览器阶段转向受限地址时拒绝。
 
 `GET /api/collector/providers/1688/auth-status` 返回示例：
 
@@ -415,7 +419,7 @@ List endpoints return `{items, nextCursor, hasMore, limit}` and never expose off
 | --- | --- | --- |
 | `GET` | `/api/v1/product-publish/tasks` | 刊登任务列表 |
 | `GET` | `/api/v1/product-publish/tasks/:id` | 任务详情（含 `platformPayload` 平台提交内容、`platformProductId` 抖店商品 ID、`retryable` 是否可重试） |
-| `POST` | `/api/v1/product-publish/tasks/:id/retry` | 重试明确可重试的非抖店 failed 任务；抖店固定拒绝且不修改状态。 |
+| `POST` | `/api/v1/product-publish/tasks/:id/retry` | 仅 development/test 可重试明确可重试的非抖店 failed 任务；staging/production 固定返回 `TRADITIONAL_PUBLISH_PRODUCTION_DISABLED` 且不修改旧任务，抖店固定返回 `DOUYIN_OPERATION_TASK_REQUIRED` 且不修改状态。 |
 
 `product_platform_publish_configs.mapped_images` 在抖店 Phase 6 保存扩展结构：
 

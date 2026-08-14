@@ -1,17 +1,18 @@
-import type { BrowserManager } from '../browser/manager.js';
-import { CustomCollectError } from '../providers/sourceCustom/errors.js';
-import { getProviderBySource } from '../providers/registry.js';
-import type { NormalizedProduct } from '../types/product.js';
-import type { CustomAccessReport } from '../types/access-status.js';
-import type { CollectTaskErrorCode } from '../types/task.js';
+import type { BrowserManager } from "../browser/manager.js";
+import { CustomCollectError } from "../providers/sourceCustom/errors.js";
+import { getProviderBySource } from "../providers/registry.js";
+import { assertPublicHttpUrl } from "../security/public-url.js";
+import type { NormalizedProduct } from "../types/product.js";
+import type { CustomAccessReport } from "../types/access-status.js";
+import type { CollectTaskErrorCode } from "../types/task.js";
 
 export type CollectTaskSuccess = {
-  status: 'success';
+  status: "success";
   product: NormalizedProduct;
 };
 
 export type CollectTaskFailure = {
-  status: 'failed';
+  status: "failed";
   error: {
     code: CollectTaskErrorCode;
     message: string;
@@ -22,40 +23,45 @@ export type CollectTaskFailure = {
 export type CollectTaskResult = CollectTaskSuccess | CollectTaskFailure;
 
 const PREFIX_CODES: { p: string; code: CollectTaskErrorCode }[] = [
-  { p: 'LOGIN_REQUIRED:', code: 'LOGIN_REQUIRED' },
-  { p: 'CUSTOM_RULE_MISSING:', code: 'CUSTOM_RULE_MISSING' },
-  { p: 'CUSTOM_RULE_INVALID:', code: 'CUSTOM_RULE_INVALID' },
-  { p: 'PARSE_FAILED_TITLE_MISSING:', code: 'PARSE_FAILED_TITLE_MISSING' },
-  { p: 'PARSE_FAILED_IMAGE_MISSING:', code: 'PARSE_FAILED_IMAGE_MISSING' },
-  { p: 'INVALID_REQUEST:', code: 'INVALID_REQUEST' },
-  { p: 'PROVIDER_NOT_IMPLEMENTED:', code: 'PROVIDER_NOT_IMPLEMENTED' },
-  { p: 'PAGE_BLOCKED_OR_VERIFY_REQUIRED:', code: 'PAGE_BLOCKED_OR_VERIFY_REQUIRED' },
-  { p: 'VERIFY_REQUIRED:', code: 'VERIFY_REQUIRED' },
-  { p: 'ITEM_NOT_FOUND:', code: 'ITEM_NOT_FOUND' },
-  { p: 'MAIN_IMAGES_EMPTY:', code: 'MAIN_IMAGES_EMPTY' },
-  { p: 'ACCESS_DENIED:', code: 'ACCESS_DENIED' },
-  { p: 'UNKNOWN_COLLECT_ERROR:', code: 'UNKNOWN_COLLECT_ERROR' },
-  { p: 'PRICE_NOT_FOUND:', code: 'PRICE_NOT_FOUND' },
-  { p: 'SKU_INCOMPLETE:', code: 'SKU_INCOMPLETE' },
-  { p: 'DETAIL_IMAGES_INCOMPLETE:', code: 'DETAIL_IMAGES_INCOMPLETE' },
-  { p: 'PAGE_BLOCKED:', code: 'PAGE_BLOCKED_OR_VERIFY_REQUIRED' },
-  { p: 'CAPTCHA:', code: 'PAGE_BLOCKED_OR_VERIFY_REQUIRED' },
-  { p: 'INVALID_URL:', code: 'INVALID_URL' },
-  { p: 'UNSUPPORTED_URL:', code: 'UNSUPPORTED_URL' },
-  { p: 'UNSUPPORTED_PINDUODUO_URL:', code: 'UNSUPPORTED_PINDUODUO_URL' },
-  { p: 'WECHAT_AUTH_REQUIRED:', code: 'WECHAT_AUTH_REQUIRED' },
-  { p: 'APP_REDIRECT:', code: 'APP_REDIRECT' },
-  { p: 'PRODUCT_NOT_FOUND:', code: 'PRODUCT_NOT_FOUND' },
-  { p: 'NAVIGATION_FAILED:', code: 'NAVIGATION_FAILED' },
-  { p: 'TIMEOUT:', code: 'TIMEOUT' },
-  { p: 'PAGE_LOAD_TIMEOUT:', code: 'TIMEOUT' },
-  { p: 'PAGE_TIMEOUT:', code: 'TIMEOUT' },
-  { p: 'PARSE_FAILED:', code: 'PARSE_FAILED' },
-  { p: 'COLLECT_FAILED:', code: 'COLLECT_FAILED' },
-  { p: 'PROVIDER_NOT_AVAILABLE:', code: 'PROVIDER_NOT_AVAILABLE' },
+  { p: "LOGIN_REQUIRED:", code: "LOGIN_REQUIRED" },
+  { p: "CUSTOM_RULE_MISSING:", code: "CUSTOM_RULE_MISSING" },
+  { p: "CUSTOM_RULE_INVALID:", code: "CUSTOM_RULE_INVALID" },
+  { p: "PARSE_FAILED_TITLE_MISSING:", code: "PARSE_FAILED_TITLE_MISSING" },
+  { p: "PARSE_FAILED_IMAGE_MISSING:", code: "PARSE_FAILED_IMAGE_MISSING" },
+  { p: "INVALID_REQUEST:", code: "INVALID_REQUEST" },
+  { p: "PROVIDER_NOT_IMPLEMENTED:", code: "PROVIDER_NOT_IMPLEMENTED" },
+  {
+    p: "PAGE_BLOCKED_OR_VERIFY_REQUIRED:",
+    code: "PAGE_BLOCKED_OR_VERIFY_REQUIRED",
+  },
+  { p: "VERIFY_REQUIRED:", code: "VERIFY_REQUIRED" },
+  { p: "ITEM_NOT_FOUND:", code: "ITEM_NOT_FOUND" },
+  { p: "MAIN_IMAGES_EMPTY:", code: "MAIN_IMAGES_EMPTY" },
+  { p: "ACCESS_DENIED:", code: "ACCESS_DENIED" },
+  { p: "UNKNOWN_COLLECT_ERROR:", code: "UNKNOWN_COLLECT_ERROR" },
+  { p: "PRICE_NOT_FOUND:", code: "PRICE_NOT_FOUND" },
+  { p: "SKU_INCOMPLETE:", code: "SKU_INCOMPLETE" },
+  { p: "DETAIL_IMAGES_INCOMPLETE:", code: "DETAIL_IMAGES_INCOMPLETE" },
+  { p: "PAGE_BLOCKED:", code: "PAGE_BLOCKED_OR_VERIFY_REQUIRED" },
+  { p: "CAPTCHA:", code: "PAGE_BLOCKED_OR_VERIFY_REQUIRED" },
+  { p: "INVALID_URL:", code: "INVALID_URL" },
+  { p: "UNSUPPORTED_URL:", code: "UNSUPPORTED_URL" },
+  { p: "UNSUPPORTED_PINDUODUO_URL:", code: "UNSUPPORTED_PINDUODUO_URL" },
+  { p: "WECHAT_AUTH_REQUIRED:", code: "WECHAT_AUTH_REQUIRED" },
+  { p: "APP_REDIRECT:", code: "APP_REDIRECT" },
+  { p: "PRODUCT_NOT_FOUND:", code: "PRODUCT_NOT_FOUND" },
+  { p: "NAVIGATION_FAILED:", code: "NAVIGATION_FAILED" },
+  { p: "TIMEOUT:", code: "TIMEOUT" },
+  { p: "PAGE_LOAD_TIMEOUT:", code: "TIMEOUT" },
+  { p: "PAGE_TIMEOUT:", code: "TIMEOUT" },
+  { p: "PARSE_FAILED:", code: "PARSE_FAILED" },
+  { p: "COLLECT_FAILED:", code: "COLLECT_FAILED" },
+  { p: "PROVIDER_NOT_AVAILABLE:", code: "PROVIDER_NOT_AVAILABLE" },
 ];
 
-function mapPrefixedError(msg: string): { code: CollectTaskErrorCode; message: string } | null {
+function mapPrefixedError(
+  msg: string,
+): { code: CollectTaskErrorCode; message: string } | null {
   for (const { p, code } of PREFIX_CODES) {
     if (msg.startsWith(p)) {
       return { code, message: msg.slice(p.length) };
@@ -75,36 +81,57 @@ export async function runCollectTask(
   const url = input.url?.trim();
   if (!source || !url) {
     return {
-      status: 'failed',
-      error: { code: 'INVALID_REQUEST', message: 'fields "source" and "url" are required' },
+      status: "failed",
+      error: {
+        code: "INVALID_REQUEST",
+        message: 'fields "source" and "url" are required',
+      },
     };
   }
 
   const provider = getProviderBySource(source);
   if (!provider) {
     return {
-      status: 'failed',
-      error: { code: 'PROVIDER_NOT_FOUND', message: `unknown source "${source}"` },
+      status: "failed",
+      error: {
+        code: "PROVIDER_NOT_FOUND",
+        message: `unknown source "${source}"`,
+      },
+    };
+  }
+
+  try {
+    await assertPublicHttpUrl(url);
+  } catch {
+    return {
+      status: "failed",
+      error: {
+        code: "INVALID_URL",
+        message: "target URL must resolve to a public HTTP(S) address",
+      },
     };
   }
 
   if (!provider.canHandle(url)) {
     return {
-      status: 'failed',
+      status: "failed",
       error: {
-        code: 'UNSUPPORTED_URL',
+        code: "UNSUPPORTED_URL",
         message: `url is not supported by source "${provider.sourceId}"`,
       },
     };
   }
 
   try {
-    const product = await provider.collect(browser, { url, options: input.options });
-    return { status: 'success', product };
+    const product = await provider.collect(browser, {
+      url,
+      options: input.options,
+    });
+    return { status: "success", product };
   } catch (e) {
     if (e instanceof CustomCollectError) {
       return {
-        status: 'failed',
+        status: "failed",
         error: { code: e.code as CollectTaskErrorCode, message: e.message },
         access: e.report,
       };
@@ -112,20 +139,20 @@ export async function runCollectTask(
     const msg = e instanceof Error ? e.message : String(e);
     if (/__name is not defined|evaluate_script_error/i.test(msg)) {
       return {
-        status: 'failed',
+        status: "failed",
         error: {
-          code: 'PARSE_FAILED',
+          code: "PARSE_FAILED",
           message: `evaluate_script_error:${msg}`,
         },
       };
     }
     const mapped = mapPrefixedError(msg);
     if (mapped) {
-      return { status: 'failed', error: mapped };
+      return { status: "failed", error: mapped };
     }
     return {
-      status: 'failed',
-      error: { code: 'COLLECT_FAILED', message: msg },
+      status: "failed",
+      error: { code: "COLLECT_FAILED", message: msg },
     };
   }
 }

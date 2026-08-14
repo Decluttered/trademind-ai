@@ -14,6 +14,8 @@ import {
   type PublishBatchDetail,
 } from '@/services/productPublish';
 import { formatDateTime } from '@/utils/formatTime';
+import { usePermission } from '@/hooks/usePermission';
+import { PERMISSIONS } from '@/utils/permission';
 import { Link, history, useParams, useSearchParams } from '@umijs/max';
 import { normalizeSource } from '@/utils/urlState';
 import { Alert, Button, Card, Descriptions, Popconfirm, Space, Table, Tag, Typography, message } from 'antd';
@@ -44,6 +46,9 @@ function taskStatusTag(status: string, label?: string) {
 
 export default function PublishBatchDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { can } = usePermission();
+  const canRetry = can(PERMISSIONS.TASK_RETRY);
+  const canCancel = can(PERMISSIONS.PUBLISH_CREATE_DRAFT);
   const [searchParams] = useSearchParams();
   const navSource = normalizeSource(searchParams.get('source') || undefined);
   const [detail, setDetail] = useState<PublishBatchDetail | null>(null);
@@ -75,6 +80,10 @@ export default function PublishBatchDetailPage() {
   }, [detail?.items, statusFilter]);
 
   const onRetryFailed = async () => {
+    if (!canRetry) {
+      message.error('当前账号无任务重试权限');
+      return;
+    }
     if (!id) return;
     setActing(true);
     try {
@@ -89,6 +98,10 @@ export default function PublishBatchDetailPage() {
   };
 
   const onCancelPending = async () => {
+    if (!canCancel) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     if (!id) return;
     setActing(true);
     try {
@@ -144,16 +157,20 @@ export default function PublishBatchDetailPage() {
               </Descriptions.Item>
             </Descriptions>
             <Space style={{ marginTop: 16 }} wrap>
-              {detail.failedCount > 0 && (
+              {detail.failedCount > 0 && (canRetry ? (
                 <Popconfirm title="只重试本批次中的失败子任务？" onConfirm={() => void onRetryFailed()}>
-                  <Button type="primary" loading={acting}>
-                    重试失败项
-                  </Button>
+                  <Button type="primary" loading={acting}>重试失败项</Button>
                 </Popconfirm>
+              ) : (
+                <Button type="primary" disabled>重试失败项</Button>
+              ))}
+              {canCancel ? (
+                <Popconfirm title="只取消等待中的子任务，进行中的任务不会强杀。" onConfirm={() => void onCancelPending()}>
+                  <Button loading={acting}>取消等待项</Button>
+                </Popconfirm>
+              ) : (
+                <Button disabled>取消等待项</Button>
               )}
-              <Popconfirm title="只取消等待中的子任务，进行中的任务不会强杀。" onConfirm={() => void onCancelPending()}>
-                <Button loading={acting}>取消等待项</Button>
-              </Popconfirm>
               <Link to="/ops/task-center/failures">失败任务中心</Link>
             </Space>
           </Card>

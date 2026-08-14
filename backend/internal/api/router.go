@@ -236,7 +236,11 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	if dep.Config != nil && dep.Config.CollectorBaseURL != "" {
 		collectorBase = dep.Config.CollectorBaseURL
 	}
-	collectorClient := collect.NewCollectorClient(collectorBase, collectorTimeout)
+	collectorToken := ""
+	if dep.Config != nil {
+		collectorToken = dep.Config.CollectorServiceToken
+	}
+	collectorClient := collect.NewCollectorClient(collectorBase, collectorTimeout, collectorToken)
 
 	profileSvc := &collectbrowserprofile.Service{
 		DB:        dep.DB,
@@ -560,6 +564,9 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		OpLog:       opLogSvc,
 		Readiness:   readinessSvc,
 		Idempotency: idempotencySvc,
+	}
+	if dep.Config != nil {
+		productPublishSvc.Environment = dep.Config.AppEnv
 	}
 	writeControlSvc := &productioncontrolp10.Service{DB: dep.DB, Config: dep.Config, ProviderWriteGuard: func(ctx context.Context, shopID uuid.UUID) error {
 		if guardErr := platformdouyin.GuardWorkerWithShop(ctx, shopID.String(), platformdouyin.FeatureProductDraft, true, false); guardErr != nil {

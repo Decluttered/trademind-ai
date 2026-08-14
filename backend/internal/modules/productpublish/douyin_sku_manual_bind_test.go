@@ -1,10 +1,13 @@
 package productpublish
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 	platformdouyin "github.com/trademind-ai/trademind/backend/internal/providers/platform/douyinshop"
+	"gorm.io/gorm"
 )
 
 func TestDouyinInventorySyncReadyAllBound(t *testing.T) {
@@ -85,4 +88,15 @@ func TestPlatformSkusFromPublicationRaw(t *testing.T) {
 	if len(cands) != 1 || cands[0].PlatformSKUID != "111" {
 		t.Fatalf("unexpected candidates: %+v", cands)
 	}
+}
+
+func TestCheckDouyinSKUBindingConflictPropagatesDatabaseErrors(t *testing.T) {
+	db := newDouyinPublishTestDB(t)
+	require.NoError(t, db.Migrator().DropTable(&ProductPublicationSKU{}))
+	svc := &Service{DB: db}
+
+	err := svc.checkDouyinSKUBindingConflict(context.Background(), uuid.New(), uuid.New(), "platform-sku-1")
+	require.Error(t, err)
+	require.NotErrorIs(t, err, gorm.ErrRecordNotFound)
+	require.Contains(t, err.Error(), "check douyin sku binding conflict")
 }

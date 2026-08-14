@@ -12,6 +12,8 @@ var ErrDouyinOperationTaskRequired = errors.New("抖店平台草稿只能通过�
 
 var ErrDouyinRecoveryNotAllowed = errors.New("仅平台结果待核对的运营任务允许人工回查")
 
+var ErrTraditionalPublishProductionDisabled = errors.New("生产环境已关闭传统直发，请创建本地刊登草稿或通过运营任务中心执行受控平台草稿")
+
 const (
 	ErrorPublishCheckFailed   = "PUBLISH_CHECK_FAILED"
 	ErrorPriceInvalid         = "PRICE_INVALID"
@@ -22,10 +24,11 @@ const (
 	ErrorPlatformAPI          = "PLATFORM_API_ERROR"
 	ErrorUnknownPublish       = "UNKNOWN_PUBLISH_ERROR"
 
-	ErrorDouyinCreateProductFailed   = "DOUYIN_CREATE_PRODUCT_FAILED"
-	ErrorDouyinProductPayloadInvalid = "DOUYIN_PRODUCT_PAYLOAD_INVALID"
-	ErrorDouyinOperationTaskRequired = "DOUYIN_OPERATION_TASK_REQUIRED"
-	ErrorUnknownDouyinPublish        = "UNKNOWN_DOUYIN_ERROR"
+	ErrorDouyinCreateProductFailed            = "DOUYIN_CREATE_PRODUCT_FAILED"
+	ErrorDouyinProductPayloadInvalid          = "DOUYIN_PRODUCT_PAYLOAD_INVALID"
+	ErrorDouyinOperationTaskRequired          = "DOUYIN_OPERATION_TASK_REQUIRED"
+	ErrorUnknownDouyinPublish                 = "UNKNOWN_DOUYIN_ERROR"
+	ErrorTraditionalPublishProductionDisabled = "TRADITIONAL_PUBLISH_PRODUCTION_DISABLED"
 )
 
 func containsDouyinTarget(targets []PublishTargetRef) bool {

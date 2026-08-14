@@ -2,13 +2,14 @@
 
 ## 概述
 
-Phase A2 通过 GORM AutoMigrate 扩展 `product_publish_batches` / `product_publish_tasks`。Phase A2.1 补充**显式 PostgreSQL migration**（Go 启动时执行），用于：
+Phase A2 通过 GORM AutoMigrate 扩展 `product_publish_batches` / `product_publish_tasks`。Phase A2.1 补充**显式 PostgreSQL migration**（Go 启动时执行）；生产维护阶段又增加 tenant ownership 回填，用于：
 
 - 多商品批次 `product_id` 可空（兼容 `single_product` / `multi_product`）
 - 批次列表、子任务查询索引
 - 活跃批次 `idempotency_key` 部分唯一索引（防并发重复创建）
+- 为历史 `product_publish_tasks`、`product_publications`、`product_publish_batches` 回填可确定的 `tenant_id`
 
-实现文件：[`backend/internal/database/migrate_publish_batch_a21.go`](../backend/internal/database/migrate_publish_batch_a21.go)
+实现文件：[`backend/internal/database/migrate_publish_batch_a21.go`](../backend/internal/database/migrate_publish_batch_a21.go)、[`backend/internal/database/migrate_product_publish_tenant.go`](../backend/internal/database/migrate_product_publish_tenant.go)
 
 ## 执行时机
 
@@ -71,6 +72,16 @@ ORDER BY created_at DESC;
 
 清理完成后重启服务，migration 会自动创建唯一索引。
 
+### 4. 历史 tenant ownership 回填
+
+`migrateProductPublishTenant` 在刊登表完成 AutoMigrate 后执行，并可重复运行：
+
+- task 与 publication 从已存在的 `products.tenant_id` 回填。
+- 单商品 batch 优先从其 `product_id` 回填；多商品 batch 从已回填的子任务 tenant 回填。
+- 只更新 `tenant_id=0` 且归属可确定的行；孤立商品、孤立任务或无法确定归属的历史行继续保留为 `0`，不会猜测租户。
+
+上线前应先备份并在隔离 PostgreSQL 副本核对 tenant-zero 残留。迁移不会删除或重分配无法确认的历史数据。
+
 ## 回滚
 
 按需执行（**回滚 unique 索引不影响数据**）：
@@ -99,4 +110,5 @@ ALTER TABLE product_publish_batches ALTER COLUMN product_id SET NOT NULL;
 
 | 日期 | 说明 |
 |------|------|
+| 2026-08-14 | 增加刊登任务、publication 与批次 tenant ownership 幂等回填 |
 | 2026-06-19 | Phase A2.1 初始 migration |

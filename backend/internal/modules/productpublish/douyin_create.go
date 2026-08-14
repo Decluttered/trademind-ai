@@ -75,7 +75,7 @@ func (s *Service) ProcessDouyinDraftTask(ctx context.Context, taskID uuid.UUID, 
 	cancelRen := s.startPublishLeaseRenewal(ctx, taskID, workerID, claim, s.publishLeaseTTL())
 	defer cancelRen()
 
-	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, taskRow.TenantID).
 		Updates(map[string]any{"publish_status": StatusCreatingPlatformDraft}).Error
 
 	fail := func(code, msg string, retryable bool, requestID string, raw map[string]any) error {
@@ -93,7 +93,8 @@ func (s *Service) ProcessDouyinDraftTask(ctx context.Context, taskID uuid.UUID, 
 		}
 		_ = s.finishProductPublishTask(ctx, taskID, workerID, claim, updates)
 		if snap, ok := parseDouyinDraftSnapshot(taskRow.Input); ok {
-			_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).Where("id = ?", snap.PublicationID).
+			_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).
+				Where("id = ? AND tenant_id = ? AND product_id = ? AND shop_id = ?", snap.PublicationID, taskRow.TenantID, taskRow.ProductID, taskRow.ShopID).
 				Updates(map[string]any{"status": StatusPubFailed, "publish_status": StatusPubFailed, "updated_at": fin}).Error
 		}
 		if s.OpLog != nil {
@@ -246,7 +247,7 @@ func (s *Service) completeDouyinDraftSuccess(ctx context.Context, taskRow *Produ
 		updates["locked_by"] = nil
 		updates["locked_until"] = nil
 		updates["updated_at"] = fin
-		taskUpdate := tx.Model(&ProductPublishTask{}).Where("id = ?", taskID)
+		taskUpdate := tx.Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, taskRow.TenantID)
 		if claim != nil && strings.TrimSpace(workerID) != "" {
 			taskUpdate = taskUpdate.Where("status = ? AND locked_by = ? AND execution_id = ? AND lock_version = ?",
 				TaskRunning, workerID, claim.ExecutionID.String(), claim.LeaseVersion)
@@ -258,8 +259,8 @@ func (s *Service) completeDouyinDraftSuccess(ctx context.Context, taskRow *Produ
 		if result.RowsAffected != 1 {
 			return tasklease.ErrLeaseLost
 		}
-		publicationUpdate := tx.Model(&ProductPublication{}).Where("id = ? AND product_id = ? AND shop_id = ? AND platform = ?",
-			snap.PublicationID, taskRow.ProductID, taskRow.ShopID, "douyin_shop").Updates(map[string]any{
+		publicationUpdate := tx.Model(&ProductPublication{}).Where("id = ? AND tenant_id = ? AND product_id = ? AND shop_id = ? AND platform = ?",
+			snap.PublicationID, taskRow.TenantID, taskRow.ProductID, taskRow.ShopID, "douyin_shop").Updates(map[string]any{
 			"external_product_id":  res.PlatformProductID,
 			"status":               StatusDraft,
 			"publish_status":       StatusDraftCreated,

@@ -15,6 +15,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
 	"github.com/trademind-ai/trademind/backend/internal/modules/worker"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -25,17 +26,27 @@ func (s *Service) CreatePublishTask(c *gin.Context, productID uuid.UUID, body Pu
 	if s == nil || s.DB == nil || s.Settings == nil || s.Shops == nil || c == nil {
 		return nil, fmt.Errorf("product publish unavailable")
 	}
+	if !s.traditionalPublishAllowed() {
+		return nil, ErrTraditionalPublishProductionDisabled
+	}
 	ctx := c.Request.Context()
+	tenantID, err := adminperm.TenantIDFromGin(c)
+	if err != nil {
+		return nil, err
+	}
 	sid, err := uuid.Parse(strings.TrimSpace(body.ShopID))
 	if err != nil {
 		return nil, fmt.Errorf("invalid shopId")
+	}
+	if err := s.ensureStoreOperate(c, sid); err != nil {
+		return nil, err
 	}
 
 	var prod product.Product
 	if err := s.DB.WithContext(ctx).
 		Preload("Images", func(db *gorm.DB) *gorm.DB { return db.Order("sort_order ASC, created_at ASC") }).
 		Preload("SKUs", func(db *gorm.DB) *gorm.DB { return db.Order("created_at ASC") }).
-		First(&prod, "id = ?", productID).Error; err != nil {
+		First(&prod, "id = ? AND tenant_id = ?", productID, tenantID).Error; err != nil {
 		return nil, err
 	}
 	if prod.DeletedAt.Valid {
@@ -56,8 +67,8 @@ func (s *Service) CreatePublishTask(c *gin.Context, productID uuid.UUID, body Pu
 	if row == nil {
 		return nil, fmt.Errorf("shop not found")
 	}
-	if prod.TenantID != 0 && row.TenantID != 0 && prod.TenantID != row.TenantID {
-		return nil, fmt.Errorf("product tenant does not match shop tenant")
+	if row.TenantID != tenantID {
+		return nil, gorm.ErrRecordNotFound
 	}
 
 	platKey := strings.TrimSpace(strings.ToLower(row.Platform))
@@ -132,8 +143,8 @@ func (s *Service) CreatePublishTask(c *gin.Context, productID uuid.UUID, body Pu
 	}
 
 	var pubRow ProductPublication
-	q := s.DB.WithContext(ctx).Where("product_id = ? AND shop_id = ? AND platform = ? AND publish_status = ?",
-		prod.ID, sid, platKey, StatusPublishing).
+	q := s.DB.WithContext(ctx).Where("tenant_id = ? AND product_id = ? AND shop_id = ? AND platform = ? AND publish_status = ?",
+		tenantID, prod.ID, sid, platKey, StatusPublishing).
 		Order("updated_at DESC")
 	if err := q.First(&pubRow).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -148,6 +159,7 @@ func (s *Service) CreatePublishTask(c *gin.Context, productID uuid.UUID, body Pu
 			curr = "USD"
 		}
 		pubRow = ProductPublication{
+			TenantID:      tenantID,
 			ProductID:     prod.ID,
 			ShopID:        sid,
 			Platform:      platKey,
@@ -194,6 +206,7 @@ func (s *Service) CreatePublishTask(c *gin.Context, productID uuid.UUID, body Pu
 	}
 
 	task := ProductPublishTask{
+		TenantID:        tenantID,
 		ProductID:       prod.ID,
 		ShopID:          sid,
 		TargetStoreID:   sid,

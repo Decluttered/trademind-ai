@@ -15,6 +15,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	platformdouyin "github.com/trademind-ai/trademind/backend/internal/providers/platform/douyinshop"
 	"gorm.io/datatypes"
 )
@@ -98,6 +99,9 @@ func (s *Service) SyncDouyinSKUBindings(c *gin.Context, publicationID uuid.UUID,
 	ctx := c.Request.Context()
 	pub, err := s.loadDouyinPublication(ctx, publicationID)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.ensureStoreOperate(c, pub.ShopID); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(pub.ExternalProductID) == "" {
@@ -276,8 +280,12 @@ func (s *Service) writeDouyinDetailSyncFailed(ctx context.Context, adminID *uuid
 }
 
 func (s *Service) loadDouyinPublication(ctx context.Context, publicationID uuid.UUID) (*ProductPublication, error) {
+	tenant, err := security.RequireTenantContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var pub ProductPublication
-	if err := s.DB.WithContext(ctx).First(&pub, "id = ?", publicationID).Error; err != nil {
+	if err := s.DB.WithContext(ctx).First(&pub, "id = ? AND tenant_id = ?", publicationID, tenant.TenantID).Error; err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(strings.ToLower(pub.Platform)) != "douyin_shop" {

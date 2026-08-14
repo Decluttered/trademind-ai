@@ -17,7 +17,9 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/opslabels"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
 )
 
@@ -148,9 +150,17 @@ func publishTargetKey(platform string, shopID *uuid.UUID) string {
 }
 
 // ListPublishTargets returns platforms/shops available for publishing one product.
-func (s *Service) ListPublishTargets(ctx context.Context, productID uuid.UUID) (*PublishTargetsResponse, error) {
+func (s *Service) ListPublishTargets(c *gin.Context, productID uuid.UUID) (*PublishTargetsResponse, error) {
 	if s == nil || s.DB == nil || s.Shops == nil {
 		return nil, fmt.Errorf("product publish unavailable")
+	}
+	if c == nil {
+		return nil, security.ErrTenantContextMissing
+	}
+	ctx := c.Request.Context()
+	tenant, err := security.RequireTenantContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 	if _, err := s.loadProductForPublish(ctx, productID); err != nil {
 		return nil, err
@@ -162,7 +172,15 @@ func (s *Service) ListPublishTargets(ctx context.Context, productID uuid.UUID) (
 	})
 
 	var shops []shop.Shop
-	_ = s.DB.WithContext(ctx).Where("status <> ?", shop.StatusDisabled).Order("platform ASC, shop_name ASC").Find(&shops).Error
+	shopQuery := s.DB.WithContext(ctx).Model(&shop.Shop{}).Where("tenant_id = ? AND status <> ?", tenant.TenantID, shop.StatusDisabled)
+	if scoped, scopeErr := adminperm.ApplyStoreScope(c, s.DB, shopQuery, "id"); scopeErr != nil {
+		return nil, scopeErr
+	} else {
+		shopQuery = scoped
+	}
+	if err := shopQuery.Order("platform ASC, shop_name ASC").Find(&shops).Error; err != nil {
+		return nil, err
+	}
 	shopsByPlat := map[string][]shop.Shop{}
 	for _, sh := range shops {
 		plat := strings.TrimSpace(strings.ToLower(sh.Platform))
@@ -292,6 +310,9 @@ func (s *Service) CheckPublishTargets(ctx context.Context, productID uuid.UUID, 
 	if len(req.Targets) == 0 {
 		return nil, fmt.Errorf("targets required")
 	}
+	if err := s.validateTargetStores(ctx, req.Targets); err != nil {
+		return nil, err
+	}
 	if _, err := s.loadProductForPublish(ctx, productID); err != nil {
 		return nil, err
 	}
@@ -335,20 +356,22 @@ func (s *Service) checkOnePublishTarget(ctx context.Context, productID uuid.UUID
 	if t.ShopID != nil && strings.TrimSpace(*t.ShopID) != "" {
 		if u, err := uuid.Parse(strings.TrimSpace(*t.ShopID)); err == nil {
 			sid = &u
-			if s.Shops != nil {
-				if row, _, err := s.Shops.PlainAuthForProviderCtx(ctx, u); err == nil && row != nil {
-					shopName = strings.TrimSpace(row.ShopName)
-					if strings.TrimSpace(strings.ToLower(row.AuthStatus)) != shop.AuthAuthorized {
-						return blockedTargetResult(plat, sid, shopName, capability, []PublishTargetIssue{
-							issueFromCode("SHOP_NOT_AUTHORIZED", "error", "店铺尚未授权", "请前往店铺管理完成授权。"),
-						})
-					}
-					if strings.TrimSpace(strings.ToLower(row.Status)) != shop.StatusActive {
-						return blockedTargetResult(plat, sid, shopName, capability, []PublishTargetIssue{
-							issueFromCode("SHOP_DISABLED", "error", "店铺已停用", "请在店铺管理中启用店铺。"),
-						})
-					}
-				}
+			row, loadErr := s.loadTargetStore(ctx, u, plat)
+			if loadErr != nil {
+				return blockedTargetResult(plat, sid, shopName, capability, []PublishTargetIssue{
+					issueFromCode("SHOP_NOT_AVAILABLE", "error", "店铺不可用", "请重新选择当前租户下的平台店铺。"),
+				})
+			}
+			shopName = strings.TrimSpace(row.ShopName)
+			if strings.TrimSpace(strings.ToLower(row.AuthStatus)) != shop.AuthAuthorized {
+				return blockedTargetResult(plat, sid, shopName, capability, []PublishTargetIssue{
+					issueFromCode("SHOP_NOT_AUTHORIZED", "error", "店铺尚未授权", "请前往店铺管理完成授权。"),
+				})
+			}
+			if strings.TrimSpace(strings.ToLower(row.Status)) != shop.StatusActive {
+				return blockedTargetResult(plat, sid, shopName, capability, []PublishTargetIssue{
+					issueFromCode("SHOP_DISABLED", "error", "店铺已停用", "请在店铺管理中启用店铺。"),
+				})
 			}
 		}
 	}
@@ -503,8 +526,12 @@ func (s *Service) loadProductForPublish(ctx context.Context, productID uuid.UUID
 	if productID == uuid.Nil {
 		return &product.Product{}, nil
 	}
+	tenant, err := security.RequireTenantContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var prod product.Product
-	if err := s.DB.WithContext(ctx).First(&prod, "id = ?", productID).Error; err != nil {
+	if err := s.DB.WithContext(ctx).First(&prod, "id = ? AND tenant_id = ?", productID, tenant.TenantID).Error; err != nil {
 		return nil, err
 	}
 	if prod.DeletedAt.Valid {
@@ -536,6 +563,13 @@ func (s *Service) CreateDraftsForTargets(c *gin.Context, productID uuid.UUID, re
 	if containsDouyinTarget(targets) {
 		return nil, ErrDouyinOperationTaskRequired
 	}
+	if err := s.ensureTargetStoresOperate(c, targets); err != nil {
+		return nil, err
+	}
+	prod, err := s.loadProductForPublish(ctx, productID)
+	if err != nil {
+		return nil, err
+	}
 
 	checkRes, err := s.CheckPublishTargets(ctx, productID, PublishTargetsCheckRequest{Targets: targets})
 	if err != nil {
@@ -549,6 +583,7 @@ func (s *Service) CreateDraftsForTargets(c *gin.Context, productID uuid.UUID, re
 	inRaw, _ := json.Marshal(req)
 	pid := productID
 	batch := ProductPublishBatch{
+		TenantID:    prod.TenantID,
 		BatchType:   BatchTypeSingleProduct,
 		ProductID:   &pid,
 		Status:      BatchRunning,
@@ -557,114 +592,130 @@ func (s *Service) CreateDraftsForTargets(c *gin.Context, productID uuid.UUID, re
 		Input:       datatypes.JSON(inRaw),
 		CreatedBy:   adminID,
 	}
-	if err := s.DB.WithContext(ctx).Create(&batch).Error; err != nil {
-		return nil, err
-	}
-
-	results := make([]PublishTargetTaskResult, 0, len(targets))
-	var successN, failedN, skippedN int
-	for _, t := range targets {
-		plat := strings.TrimSpace(strings.ToLower(t.Platform))
-		var sid *uuid.UUID
-		if t.ShopID != nil && strings.TrimSpace(*t.ShopID) != "" {
-			if u, err := uuid.Parse(strings.TrimSpace(*t.ShopID)); err == nil {
-				sid = &u
-			}
-		}
-		key := publishTargetKey(plat, sid)
-		chk := checkByKey[key]
-		if req.OnlyReady && (chk.Status == statusBlocked || !chk.CanCreate) {
-			skippedN++
-			results = append(results, PublishTargetTaskResult{
-				TargetKey:     key,
-				Platform:      plat,
-				PlatformLabel: opslabels.PlatformLabel(plat),
-				ShopID:        shopIDString(sid),
-				ShopName:      chk.ShopName,
-				Status:        "skipped",
-				StatusLabel:   "已跳过",
-				Capability:    chk.Capability,
-			})
-			continue
-		}
-		if chk.Status == statusBlocked {
-			failedN++
-			msg := "目标暂不能创建草稿"
-			if len(chk.Issues) > 0 {
-				msg = chk.Issues[0].Title
-			}
-			results = append(results, PublishTargetTaskResult{
-				TargetKey:     key,
-				Platform:      plat,
-				PlatformLabel: opslabels.PlatformLabel(plat),
-				ShopID:        shopIDString(sid),
-				ShopName:      chk.ShopName,
-				Status:        TaskFailed,
-				StatusLabel:   opslabels.StatusLabel(TaskFailed),
-				Capability:    chk.Capability,
-				ErrorMessage:  msg,
-			})
-			continue
+	var response *PublishTargetsCreateDraftsResponse
+	err = s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txService := *s
+		txService.DB = tx
+		if err := tx.Create(&batch).Error; err != nil {
+			return err
 		}
 
-		var taskRes PublishTargetTaskResult
-		switch chk.Capability {
-		case CapRealDraftCreate:
-			if sid == nil {
-				failedN++
-				taskRes = PublishTargetTaskResult{
-					TargetKey: key, Platform: plat, PlatformLabel: opslabels.PlatformLabel(plat),
-					Status: TaskFailed, StatusLabel: opslabels.StatusLabel(TaskFailed),
-					Capability: chk.Capability, ErrorMessage: "缺少店铺",
+		results := make([]PublishTargetTaskResult, 0, len(targets))
+		var successN, failedN, skippedN int
+		for _, t := range targets {
+			plat := strings.TrimSpace(strings.ToLower(t.Platform))
+			var sid *uuid.UUID
+			if t.ShopID != nil && strings.TrimSpace(*t.ShopID) != "" {
+				if u, err := uuid.Parse(strings.TrimSpace(*t.ShopID)); err == nil {
+					sid = &u
 				}
-			} else {
-				taskRes = s.createDouyinDraftForTarget(c, productID, *sid, batch.ID, adminID, req.Force, chk)
-				if taskRes.Status == TaskSuccess || taskRes.Status == TaskPending || taskRes.Status == TaskRunning {
+			}
+			key := publishTargetKey(plat, sid)
+			chk := checkByKey[key]
+			if req.OnlyReady && (chk.Status == statusBlocked || !chk.CanCreate) {
+				skippedN++
+				results = append(results, PublishTargetTaskResult{
+					TargetKey:     key,
+					Platform:      plat,
+					PlatformLabel: opslabels.PlatformLabel(plat),
+					ShopID:        shopIDString(sid),
+					ShopName:      chk.ShopName,
+					Status:        "skipped",
+					StatusLabel:   "已跳过",
+					Capability:    chk.Capability,
+				})
+				continue
+			}
+			if chk.Status == statusBlocked {
+				failedN++
+				msg := "目标暂不能创建草稿"
+				if len(chk.Issues) > 0 {
+					msg = chk.Issues[0].Title
+				}
+				results = append(results, PublishTargetTaskResult{
+					TargetKey:     key,
+					Platform:      plat,
+					PlatformLabel: opslabels.PlatformLabel(plat),
+					ShopID:        shopIDString(sid),
+					ShopName:      chk.ShopName,
+					Status:        TaskFailed,
+					StatusLabel:   opslabels.StatusLabel(TaskFailed),
+					Capability:    chk.Capability,
+					ErrorMessage:  msg,
+				})
+				continue
+			}
+
+			var taskRes PublishTargetTaskResult
+			switch chk.Capability {
+			case CapRealDraftCreate:
+				if sid == nil {
+					failedN++
+					taskRes = PublishTargetTaskResult{
+						TargetKey: key, Platform: plat, PlatformLabel: opslabels.PlatformLabel(plat),
+						Status: TaskFailed, StatusLabel: opslabels.StatusLabel(TaskFailed),
+						Capability: chk.Capability, ErrorMessage: "缺少店铺",
+					}
+				} else {
+					taskRes = txService.createDouyinDraftForTarget(c, productID, *sid, batch.ID, adminID, req.Force, chk)
+					if taskRes.Status == TaskSuccess || taskRes.Status == TaskPending || taskRes.Status == TaskRunning {
+						successN++
+					} else {
+						failedN++
+					}
+				}
+			default:
+				taskRes = txService.createLocalDraftForTarget(ctx, productID, plat, sid, batch.ID, adminID, chk)
+				if taskRes.Status == TaskSuccess {
 					successN++
 				} else {
 					failedN++
 				}
 			}
-		default:
-			taskRes = s.createLocalDraftForTarget(ctx, productID, plat, sid, batch.ID, adminID, chk)
-			if taskRes.Status == TaskSuccess {
-				successN++
-			} else {
-				failedN++
-			}
+			results = append(results, taskRes)
 		}
-		results = append(results, taskRes)
-	}
 
-	batchStatus := BatchSuccess
-	if failedN > 0 && successN > 0 {
-		batchStatus = BatchPartialSuccess
-	} else if failedN > 0 && successN == 0 {
-		batchStatus = BatchFailed
-	}
-	fin := time.Now().UTC()
-	sumRaw, _ := json.Marshal(map[string]any{
-		"targetCount": len(targets), "successCount": successN, "failedCount": failedN, "skippedCount": skippedN,
+		batchStatus := BatchSuccess
+		if failedN > 0 && successN > 0 {
+			batchStatus = BatchPartialSuccess
+		} else if failedN > 0 && successN == 0 {
+			batchStatus = BatchFailed
+		}
+		fin := time.Now().UTC()
+		sumRaw, _ := json.Marshal(map[string]any{
+			"targetCount": len(targets), "successCount": successN, "failedCount": failedN, "skippedCount": skippedN,
+		})
+		result := tx.Model(&ProductPublishBatch{}).Where("id = ? AND tenant_id = ?", batch.ID, prod.TenantID).Updates(map[string]any{
+			"status":        batchStatus,
+			"success_count": successN,
+			"failed_count":  failedN,
+			"target_count":  len(targets),
+			"summary":       datatypes.JSON(sumRaw),
+			"finished_at":   &fin,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return fmt.Errorf("product publish batch finalize lost")
+		}
+
+		response = &PublishTargetsCreateDraftsResponse{
+			BatchID:      batch.ID.String(),
+			Status:       batchStatus,
+			StatusLabel:  opslabels.StatusLabel(batchStatus),
+			TargetCount:  len(targets),
+			SuccessCount: successN,
+			FailedCount:  failedN,
+			SkippedCount: skippedN,
+			Targets:      results,
+		}
+		return nil
 	})
-	_ = s.DB.WithContext(ctx).Model(&ProductPublishBatch{}).Where("id = ?", batch.ID).Updates(map[string]any{
-		"status":        batchStatus,
-		"success_count": successN,
-		"failed_count":  failedN,
-		"target_count":  len(targets),
-		"summary":       datatypes.JSON(sumRaw),
-		"finished_at":   &fin,
-	}).Error
-
-	return &PublishTargetsCreateDraftsResponse{
-		BatchID:      batch.ID.String(),
-		Status:       batchStatus,
-		StatusLabel:  opslabels.StatusLabel(batchStatus),
-		TargetCount:  len(targets),
-		SuccessCount: successN,
-		FailedCount:  failedN,
-		SkippedCount: skippedN,
-		Targets:      results,
-	}, nil
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
 }
 
 func (s *Service) createDouyinDraftForTarget(c *gin.Context, productID, shopID, batchID uuid.UUID, adminID *uuid.UUID, force bool, chk PublishTargetCheckResult) PublishTargetTaskResult {
@@ -709,6 +760,10 @@ func (s *Service) createDouyinDraftForTarget(c *gin.Context, productID, shopID, 
 }
 
 func (s *Service) createLocalDraftForTarget(ctx context.Context, productID uuid.UUID, plat string, sid *uuid.UUID, batchID uuid.UUID, adminID *uuid.UUID, chk PublishTargetCheckResult) PublishTargetTaskResult {
+	return s.createLocalDraftForTargetWithInput(ctx, productID, plat, sid, batchID, adminID, chk, nil)
+}
+
+func (s *Service) createLocalDraftForTargetWithInput(ctx context.Context, productID uuid.UUID, plat string, sid *uuid.UUID, batchID uuid.UUID, adminID *uuid.UUID, chk PublishTargetCheckResult, taskInput datatypes.JSON) PublishTargetTaskResult {
 	key := publishTargetKey(plat, sid)
 	res := PublishTargetTaskResult{
 		TargetKey:      key,
@@ -727,10 +782,17 @@ func (s *Service) createLocalDraftForTarget(ctx context.Context, productID uuid.
 	}
 
 	var prod product.Product
+	tenant, tenantErr := security.RequireTenantContext(ctx)
+	if tenantErr != nil {
+		res.Status = TaskFailed
+		res.StatusLabel = opslabels.StatusLabel(TaskFailed)
+		res.ErrorMessage = tenantErr.Error()
+		return res
+	}
 	if err := s.DB.WithContext(ctx).
 		Preload("Images", func(db *gorm.DB) *gorm.DB { return db.Order("sort_order ASC, created_at ASC") }).
 		Preload("SKUs", func(db *gorm.DB) *gorm.DB { return db.Order("created_at ASC") }).
-		First(&prod, "id = ?", productID).Error; err != nil {
+		First(&prod, "id = ? AND tenant_id = ?", productID, tenant.TenantID).Error; err != nil {
 		res.Status = TaskFailed
 		res.StatusLabel = opslabels.StatusLabel(TaskFailed)
 		res.ErrorMessage = err.Error()
@@ -746,6 +808,7 @@ func (s *Service) createLocalDraftForTarget(ctx context.Context, productID uuid.
 
 	fin := time.Now().UTC()
 	pubRow := ProductPublication{
+		TenantID:      prod.TenantID,
 		ProductID:     productID,
 		ShopID:        *sid,
 		Platform:      plat,
@@ -768,15 +831,9 @@ func (s *Service) createLocalDraftForTarget(ctx context.Context, productID uuid.
 	}
 	snapRaw, _ := json.Marshal(snap)
 	pubRow.RawData = datatypes.JSON(snapRaw)
-	if err := s.DB.WithContext(ctx).Create(&pubRow).Error; err != nil {
-		res.Status = TaskFailed
-		res.StatusLabel = opslabels.StatusLabel(TaskFailed)
-		res.ErrorMessage = err.Error()
-		return res
-	}
-
 	outSnap, _ := json.Marshal(snap)
 	task := ProductPublishTask{
+		TenantID:      prod.TenantID,
 		ProductID:     productID,
 		ShopID:        *sid,
 		TargetStoreID: *sid,
@@ -790,18 +847,27 @@ func (s *Service) createLocalDraftForTarget(ctx context.Context, productID uuid.
 		PublishMode:   PublishModeSaveAsPlatformDraft,
 		Title:         draft.Title,
 		Description:   draft.Description,
+		Input:         taskInput,
 		Output:        datatypes.JSON(outSnap),
 		FinishedAt:    &fin,
 		CreatedBy:     adminID,
 	}
-	if err := s.DB.WithContext(ctx).Create(&task).Error; err != nil {
+	if err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&pubRow).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&task).Error; err != nil {
+			return err
+		}
+		return tx.Model(&ProductPublication{}).
+			Where("id = ? AND tenant_id = ?", pubRow.ID, prod.TenantID).
+			Update("publish_task_id", task.ID).Error
+	}); err != nil {
 		res.Status = TaskFailed
 		res.StatusLabel = opslabels.StatusLabel(TaskFailed)
 		res.ErrorMessage = err.Error()
 		return res
 	}
-	_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).Where("id = ?", pubRow.ID).
-		Updates(map[string]any{"publish_task_id": task.ID}).Error
 
 	res.TaskID = task.ID.String()
 	res.PublicationID = pubRow.ID.String()
@@ -825,8 +891,12 @@ func (s *Service) failedTargetsFromBatch(ctx context.Context, batchID string) ([
 		out = append(out, PublishTargetRef{Platform: t.Platform, ShopID: &sid})
 	}
 	if len(out) == 0 {
+		tenant, tenantErr := security.RequireTenantContext(ctx)
+		if tenantErr != nil {
+			return nil, tenantErr
+		}
 		var batch ProductPublishBatch
-		if err := s.DB.WithContext(ctx).First(&batch, "id = ?", bid).Error; err != nil {
+		if err := s.DB.WithContext(ctx).First(&batch, "id = ? AND tenant_id = ?", bid, tenant.TenantID).Error; err != nil {
 			return nil, err
 		}
 		var in PublishTargetsCreateDraftsRequest
@@ -838,11 +908,17 @@ func (s *Service) failedTargetsFromBatch(ctx context.Context, batchID string) ([
 
 // GetPublishBatch returns batch summary with child tasks.
 func (s *Service) GetPublishBatch(ctx context.Context, batchID uuid.UUID) (*ProductPublishBatch, []ProductPublishTask, error) {
+	tenant, err := security.RequireTenantContext(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	var batch ProductPublishBatch
-	if err := s.DB.WithContext(ctx).First(&batch, "id = ?", batchID).Error; err != nil {
+	if err := s.DB.WithContext(ctx).First(&batch, "id = ? AND tenant_id = ?", batchID, tenant.TenantID).Error; err != nil {
 		return nil, nil, err
 	}
 	var tasks []ProductPublishTask
-	_ = s.DB.WithContext(ctx).Where("batch_id = ?", batchID).Order("created_at ASC").Find(&tasks).Error
+	if err := s.DB.WithContext(ctx).Where("tenant_id = ? AND batch_id = ?", tenant.TenantID, batchID).Order("created_at ASC").Find(&tasks).Error; err != nil {
+		return nil, nil, err
+	}
 	return &batch, tasks, nil
 }

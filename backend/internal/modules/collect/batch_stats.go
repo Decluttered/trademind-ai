@@ -198,7 +198,7 @@ func (s *Service) computeBatchStats(ctx context.Context, batchID uuid.UUID) Batc
 
 	var tasks []CollectTask
 	if err := s.DB.WithContext(ctx).
-		Where("batch_id = ?", batchID).
+		Where("tenant_id = ? AND batch_id = ?", batch.TenantID, batchID).
 		Find(&tasks).Error; err != nil {
 		return out
 	}
@@ -301,7 +301,7 @@ func inferCodeFromMessage(msg string) string {
 	return ""
 }
 
-func (s *Service) sameURLCollectSucceeded(ctx context.Context, source, url string, excludeTaskID uuid.UUID) bool {
+func (s *Service) sameURLCollectSucceeded(ctx context.Context, tenantID int64, source, url string, excludeTaskID uuid.UUID) bool {
 	if s == nil || s.DB == nil {
 		return false
 	}
@@ -315,7 +315,7 @@ func (s *Service) sameURLCollectSucceeded(ctx context.Context, source, url strin
 	}
 	var n int64
 	_ = s.DB.WithContext(ctx).Model(&CollectTask{}).
-		Where("source = ? AND source_url = ? AND status = ? AND id <> ?", source, url, StatusSuccess, excludeTaskID).
+		Where("tenant_id = ? AND source = ? AND source_url = ? AND status = ? AND id <> ?", tenantID, source, url, StatusSuccess, excludeTaskID).
 		Count(&n).Error
 	return n > 0
 }
@@ -344,7 +344,7 @@ func (s *Service) enrichTaskDTO(ctx context.Context, t *CollectTask) TaskDTO {
 		dto.Retryable = &retryable
 	}
 	if t.Status == StatusFailed || t.Status == StatusRetrying {
-		sameOK := s.sameURLCollectSucceeded(ctx, t.Source, t.SourceURL, t.ID)
+		sameOK := s.sameURLCollectSucceeded(ctx, t.TenantID, t.Source, t.SourceURL, t.ID)
 		dto.SameUrlSucceededElsewhere = sameOK
 		dto.FailureHint = collectFailureHint(code, t.Source, sameOK)
 	}

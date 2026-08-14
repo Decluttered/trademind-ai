@@ -56,9 +56,11 @@ function targetStatusColor(status: string) {
 export default function MultiPlatformPublishCenter({
   productId,
   onDraftsCreated,
+  disabled = false,
 }: {
   productId: string;
   onDraftsCreated?: () => void | Promise<void>;
+  disabled?: boolean;
 }) {
   const [loading, setLoading] = useState(true);
   const [platforms, setPlatforms] = useState<PublishTargetPlatform[]>([]);
@@ -133,6 +135,10 @@ export default function MultiPlatformPublishCenter({
   };
 
   const runCheck = async () => {
+    if (disabled) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     if (!selectedList.length) {
       message.warning('请先选择要刊登的平台和店铺');
       return;
@@ -158,6 +164,10 @@ export default function MultiPlatformPublishCenter({
   };
 
   const runCreate = async (onlyReady: boolean, retryFailedOnly = false) => {
+    if (disabled) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     if (!retryFailedOnly && !selectedList.length) {
       message.warning('请先选择要刊登的平台和店铺');
       return;
@@ -243,6 +253,14 @@ export default function MultiPlatformPublishCenter({
         {actionError ? (
           <Alert type="error" showIcon message="多平台草稿操作失败" description={actionError} />
         ) : null}
+        {disabled ? (
+          <Alert
+            type="info"
+            showIcon
+            message="当前账号仅可查看刊登目标"
+            description="刊登检查、草稿创建和失败重试需要刊登草稿写权限。"
+          />
+        ) : null}
 
         <Card size="small" title="一、刊登目标" variant="borderless">
           <Typography.Paragraph type="secondary">选择要刊登的平台和店铺；这里只创建刊登草稿或本地任务快照，不代表平台已经上线。</Typography.Paragraph>
@@ -267,7 +285,7 @@ export default function MultiPlatformPublishCenter({
                       indeterminate={
                         authorizedShops.some((s) => selected[targetKey(plat.platform, s.shopId)]) && !allSelected
                       }
-                      disabled={requiresOperationTask || !authorizedShops.length}
+                      disabled={disabled || requiresOperationTask || !authorizedShops.length}
                       onChange={(e) => togglePlatformShops(plat, e.target.checked)}
                     />
                     <Space direction="vertical" size={4} style={{ minWidth: 0 }}>
@@ -296,7 +314,7 @@ export default function MultiPlatformPublishCenter({
                             <Checkbox
                               key={shop.shopId}
                               checked={!!selected[targetKey(plat.platform, shop.shopId)]}
-                              disabled={requiresOperationTask || !shop.enabled || shop.authStatus !== 'authorized'}
+                              disabled={disabled || requiresOperationTask || !shop.enabled || shop.authStatus !== 'authorized'}
                               onChange={(e) =>
                                 toggleShop(plat, shop.shopId, shop.shopName, e.target.checked)
                               }
@@ -349,22 +367,22 @@ export default function MultiPlatformPublishCenter({
         </Card>
 
         <Space wrap>
-          <Button loading={checking} onClick={() => void runCheck()}>
+          <Button loading={checking} disabled={disabled} onClick={() => void runCheck()}>
             检查所选目标
           </Button>
-          <Button type="primary" loading={creating} onClick={() => void runCreate(false)}>
+          <Button type="primary" loading={creating} disabled={disabled} onClick={() => void runCreate(false)}>
             创建刊登草稿
           </Button>
-          <Button loading={creating} onClick={() => void runCreate(true)}>
+          <Button loading={creating} disabled={disabled} onClick={() => void runCreate(true)}>
             只处理可以创建草稿的目标
           </Button>
           {checkResult && (checkResult.summary.warningCount > 0 || checkResult.summary.blockedCount > 0) ? (
-            <Button type="link" onClick={() => void runCheck()}>
+            <Button type="link" disabled={disabled} onClick={() => void runCheck()}>
               查看需要处理的问题
             </Button>
           ) : null}
           {lastBatchId && createResult && createResult.failedCount > 0 ? (
-            <Button loading={creating} onClick={() => void runCreate(false, true)}>
+            <Button loading={creating} disabled={disabled} onClick={() => void runCreate(false, true)}>
               重试失败目标
             </Button>
           ) : null}

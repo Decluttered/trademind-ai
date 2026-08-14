@@ -121,7 +121,11 @@ docker compose -f docker-compose.full.yml up -d --build
 | --- | --- | --- | --- | --- |
 | `COLLECTOR_BASE_URL` | `http://127.0.0.1:3100` | backend | 否 | Go API 调用 Collector 的基础地址。 |
 | `COLLECTOR_TIMEOUT_SECONDS` | `120` | backend | 否 | 后端调用 Collector 超时；淘宝/天猫任务会按页面打开超时自动放宽（约 `gotoTimeoutMs + 90s`）。 |
+| `COLLECTOR_SERVICE_TOKEN` | 空 | backend / collector | 是 | 后端与 Collector 共用的内部 Bearer Token。Collector 除 `/health` 外的接口均要求该 Token；production 必须使用至少 32 字符的独立随机值，完整 Compose 启动时必须显式提供。 |
 | `COLLECTOR_HTTP_ADDR` | `:3100` / `:3001` | collector | 否 | Collector 监听地址。 |
+| `COLLECTOR_MAX_REQUEST_BODY_BYTES` | `1048576` | collector | 否 | Collector JSON 请求体上限，允许 1 KiB 至 16 MiB；非法配置回退为 1 MiB。 |
+| `COLLECTOR_REQUEST_TIMEOUT_MS` | `15000` | collector | 否 | HTTP 请求接收超时，允许 1-120 秒；不限制 Playwright 页面采集执行时长。 |
+| `COLLECTOR_HEADERS_TIMEOUT_MS` | `10000` | collector | 否 | HTTP 请求头接收超时，允许 1-60 秒。 |
 | `COLLECTOR_GOTO_TIMEOUT_MS` | `45000` | collector | 否 | Playwright 页面打开超时。 |
 | `COLLECTOR_HEADLESS` | `1` | collector | 否 | 是否无头浏览器运行；本地打开登录浏览器时可设为 `0`。 |
 | `COLLECTOR_BROWSER_PROFILE_DIR` / `BROWSER_PROFILE_ROOT` | `collector/data/browser-profiles`（相对 collector 包根目录） | collector | 否 | 1688 持久化 Profile 根目录（1688 使用子目录 `1688`）。Docker 通常设为 `/workspace/data/browser-profiles`。 |
@@ -162,9 +166,10 @@ docker compose -f docker-compose.full.yml up -d --build
 | --- | --- | --- |
 | `ADMIN_PUBLISH_PORT` | `8000` | 管理端宿主机端口。 |
 | `BACKEND_PUBLISH_PORT` | `8080` | 后端 API 宿主机端口。 |
-| `COLLECTOR_PUBLISH_PORT` | `3001` | Collector 宿主机端口。 |
-| `POSTGRES_PUBLISH_PORT` | `5432` | PostgreSQL 宿主机端口。 |
-| `REDIS_PUBLISH_PORT` | `6379` | Redis 宿主机端口。 |
+| `POSTGRES_PUBLISH_PORT` | `5432` | PostgreSQL 宿主机回环端口，仅绑定 `127.0.0.1`。 |
+| `REDIS_PUBLISH_PORT` | `6379` | Redis 宿主机回环端口，仅绑定 `127.0.0.1`。 |
+
+完整 Compose 不发布 Collector 宿主机端口；backend 仅通过 Compose 内部网络的 `http://collector:3001` 访问。Collector 容器以非 root 用户运行，浏览器 Profile 与 Storage State 分别保存在 `trademind_full_collector_profiles`、`trademind_full_collector_storage_states` 命名卷中。需要本地交互式登录时，单独启动本地 Collector 并使用与本地 backend 一致的 `COLLECTOR_SERVICE_TOKEN`。
 
 ## 新增变量检查清单
 

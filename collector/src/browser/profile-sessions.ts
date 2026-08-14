@@ -1,20 +1,28 @@
-import { chromium, type BrowserContext, type Page } from 'playwright';
-import { evaluateGenericPageAccess, resolveAccessStatusFromSignals } from '../providers/sourceCustom/access-detect.js';
-import type { AccessStatus } from '../types/access-status.js';
-import { getCustomProfileUserDataDir } from './browser-paths.js';
-import { PAGE_EVALUATE_POLYFILL } from './evaluate-in-page.js';
-import { sanitizeProfileKey } from './profile-key.js';
-import { getBrowserHeadless, getDefaultNavigationTimeoutMs } from '../config/env.js';
+import { chromium, type BrowserContext, type Page } from "playwright";
+import {
+  evaluateGenericPageAccess,
+  resolveAccessStatusFromSignals,
+} from "../providers/sourceCustom/access-detect.js";
+import type { AccessStatus } from "../types/access-status.js";
+import { getCustomProfileUserDataDir } from "./browser-paths.js";
+import { PAGE_EVALUATE_POLYFILL } from "./evaluate-in-page.js";
+import { sanitizeProfileKey } from "./profile-key.js";
+import {
+  getBrowserHeadless,
+  getDefaultNavigationTimeoutMs,
+} from "../config/env.js";
+import { installPublicNetworkGuard } from "../security/public-url.js";
 
 function persistentContextOptions(headless: boolean) {
   return {
     headless,
-    locale: 'zh-CN' as const,
+    locale: "zh-CN" as const,
     userAgent:
       process.env.COLLECTOR_USER_AGENT ??
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    args: ['--disable-blink-features=AutomationControlled'],
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    args: ["--disable-blink-features=AutomationControlled"],
     viewport: { width: 1280, height: 800 },
+    serviceWorkers: "block" as const,
   };
 }
 
@@ -45,9 +53,14 @@ export class CustomProfileSessionManager {
     return next;
   }
 
-  async getOrCreateContext(profileKey: string, opts?: { headless?: boolean }): Promise<BrowserContext> {
+  async getOrCreateContext(
+    profileKey: string,
+    opts?: { headless?: boolean },
+  ): Promise<BrowserContext> {
     const key = sanitizeProfileKey(profileKey);
-    const wantHeadless = opts?.headless ?? (this.loginActive.has(key) ? false : getBrowserHeadless());
+    const wantHeadless =
+      opts?.headless ??
+      (this.loginActive.has(key) ? false : getBrowserHeadless());
 
     const existing = this.contexts.get(key);
     if (existing && !existing.isClosed()) {
@@ -64,6 +77,7 @@ export class CustomProfileSessionManager {
       persistentContextOptions(wantHeadless),
     );
     await context.addInitScript(PAGE_EVALUATE_POLYFILL);
+    await installPublicNetworkGuard(context);
     const timeout = getDefaultNavigationTimeoutMs();
     context.setDefaultNavigationTimeout(timeout);
     context.setDefaultTimeout(timeout);
@@ -72,7 +86,10 @@ export class CustomProfileSessionManager {
     return context;
   }
 
-  async withProfilePage<T>(profileKey: string, fn: (page: Page) => Promise<T>): Promise<T> {
+  async withProfilePage<T>(
+    profileKey: string,
+    fn: (page: Page) => Promise<T>,
+  ): Promise<T> {
     return this.runLocked(async () => {
       const context = await this.getOrCreateContext(profileKey);
       const page = await context.newPage();
@@ -95,7 +112,7 @@ export class CustomProfileSessionManager {
     const key = sanitizeProfileKey(profileKey);
     const url = targetUrl.trim();
     if (!url) {
-      throw new Error('INVALID_REQUEST:url required');
+      throw new Error("INVALID_REQUEST:url required");
     }
 
     return this.runLocked(async () => {
@@ -104,15 +121,15 @@ export class CustomProfileSessionManager {
       if (this.loginActive.has(key) && existing && !existing.isClosed()) {
         const page = existing.pages()[0] ?? (await existing.newPage());
         await page.bringToFront().catch(() => undefined);
-        if (page.url() === 'about:blank' || !page.url().startsWith('http')) {
+        if (page.url() === "about:blank" || !page.url().startsWith("http")) {
           await page.goto(url, {
-            waitUntil: 'domcontentloaded',
+            waitUntil: "domcontentloaded",
             timeout: getDefaultNavigationTimeoutMs(),
           });
         }
         return {
           profilePath: userDataDir,
-          message: '采集浏览器已打开，请在窗口中完成登录或安全验证',
+          message: "采集浏览器已打开，请在窗口中完成登录或安全验证",
           alreadyOpen: true,
         };
       }
@@ -121,21 +138,25 @@ export class CustomProfileSessionManager {
       const context = await this.getOrCreateContext(key, { headless: false });
       const page = context.pages()[0] ?? (await context.newPage());
       await page.goto(url, {
-        waitUntil: 'domcontentloaded',
+        waitUntil: "domcontentloaded",
         timeout: getDefaultNavigationTimeoutMs(),
       });
       return {
         profilePath: userDataDir,
-        message: '已打开采集浏览器，请在此窗口手动登录目标网站（系统不保存账号密码）',
+        message:
+          "已打开采集浏览器，请在此窗口手动登录目标网站（系统不保存账号密码）",
         alreadyOpen: false,
       };
     });
   }
 
-  async checkProfileAccess(profileKey: string, targetUrl: string): Promise<ProfileCheckResult> {
+  async checkProfileAccess(
+    profileKey: string,
+    targetUrl: string,
+  ): Promise<ProfileCheckResult> {
     const url = targetUrl.trim();
     if (!url) {
-      throw new Error('INVALID_REQUEST:url required');
+      throw new Error("INVALID_REQUEST:url required");
     }
     const timeoutMs = getDefaultNavigationTimeoutMs();
 
@@ -143,7 +164,7 @@ export class CustomProfileSessionManager {
       let httpStatus: number | undefined;
       try {
         const resp = await page.goto(url, {
-          waitUntil: 'domcontentloaded',
+          waitUntil: "domcontentloaded",
           timeout: timeoutMs,
         });
         httpStatus = resp?.status();
@@ -151,36 +172,41 @@ export class CustomProfileSessionManager {
         const err = e instanceof Error ? e.message : String(e);
         if (/timeout/i.test(err)) {
           return {
-            accessStatus: 'timeout',
+            accessStatus: "timeout",
             finalUrl: url,
-            errorCode: 'TIMEOUT',
-            message: '页面加载超时',
+            errorCode: "TIMEOUT",
+            message: "页面加载超时",
           };
         }
         return {
-          accessStatus: 'navigation_failed',
+          accessStatus: "navigation_failed",
           finalUrl: url,
-          errorCode: 'NAVIGATION_FAILED',
+          errorCode: "NAVIGATION_FAILED",
           message: `页面打开失败：${err}`,
         };
       }
 
       await page
-        .waitForLoadState('networkidle', { timeout: Math.min(timeoutMs, 12_000) })
+        .waitForLoadState("networkidle", {
+          timeout: Math.min(timeoutMs, 12_000),
+        })
         .catch(() => undefined);
 
       const signals = await evaluateGenericPageAccess(page, httpStatus);
       const accessStatus = resolveAccessStatusFromSignals(signals);
-      let message = '页面可访问';
+      let message = "页面可访问";
       let errorCode: string | undefined;
-      if (accessStatus === 'login_required') {
-        message = '页面疑似需要登录';
-        errorCode = 'LOGIN_REQUIRED';
-      } else if (accessStatus === 'verify_required' || accessStatus === 'blocked') {
-        message = '页面疑似触发验证码或风控';
-        errorCode = 'PAGE_BLOCKED_OR_VERIFY_REQUIRED';
-      } else if (accessStatus === 'unknown') {
-        message = '无法确认访问状态';
+      if (accessStatus === "login_required") {
+        message = "页面疑似需要登录";
+        errorCode = "LOGIN_REQUIRED";
+      } else if (
+        accessStatus === "verify_required" ||
+        accessStatus === "blocked"
+      ) {
+        message = "页面疑似触发验证码或风控";
+        errorCode = "PAGE_BLOCKED_OR_VERIFY_REQUIRED";
+      } else if (accessStatus === "unknown") {
+        message = "无法确认访问状态";
       }
 
       return {

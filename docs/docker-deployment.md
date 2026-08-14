@@ -16,6 +16,7 @@
 
 ```bash
 cp .env.example .env
+# 在 .env 中设置独立随机的 COLLECTOR_SERVICE_TOKEN（至少 32 字符）
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
@@ -23,6 +24,7 @@ Windows PowerShell：
 
 ```powershell
 Copy-Item .env.example .env
+# 在 .env 中设置独立随机的 COLLECTOR_SERVICE_TOKEN（至少 32 字符）
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
@@ -32,7 +34,8 @@ docker compose -f docker-compose.full.yml up -d --build
 | --- | --- |
 | Admin | `http://127.0.0.1:8000` |
 | Backend Health | `http://127.0.0.1:8080/health` |
-| Collector Health | `http://127.0.0.1:3001/health` |
+
+Collector 不发布宿主机端口，只允许 backend 通过 Compose 内部网络访问；PostgreSQL 与 Redis 的宿主机映射仅绑定 `127.0.0.1`。
 
 ## 端口配置
 
@@ -41,7 +44,6 @@ docker compose -f docker-compose.full.yml up -d --build
 ```env
 ADMIN_PUBLISH_PORT=8000
 BACKEND_PUBLISH_PORT=8080
-COLLECTOR_PUBLISH_PORT=3001
 POSTGRES_PUBLISH_PORT=5432
 REDIS_PUBLISH_PORT=6379
 ```
@@ -65,6 +67,7 @@ P7 性能数据集与负载测试只能在隔离 `APP_ENV=performance` 环境执
 - `JWT_SECRET`
 - `APP_MASTER_KEY`
 - `ADMIN_BOOTSTRAP_PASSWORD`
+- `COLLECTOR_SERVICE_TOKEN`（backend 与 Collector 使用同一个至少 32 字符的独立随机值）
 - `POSTGRES_PASSWORD`
 - `DB_PASSWORD`
 - 所有第三方平台、AI、存储、Webhook、邮箱等密钥
@@ -126,7 +129,9 @@ ADMIN_BOOTSTRAP_PASSWORD=admin123456
 - `docker-compose.yml`：仅用于本地开发基础设施，包含 PostgreSQL + Redis。
 - `docker-compose.full.yml`：用于完整 Docker 部署，包含 PostgreSQL + Redis + backend + admin + collector。
 
-**1688 采集浏览器 Profile**：`docker-compose.full.yml` 为 collector 挂载 `./data/browser-profiles` 与 `./data/storage-states`，用于持久化 1688 登录 Cookie（含 Login Data、Cookies、History、Local Storage、Session Storage 等 Chromium 用户数据）。这些目录**必须持久化挂载、禁止提交 Git**（已在 `.gitignore` 忽略；本地 `collector/data/browser-profiles/` 同理）。容器内默认无图形界面，**首次登录建议在宿主机本地运行 collector（`COLLECTOR_HEADLESS=0`）完成 1688 登录**，Profile 目录可被 Docker 复用；或在已配置远程桌面的 Linux 服务器上打开登录浏览器。
+**1688 采集浏览器 Profile**：`docker-compose.full.yml` 使用 `trademind_full_collector_profiles` 与 `trademind_full_collector_storage_states` 命名卷持久化 1688 登录 Cookie（含 Login Data、Cookies、History、Local Storage、Session Storage 等 Chromium 用户数据），Collector 以 Playwright 镜像内置的非 root 用户运行。卷数据**必须纳入备份、禁止提交 Git**；本地 `collector/data/browser-profiles/` 同理。容器内默认无图形界面，首次登录建议在宿主机本地运行 collector（`COLLECTOR_HEADLESS=0`）并按受控流程把 Profile 导入命名卷；或在已配置远程桌面的 Linux 服务器上打开登录浏览器。
+
+Collector 的 `/health` 保持无鉴权供容器编排探活，其余接口在 Token 缺失时返回 503、Token 不匹配时返回 401。采集目标只允许公网 HTTP/HTTPS 地址；私网、回环、链路本地、保留地址、DNS 解析结果和浏览器 WebSocket 请求都会在访问前复核。生产仍需用容器出站策略限制 Collector 只能访问业务所需公网目标。
 
 两套 Compose 的服务、端口和数据卷应分开理解。
 

@@ -152,6 +152,7 @@ GitHub Actions runs automated regression. Maintainers sign off product and busin
 
 ```bash
 cp .env.example .env
+# Set a unique random COLLECTOR_SERVICE_TOKEN (at least 32 characters) in .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
@@ -159,6 +160,7 @@ Windows PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
+# Set a unique random COLLECTOR_SERVICE_TOKEN (at least 32 characters) in .env
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
@@ -168,7 +170,8 @@ Default URLs:
 | --- | --- |
 | Admin | <http://127.0.0.1:8000> |
 | Backend Health | <http://127.0.0.1:8080/health> |
-| Collector Health | <http://127.0.0.1:3001/health> |
+
+In the full Compose stack, Collector is reachable only by the backend over the internal network and has no host port. PostgreSQL and Redis bind to host loopback only. Real platform capabilities remain at `L0` by default: non-Douyin flows create local listing drafts, while Douyin can only run reviewed `save_as_platform_draft` operation tasks.
 
 The Admin root URL serves the public product homepage, with direct links to sign in or register before entering the operations workspace.
 

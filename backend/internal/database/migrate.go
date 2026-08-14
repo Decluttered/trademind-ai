@@ -181,6 +181,9 @@ func AutoMigrate(db *gorm.DB) error {
 	if err := operationtask.Migrate(db); err != nil {
 		return err
 	}
+	if err := migrateProductPublishTenant(db); err != nil {
+		return err
+	}
 	if err := inventorysyncp9.Migrate(db); err != nil {
 		return err
 	}

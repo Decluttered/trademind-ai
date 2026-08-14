@@ -18,6 +18,8 @@ TradeMind 已由项目所有者确认进入生产维护阶段。当前工作重�
 
 ## 仓库整理
 
+2026-08-14 完成采集到刊登链路的生产候选加固：backend 与 Collector 增加内部 Bearer 鉴权，Collector 增加请求体/HTTP 超时与 URL、DNS、浏览器请求出站保护，完整 Compose 不再发布 Collector 端口且 PostgreSQL/Redis 仅绑定宿主机回环地址。采集任务、商品导入、刊登任务、publication 与批次查询按 tenant/store scope 收敛，采集导入成功与任务终态、本地 publication 与任务、多商品本地草稿、批次重试替代和 pending 取消均使用事务保护；历史刊登数据只对可确定归属的行幂等回填 tenant。Admin 在 production 构建隐藏传统直发并按只读/权限状态关闭写操作，backend 在 staging/production 同步拒绝传统直发。抖店仍只能通过已审核运营任务执行 `save_as_platform_draft`，仓库默认保持 L0；当前结论仅为代码生产候选，仍等待 CI、独立 PostgreSQL/Redis/Docker 部署、备份恢复/回滚和维护者人工签收。
+
 2026-08-14 将数据库备份管理与恢复验证完整移交云数据库和运维平台：删除 Admin 页面、应用 API、专用权限、backend 配置、任务服务、应用指标、默认告警、看板及专用 Runbook，并停止通过 `AutoMigrate` 管理 `backup_jobs`、`backup_verifications` 和 `restore_jobs`。已有历史表和数据不自动删除。目标环境必须在外部平台落实自动备份、加密、保留、PITR、告警和隔离恢复演练；数据库回滚边界、灾难恢复计划及 P10 部署级预生产备份/隔离恢复/回滚门槛继续保留。
 
 2026-08-13 退役未连接 CI/CD、部署进程或流量切换工具的发布流程记录模块：删除开发 Admin 页面、`/api/v1/ops/releases*`、专用权限与配置、未写入指标、失真默认告警和对应看板/Runbook。真实发布继续由 GitHub Actions、部署脚本、发布工单和人工审批负责；当时保留的应用内备份校验与隔离恢复验证已于 2026-08-14 进一步移交外部平台，数据库回滚边界、抖店 Release Gate 与真实应用回滚流程继续保留。`release_runs`、`release_artifacts`、`release_steps`、`release_rollbacks` 不再由 `AutoMigrate` 创建或管理，已有历史行不在本次升级中自动删除。

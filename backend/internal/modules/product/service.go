@@ -766,6 +766,18 @@ func (s *Service) ImportDraftWithContext(ctx context.Context, adminID *uuid.UUID
 	return out, nil
 }
 
+// ImportDraftInTransaction imports one draft using the caller-owned transaction.
+// The caller must write operation logs only after the outer transaction commits.
+func (s *Service) ImportDraftInTransaction(ctx context.Context, tx *gorm.DB, adminID *uuid.UUID, p ImportDraftParams) (*Product, error) {
+	if s == nil || tx == nil {
+		return nil, fmt.Errorf("product: transaction unavailable")
+	}
+	clone := *s
+	clone.DB = tx
+	clone.OpLog = nil
+	return clone.ImportDraftWithContext(ctx, adminID, p)
+}
+
 func (s *Service) importDraftCore(ctx context.Context, tenantID int64, adminID *uuid.UUID, p ImportDraftParams) (*Product, error) {
 	title := strings.TrimSpace(p.Title)
 	if title == "" {

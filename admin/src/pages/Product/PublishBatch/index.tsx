@@ -35,7 +35,9 @@ import {
 } from '@/services/productPublish';
 import { confirmBatchPublishDraft } from '@/constants/sensitiveActions';
 import { detectConfigReminders } from '@/utils/publishConfigMerge';
-import { Link, history, useLocation, useModel } from '@umijs/max';
+import { usePermission } from '@/hooks/usePermission';
+import { PERMISSIONS } from '@/utils/permission';
+import { Link, history, useLocation } from '@umijs/max';
 import {
   Alert,
   Button,
@@ -104,10 +106,9 @@ function parseConfigError(e: unknown): { title?: string; message: string; techni
 
 export default function PublishBatchWizardPage() {
   const location = useLocation();
-  const { initialState } = useModel('@@initialState') as {
-    initialState?: { currentUser?: API.CurrentUser };
-  };
-  const userId = initialState?.currentUser?.id?.toString() || initialState?.currentUser?.username || 'anon';
+  const { user, can } = usePermission();
+  const canCreatePublishDraft = can(PERMISSIONS.PUBLISH_CREATE_DRAFT);
+  const userId = user?.id?.toString() || user?.username || 'anon';
   const initialIds = useMemo(() => parseProductIdsFromSearch(location.search), [location.search]);
 
   const [step, setStep] = useState(0);
@@ -282,6 +283,10 @@ export default function PublishBatchWizardPage() {
   };
 
   const runCheck = async () => {
+    if (!canCreatePublishDraft) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     const clientErr = validatePublishConfigClient(commonConfig);
     if (clientErr) {
       message.error(clientErr);
@@ -351,6 +356,10 @@ export default function PublishBatchWizardPage() {
   };
 
   const invokeCreate = (onlyReady: boolean) => {
+    if (!canCreatePublishDraft) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     if (matrixLimitError) {
       message.error(matrixLimitError);
       return;
@@ -469,6 +478,19 @@ export default function PublishBatchWizardPage() {
     { title: '单独覆盖' },
     { title: '检查并创建' },
   ];
+
+  if (!canCreatePublishDraft) {
+    return (
+      <TmPageContainer title="批量刊登" subTitle="批量创建本地刊登草稿。">
+        <Alert
+          type="info"
+          showIcon
+          message="当前账号无刊登草稿写权限"
+          description="可以从商品草稿或刊登任务页面查看已有记录；批量检查和草稿创建已禁用。"
+        />
+      </TmPageContainer>
+    );
+  }
 
   return (
     <TmPageContainer

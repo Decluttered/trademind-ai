@@ -11,6 +11,7 @@ import { useUrlQueryState } from '@/hooks/useUrlState';
 import { publishBatchStatusTag } from '@/constants/publishLabels';
 import { platformLabel } from '@/constants/userFriendly';
 import { normalizeSource, parsePositiveInt, queryTimeRange } from '@/utils/urlState';
+import { isProductionBuild } from '@/utils/runtimeEnvironment';
 import {
   getProductPublishTask,
   queryProductPublishTasks,
@@ -19,6 +20,8 @@ import {
   type ProductPublishTaskDTO,
   type PublishBatchListItem,
 } from '@/services/productPublish';
+import { usePermission } from '@/hooks/usePermission';
+import { PERMISSIONS } from '@/utils/permission';
 
 const PUBLISH_TASK_QUERY_KEYS = [
   'page',
@@ -46,6 +49,8 @@ function tagFromStatus(raw: string) {
 }
 
 export default function ProductPublishTasksPage() {
+  const { can } = usePermission();
+  const canRetry = can(PERMISSIONS.TASK_RETRY);
   const { state: urlState, setState: setUrlState, clearState: clearUrlState } =
     useUrlQueryState<Record<(typeof PUBLISH_TASK_QUERY_KEYS)[number], string | undefined>>(
       PUBLISH_TASK_QUERY_KEYS,
@@ -220,7 +225,7 @@ export default function ProductPublishTasksPage() {
         render: (_, r) => (
           <Space>
             <a onClick={() => void openTaskDetail(r.id)}>查看</a>
-            {r.status === 'failed' && r.platform !== 'douyin_shop' && r.platform !== 'douyin' ? (
+            {!isProductionBuild && r.status === 'failed' && r.platform !== 'douyin_shop' && r.platform !== 'douyin' ? (canRetry ? (
               <Popconfirm
                 title="确认重试该刊登任务？"
                 onConfirm={async () => {
@@ -233,12 +238,16 @@ export default function ProductPublishTasksPage() {
                   重试
                 </Button>
               </Popconfirm>
-            ) : null}
+            ) : (
+              <Button type="link" size="small" style={{ padding: 0 }} disabled>
+                重试
+              </Button>
+            )) : null}
           </Space>
         ),
       },
     ],
-    [],
+    [canRetry],
   );
 
   const batchColumns: ProColumns<PublishBatchListItem>[] = useMemo(

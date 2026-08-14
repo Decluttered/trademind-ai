@@ -133,6 +133,7 @@ func TestValidate_productionRequiresStrongJWT(t *testing.T) {
 		AppEnv:                 EnvProduction,
 		JWTSecret:              strings.Repeat("a", 48),
 		MasterKey:              strings.Repeat("b", 64),
+		CollectorServiceToken:  strings.Repeat("c", 48),
 		APIPublicURL:           "https://api.example.com",
 		AdminPublicURL:         "https://admin.example.com",
 		BootstrapAdminPassword: "StrongPass!2026",
@@ -149,6 +150,35 @@ func TestValidate_productionRequiresStrongJWT(t *testing.T) {
 	}
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("valid production config rejected: %v", err)
+	}
+}
+
+func TestValidate_productionRequiresStrongCollectorServiceToken(t *testing.T) {
+	t.Parallel()
+	for _, token := range []string{"", "short-token", defaultJWTSecret} {
+		cfg := &Config{
+			AppEnv:                 EnvProduction,
+			JWTSecret:              strings.Repeat("a", 48),
+			MasterKey:              strings.Repeat("b", 64),
+			CollectorServiceToken:  token,
+			APIPublicURL:           "https://api.example.com",
+			AdminPublicURL:         "https://admin.example.com",
+			BootstrapAdminPassword: "StrongPass!2026",
+			StorageProvider:        "cos",
+			CORSAllowedOrigins:     []string{"https://admin.example.com"},
+			Auth:                   productionP4Auth(),
+			Observability:          ValidProductionObservability(),
+			P7:                     productionP7(),
+			DB: DBConfig{
+				Driver: "postgres",
+				User:   "u",
+				Name:   "db",
+			},
+		}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "COLLECTOR_SERVICE_TOKEN") {
+			t.Fatalf("expected collector service token rejection for %q, got %v", token, err)
+		}
 	}
 }
 
@@ -249,6 +279,7 @@ func TestLoad_productionFromEnv(t *testing.T) {
 	t.Setenv("APP_ENV", "production")
 	t.Setenv("JWT_SECRET", strings.Repeat("x", 48))
 	t.Setenv("APP_MASTER_KEY", strings.Repeat("y", 64))
+	t.Setenv("COLLECTOR_SERVICE_TOKEN", strings.Repeat("z", 48))
 	t.Setenv("API_PUBLIC_URL", "https://api.example.com")
 	t.Setenv("ADMIN_PUBLIC_URL", "https://admin.example.com")
 	t.Setenv("ADMIN_BOOTSTRAP_PASSWORD", "StrongPass!2026")

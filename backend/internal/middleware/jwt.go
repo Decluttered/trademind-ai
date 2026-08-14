@@ -92,6 +92,7 @@ func BearerAuthWithDB(cfg *config.Config, db *gorm.DB, sessions *auth.SessionSer
 		tc := security.BuildTenantContext(c, tenantID, uid, sessID, "", nil, nil)
 		tc.AuthSource = authSource
 		security.SetGin(c, tc)
+		c.Request = c.Request.WithContext(security.WithTenantContext(c.Request.Context(), tc))
 		c.Next()
 	}
 }

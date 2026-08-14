@@ -43,6 +43,8 @@ type Config struct {
 	CollectorBaseURL string
 	// CollectorTimeoutSeconds caps outbound HTTP calls to the collector (default 60).
 	CollectorTimeoutSeconds int
+	// CollectorServiceToken authenticates backend-to-collector HTTP calls.
+	CollectorServiceToken string
 
 	// CollectQueueEnabled gates async collect jobs (Redis list + worker).
 	CollectQueueEnabled bool
@@ -231,6 +233,7 @@ func Load() (*Config, error) {
 
 		CollectorBaseURL:        strings.TrimRight(strings.TrimSpace(firstNonEmpty(os.Getenv("COLLECTOR_BASE_URL"), "http://127.0.0.1:3100")), "/"),
 		CollectorTimeoutSeconds: atoiOrDefault(os.Getenv("COLLECTOR_TIMEOUT_SECONDS"), 120),
+		CollectorServiceToken:   strings.TrimSpace(os.Getenv("COLLECTOR_SERVICE_TOKEN")),
 
 		CollectQueueEnabled:      envBool(os.Getenv("COLLECT_QUEUE_ENABLED"), true),
 		CollectWorkerConcurrency: atoiOrDefault(os.Getenv("COLLECT_WORKER_CONCURRENCY"), 2),

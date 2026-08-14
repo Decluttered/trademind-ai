@@ -19,8 +19,13 @@ RUN pnpm install --frozen-lockfile
 
 RUN pnpm --filter @trademind/collector build
 
+RUN mkdir -p /workspace/data/browser-profiles /workspace/data/storage-states \
+  && chown -R pwuser:pwuser /workspace/data
+
 ENV NODE_ENV=production
 
 EXPOSE 3001
+
+USER pwuser
 
 CMD ["pnpm", "--filter", "@trademind/collector", "start"]
