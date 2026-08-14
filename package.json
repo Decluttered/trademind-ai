@@ -37,6 +37,7 @@
     "dev:collector": "pnpm --filter @trademind/collector dev",
     "collect:test": "pnpm --filter @trademind/collector collect:test",
     "test:collector": "pnpm --filter @trademind/collector test",
+    "test:dev-scripts": "vitest run --environment node scripts/utils/collector-dev-env.test.ts",
     "build:collector": "pnpm --filter @trademind/collector build",
     "install:collector:browsers": "pnpm --filter @trademind/collector exec playwright install chromium",
     "test:backend": "cd backend && go test ./...",

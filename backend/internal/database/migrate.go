@@ -53,7 +53,7 @@ func migrateLegacyPublicationSKUColumns(db *gorm.DB) error {
 	return nil
 }
 
-// migrateLegacyInventorySKUColumns renames early GORM typo columns (product_sk_uid / external_sk_uid)
+// migrateLegacyInventorySKUColumns renames early GORM typo columns (*_sk_uid)
 // and ensures inventory / order SKU linkage columns exist before raw SQL aggregations run.
 func migrateLegacyInventorySKUColumns(db *gorm.DB) error {
 	if db == nil {
@@ -66,6 +66,7 @@ func migrateLegacyInventorySKUColumns(db *gorm.DB) error {
 	}
 	renames := []spec{
 		{&inventory.InventorySyncTask{}, "product_sk_uid", "product_sku_id"},
+		{&inventory.InventorySyncTask{}, "publication_sk_uid", "publication_sku_id"},
 		{&inventory.InventoryChangeLog{}, "product_sk_uid", "product_sku_id"},
 		{&inventory.OrderInventoryEffect{}, "product_sk_uid", "product_sku_id"},
 		{&order.OrderItem{}, "product_sk_uid", "product_sku_id"},

@@ -7,6 +7,7 @@ import { execa } from 'execa';
 import pc from 'picocolors';
 
 import { runDevEnvChecks } from './check-dev-env.js';
+import { resolveCollectorDevToken } from './utils/collector-dev-env.js';
 import type { InfraMode } from './utils/infra.js';
 import { addrToHttpUrl, readEnvKey, resolveEffectiveEnvPath } from './utils/env-file.js';
 import { banner, tagLine } from './utils/log.js';
@@ -120,6 +121,16 @@ async function main(): Promise<void> {
 
   await cleanupPreviousDevProcesses();
 
+  const envPath = resolveEffectiveEnvPath(repoRoot);
+  const collectorToken = resolveCollectorDevToken(
+    process.env.COLLECTOR_SERVICE_TOKEN,
+    envPath ? readEnvKey(envPath, 'COLLECTOR_SERVICE_TOKEN') : undefined,
+  );
+  if (collectorToken.generated) {
+    tagLine('env', 'COLLECTOR_SERVICE_TOKEN 未配置，已为本次本地开发生成临时内部 Token', pc.yellow);
+  }
+  const serviceEnv = { ...process.env, COLLECTOR_SERVICE_TOKEN: collectorToken.token };
+
   tagLine('backend', 'starting...', pc.blue);
   tagLine('admin', 'starting...', pc.blue);
   tagLine('collector', 'starting...', pc.blue);
@@ -134,7 +145,7 @@ async function main(): Promise<void> {
         reject: false,
         stdout: 'pipe',
         stderr: 'pipe',
-        env: { ...process.env },
+        env: serviceEnv,
       }),
     },
     {
@@ -154,7 +165,7 @@ async function main(): Promise<void> {
         reject: false,
         stdout: 'pipe',
         stderr: 'pipe',
-        env: { ...process.env },
+        env: serviceEnv,
       }),
     },
   ];

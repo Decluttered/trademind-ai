@@ -4,6 +4,10 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Database migration reliability (2026-08-15)
+
+- Reconciled legacy and canonical PostgreSQL index names only when their definitions are otherwise identical, while keeping different definitions fail closed, so repeated `AutoMigrate` startup no longer fails on an equivalent duplicate inventory index.
+
 ### Naming consistency (2026-08-14)
 
 - Normalized Go identifiers to standard initialisms such as `ID`, `SKU`, `URL`, `API`, `HTTP`, `JSON`, `UUID` and `OAuth` without changing JSON fields or API payloads.

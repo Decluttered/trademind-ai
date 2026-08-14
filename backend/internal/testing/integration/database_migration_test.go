@@ -10,6 +10,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/customerchat"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customersync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/imagetask"
+	"github.com/trademind-ai/trademind/backend/internal/modules/inventory"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrol"
 	"github.com/trademind-ai/trademind/backend/internal/testing/postgrestest"
 	"github.com/trademind-ai/trademind/backend/internal/testing/safeenv"
@@ -162,6 +163,85 @@ func TestAutoMigrateAgainstIsolatedPostgres(t *testing.T) {
 	} {
 		require.Falsef(t, db.Migrator().HasTable(legacy), "legacy table must not be created: %s", legacy)
 	}
+	require.True(t, db.Migrator().HasColumn(&inventory.InventorySyncTask{}, "publication_sku_id"))
+	require.False(t, db.Migrator().HasColumn(&inventory.InventorySyncTask{}, "publication_sk_uid"))
+}
+
+func TestAutoMigrateRenamesLegacyInventoryPublicationSKUColumnWithoutDataLoss(t *testing.T) {
+	t.Setenv("APP_ENV", "test")
+	_, ok, err := safeenv.TestDatabaseURLFromEnv()
+	require.NoError(t, err)
+	if !ok {
+		t.Skip("TEST_DATABASE_URL is not set; skipping PostgreSQL inventory column migration test")
+	}
+
+	db := postgrestest.Require(t).DB
+	require.NoError(t, db.Exec(`
+CREATE TABLE inventory_sync_tasks (
+  id CHAR(36) PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  tenant_id BIGINT NOT NULL DEFAULT 0,
+  product_id CHAR(36) NOT NULL,
+  publication_sk_uid CHAR(36),
+  shop_id CHAR(36) NOT NULL,
+  platform VARCHAR(64) NOT NULL,
+  task_type VARCHAR(64) NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  mode VARCHAR(32) NOT NULL,
+  target_stock INTEGER NOT NULL
+)`).Error)
+	require.NoError(t, db.Exec(`CREATE INDEX idx_inventory_sync_tasks_publication_sk_uid ON inventory_sync_tasks (publication_sk_uid)`).Error)
+
+	taskID := uuid.New()
+	publicationSKUID := uuid.New()
+	now := time.Now().UTC()
+	require.NoError(t, db.Exec(`
+INSERT INTO inventory_sync_tasks (
+  id, created_at, updated_at, tenant_id, product_id, publication_sk_uid,
+  shop_id, platform, task_type, status, mode, target_stock
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		taskID, now, now, 7, uuid.New(), publicationSKUID,
+		uuid.New(), "douyin_shop", inventory.TaskTypeInventorySync, inventory.StatusFailed, inventory.ModeManual, 3,
+	).Error)
+
+	require.NoError(t, database.AutoMigrate(db))
+	require.NoError(t, database.AutoMigrate(db))
+	require.True(t, db.Migrator().HasColumn(&inventory.InventorySyncTask{}, "publication_sku_id"))
+	require.False(t, db.Migrator().HasColumn(&inventory.InventorySyncTask{}, "publication_sk_uid"))
+	require.True(t, db.Migrator().HasIndex(&inventory.InventorySyncTask{}, "idx_inventory_sync_tasks_publication_sku_id"))
+	require.False(t, db.Migrator().HasIndex(&inventory.InventorySyncTask{}, "idx_inventory_sync_tasks_publication_sk_uid"))
+
+	var migratedPublicationSKUIDRaw string
+	require.NoError(t, db.Raw(
+		`SELECT publication_sku_id FROM inventory_sync_tasks WHERE id = ?`, taskID,
+	).Scan(&migratedPublicationSKUIDRaw).Error)
+	migratedPublicationSKUID, err := uuid.Parse(migratedPublicationSKUIDRaw)
+	require.NoError(t, err)
+	require.Equal(t, publicationSKUID, migratedPublicationSKUID)
+}
+
+func TestAutoMigrateRemovesEquivalentLegacyInventoryPublicationSKUIndex(t *testing.T) {
+	t.Setenv("APP_ENV", "test")
+	_, ok, err := safeenv.TestDatabaseURLFromEnv()
+	require.NoError(t, err)
+	if !ok {
+		t.Skip("TEST_DATABASE_URL is not set; skipping PostgreSQL equivalent index migration test")
+	}
+
+	db := postgrestest.Require(t).DB
+	require.NoError(t, db.Exec(`
+CREATE TABLE inventory_sync_tasks (
+  id CHAR(36) PRIMARY KEY,
+  publication_sku_id CHAR(36)
+)`).Error)
+	require.NoError(t, db.Exec(`CREATE INDEX idx_inventory_sync_tasks_publication_sku_id ON inventory_sync_tasks (publication_sku_id)`).Error)
+	require.NoError(t, db.Exec(`CREATE INDEX idx_inventory_sync_tasks_publication_sk_uid ON inventory_sync_tasks (publication_sku_id)`).Error)
+
+	require.NoError(t, database.AutoMigrate(db))
+	require.NoError(t, database.AutoMigrate(db))
+	require.True(t, db.Migrator().HasIndex(&inventory.InventorySyncTask{}, "idx_inventory_sync_tasks_publication_sku_id"))
+	require.False(t, db.Migrator().HasIndex(&inventory.InventorySyncTask{}, "idx_inventory_sync_tasks_publication_sk_uid"))
 }
 
 func TestAutoMigrateProductionSchemaRenamesLegacySchemaWithoutDataLoss(t *testing.T) {
@@ -258,10 +338,10 @@ func TestAutoMigrateRejectsSplitPerformanceIndexNames(t *testing.T) {
 
 	db := postgrestest.Require(t).DB
 	require.NoError(t, database.AutoMigrate(db))
-	require.NoError(t, db.Exec(`CREATE INDEX idx_products_p7_tenant_created_id ON products (tenant_id, created_at DESC, id DESC)`).Error)
+	require.NoError(t, db.Exec(`CREATE INDEX idx_products_p7_tenant_created_id ON products (tenant_id)`).Error)
 
 	err = database.AutoMigrate(db)
-	require.ErrorContains(t, err, "rename index idx_products_p7_tenant_created_id to idx_products_tenant_created_id")
+	require.ErrorContains(t, err, "legacy index migration conflict: both idx_products_p7_tenant_created_id and idx_products_tenant_created_id exist with different definitions")
 	require.True(t, db.Migrator().HasIndex("products", "idx_products_tenant_created_id"))
 	require.True(t, db.Migrator().HasIndex("products", "idx_products_p7_tenant_created_id"))
 }

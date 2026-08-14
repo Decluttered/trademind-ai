@@ -81,6 +81,7 @@ var legacyObjectNameRenames = []legacySchemaRename{
 	{legacy: "idx_products_p7_tenant_created_id", current: "idx_products_tenant_created_id"},
 	{legacy: "idx_orders_p7_tenant_created_id", current: "idx_orders_tenant_created_id"},
 	{legacy: "idx_orders_p7_tenant_shop_created_id", current: "idx_orders_tenant_shop_created_id"},
+	{legacy: "publication_sk_uid", current: "publication_sku_id"},
 	{legacy: "idx_inventory_sync_tasks_p7_tenant_status_updated", current: "idx_inventory_sync_tasks_tenant_status_updated"},
 	{legacy: "idx_collect_tasks_p7_tenant_updated_id", current: "idx_collect_tasks_tenant_updated_id"},
 	{legacy: "idx_webhook_events_p7_tenant_status_created", current: "idx_webhook_events_tenant_status_created"},
@@ -195,17 +196,134 @@ func renamePostgresTableObjects(db *gorm.DB, table string) error {
 	if err := db.Raw(`SELECT indexname FROM pg_indexes WHERE schemaname = current_schema() AND tablename = ? ORDER BY indexname`, table).Scan(&indexes).Error; err != nil {
 		return fmt.Errorf("list indexes for %s: %w", table, err)
 	}
+	existingIndexes := make(map[string]struct{}, len(indexes))
+	for _, index := range indexes {
+		existingIndexes[index] = struct{}{}
+	}
 	for _, legacy := range indexes {
+		if _, exists := existingIndexes[legacy]; !exists {
+			continue
+		}
 		current := stableObjectName(legacy)
 		if current == legacy {
+			continue
+		}
+		if _, currentExists := existingIndexes[current]; currentExists {
+			legacyDefinition, err := postgresIndexDefinition(db, legacy)
+			if err != nil {
+				return err
+			}
+			currentDefinition, err := postgresIndexDefinition(db, current)
+			if err != nil {
+				return err
+			}
+			equivalent, err := equivalentPostgresIndexDefinitions(legacyDefinition, currentDefinition)
+			if err != nil {
+				return fmt.Errorf("compare index definitions %s and %s: %w", legacy, current, err)
+			}
+			if !equivalent {
+				return fmt.Errorf("legacy index migration conflict: both %s and %s exist with different definitions", legacy, current)
+			}
+			stmt := fmt.Sprintf("DROP INDEX %s", quotePostgresIdentifier(legacy))
+			if err := db.Exec(stmt).Error; err != nil {
+				return fmt.Errorf("drop equivalent legacy index %s while keeping %s: %w", legacy, current, err)
+			}
+			delete(existingIndexes, legacy)
 			continue
 		}
 		stmt := fmt.Sprintf("ALTER INDEX %s RENAME TO %s", quotePostgresIdentifier(legacy), quotePostgresIdentifier(current))
 		if err := db.Exec(stmt).Error; err != nil {
 			return fmt.Errorf("rename index %s to %s: %w", legacy, current, err)
 		}
+		delete(existingIndexes, legacy)
+		existingIndexes[current] = struct{}{}
 	}
 	return nil
+}
+
+func postgresIndexDefinition(db *gorm.DB, index string) (string, error) {
+	var row struct {
+		Definition string
+	}
+	result := db.Raw(`
+SELECT pg_get_indexdef(indexes.indexrelid) AS definition
+FROM pg_index AS indexes
+JOIN pg_class AS index_class ON index_class.oid = indexes.indexrelid
+JOIN pg_namespace AS namespace ON namespace.oid = index_class.relnamespace
+WHERE namespace.nspname = current_schema() AND index_class.relname = ?`, index).Scan(&row)
+	if result.Error != nil {
+		return "", fmt.Errorf("read index definition for %s: %w", index, result.Error)
+	}
+	if result.RowsAffected != 1 || strings.TrimSpace(row.Definition) == "" {
+		return "", fmt.Errorf("read index definition for %s: expected one index in current schema", index)
+	}
+	return row.Definition, nil
+}
+
+func equivalentPostgresIndexDefinitions(left, right string) (bool, error) {
+	normalizedLeft, err := normalizePostgresIndexDefinition(left)
+	if err != nil {
+		return false, err
+	}
+	normalizedRight, err := normalizePostgresIndexDefinition(right)
+	if err != nil {
+		return false, err
+	}
+	return normalizedLeft == normalizedRight, nil
+}
+
+// normalizePostgresIndexDefinition removes only the index name emitted by
+// pg_get_indexdef. Uniqueness, table, method, expressions and predicates remain.
+func normalizePostgresIndexDefinition(definition string) (string, error) {
+	definition = strings.TrimSpace(definition)
+	prefix := ""
+	kind := ""
+	switch {
+	case strings.HasPrefix(definition, "CREATE UNIQUE INDEX "):
+		prefix = "CREATE UNIQUE INDEX"
+		kind = "unique"
+	case strings.HasPrefix(definition, "CREATE INDEX "):
+		prefix = "CREATE INDEX"
+		kind = "nonunique"
+	default:
+		return "", fmt.Errorf("unsupported PostgreSQL index definition")
+	}
+
+	remainder := strings.TrimSpace(strings.TrimPrefix(definition, prefix))
+	nameEnd, err := postgresIndexNameEnd(remainder)
+	if err != nil {
+		return "", err
+	}
+	remainder = strings.TrimSpace(remainder[nameEnd:])
+	if !strings.HasPrefix(remainder, "ON ") {
+		return "", fmt.Errorf("unsupported PostgreSQL index definition after index name")
+	}
+	return kind + "|" + remainder, nil
+}
+
+func postgresIndexNameEnd(value string) (int, error) {
+	inQuotes := false
+	for i := 0; i < len(value); i++ {
+		switch value[i] {
+		case '"':
+			if inQuotes && i+1 < len(value) && value[i+1] == '"' {
+				i++
+				continue
+			}
+			inQuotes = !inQuotes
+		case ' ', '\t', '\r', '\n':
+			if !inQuotes {
+				if i == 0 {
+					return 0, fmt.Errorf("PostgreSQL index definition has an empty index name")
+				}
+				return i, nil
+			}
+		}
+	}
+	if inQuotes {
+		return 0, fmt.Errorf("PostgreSQL index definition has an unterminated quoted index name")
+	}
+	return 0, fmt.Errorf("PostgreSQL index definition is missing the indexed table")
 }
 
 func renamePostgresFunction(db *gorm.DB, legacy, current string) error {

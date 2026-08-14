@@ -83,6 +83,7 @@ func TestStableObjectName(t *testing.T) {
 		"idx_p10_credential_lifecycle_events_credential_id": "idx_platform_credential_lifecycle_events_credential_id",
 		"idx_products_p7_tenant_created_id":                 "idx_products_tenant_created_id",
 		"idx_orders_p7_tenant_shop_created_id":              "idx_orders_tenant_shop_created_id",
+		"idx_inventory_sync_tasks_publication_sk_uid":       "idx_inventory_sync_tasks_publication_sku_id",
 		"idx_files_p7_tenant_security_created":              "idx_files_tenant_security_created",
 	}
 	for legacy, current := range tests {
@@ -100,4 +101,42 @@ func TestStableObjectName(t *testing.T) {
 func TestLegacyInventorySyncFunctionNameRemainsCompatible(t *testing.T) {
 	require.Equal(t, "inventorysyncp9_reject_immutable_change", legacyInventorySyncImmutableFunction)
 	require.Equal(t, "inventorysync_reject_immutable_change", currentInventorySyncImmutableFunction)
+}
+
+func TestNormalizePostgresIndexDefinitionRemovesOnlyIndexName(t *testing.T) {
+	definition := `CREATE UNIQUE INDEX "idx legacy" ON public.inventory_sync_tasks USING btree (lower((platform)::text), publication_sku_id) WHERE (status = 'failed'::text)`
+
+	normalized, err := normalizePostgresIndexDefinition(definition)
+	require.NoError(t, err)
+	require.Equal(t,
+		`unique|ON public.inventory_sync_tasks USING btree (lower((platform)::text), publication_sku_id) WHERE (status = 'failed'::text)`,
+		normalized,
+	)
+}
+
+func TestEquivalentPostgresIndexDefinitions(t *testing.T) {
+	legacy := `CREATE INDEX idx_inventory_sync_tasks_publication_sk_uid ON public.inventory_sync_tasks USING btree (publication_sku_id)`
+	current := `CREATE INDEX idx_inventory_sync_tasks_publication_sku_id ON public.inventory_sync_tasks USING btree (publication_sku_id)`
+
+	equivalent, err := equivalentPostgresIndexDefinitions(legacy, current)
+	require.NoError(t, err)
+	require.True(t, equivalent)
+
+	uniqueCurrent := `CREATE UNIQUE INDEX idx_inventory_sync_tasks_publication_sku_id ON public.inventory_sync_tasks USING btree (publication_sku_id)`
+	equivalent, err = equivalentPostgresIndexDefinitions(legacy, uniqueCurrent)
+	require.NoError(t, err)
+	require.False(t, equivalent)
+
+	partialCurrent := `CREATE INDEX idx_inventory_sync_tasks_publication_sku_id ON public.inventory_sync_tasks USING btree (publication_sku_id) WHERE (status = 'failed'::text)`
+	equivalent, err = equivalentPostgresIndexDefinitions(legacy, partialCurrent)
+	require.NoError(t, err)
+	require.False(t, equivalent)
+}
+
+func TestNormalizePostgresIndexDefinitionRejectsMalformedInput(t *testing.T) {
+	_, err := normalizePostgresIndexDefinition(`DROP INDEX idx_inventory_sync_tasks_publication_sk_uid`)
+	require.EqualError(t, err, "unsupported PostgreSQL index definition")
+
+	_, err = normalizePostgresIndexDefinition(`CREATE INDEX "unterminated ON inventory_sync_tasks (publication_sku_id)`)
+	require.EqualError(t, err, "PostgreSQL index definition has an unterminated quoted index name")
 }

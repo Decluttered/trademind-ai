@@ -133,6 +133,8 @@ docker compose -f docker-compose.full.yml up -d --build
 | `COLLECTOR_1688_AUTH_PROBE_URL` | 注释示例 | collector | 否 | 登录态检测时用于探测的商品详情 URL。 |
 | `COLLECTOR_USER_AGENT` | 注释示例 | collector | 否 | 可选 UA 覆盖。 |
 
+本地 `pnpm dev` 会从根 `.env`（不存在时从 `backend/.env`）读取 Collector 配置；进程环境变量优先。若 `COLLECTOR_SERVICE_TOKEN` 为空，开发启动器只为当前 backend/collector 会话生成随机 Token，不会写回配置文件；单独启动两个服务时必须显式提供相同 Token。
+
 ## 队列与任务
 
 | 变量前缀 | 示例变量 | 服务 | 说明 |

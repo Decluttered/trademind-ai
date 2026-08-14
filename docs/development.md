@@ -18,6 +18,7 @@ pnpm dev
 ```
 
 `pnpm dev` 启动 PostgreSQL/Redis、backend、Admin 和 collector。若 Docker 不可用，会检查 `.env` 指定的本机 PostgreSQL/Redis。
+若未配置 `COLLECTOR_SERVICE_TOKEN`，该命令会仅为本次开发会话生成随机内部 Token，并同时传给 backend 与 collector；不会写回 `.env` 或输出 Token。单独启动 backend 与 collector 时，仍应在环境变量或 `.env` 中配置相同的非空 Token。
 
 常用命令：
 
