@@ -1,4 +1,4 @@
-import { TmPageContainer } from '@/components/ui';
+import { ErrorAlert, TmPageContainer } from '@/components/ui';
 import { PLATFORM_STATUS_META } from '@/constants/platformAppConfig';
 import {
   isPlatformRuntimeSupported,
@@ -8,10 +8,11 @@ import {
 import { preferredPlatformTabOrder } from '@/services/platformOpen';
 import { queryPlatformProviders, type PlatformProviderMeta } from '@/services/shops';
 import { history, useLocation } from '@umijs/max';
-import { Alert, Spin, Tabs, Tag } from 'antd';
+import { Alert, Button, Spin, Tabs, Tag } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DouyinRuntimePanel from './DouyinRuntimePanel';
 import PlatformRuntimeUnavailablePanel from './PlatformRuntimeUnavailablePanel';
+import styles from './index.less';
 
 function renderPlatformPanel(meta: PlatformProviderMeta) {
   if (isPlatformRuntimeSupported(meta.platform)) {
@@ -28,6 +29,7 @@ function renderPlatformPanel(meta: PlatformProviderMeta) {
 export default function PlatformRuntimePage() {
   const location = useLocation();
   const [loadingProviders, setLoadingProviders] = useState(true);
+  const [providersError, setProvidersError] = useState(false);
   const [providers, setProviders] = useState<PlatformProviderMeta[]>([]);
 
   const loadProviders = useCallback(async () => {
@@ -35,8 +37,10 @@ export default function PlatformRuntimePage() {
     try {
       const { list } = await queryPlatformProviders();
       setProviders(list ?? []);
+      setProvidersError(false);
     } catch {
       setProviders([]);
+      setProvidersError(true);
     } finally {
       setLoadingProviders(false);
     }
@@ -80,18 +84,12 @@ export default function PlatformRuntimePage() {
     return {
       key: p.platform,
       label: (
-        <span>
-          {p.name}
-          {runtimeReady ? null : (
-            <Tag color="default" style={{ marginLeft: 6, marginRight: 0 }}>
-              未接入
-            </Tag>
-          )}
-          {st && p.status !== 'available' ? (
-            <Tag color={st.color} style={{ marginLeft: 6, marginRight: 0 }}>
-              {st.label}
-            </Tag>
-          ) : null}
+        <span className={styles.platformTabLabel}>
+          <span>{p.name}</span>
+          <span className={styles.platformTabTags}>
+            {runtimeReady ? null : <Tag color="default">未接入</Tag>}
+            {st && p.status !== 'available' ? <Tag color={st.color}>{st.label}</Tag> : null}
+          </span>
         </span>
       ),
       children: renderPlatformPanel(p),
@@ -102,9 +100,22 @@ export default function PlatformRuntimePage() {
     <TmPageContainer
       title="平台运行状态"
       subTitle="按平台查看健康检查、运行指标、运行控制与发布门禁；未接入运行时的平台仅展示说明，不可操作。"
+      className={styles.page}
     >
-      <Spin spinning={loadingProviders}>
-        {tabProviders.length === 0 ? (
+      {providersError ? (
+        <ErrorAlert
+          title="平台列表加载失败"
+          actionHint="请检查后端服务后重试。"
+          action={
+            <Button size="small" onClick={() => void loadProviders()}>
+              重新加载
+            </Button>
+          }
+          className={styles.providersError}
+        />
+      ) : null}
+      <Spin spinning={loadingProviders} className={styles.providerSpin}>
+        {providersError ? null : tabProviders.length === 0 ? (
           <Alert
             showIcon
             type="info"
@@ -112,7 +123,13 @@ export default function PlatformRuntimePage() {
             description="请刷新页面或先在平台接入设置中确认平台接入方已注册。"
           />
         ) : (
-          <Tabs activeKey={activePlatform} onChange={onTabChange} items={tabItems} destroyOnHidden />
+          <Tabs
+            activeKey={activePlatform}
+            onChange={onTabChange}
+            items={tabItems}
+            destroyOnHidden
+            className={styles.platformTabs}
+          />
         )}
       </Spin>
     </TmPageContainer>

@@ -9,6 +9,7 @@ import { inventorySyncP9Response } from '../mocks/inventory-sync-p9';
 import { imageProviderCapabilities } from '../mocks/image-providers';
 import { observabilityResponse } from '../mocks/observability';
 import { operationTaskResponse } from '../mocks/operation-tasks';
+import { platformRuntimeResponse } from '../mocks/platform-runtime';
 
 export async function seedAdminAuth(page: Page) {
   await page.addInitScript(([key, token]) => {
@@ -38,6 +39,7 @@ export async function routeAdminApi(page: Page) {
       (path === '/api/v1/settings' ? ok({ items: [] }) : null) ??
       (path === '/api/v1/image/providers' ? ok(imageProviderCapabilities) : null) ??
       observabilityResponse(path) ??
+      platformRuntimeResponse(path) ??
       operationTaskResponse(path) ??
       inventorySyncP9Response(path) ??
       productsResponse(path) ??
