@@ -3,6 +3,7 @@ package collect
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectbrowserprofile"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectrule"
@@ -21,6 +23,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/ctxkey"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/repository"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/tasklease"
 	"github.com/trademind-ai/trademind/backend/internal/rdb"
@@ -47,12 +50,12 @@ type Service struct {
 	RetryMaxDelaySec  int
 
 	// 1688 batch throttling (env defaults; settings group collector overrides at runtime).
-	Batch1688Concurrency int
-	Batch1688DelayMinMs  int
-	Batch1688DelayMaxMs  int
-	BatchRetryOnBlocked  bool
-	BatchRetryOnTimeout  bool
-	Batch1688MaxRetries  int
+	Source1688BatchConcurrency int
+	Source1688BatchDelayMinMs  int
+	Source1688BatchDelayMaxMs  int
+	BatchRetryOnBlocked        bool
+	BatchRetryOnTimeout        bool
+	Source1688BatchMaxRetries  int
 
 	Settings *settings.Service
 
@@ -132,6 +135,65 @@ func (n *normalizedProduct) importParams(fullJSON json.RawMessage) product.Impor
 		SKUs:               skus,
 		FullNormalizedJSON: fullJSON,
 	}
+}
+
+func (s *Service) importDraftAndFinishTask(
+	ctx context.Context,
+	task *CollectTask,
+	workerID string,
+	claim *tasklease.ClaimResult,
+	params product.ImportDraftParams,
+	rawResult json.RawMessage,
+) (*product.Product, time.Time, error) {
+	if s == nil || s.DB == nil || s.Products == nil || task == nil || claim == nil {
+		return nil, time.Time{}, fmt.Errorf("collect import transaction unavailable")
+	}
+	finishedAt := time.Now().UTC()
+	var created *product.Product
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var owned CollectTask
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ? AND tenant_id = ? AND status = ? AND locked_by = ? AND execution_id = ? AND lock_version = ? AND locked_until > ?",
+				task.ID, task.TenantID, StatusRunning, workerID, claim.ExecutionID.String(), claim.LeaseVersion, finishedAt).
+			First(&owned).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return tasklease.ErrLeaseLost
+			}
+			return err
+		}
+		var err error
+		created, err = s.Products.ImportDraftInTransaction(ctx, tx, task.CreatedBy, params)
+		if err != nil {
+			return err
+		}
+		res := tx.Model(&CollectTask{}).
+			Where("id = ? AND tenant_id = ? AND status = ? AND locked_by = ? AND execution_id = ? AND lock_version = ?",
+				task.ID, task.TenantID, StatusRunning, workerID, claim.ExecutionID.String(), claim.LeaseVersion).
+			Updates(map[string]interface{}{
+				"status":            StatusSuccess,
+				"result_product_id": created.ID,
+				"raw_result":        datatypes.JSON(rawResult),
+				"error_message":     "",
+				"finished_at":       &finishedAt,
+				"next_retry_at":     nil,
+				"retry_enqueued_at": nil,
+				"retry_count":       0,
+				"locked_by":         nil,
+				"locked_until":      nil,
+				"updated_at":        finishedAt,
+			})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected != 1 {
+			return tasklease.ErrLeaseLost
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	return created, finishedAt, nil
 }
 
 func (s *Service) failTask(ctx context.Context, task *CollectTask, fromStatus, msg string, payload map[string]any, workerID string, claim *tasklease.ClaimResult) {
@@ -426,28 +488,17 @@ func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, worker
 	if isTaobaoTmallCollectSource(task.Source) {
 		params, outcome.ProductJSON = normalizeTaobaoTmallImport(task.Source, norm, outcome.ProductJSON)
 	}
-	created, err := s.Products.ImportDraftWithContext(ctx, task.CreatedBy, params)
+	created, _, err := s.importDraftAndFinishTask(ctx, task, workerID, claim, params, outcome.ProductJSON)
 	if err != nil {
+		if errors.Is(err, tasklease.ErrLeaseLost) {
+			slog.Warn("collect_import_lease_lost", "taskId", taskID.String(), "error", err.Error())
+			return true, nil
+		}
 		s.handleCollectJobError(ctx, task, err, workerID, claim)
 		return true, nil
 	}
 
-	fin := time.Now().UTC()
-	rawJSON := datatypes.JSON(outcome.ProductJSON)
 	pid := created.ID
-	if err := s.finishCollectTask(ctx, taskID, workerID, claim, map[string]interface{}{
-		"status":            StatusSuccess,
-		"result_product_id": pid,
-		"raw_result":        rawJSON,
-		"error_message":     "",
-		"finished_at":       &fin,
-		"next_retry_at":     nil,
-		"retry_enqueued_at": nil,
-		"retry_count":       0,
-	}); err != nil {
-		slog.Warn("collect_success_lease_lost", "taskId", taskID.String(), "error", err.Error())
-		return true, nil
-	}
 	var refreshed CollectTask
 	if err := s.DB.WithContext(ctx).First(&refreshed, "id = ?", taskID).Error; err != nil {
 		return true, nil
@@ -465,6 +516,14 @@ func (s *Service) RunCollectJob(parent context.Context, taskID uuid.UUID, worker
 	})
 
 	if s.OpLog != nil {
+		_ = s.OpLog.WriteBackground(ctx, operationlog.WriteOpts{
+			AdminUserID: refreshed.CreatedBy,
+			Action:      "product.create",
+			Resource:    "product",
+			ResourceID:  pid.String(),
+			Status:      "success",
+			Message:     "draft imported from collect",
+		})
 		action := "collect.task.success"
 		msg := fmt.Sprintf("product_id=%s", pid.String())
 		if isPinduoduoCollectSource(refreshed.Source) {
@@ -714,7 +773,11 @@ func (s *Service) RetryAsync(c *gin.Context, id uuid.UUID, adminID *uuid.UUID) (
 	}
 
 	var task CollectTask
-	if err := s.DB.WithContext(c.Request.Context()).First(&task, "id = ?", id).Error; err != nil {
+	tenantID, err := adminperm.TenantIDFromGin(c)
+	if err != nil {
+		return zero, err
+	}
+	if err := repository.FindByID(c.Request.Context(), s.DB, &task, tenantID, id); err != nil {
 		return zero, err
 	}
 	if task.Status != StatusFailed {
@@ -722,8 +785,8 @@ func (s *Service) RetryAsync(c *gin.Context, id uuid.UUID, adminID *uuid.UUID) (
 	}
 
 	retryAt := time.Now().UTC()
-	if err := s.DB.WithContext(c.Request.Context()).Model(&CollectTask{}).
-		Where("id = ?", id).
+	update := s.DB.WithContext(c.Request.Context()).Model(&CollectTask{}).
+		Where("id = ? AND tenant_id = ? AND status = ?", id, tenantID, StatusFailed).
 		Updates(map[string]interface{}{
 			"status":            StatusRetrying,
 			"error_message":     "",
@@ -736,11 +799,15 @@ func (s *Service) RetryAsync(c *gin.Context, id uuid.UUID, adminID *uuid.UUID) (
 			"locked_by":         nil,
 			"locked_until":      nil,
 			"updated_at":        retryAt,
-		}).Error; err != nil {
-		return zero, err
+		})
+	if update.Error != nil {
+		return zero, update.Error
+	}
+	if update.RowsAffected != 1 {
+		return zero, fmt.Errorf("only failed tasks can be retried")
 	}
 
-	if err := s.DB.WithContext(c.Request.Context()).First(&task, "id = ?", id).Error; err != nil {
+	if err := s.DB.WithContext(c.Request.Context()).First(&task, "id = ? AND tenant_id = ?", id, tenantID).Error; err != nil {
 		return zero, err
 	}
 
@@ -748,7 +815,7 @@ func (s *Service) RetryAsync(c *gin.Context, id uuid.UUID, adminID *uuid.UUID) (
 	if err := s.enqueueTask(c.Request.Context(), task.ID, task.Source, task.SourceURL, task.CreatedBy, reqID); err != nil {
 		fin := time.Now().UTC()
 		_ = s.DB.WithContext(c.Request.Context()).Model(&CollectTask{}).
-			Where("id = ?", id).
+			Where("id = ? AND tenant_id = ?", id, tenantID).
 			Updates(map[string]interface{}{
 				"status":        StatusFailed,
 				"error_message": ErrRedisQueueUnavailable.Error(),
@@ -756,7 +823,7 @@ func (s *Service) RetryAsync(c *gin.Context, id uuid.UUID, adminID *uuid.UUID) (
 				"updated_at":    fin,
 			}).Error
 		var bumped CollectTask
-		if er := s.DB.WithContext(c.Request.Context()).First(&bumped, "id = ?", id).Error; er == nil {
+		if er := s.DB.WithContext(c.Request.Context()).First(&bumped, "id = ? AND tenant_id = ?", id, tenantID).Error; er == nil {
 			s.RecordTaskEvent(c.Request.Context(), &bumped, TaskEventInput{
 				EventType:    EventTaskFailed,
 				FromStatus:   StatusRetrying,
@@ -800,7 +867,11 @@ func (s *Service) GetDTO(c *gin.Context, id uuid.UUID) (TaskDTO, error) {
 		return zero, fmt.Errorf("collect: no db")
 	}
 	var t CollectTask
-	if err := s.DB.WithContext(c.Request.Context()).First(&t, "id = ?", id).Error; err != nil {
+	tenantID, err := adminperm.TenantIDFromGin(c)
+	if err != nil {
+		return zero, err
+	}
+	if err := repository.FindByID(c.Request.Context(), s.DB, &t, tenantID, id); err != nil {
 		return zero, err
 	}
 	return s.enrichTaskDTO(c.Request.Context(), &t), nil
@@ -814,6 +885,10 @@ func (s *Service) List(c *gin.Context, q ListQuery) (*ListResult, error) {
 	page, ps := clampCollectPage(q.Page, q.PageSize)
 
 	tx := s.DB.WithContext(c.Request.Context()).Model(&CollectTask{})
+	var err error
+	if tx, _, err = adminperm.ApplyTenantScope(c, tx); err != nil {
+		return nil, err
+	}
 	if v := strings.TrimSpace(q.Status); v != "" {
 		tx = tx.Where("status = ?", v)
 	}

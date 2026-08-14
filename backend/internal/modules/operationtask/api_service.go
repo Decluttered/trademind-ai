@@ -16,13 +16,15 @@ import (
 )
 
 type APIService struct {
-	DB          *gorm.DB
-	Authorizer  *RBACAuthorizer
-	Drafts      *DraftVersionService
-	Approvals   *ApprovalService
-	Executor    *ExecutionOrchestrator
-	Retry       *ManualRetryService
-	Transitions *TaskTransitionService
+	DB              *gorm.DB
+	Authorizer      *RBACAuthorizer
+	Drafts          *DraftVersionService
+	Approvals       *ApprovalService
+	Executor        *ExecutionOrchestrator
+	Retry           *ManualRetryService
+	Transitions     *TaskTransitionService
+	SnapshotBuilder ProductionSnapshotBuilder
+	Production      *ProductionExecutionService
 }
 
 func NewAPIService(db *gorm.DB) *APIService {
@@ -58,6 +60,35 @@ func (s *APIService) CreateTask(ctx context.Context, actor APIActor, req CreateT
 	if err != nil {
 		return nil, ErrValidation
 	}
+	if existing, lookupErr := NewOperationTaskRepository(s.DB).GetByIdempotencyKey(ctx, actor.TenantID, idemKey); lookupErr == nil {
+		existingHash, hashErr := ComputePayloadHash([]byte(existing.Payload))
+		if hashErr != nil || existingHash != payloadHash || existing.Title != strings.TrimSpace(req.Title) {
+			return nil, ErrIdemPayloadConflict
+		}
+		return s.detail(ctx, actor, existing.ID)
+	} else if !errors.Is(lookupErr, ErrNotFound) {
+		return nil, lookupErr
+	}
+	productionIntent, productionTask := DouyinDraftIntent{}, req.TaskType == OperationTaskTypeProductPublish && req.Platform == PlatformDouyin
+	var frozenPayload datatypes.JSON
+	var frozenHash string
+	if productionTask {
+		if actor.TenantID <= 0 || s.SnapshotBuilder == nil {
+			return nil, ErrPermissionDenied
+		}
+		productionIntent, err = ParseDouyinDraftIntent(payload)
+		if err != nil {
+			return nil, err
+		}
+		frozenPayload, err = s.SnapshotBuilder.BuildDouyinDraftSnapshot(ctx, actor.TenantID, actor.ActorID, productionIntent)
+		if err != nil {
+			return nil, err
+		}
+		frozenHash, err = ComputePayloadHash(frozenPayload)
+		if err != nil {
+			return nil, ErrValidation
+		}
+	}
 	var task OperationTask
 	err = s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if existing, err := NewOperationTaskRepository(tx).GetByIdempotencyKey(ctx, actor.TenantID, idemKey); err == nil {
@@ -74,6 +105,10 @@ func (s *APIService) CreateTask(ctx context.Context, actor APIActor, req CreateT
 			return err
 		}
 		key := strings.TrimSpace(idemKey)
+		initialStatus := OperationTaskStatusSuggested
+		if productionTask {
+			initialStatus = OperationTaskStatusDraftPreparing
+		}
 		task = OperationTask{
 			TenantID:        actor.TenantID,
 			SourceType:      req.SourceType,
@@ -83,7 +118,7 @@ func (s *APIService) CreateTask(ctx context.Context, actor APIActor, req CreateT
 			Title:           req.Title,
 			Summary:         req.Summary,
 			Payload:         payload,
-			Status:          OperationTaskStatusSuggested,
+			Status:          initialStatus,
 			Priority:        req.Priority,
 			IdempotencyKey:  &key,
 			Revision:        1,
@@ -102,17 +137,42 @@ func (s *APIService) CreateTask(ctx context.Context, actor APIActor, req CreateT
 			}
 			return stableError(err, ErrConflict)
 		}
-		return appendAuditEventTx(tx, OperationTaskEvent{
+		if err := appendAuditEventTx(tx, OperationTaskEvent{
 			TenantID:        actor.TenantID,
 			OperationTaskID: task.ID,
 			EventType:       OperationTaskEventTypeTaskCreated,
 			ActorType:       OperationTaskEventActorUser,
 			ActorID:         &actor.ActorID,
-			AfterState:      OperationTaskStatusSuggested,
+			AfterState:      initialStatus,
 			RequestID:       strings.TrimSpace(requestID),
 			Reason:          "operation task created",
 			Metadata:        safeMetadataJSON(map[string]any{"idempotencyKeyHash": safeKeyHash(idemKey), "payloadHash": payloadHash}),
-		})
+		}); err != nil {
+			return err
+		}
+		if !productionTask {
+			return nil
+		}
+		draftKey := key + ":draft:v1"
+		draft := PlatformDraft{TenantID: actor.TenantID, OperationTaskID: task.ID, Platform: PlatformDouyin, AdapterMode: AdapterModeProductionDraft, DraftVersion: 1, Payload: frozenPayload, PayloadHash: frozenHash, Status: PlatformDraftStatusPendingReview, ChangeReason: "production snapshot generated", IdempotencyKey: &draftKey, CreatedBy: &actor.ActorID, UpdatedBy: &actor.ActorID}
+		if err := validatePlatformDraft(&draft); err != nil {
+			return err
+		}
+		if err := tx.Create(&draft).Error; err != nil {
+			return stableError(err, ErrDuplicateDraftVersion)
+		}
+		if err := updateTaskStatusRevisionTx(tx, &task, OperationTaskStatusPendingReview, &actor.ActorID); err != nil {
+			return err
+		}
+		if err := appendAuditEventTx(tx, OperationTaskEvent{TenantID: actor.TenantID, OperationTaskID: task.ID, EventType: OperationTaskEventTypeDraftGenerated, ActorType: OperationTaskEventActorSystem, BeforeState: OperationTaskStatusDraftPreparing, AfterState: OperationTaskStatusPendingReview, PlatformDraftID: &draft.ID, DraftVersion: draft.DraftVersion, RequestID: strings.TrimSpace(requestID), Reason: "immutable platform request snapshot generated", Metadata: safeMetadataJSON(map[string]any{"payloadHash": frozenHash, "schemaVersion": productionIntent.SchemaVersion})}); err != nil {
+			return err
+		}
+		if err := appendAuditEventTx(tx, OperationTaskEvent{TenantID: actor.TenantID, OperationTaskID: task.ID, EventType: OperationTaskEventTypeReviewRequested, ActorType: OperationTaskEventActorSystem, BeforeState: OperationTaskStatusPendingReview, AfterState: OperationTaskStatusPendingReview, PlatformDraftID: &draft.ID, DraftVersion: draft.DraftVersion, RequestID: strings.TrimSpace(requestID), Reason: "human review required before platform write", Metadata: datatypes.JSON([]byte(`{}`))}); err != nil {
+			return err
+		}
+		task.Status = OperationTaskStatusPendingReview
+		task.Revision++
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -133,9 +193,29 @@ func (s *APIService) ListTasks(ctx context.Context, actor APIActor, p OperationT
 	if err != nil {
 		return zero, err
 	}
+	taskIDs := make([]uuid.UUID, 0, len(result.Items))
+	for _, task := range result.Items {
+		taskIDs = append(taskIDs, task.ID)
+	}
+	latestDrafts, err := NewPlatformDraftRepository(s.DB).ListLatestByTasks(ctx, actor.TenantID, taskIDs)
+	if err != nil {
+		return zero, err
+	}
+	latestAttempts, err := NewExecutionAttemptRepository(s.DB).ListLatestByTasks(ctx, actor.TenantID, taskIDs)
+	if err != nil {
+		return zero, err
+	}
 	items := make([]OperationTaskSummaryResponse, 0, len(result.Items))
 	for _, task := range result.Items {
-		items = append(items, s.taskSummary(ctx, task))
+		var draft *PlatformDraft
+		if value, ok := latestDrafts[task.ID]; ok {
+			draft = &value
+		}
+		var attempt *ExecutionAttempt
+		if value, ok := latestAttempts[task.ID]; ok {
+			attempt = &value
+		}
+		items = append(items, taskSummary(task, draft, attempt))
 	}
 	return TaskListResponse{Items: items, NextCursor: result.NextCursor, HasMore: result.HasMore, Limit: result.Limit}, nil
 }
@@ -156,6 +236,9 @@ func (s *APIService) CreateInitialDraft(ctx context.Context, actor APIActor, tas
 	}
 	if err := s.Authorizer.CanEdit(ctx, actor.TenantID, actor.ActorID, taskID); err != nil {
 		return nil, ErrPermissionDenied
+	}
+	if task, loadErr := NewOperationTaskRepository(s.DB).GetByID(ctx, actor.TenantID, taskID); loadErr == nil && task.TaskType == OperationTaskTypeProductPublish && task.Platform == PlatformDouyin {
+		return nil, ErrExecutionModeForbidden
 	}
 	payload, err := apiJSONPayload(req.Payload)
 	if err != nil {
@@ -178,6 +261,9 @@ func (s *APIService) EditLatestDraft(ctx context.Context, actor APIActor, taskID
 	}
 	if err := s.Authorizer.CanEdit(ctx, actor.TenantID, actor.ActorID, taskID); err != nil {
 		return nil, ErrPermissionDenied
+	}
+	if task, loadErr := NewOperationTaskRepository(s.DB).GetByID(ctx, actor.TenantID, taskID); loadErr == nil && task.TaskType == OperationTaskTypeProductPublish && task.Platform == PlatformDouyin {
+		return nil, ErrExecutionModeForbidden
 	}
 	payload, err := apiJSONPayload(req.Payload)
 	if err != nil {
@@ -281,6 +367,27 @@ func (s *APIService) Execute(ctx context.Context, actor APIActor, taskID uuid.UU
 			return nil, ErrRevisionConflict
 		}
 	}
+	if s.Production != nil {
+		task, loadErr := NewOperationTaskRepository(s.DB).GetByID(ctx, actor.TenantID, taskID)
+		if loadErr != nil {
+			return nil, loadErr
+		}
+		draft, loadErr := NewPlatformDraftRepository(s.DB).GetLatest(ctx, actor.TenantID, taskID)
+		if loadErr != nil {
+			return nil, loadErr
+		}
+		if IsProductionDouyinTask(task, draft) {
+			mode := strings.TrimSpace(strings.ToLower(req.AdapterMode))
+			if mode != "" && mode != AdapterModeProductionDraft {
+				return nil, ErrExecutionModeForbidden
+			}
+			out, queueErr := s.Production.Queue(ctx, ExecutionInput{TenantID: actor.TenantID, OperationTaskID: taskID, ActorID: actor.ActorID, RequestID: requestID, IdempotencyKey: idemKey, AdapterMode: AdapterModeProductionDraft}, false)
+			if queueErr != nil {
+				return nil, queueErr
+			}
+			return s.executionResponse(ctx, actor.TenantID, out), nil
+		}
+	}
 	out, err := s.Executor.Execute(ctx, ExecutionInput{TenantID: actor.TenantID, OperationTaskID: taskID, ActorID: actor.ActorID, RequestID: requestID, IdempotencyKey: idemKey, AdapterMode: req.AdapterMode})
 	if err != nil && out == nil {
 		return nil, err
@@ -314,6 +421,23 @@ func (s *APIService) RetryExecution(ctx context.Context, actor APIActor, taskID 
 		}
 		if attempt.OperationTaskID != taskID || attempt.Status != ExecutionAttemptStatusFailed {
 			return nil, ErrStateConflict
+		}
+	}
+	if s.Production != nil {
+		task, loadErr := NewOperationTaskRepository(s.DB).GetByID(ctx, actor.TenantID, taskID)
+		if loadErr != nil {
+			return nil, loadErr
+		}
+		draft, loadErr := NewPlatformDraftRepository(s.DB).GetLatest(ctx, actor.TenantID, taskID)
+		if loadErr != nil {
+			return nil, loadErr
+		}
+		if IsProductionDouyinTask(task, draft) {
+			out, queueErr := s.Production.Queue(ctx, ExecutionInput{TenantID: actor.TenantID, OperationTaskID: taskID, ActorID: actor.ActorID, RequestID: requestID, IdempotencyKey: idemKey, AdapterMode: AdapterModeProductionDraft}, true)
+			if queueErr != nil {
+				return nil, queueErr
+			}
+			return s.executionResponse(ctx, actor.TenantID, out), nil
 		}
 	}
 	out, err := s.Retry.Retry(ctx, ExecutionInput{TenantID: actor.TenantID, OperationTaskID: taskID, ActorID: actor.ActorID, RequestID: requestID, IdempotencyKey: idemKey})
@@ -462,29 +586,41 @@ func (s *APIService) detail(ctx context.Context, actor APIActor, taskID uuid.UUI
 	if err != nil {
 		return nil, err
 	}
-	summary := s.taskSummary(ctx, *task)
+	draft, err := NewPlatformDraftRepository(s.DB).GetLatest(ctx, actor.TenantID, taskID)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return nil, err
+	}
+	approval, err := NewApprovalRecordRepository(s.DB).GetLatestByTask(ctx, actor.TenantID, taskID)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return nil, err
+	}
+	attempt, err := latestAttempt(s.DB, ctx, actor.TenantID, taskID)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return nil, err
+	}
+	summary := taskSummary(*task, draft, attempt)
 	detail := OperationTaskDetailResponse{OperationTaskSummaryResponse: summary, Payload: decodeSafeJSON(task.Payload), AllowedActions: s.allowedActions(ctx, actor, *task)}
-	if draft, err := NewPlatformDraftRepository(s.DB).GetLatest(ctx, actor.TenantID, taskID); err == nil {
+	if draft != nil {
 		v := draftSummary(*draft)
 		detail.LatestDraft = &v
 	}
-	if approval, err := NewApprovalRecordRepository(s.DB).GetLatestByTask(ctx, actor.TenantID, taskID); err == nil {
+	if approval != nil {
 		v := approvalResponse(*approval)
 		detail.LatestApproval = &v
 	}
-	if attempt, err := latestAttempt(s.DB, ctx, actor.TenantID, taskID); err == nil {
+	if attempt != nil {
 		v := attemptSummary(*attempt)
 		detail.LatestAttempt = &v
 	}
 	return &detail, nil
 }
 
-func (s *APIService) taskSummary(ctx context.Context, task OperationTask) OperationTaskSummaryResponse {
+func taskSummary(task OperationTask, draft *PlatformDraft, attempt *ExecutionAttempt) OperationTaskSummaryResponse {
 	out := OperationTaskSummaryResponse{ID: task.ID, SourceType: task.SourceType, SourceReference: task.SourceReference, TaskType: task.TaskType, Platform: task.Platform, Title: task.Title, Summary: task.Summary, Status: task.Status, Priority: task.Priority, Revision: task.Revision, CreatedBy: task.CreatedBy, CreatedAt: task.CreatedAt, UpdatedAt: task.UpdatedAt}
-	if draft, err := NewPlatformDraftRepository(s.DB).GetLatest(ctx, task.TenantID, task.ID); err == nil {
+	if draft != nil {
 		out.LatestDraftVersion = draft.DraftVersion
 	}
-	if attempt, err := latestAttempt(s.DB, ctx, task.TenantID, task.ID); err == nil {
+	if attempt != nil {
 		out.LatestExecutionStatus = attempt.Status
 	}
 	return out
@@ -522,7 +658,103 @@ func (s *APIService) executionResponse(ctx context.Context, tenantID int64, out 
 }
 
 func draftSummary(draft PlatformDraft) DraftSummaryResponse {
-	return DraftSummaryResponse{ID: draft.ID, DraftVersion: draft.DraftVersion, PayloadHash: draft.PayloadHash, Status: draft.Status, ChangeReason: draft.ChangeReason, CreatedBy: draft.CreatedBy, CreatedAt: draft.CreatedAt, UpdatedAt: draft.UpdatedAt}
+	return DraftSummaryResponse{ID: draft.ID, DraftVersion: draft.DraftVersion, AdapterMode: draft.AdapterMode, PayloadHash: draft.PayloadHash, Status: draft.Status, ChangeReason: draft.ChangeReason, CreatedBy: draft.CreatedBy, CreatedAt: draft.CreatedAt, UpdatedAt: draft.UpdatedAt, Payload: draftPayloadForAPI(draft)}
+}
+
+func draftPayloadForAPI(draft PlatformDraft) any {
+	if draft.AdapterMode != AdapterModeProductionDraft {
+		return decodeSafeJSON(draft.Payload)
+	}
+	frozen, err := ParseFrozenDouyinDraft(draft.Payload)
+	if err != nil {
+		return nil
+	}
+	return map[string]any{
+		"schemaVersion":   frozen.SchemaVersion,
+		"productId":       frozen.ProductID,
+		"shopId":          frozen.ShopID,
+		"publishMode":     frozen.PublishMode,
+		"skuCount":        frozen.SKUCount,
+		"review":          productionReviewForAPI(frozen.Review),
+		"mappingSnapshot": productionMappingForAPI(frozen.MappingSnapshot),
+		"mappingHash":     frozen.MappingHash,
+	}
+}
+
+func productionReviewForAPI(raw json.RawMessage) any {
+	var review struct {
+		Name           string         `json:"name"`
+		CategoryLeafID string         `json:"categoryLeafId"`
+		Pic            string         `json:"pic"`
+		Description    string         `json:"description"`
+		ProductFormat  map[string]any `json:"productFormat"`
+		SpecInfo       map[string]any `json:"specInfo"`
+		SpecPricesV2   []any          `json:"specPricesV2"`
+		Commit         bool           `json:"commit"`
+		StartSaleType  int            `json:"startSaleType"`
+	}
+	if json.Unmarshal(raw, &review) != nil {
+		return map[string]any{}
+	}
+	return productionSafeValue(review)
+}
+
+func productionMappingForAPI(raw json.RawMessage) any {
+	type image struct {
+		PlatformImageURL string `json:"platformImageUrl,omitempty"`
+		URL              string `json:"url,omitempty"`
+	}
+	type sku struct {
+		LocalSKUID string         `json:"localSkuId,omitempty"`
+		Name       string         `json:"name,omitempty"`
+		Attrs      map[string]any `json:"attrs,omitempty"`
+		Price      float64        `json:"price"`
+		Stock      *int           `json:"stock,omitempty"`
+	}
+	var mapping struct {
+		CategoryID   string  `json:"categoryId,omitempty"`
+		CategoryPath string  `json:"categoryPath,omitempty"`
+		Title        string  `json:"title,omitempty"`
+		Description  string  `json:"description,omitempty"`
+		MainImages   []image `json:"mainImages,omitempty"`
+		DetailImages []image `json:"detailImages,omitempty"`
+		SKUs         []sku   `json:"skus,omitempty"`
+		Price        struct {
+			Currency string   `json:"currency,omitempty"`
+			Min      *float64 `json:"min,omitempty"`
+			Max      *float64 `json:"max,omitempty"`
+		} `json:"price,omitempty"`
+		Stock struct {
+			Total       *int `json:"total,omitempty"`
+			Min         *int `json:"min,omitempty"`
+			Unconfirmed bool `json:"unconfirmed"`
+		} `json:"stock,omitempty"`
+	}
+	if json.Unmarshal(raw, &mapping) != nil {
+		return map[string]any{}
+	}
+	if len(mapping.MainImages) > 20 {
+		mapping.MainImages = mapping.MainImages[:20]
+	}
+	if len(mapping.DetailImages) > 50 {
+		mapping.DetailImages = mapping.DetailImages[:50]
+	}
+	if len(mapping.SKUs) > 100 {
+		mapping.SKUs = mapping.SKUs[:100]
+	}
+	return productionSafeValue(mapping)
+}
+
+func productionSafeValue(value any) any {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return map[string]any{}
+	}
+	var decoded any
+	if json.Unmarshal(raw, &decoded) != nil {
+		return map[string]any{}
+	}
+	return redactSafeValue(decoded)
 }
 
 func approvalResponse(record ApprovalRecord) ApprovalResponse {

@@ -8,7 +8,7 @@
 ## 1. 上线前检查顺序
 
 1. 备份 PostgreSQL（全库或 `orders` / `order_items` 表）。
-2. 启动应用或执行数据库迁移；`migrateDouyinPhase102Indexes` 会**自动**检测重复数据（无需手动 SQL）。
+2. 启动应用或执行数据库迁移；`migrateDouyinOrderIdempotencyIndexes` 会**自动**检测重复数据（无需手动 SQL）。
 3. 若迁移成功 → 唯一索引已创建或已存在，可继续上线。
 4. 若启动/迁移报错 `phase102 blocked: found ... duplicate ...` → **停止上线**，按本文档人工处理后再重试。
 

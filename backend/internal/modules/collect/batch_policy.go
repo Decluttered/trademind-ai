@@ -27,25 +27,25 @@ func (s *Service) env1688BatchPolicy() BatchSourcePolicy {
 	if s == nil {
 		return p
 	}
-	if s.Batch1688Concurrency > 0 {
-		p.Concurrency = s.Batch1688Concurrency
+	if s.Source1688BatchConcurrency > 0 {
+		p.Concurrency = s.Source1688BatchConcurrency
 	} else {
 		p.Concurrency = 1
 	}
 	if p.Concurrency > 2 {
 		p.Concurrency = 2
 	}
-	if s.Batch1688DelayMinMs > 0 {
-		p.DelayMinMs = s.Batch1688DelayMinMs
+	if s.Source1688BatchDelayMinMs > 0 {
+		p.DelayMinMs = s.Source1688BatchDelayMinMs
 	} else {
 		p.DelayMinMs = 1500
 	}
-	if s.Batch1688DelayMaxMs > 0 {
-		p.DelayMaxMs = s.Batch1688DelayMaxMs
+	if s.Source1688BatchDelayMaxMs > 0 {
+		p.DelayMaxMs = s.Source1688BatchDelayMaxMs
 	} else {
 		p.DelayMaxMs = 5000
 	}
-	if s.Batch1688DelayMaxMs > 0 && s.Batch1688DelayMinMs > s.Batch1688DelayMaxMs {
+	if s.Source1688BatchDelayMaxMs > 0 && s.Source1688BatchDelayMinMs > s.Source1688BatchDelayMaxMs {
 		p.DelayMinMs, p.DelayMaxMs = p.DelayMaxMs, p.DelayMinMs
 	}
 	p.RetryOnBlocked = true
@@ -54,8 +54,8 @@ func (s *Service) env1688BatchPolicy() BatchSourcePolicy {
 		p.RetryOnBlocked = s.BatchRetryOnBlocked
 		p.RetryOnTimeout = s.BatchRetryOnTimeout
 	}
-	if s.Batch1688MaxRetries > 0 {
-		p.MaxRetries = s.Batch1688MaxRetries
+	if s.Source1688BatchMaxRetries > 0 {
+		p.MaxRetries = s.Source1688BatchMaxRetries
 	} else {
 		p.MaxRetries = 2
 	}

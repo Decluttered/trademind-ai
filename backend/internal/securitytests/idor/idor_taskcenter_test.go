@@ -11,7 +11,7 @@ import (
 // --- Task Center IDOR (6 cases) ---
 
 func TestIDOR_TaskCenterAlertFindByIDCrossTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	aid := seedTaskAlert(t, db, tenantB, uuid.NewString())
 	var row taskcenter.TaskAlert
 	assertFindByIDDenied(t, db, tenantA, aid, &row)
@@ -19,7 +19,7 @@ func TestIDOR_TaskCenterAlertFindByIDCrossTenant(t *testing.T) {
 }
 
 func TestIDOR_TaskCenterFailureMarkFindByIDCrossTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	mid := seedTaskFailureMark(t, db, tenantB, uuid.NewString())
 	var row taskcenter.TaskFailureMark
 	assertFindByIDDenied(t, db, tenantA, mid, &row)
@@ -27,7 +27,7 @@ func TestIDOR_TaskCenterFailureMarkFindByIDCrossTenant(t *testing.T) {
 }
 
 func TestIDOR_TaskCenterCollectTaskScopedDenied(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	tid := seedCollectTaskFailed(t, db, tenantB)
 	var row collect.CollectTask
 	assertFindByIDDenied(t, db, tenantA, tid, &row)
@@ -35,7 +35,7 @@ func TestIDOR_TaskCenterCollectTaskScopedDenied(t *testing.T) {
 }
 
 func TestIDOR_TaskCenterAlertScopedListExcludesOtherTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	seedTaskAlert(t, db, tenantA, uuid.NewString())
 	seedTaskAlert(t, db, tenantB, uuid.NewString())
 	c := ginWithTenant(tenantA, uuid.New())
@@ -56,7 +56,7 @@ func TestIDOR_TaskCenterAlertScopedListExcludesOtherTenant(t *testing.T) {
 }
 
 func TestIDOR_TaskCenterFailureMarkScopedListExcludesOtherTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	seedTaskFailureMark(t, db, tenantA, uuid.NewString())
 	seedTaskFailureMark(t, db, tenantB, uuid.NewString())
 	c := ginWithTenant(tenantA, uuid.New())

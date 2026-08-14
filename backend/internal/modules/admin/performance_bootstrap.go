@@ -53,7 +53,7 @@ func EnsurePerformanceBootstrap(ctx context.Context, db *gorm.DB, cfg *config.Co
 	if config.IsProduction(cfg.AppEnv) {
 		return stats, fmt.Errorf("performance bootstrap: forbidden in production")
 	}
-	if cfg.AppEnv != config.EnvPerformance || !cfg.P7.PerformanceTestMode {
+	if cfg.AppEnv != config.EnvPerformance || !cfg.RuntimeLimits.PerformanceTestMode {
 		return nil, nil
 	}
 

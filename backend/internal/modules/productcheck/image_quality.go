@@ -148,7 +148,7 @@ func (s *Service) loadLatestScoreForImage(ctx context.Context, imageID uuid.UUID
 		ScoreJSON []byte
 	}
 	var r row
-	err := s.DB.WithContext(ctx).Table("ai_image_task_items").
+	err := s.DB.WithContext(ctx).Table("image_task_items").
 		Select("score_json").
 		Where("source_image_id = ? AND score_json IS NOT NULL AND status = ?", imageID, "success").
 		Order("updated_at DESC").

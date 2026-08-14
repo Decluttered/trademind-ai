@@ -91,18 +91,22 @@ func (s *Service) RecoverLeaseExpired(ctx context.Context, taskID uuid.UUID) err
 	code := platformdouyin.CodeDouyinTaskStale
 	recovery := platformdouyin.RecoveryStale
 	if task.Platform == "douyin_shop" {
+		if task.ExecutionAttemptID != nil && *task.ExecutionAttemptID != uuid.Nil {
+			code = platformdouyin.CodeDouyinUnknownResult
+			recovery = platformdouyin.RecoveryResultUnknown
+		}
 		out := platformdouyin.MarshalRecoveryOutput(nil, platformdouyin.TaskRecoveryMeta{
 			RecoveryStatus: recovery,
 			LastErrorCode:  code,
 			UserMessage:    platformdouyin.UserMessageForRecovery(recovery),
 			TechnicalCode:  code,
 		})
-		_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+		_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, task.TenantID).
 			Updates(map[string]any{
 				"status":        TaskFailed,
 				"error_code":    code,
 				"error_message": platformdouyin.UserMessageForRecovery(recovery),
-				"retryable":     true,
+				"retryable":     recovery != platformdouyin.RecoveryResultUnknown,
 				"finished_at":   &fin,
 				"output":        datatypes.JSON(out),
 				"locked_by":     nil,
@@ -110,7 +114,7 @@ func (s *Service) RecoverLeaseExpired(ctx context.Context, taskID uuid.UUID) err
 				"updated_at":    fin,
 			}).Error
 	} else {
-		_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+		_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, task.TenantID).
 			Updates(map[string]any{
 				"status":        TaskFailed,
 				"error_message": msg,
@@ -121,7 +125,8 @@ func (s *Service) RecoverLeaseExpired(ctx context.Context, taskID uuid.UUID) err
 			}).Error
 	}
 	if rid, ok := snapshotPublicationFromTask(&task); ok {
-		_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).Where("id = ?", rid).
+		_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).
+			Where("id = ? AND tenant_id = ? AND product_id = ? AND shop_id = ?", rid, task.TenantID, task.ProductID, task.ShopID).
 			Updates(map[string]any{
 				"status":         StatusPubFailed,
 				"publish_status": StatusPubFailed,
@@ -138,7 +143,7 @@ func (s *Service) RecoverLeaseExpired(ctx context.Context, taskID uuid.UUID) err
 			Message:     fmt.Sprintf("taskId=%s reason=lease_expired shopId=%s", taskID.String(), task.ShopID.String()),
 		})
 	}
-	return nil
+	return s.ReconcileOperationTaskResult(ctx, taskID)
 }
 
 func (s *Service) RecoverLegacyRunning(ctx context.Context, taskID uuid.UUID, legacyCutoff time.Time) error {
@@ -160,7 +165,7 @@ func (s *Service) RecoverLegacyRunning(ctx context.Context, taskID uuid.UUID, le
 	}
 	fin := time.Now().UTC()
 	msg := "legacy running publish task recovered (no lease)"
-	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, task.TenantID).
 		Updates(map[string]any{
 			"status":        TaskFailed,
 			"error_message": msg,

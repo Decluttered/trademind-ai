@@ -12,7 +12,7 @@ import (
 // ContextSummary is a safe, user-visible AI context digest (no raw platform data).
 type ContextSummary struct {
 	OrderStatus       string `json:"orderStatus,omitempty"`
-	SkuMatchStatus    string `json:"skuMatchStatus,omitempty"`
+	SKUMatchStatus    string `json:"skuMatchStatus,omitempty"`
 	InventoryStatus   string `json:"inventoryStatus,omitempty"`
 	ProductTitle      string `json:"productTitle,omitempty"`
 	CustomerQuestion  string `json:"customerQuestion,omitempty"`
@@ -55,7 +55,7 @@ func (s *Service) buildContextSummary(c *gin.Context, conv *CustomerConversation
 		return out
 	}
 	out.OrderStatus = humanOrderStatus(sum.Status)
-	out.SkuMatchStatus = humanSkuMatchStatus(sum.SkuMatchStatus)
+	out.SKUMatchStatus = humanSKUMatchStatus(sum.SKUMatchStatus)
 	out.InventoryStatus = humanInvDeductStatus(sum.InventoryDeductStatus)
 	if sum.ItemCount > 0 {
 		out.ProductTitle = s.firstOrderProductTitle(c, *conv.OrderID)
@@ -121,7 +121,7 @@ ORDER BY oi.created_at ASC
 			SKUName:     r.SKUName,
 			Stock:       r.Stock,
 			StockStatus: humanStockStatus(st),
-			BindStatus:  humanSkuMatchStatus(r.MatchStatus),
+			BindStatus:  humanSKUMatchStatus(r.MatchStatus),
 		})
 	}
 	return out
@@ -193,17 +193,17 @@ func humanOrderStatus(st string) string {
 	}
 }
 
-func humanSkuMatchStatus(st string) string {
+func humanSKUMatchStatus(st string) string {
 	switch strings.TrimSpace(strings.ToLower(st)) {
-	case order.ListSkuMatchAllMatched, "matched", "manual_bound":
+	case order.ListSKUMatchAllMatched, "matched", "manual_bound":
 		return "已匹配"
-	case order.ListSkuMatchPartial:
+	case order.ListSKUMatchPartial:
 		return "部分匹配"
-	case order.ListSkuMatchUnmatched:
+	case order.ListSKUMatchUnmatched:
 		return "未匹配"
-	case order.ListSkuMatchAmbiguous:
+	case order.ListSKUMatchAmbiguous:
 		return "匹配歧义"
-	case order.ListSkuMatchNone:
+	case order.ListSKUMatchNone:
 		return "无 SKU 行"
 	default:
 		if st == "" {

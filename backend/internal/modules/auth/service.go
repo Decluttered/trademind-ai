@@ -10,7 +10,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/config"
 	"github.com/trademind-ai/trademind/backend/internal/modules/admin"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
-	"github.com/trademind-ai/trademind/backend/internal/pkg/p7diag"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/runtimediag"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -75,22 +75,22 @@ func (s *LoginService) legacyLogin(ctx context.Context, account, password string
 	if s.Admins != nil {
 		db = s.Admins.DB
 	}
-	timing, err := p7diag.TimedGorm(db, func() error {
+	timing, err := runtimediag.TimedGorm(db, func() error {
 		var lookupErr error
 		u, lookupErr = s.Admins.ByLoginAccount(ctx, account)
 		return lookupErr
 	})
 	outcome := authOutcome(err)
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "account_lookup", outcome, stageStart)
-	p7diag.ObserveDBOperation(p7diag.RouteAuthInvalidLogin, "account_lookup", outcome, stageStart)
-	p7diag.ObserveSQL(p7diag.RouteAuthInvalidLogin, "auth", "auth.account_lookup", "select", "admin_users", outcome, false, timing)
-	p7diag.Count(p7diag.RouteAuthInvalidLogin, "accountLookupCount", 1)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "account_lookup", outcome, stageStart)
+	runtimediag.ObserveDBOperation(runtimediag.RouteAuthInvalidLogin, "account_lookup", outcome, stageStart)
+	runtimediag.ObserveSQL(runtimediag.RouteAuthInvalidLogin, "auth", "auth.account_lookup", "select", "admin_users", outcome, false, timing)
+	runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "accountLookupCount", 1)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			p7diag.Path(p7diag.RouteAuthInvalidLogin, "account_missing")
-			p7diag.Path(p7diag.RouteAuthInvalidLogin, p7diag.PathUnknownAccount)
-			p7diag.Count(p7diag.RouteAuthInvalidLogin, "unknownAccountQueryCount", 1)
-			p7diag.ObservePasswordVerify(p7diag.PathUnknownAccount, p7diag.PasswordAlgoBcrypt, bcrypt.DefaultCost, 0, time.Now())
+			runtimediag.Path(runtimediag.RouteAuthInvalidLogin, "account_missing")
+			runtimediag.Path(runtimediag.RouteAuthInvalidLogin, runtimediag.PathUnknownAccount)
+			runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "unknownAccountQueryCount", 1)
+			runtimediag.ObservePasswordVerify(runtimediag.PathUnknownAccount, runtimediag.PasswordAlgoBcrypt, bcrypt.DefaultCost, 0, time.Now())
 			return nil, errors.New(ErrInvalidCredentials)
 		}
 		return nil, err
@@ -101,17 +101,17 @@ func (s *LoginService) legacyLogin(ctx context.Context, account, password string
 		cost = c
 	}
 	if err := admin.CheckPassword(u.PasswordHash, password); err != nil {
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "password_verify", p7diag.OutcomeExpectedRejection, stageStart)
-		p7diag.ObservePasswordVerify(p7diag.PathKnownWrongPassword, p7diag.PasswordAlgoBcrypt, cost, 1, stageStart)
-		p7diag.Count(p7diag.RouteAuthInvalidLogin, "passwordVerifyCount", 1)
-		p7diag.Count(p7diag.RouteAuthInvalidLogin, "wrongPasswordQueryCount", 1)
-		p7diag.Path(p7diag.RouteAuthInvalidLogin, "wrong_password")
-		p7diag.Path(p7diag.RouteAuthInvalidLogin, p7diag.PathKnownWrongPassword)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "password_verify", runtimediag.OutcomeExpectedRejection, stageStart)
+		runtimediag.ObservePasswordVerify(runtimediag.PathKnownWrongPassword, runtimediag.PasswordAlgoBcrypt, cost, 1, stageStart)
+		runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "passwordVerifyCount", 1)
+		runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "wrongPasswordQueryCount", 1)
+		runtimediag.Path(runtimediag.RouteAuthInvalidLogin, "wrong_password")
+		runtimediag.Path(runtimediag.RouteAuthInvalidLogin, runtimediag.PathKnownWrongPassword)
 		return nil, errors.New(ErrInvalidCredentials)
 	}
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "password_verify", p7diag.OutcomeSuccess, stageStart)
-	p7diag.ObservePasswordVerify(p7diag.PathSuccessVerify, p7diag.PasswordAlgoBcrypt, cost, 1, stageStart)
-	p7diag.Count(p7diag.RouteAuthInvalidLogin, "passwordVerifyCount", 1)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "password_verify", runtimediag.OutcomeSuccess, stageStart)
+	runtimediag.ObservePasswordVerify(runtimediag.PathSuccessVerify, runtimediag.PasswordAlgoBcrypt, cost, 1, stageStart)
+	runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "passwordVerifyCount", 1)
 	if st := strings.TrimSpace(strings.ToLower(u.Status)); st == "disabled" || st == "inactive" {
 		return nil, errors.New(ErrUserDisabled)
 	}
@@ -139,10 +139,10 @@ func (s *LoginService) legacyLogin(ctx context.Context, account, password string
 
 func authOutcome(err error) string {
 	if err == nil {
-		return p7diag.OutcomeSuccess
+		return runtimediag.OutcomeSuccess
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return p7diag.OutcomeExpectedRejection
+		return runtimediag.OutcomeExpectedRejection
 	}
-	return p7diag.OutcomeError
+	return runtimediag.OutcomeError
 }

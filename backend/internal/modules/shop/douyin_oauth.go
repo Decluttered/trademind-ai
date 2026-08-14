@@ -217,7 +217,7 @@ func (s *Service) DouyinOAuthStart(c *gin.Context, shopID *uuid.UUID, adminID *u
 	if err := s.Redis.Set(ctx, douyinOAuthRedisPrefix+st, raw, 10*time.Minute).Err(); err != nil {
 		return nil, err
 	}
-	// P3: durable one-time state hash (DB) alongside Redis fast path.
+	// Store a durable one-time state hash in the database alongside the Redis fast path.
 	if err := s.persistDouyinOAuthState(ctx, st, adminID, shopID, cfg.RedirectURI); err != nil {
 		return nil, err
 	}

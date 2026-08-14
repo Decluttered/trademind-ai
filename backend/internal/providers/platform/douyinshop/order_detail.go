@@ -12,7 +12,7 @@ import (
 // Source: https://op.jinritemai.com/docs/guide-docs/154/2034 (order.orderDetail)
 const MethodOrderDetail = "order.orderDetail"
 
-// OrderDetail is the normalized P3 order detail response.
+// OrderDetail is the normalized order detail response.
 type OrderDetail struct {
 	platformp.PlatformOrder
 	// Additional detail fields not available in order list

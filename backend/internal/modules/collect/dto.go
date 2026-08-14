@@ -99,7 +99,7 @@ type TaskDTO struct {
 	CollectorErrorCode        string          `json:"collectorErrorCode,omitempty"`
 	Retryable                 *bool           `json:"retryable,omitempty"`
 	FailureHint               string          `json:"failureHint,omitempty"`
-	SameUrlSucceededElsewhere bool            `json:"sameUrlSucceededElsewhere,omitempty"`
+	SameURLSucceededElsewhere bool            `json:"sameUrlSucceededElsewhere,omitempty"`
 	RetryCount                int             `json:"retryCount"`
 	MaxRetries                int             `json:"maxRetries"`
 	RequestOptions            json.RawMessage `json:"requestOptions,omitempty"`

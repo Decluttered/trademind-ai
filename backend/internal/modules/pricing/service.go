@@ -65,7 +65,7 @@ func buildPreviewLine(row product.ProductSKU, prodID uuid.UUID, calc CalculateRe
 		delta = calc.CalculatedPrice - *cur
 	}
 	return PreviewLine{
-		ProductSkuID:        row.ID.String(),
+		ProductSKUID:        row.ID.String(),
 		ProductID:           prodID.String(),
 		SKUCode:             row.SKUCode,
 		SKUName:             row.SKUName,
@@ -95,9 +95,9 @@ func (s *Service) Calculate(ctx context.Context, body CalculateBody) (*Calculate
 
 	var cost, current *float64
 	base := 0.0
-	if body.ProductSkuID != nil && *body.ProductSkuID != uuid.Nil {
+	if body.ProductSKUID != nil && *body.ProductSKUID != uuid.Nil {
 		var row product.ProductSKU
-		if err := s.DB.WithContext(ctx).First(&row, "id = ?", *body.ProductSkuID).Error; err != nil {
+		if err := s.DB.WithContext(ctx).First(&row, "id = ?", *body.ProductSKUID).Error; err != nil {
 			return nil, err
 		}
 		cost = row.CostPrice
@@ -120,7 +120,7 @@ func (s *Service) Calculate(ctx context.Context, body CalculateBody) (*Calculate
 			base = *body.BasePrice
 		}
 	}
-	if body.BasePrice != nil && body.ProductSkuID == nil {
+	if body.BasePrice != nil && body.ProductSKUID == nil {
 		base = *body.BasePrice
 	}
 
@@ -217,7 +217,7 @@ func (s *Service) ApplyProduct(ctx context.Context, productID uuid.UUID, body Pr
 	if strings.TrimSpace(probe.Currency) != "" {
 		curr = strings.TrimSpace(probe.Currency)
 	}
-	rows, err := s.loadProductSKUs(ctx, productID, body.SkuIDs)
+	rows, err := s.loadProductSKUs(ctx, productID, body.SKUIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (s *Service) ApplyProduct(ctx context.Context, productID uuid.UUID, body Pr
 	}
 	sum := &ApplySummary{
 		ProductCount: 1,
-		SkuCount:     len(rows),
+		SKUCount:     len(rows),
 		Updated:      updated,
 		Skipped:      len(rows) - updated,
 	}
@@ -262,7 +262,7 @@ func (s *Service) PreviewProduct(ctx context.Context, productID uuid.UUID, body 
 	if strings.TrimSpace(probe.Currency) != "" {
 		curr = strings.TrimSpace(probe.Currency)
 	}
-	rows, err := s.loadProductSKUs(ctx, productID, body.SkuIDs)
+	rows, err := s.loadProductSKUs(ctx, productID, body.SKUIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +273,7 @@ func (s *Service) PreviewProduct(ctx context.Context, productID uuid.UUID, body 
 	}
 	return &ApplySummary{
 		ProductCount: 1,
-		SkuCount:     len(rows),
+		SKUCount:     len(rows),
 		Preview:      preview,
 	}, nil
 }
@@ -379,7 +379,7 @@ func (s *Service) BatchApply(ctx context.Context, body BatchApplyBody, adminID *
 	}
 	sum := &ApplySummary{
 		ProductCount: productCount,
-		SkuCount:     len(allPlans),
+		SKUCount:     len(allPlans),
 		Updated:      updated,
 		Skipped:      len(allPlans) - updated,
 	}
@@ -433,7 +433,7 @@ func (s *Service) BatchPreview(ctx context.Context, body BatchApplyBody) (*Apply
 	}
 	return &ApplySummary{
 		ProductCount: productCount,
-		SkuCount:     len(preview),
+		SKUCount:     len(preview),
 		Preview:      preview,
 	}, nil
 }
@@ -465,7 +465,7 @@ func (s *Service) writeApplyOpLog(ctx context.Context, adminID *uuid.UUID, actio
 	}
 	payload := map[string]any{
 		"productId":                 productID,
-		"skuCount":                  sum.SkuCount,
+		"skuCount":                  sum.SKUCount,
 		"updated":                   sum.Updated,
 		"platform":                  strings.TrimSpace(platform),
 		"markupType":                rule.MarkupType,

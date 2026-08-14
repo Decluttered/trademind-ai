@@ -96,7 +96,7 @@ func TestValidateDouyinDraftMappingErrorCodes(t *testing.T) {
 			Required: true,
 		}},
 		SKUs: []DouyinDraftSKU{{
-			LocalSkuID: uuid.NewString(),
+			LocalSKUID: uuid.NewString(),
 			Name:       "Bad",
 			Price:      0,
 			Stock:      &stock,
@@ -150,7 +150,7 @@ func TestSaveReadDouyinDraftMappingAndManualEditPersists(t *testing.T) {
 		}},
 		Attributes: []DouyinDraftAttr{{AttrID: "brand", Name: "Brand", Value: "TradeMind"}},
 		SKUs: []DouyinDraftSKU{{
-			LocalSkuID: uuid.NewString(),
+			LocalSKUID: uuid.NewString(),
 			Name:       "Default",
 			Attrs:      map[string]any{"spec": "default"},
 			Price:      price,

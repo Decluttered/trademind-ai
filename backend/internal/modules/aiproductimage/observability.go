@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// ObserveAIImage records AI image metrics through the shared P5 catalog.
+// ObserveAIImage records AI image metrics through the shared metrics catalog.
 func (s *Service) ObserveAIImage(provider, operation, event, result, errorClass string, dur time.Duration) {
 	if s == nil || s.Metrics == nil {
 		return

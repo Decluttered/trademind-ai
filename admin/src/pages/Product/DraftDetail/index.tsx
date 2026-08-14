@@ -140,12 +140,11 @@ import {
   undoProductAITitle,
 } from '@/services/products';
 import { Link } from '@umijs/renderer-react';
+import { history } from '@umijs/max';
 import {
   listProductPublications,
   publishProduct,
-  createDouyinProductDraft,
   listDouyinPublishTasks,
-  retryProductPublishTask,
   getDouyinSkuBindings,
   syncDouyinSkuBindings,
   bindDouyinSku,
@@ -182,9 +181,9 @@ import {
 } from '@/services/inventory';
 import InventorySyncDisabledBanner from '@/components/inventory/InventorySyncDisabledBanner';
 import { usePermission } from '@/hooks/usePermission';
+import { PERMISSIONS } from '@/utils/permission';
 import {
   confirmApplyAiText,
-  confirmCreatePlatformDraft,
   confirmInventoryManualAdjust,
   confirmInventorySync,
   confirmPlatformPublishConfigSave,
@@ -997,7 +996,9 @@ function InventorySyncPlatformHint({ platform }: { platform?: string }) {
 
 export default function ProductDraftDetailPage() {
   const id = decodeURIComponent(window.location.pathname.split('/').filter(Boolean).pop() ?? '');
-  const { readonly } = usePermission();
+  const { readonly, can } = usePermission();
+  const publishWriteDisabled = !can(PERMISSIONS.PUBLISH_CREATE_DRAFT);
+  const skuBindDisabled = !can(PERMISSIONS.SKU_BIND);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ProductDetail | null>(null);
   const [err, setErr] = useState<string>();
@@ -1042,9 +1043,9 @@ export default function ProductDraftDetailPage() {
   const douyinMappingFormConnectedRef = useRef(false);
   const [publishSubmitting, setPublishSubmitting] = useState(false);
   const [douyinSaving, setDouyinSaving] = useState(false);
-  const [douyinConfirmingAction, setDouyinConfirmingActionState] = useState<'' | 'config' | 'mapping' | 'create'>('');
-  const douyinConfirmingActionRef = useRef<'' | 'config' | 'mapping' | 'create'>('');
-  const setDouyinConfirmingAction = useCallback((next: '' | 'config' | 'mapping' | 'create') => {
+  const [douyinConfirmingAction, setDouyinConfirmingActionState] = useState<'' | 'config' | 'mapping'>('');
+  const douyinConfirmingActionRef = useRef<'' | 'config' | 'mapping'>('');
+  const setDouyinConfirmingAction = useCallback((next: '' | 'config' | 'mapping') => {
     douyinConfirmingActionRef.current = next;
     setDouyinConfirmingActionState(next);
   }, []);
@@ -1054,7 +1055,6 @@ export default function ProductDraftDetailPage() {
   const [douyinMappingValidating, setDouyinMappingValidating] = useState(false);
   const [douyinImageUploading, setDouyinImageUploading] = useState(false);
   const [douyinImageRetryingKey, setDouyinImageRetryingKey] = useState('');
-  const [douyinDraftCreating, setDouyinDraftCreating] = useState(false);
   const [douyinPublishTasks, setDouyinPublishTasks] = useState<ProductPublishTaskDTO[]>([]);
   const [douyinPublishTasksLoading, setDouyinPublishTasksLoading] = useState(false);
   const [douyinPublishTasksError, setDouyinPublishTasksError] = useState('');
@@ -1437,8 +1437,8 @@ export default function ProductDraftDetailPage() {
   }, [douyinCategoryFlat, douyinConfig.categoryPath, douyinForm, douyinMappingForm, id]);
 
   const handleBuildDouyinMapping = useCallback(() => {
-    if (readonly) {
-      message.error('只读账号不可执行写操作');
+    if (publishWriteDisabled) {
+      message.error('当前账号无刊登草稿写权限');
       return;
     }
     if (douyinConfirmingActionRef.current || douyinMappingLoading) return;
@@ -1451,9 +1451,13 @@ export default function ProductDraftDetailPage() {
         setDouyinConfirmingAction('');
       }
     });
-  }, [douyinMappingLoading, readonly, runBuildDouyinMapping, setDouyinConfirmingAction]);
+  }, [douyinMappingLoading, publishWriteDisabled, runBuildDouyinMapping, setDouyinConfirmingAction]);
 
   const handleSaveDouyinMapping = useCallback(async () => {
+    if (publishWriteDisabled) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     if (!douyinMapping) {
       message.warning('请先生成抖店刊登草稿');
       return;
@@ -1470,9 +1474,13 @@ export default function ProductDraftDetailPage() {
     } finally {
       setDouyinMappingSaving(false);
     }
-  }, [currentDouyinMapping, douyinMapping, douyinMappingForm, id]);
+  }, [currentDouyinMapping, douyinMapping, douyinMappingForm, id, publishWriteDisabled]);
 
   const handleValidateDouyinMapping = useCallback(async () => {
+    if (publishWriteDisabled) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     setDouyinMappingValidating(true);
     try {
       const res = await validateDouyinDraftMapping(id, douyinMapping ? currentDouyinMapping() : undefined);
@@ -1495,9 +1503,13 @@ export default function ProductDraftDetailPage() {
     } finally {
       setDouyinMappingValidating(false);
     }
-  }, [currentDouyinMapping, douyinConfig.shopId, douyinMapping, id]);
+  }, [currentDouyinMapping, douyinConfig.shopId, douyinMapping, id, publishWriteDisabled]);
 
   const handleUploadDouyinImages = useCallback(async (force = false) => {
+    if (publishWriteDisabled) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     if (!douyinMapping) {
       message.warning('请先生成抖店刊登草稿');
       return;
@@ -1516,9 +1528,13 @@ export default function ProductDraftDetailPage() {
     } finally {
       setDouyinImageUploading(false);
     }
-  }, [douyinMapping, id]);
+  }, [douyinMapping, id, publishWriteDisabled]);
 
   const handleRetryDouyinImage = useCallback(async (imageKey: string) => {
+    if (publishWriteDisabled) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     setDouyinImageRetryingKey(imageKey);
     try {
       const res = await retryDouyinImage(id, imageKey);
@@ -1529,7 +1545,7 @@ export default function ProductDraftDetailPage() {
     } finally {
       setDouyinImageRetryingKey('');
     }
-  }, [id]);
+  }, [id, publishWriteDisabled]);
 
   const reloadPublicationSkus = useCallback(async () => {
     if (!id) return;
@@ -1839,6 +1855,7 @@ export default function ProductDraftDetailPage() {
 
   const eligibleShopsForPublish = useMemo(() => {
     return shopsList.filter((s) => {
+	  if ((s.platform || '').toLowerCase() === 'douyin_shop') return false;
       const m = platformsMeta.find((x) => x.platform === s.platform);
       const st = m?.capabilityStatus?.product_publish;
       return st === 'available' || st === 'beta';
@@ -1898,6 +1915,10 @@ export default function ProductDraftDetailPage() {
   }, [douyinPublication?.id, reloadDouyinSkuBindingsForPublication]);
 
   const handleSyncDouyinSkuBindings = useCallback(async () => {
+    if (skuBindDisabled) {
+      message.error('当前账号无规格绑定权限');
+      return;
+    }
     if (!douyinPublication?.id) {
       message.warning('请先完成抖店商品草稿创建');
       return;
@@ -1915,9 +1936,10 @@ export default function ProductDraftDetailPage() {
     } finally {
       setDouyinSkuBindingSyncing(false);
     }
-  }, [douyinPublication?.id, reloadPublicationSkus]);
+  }, [douyinPublication?.id, reloadPublicationSkus, skuBindDisabled]);
 
   const douyinCreateDraftDisabled = useMemo(() => {
+    if (publishWriteDisabled) return true;
     if (!douyinMapping || (douyinMapping.errors?.length ?? 0) > 0) return true;
     if (!douyinConfig.shopId || !douyinConfig.categoryId) return true;
     if (!douyinShops.some((s) => s.id === douyinConfig.shopId)) return true;
@@ -1925,36 +1947,17 @@ export default function ProductDraftDetailPage() {
     if (!mainUploaded) return true;
     if (publishReadiness && !publishReadiness.canPublish) return true;
     return false;
-  }, [douyinConfig.categoryId, douyinConfig.shopId, douyinMapping, douyinShops, publishReadiness]);
+  }, [douyinConfig.categoryId, douyinConfig.shopId, douyinMapping, douyinShops, publishReadiness, publishWriteDisabled]);
 
-  const handleCreateDouyinDraft = useCallback(() => {
+  const handleOpenDouyinOperationReview = useCallback(() => {
     const shopId = String(douyinConfig.shopId || '').trim();
     if (!shopId) {
       message.error('请选择抖店店铺');
       return;
     }
-    if (douyinConfirmingActionRef.current || douyinDraftCreating) return;
-    setDouyinConfirmingAction('create');
-    window.setTimeout(() => douyinConfirmingActionRef.current === 'create' ? setDouyinConfirmingAction('') : undefined, 800);
-    confirmCreatePlatformDraft(false, async () => {
-      setDouyinDraftCreating(true);
-      try {
-        const task = await createDouyinProductDraft(id, { shopId, publishMode: 'save_as_platform_draft' });
-        message.success('已创建抖店商品草稿，请到抖店后台确认后上架。');
-        await reloadDouyinPublishTasks();
-        await reloadPublicationSkus();
-        await reloadDouyinSkuBindings();
-        if (task.platformProductId) {
-          message.info(`抖店商品 ID：${task.platformProductId}`);
-        }
-      } catch (e: unknown) {
-        message.error((e as Error)?.message || '创建抖店商品草稿失败');
-      } finally {
-        setDouyinDraftCreating(false);
-        setDouyinConfirmingAction('');
-      }
-    });
-  }, [douyinConfig.shopId, douyinDraftCreating, id, reloadDouyinPublishTasks, reloadPublicationSkus, reloadDouyinSkuBindings, setDouyinConfirmingAction]);
+	const query = new URLSearchParams({ create: 'production', productId: id, shopId });
+	history.push(`/ops/task-center/operation-tasks?${query.toString()}`);
+  }, [douyinConfig.shopId, id]);
 
   const shopsForReadinessPlat = useMemo(() => {
     const p = readinessPlat.trim().toLowerCase();
@@ -2116,9 +2119,9 @@ export default function ProductDraftDetailPage() {
     },
     {
       label: '创建草稿',
-      status: douyinCreateDraftDisabled ? '暂不可创建' : '可以手动创建',
+      status: douyinCreateDraftDisabled ? '暂不可审核' : '可以进入审核',
       tone: douyinCreateDraftDisabled ? 'warning' : 'success',
-      detail: '创建抖店商品草稿不等于正式发布或上架。',
+      detail: '进入运营任务中心冻结内容并人工审核，不会直接创建平台草稿。',
     },
     {
       label: '最近任务',
@@ -4454,12 +4457,14 @@ export default function ProductDraftDetailPage() {
                             多平台中心和抖店专项流程会先创建可继续编辑或确认的草稿，不代表商品已经正式提交到平台。
                           </Typography.Paragraph>
                         </div>
-                        <div>
-                          <Typography.Text strong>提交刊登</Typography.Text>
-                          <Typography.Paragraph type="secondary">
-                            传统入口会在发布检查通过后调用刊登提交接口，可能产生真实平台写操作和后台刊登任务。
-                          </Typography.Paragraph>
-                        </div>
+                        {!isProductionBuild ? (
+                          <div>
+                            <Typography.Text strong>提交刊登</Typography.Text>
+                            <Typography.Paragraph type="secondary">
+                              传统入口会在发布检查通过后调用刊登提交接口，可能产生真实平台写操作和后台刊登任务。
+                            </Typography.Paragraph>
+                          </div>
+                        ) : null}
                         <div>
                           <Typography.Text strong>发布检查</Typography.Text>
                           <Typography.Paragraph type="secondary">
@@ -4484,12 +4489,12 @@ export default function ProductDraftDetailPage() {
                             action={<Button size="small" onClick={() => void reloadPublishContext()}>重新加载</Button>}
                           />
                         ) : null}
-                        {readonly ? (
+                        {publishWriteDisabled ? (
                           <Alert
                             type="info"
                             showIcon
-                            message="当前账号为只读模式"
-                            description="可查看配置、任务和刊登记录；请勿触发草稿创建、配置保存、图片上传、SKU 绑定或传统提交刊登等写操作。"
+                            message="当前账号无刊登草稿写权限"
+                            description="可查看配置、任务和刊登记录；刊登检查、草稿创建、配置保存与图片上传均已禁用。"
                           />
                         ) : null}
                         <div className="product-draft-publish__condition-grid">
@@ -4497,7 +4502,13 @@ export default function ProductDraftDetailPage() {
                             <span>店铺上下文</span>
                             <strong>{shopsList.length ? `${shopsList.length} 个已授权店铺` : '无已授权店铺'}</strong>
                             <Typography.Text type="secondary">
-                              {eligibleShopsForPublish.length ? `${eligibleShopsForPublish.length} 个店铺支持传统刊登或 beta` : pubCtxError ? '店铺数据加载失败' : '传统刊登暂无可用店铺'}
+                              {isProductionBuild
+                                ? `${shopsList.length} 个店铺可用于本地草稿或受控平台流程`
+                                : eligibleShopsForPublish.length
+                                  ? `${eligibleShopsForPublish.length} 个店铺支持传统刊登或 beta`
+                                  : pubCtxError
+                                    ? '店铺数据加载失败'
+                                    : '传统刊登暂无可用店铺'}
                             </Typography.Text>
                           </div>
                           <div className="product-draft-publish__condition">
@@ -4507,13 +4518,15 @@ export default function ProductDraftDetailPage() {
                               {platformsMeta.length ? '来自平台接入服务的商品刊登能力' : pubCtxError ? '平台能力加载失败' : '暂无平台能力数据'}
                             </Typography.Text>
                           </div>
-                          <div className="product-draft-publish__condition">
-                            <span>发布检查</span>
-                            <strong>{publishReadiness ? readinessStatusTag(publishReadiness) : '未选择传统刊登店铺'}</strong>
-                            <Typography.Text type="secondary">
-                              {publishReadiness ? `错误 ${publishReadiness.errorCount} · 警告 ${publishReadiness.warningCount}` : '选择店铺后会加载 publish 模式检查'}
-                            </Typography.Text>
-                          </div>
+                          {!isProductionBuild ? (
+                            <div className="product-draft-publish__condition">
+                              <span>发布检查</span>
+                              <strong>{publishReadiness ? readinessStatusTag(publishReadiness) : '未选择传统刊登店铺'}</strong>
+                              <Typography.Text type="secondary">
+                                {publishReadiness ? `错误 ${publishReadiness.errorCount} · 警告 ${publishReadiness.warningCount}` : '选择店铺后会加载 publish 模式检查'}
+                              </Typography.Text>
+                            </div>
+                          ) : null}
                           <div className="product-draft-publish__condition">
                             <span>图片准备</span>
                             <strong>{imageSyncSummary.synced} / {imageSyncSummary.total} 已同步</strong>
@@ -4549,7 +4562,7 @@ export default function ProductDraftDetailPage() {
                     >
                       <Space direction="vertical" style={{ width: '100%' }} size="small">
                         {!pubCtxError && shopsList.length === 0 ? <Alert type="warning" showIcon message="暂无已授权店铺" description="请先完成店铺授权后再选择刊登路径。" /> : null}
-                        {!pubCtxError && shopsList.length > 0 && eligibleShopsForPublish.length === 0 ? <Alert type="warning" showIcon message="暂无支持传统刊登的店铺" description="平台接入服务未返回可用或测试中的商品刊登能力。" /> : null}
+                        {!isProductionBuild && !pubCtxError && shopsList.length > 0 && eligibleShopsForPublish.length === 0 ? <Alert type="warning" showIcon message="暂无支持传统刊登的店铺" description="平台接入服务未返回可用或测试中的商品刊登能力。" /> : null}
                         {publishReadinessErrors.length ? <Alert type="error" showIcon message="发布检查存在阻断" description={readinessCheckList(publishReadinessErrors, 5)} action={<Button size="small" onClick={() => openDraftLocation('readiness', 'publish-check')}>去发布检查</Button>} /> : null}
                         {publishReadinessWarnings.length ? <Alert type="warning" showIcon message="发布检查有待确认项" description={readinessCheckList(publishReadinessWarnings, 5)} action={<Button size="small" onClick={() => openDraftLocation('readiness', 'publish-check')}>查看明细</Button>} /> : null}
                         {imageSyncSummary.external > 0 ? <Alert type="warning" showIcon message="仍有图片未同步到平台存储" description="抖店创建商品草稿前还需要把需要使用的图片上传到抖店。" action={<Button size="small" onClick={() => openDraftLocation('images', 'image-list')}>去图片管理</Button>} /> : null}
@@ -4577,11 +4590,13 @@ export default function ProductDraftDetailPage() {
                           <Tag>草稿和配置</Tag>
                           <Typography.Text type="secondary">处理抖店店铺、类目、属性、图片上传、草稿映射和抖店商品草稿创建；创建后仍需到抖店后台确认上架。</Typography.Text>
                         </div>
-                        <div className="product-draft-publish__path product-draft-publish__path--compat">
-                          <Typography.Text strong>传统提交刊登</Typography.Text>
-                          <Tag color="orange">兼容入口</Tag>
-                          <Typography.Text type="secondary">执行 publish 模式发布检查后提交刊登任务，是可能触发真实平台写操作的入口。</Typography.Text>
-                        </div>
+                        {!isProductionBuild ? (
+                          <div className="product-draft-publish__path product-draft-publish__path--compat">
+                            <Typography.Text strong>传统提交刊登</Typography.Text>
+                            <Tag color="orange">兼容入口</Tag>
+                            <Typography.Text type="secondary">执行 publish 模式发布检查后提交刊登任务，是可能触发真实平台写操作的入口。</Typography.Text>
+                          </div>
+                        ) : null}
                       </div>
                     </SectionCard>
                     <SectionCard title="多平台刊登中心" description="创建多平台刊登草稿，不等同于已经正式提交到平台。" className="product-draft-publish__multi-platform">
@@ -4596,11 +4611,12 @@ export default function ProductDraftDetailPage() {
                         </div>
                         <div>
                           <Typography.Text strong>只读状态</Typography.Text>
-                          <Typography.Paragraph type="secondary">{readonly ? '当前账号只应查看状态，不应触发检查或创建草稿。' : '需要手动选择平台和店铺，本页不会自动选择或自动提交。'}</Typography.Paragraph>
+                          <Typography.Paragraph type="secondary">{publishWriteDisabled ? '当前账号只可查看状态，刊登检查和草稿创建已禁用。' : '需要手动选择平台和店铺，本页不会自动选择或自动提交。'}</Typography.Paragraph>
                         </div>
                       </div>
                       <MultiPlatformPublishCenter
                         productId={id}
+                        disabled={publishWriteDisabled}
                         onDraftsCreated={async () => {
                           const rows = await reloadPublishContext();
                           await reloadDouyinPublishTasks();
@@ -4800,6 +4816,7 @@ export default function ProductDraftDetailPage() {
                                   douyinFormConnectedRef.current = Boolean(instance);
                                 }}
                                 form={douyinForm}
+                                disabled={publishWriteDisabled}
                                 layout="vertical"
                                 className="product-draft-douyin-flow__form"
                                 onValuesChange={(changed, all) => {
@@ -4824,8 +4841,8 @@ export default function ProductDraftDetailPage() {
                                   }
                                 }}
                                 onFinish={async (vals) => {
-                                  if (readonly) {
-                                    message.error('只读账号不可执行写操作');
+                                  if (publishWriteDisabled) {
+                                    message.error('当前账号无刊登草稿写权限');
                                     return;
                                   }
                                   const cat = douyinCategoryFlat.find((x) => x.categoryId === vals.categoryId);
@@ -4946,7 +4963,7 @@ export default function ProductDraftDetailPage() {
                                 ) : null}
                                 <Form.Item className="product-draft-douyin-flow__submit-row">
                                   <Space wrap className="product-draft-douyin-flow__panel-actions">
-                                    <Button htmlType="submit" loading={douyinSaving} disabled={!!douyinConfirmingAction}>
+                                    <Button htmlType="submit" loading={douyinSaving} disabled={publishWriteDisabled || !!douyinConfirmingAction}>
                                       保存抖店配置
                                     </Button>
                                     <Button
@@ -4977,13 +4994,13 @@ export default function ProductDraftDetailPage() {
                             </div>
                             <Space direction="vertical" style={{ width: '100%' }} size="middle">
                               <Space wrap className="product-draft-douyin-flow__panel-actions">
-                                <Button loading={douyinMappingLoading} disabled={!!douyinConfirmingAction} onClick={() => void handleBuildDouyinMapping()}>
+                                <Button loading={douyinMappingLoading} disabled={publishWriteDisabled || !!douyinConfirmingAction} onClick={() => void handleBuildDouyinMapping()}>
                                   生成抖店刊登草稿
                                 </Button>
-                                <Button disabled={!douyinMapping} loading={douyinMappingSaving} onClick={() => void handleSaveDouyinMapping()}>
+                                <Button disabled={publishWriteDisabled || !douyinMapping} loading={douyinMappingSaving} onClick={() => void handleSaveDouyinMapping()}>
                                   保存刊登草稿
                                 </Button>
-                                <Button loading={douyinMappingValidating} onClick={() => void handleValidateDouyinMapping()}>
+                                <Button disabled={publishWriteDisabled} loading={douyinMappingValidating} onClick={() => void handleValidateDouyinMapping()}>
                                   校验刊登草稿
                                 </Button>
                               </Space>
@@ -5012,6 +5029,7 @@ export default function ProductDraftDetailPage() {
                                       douyinMappingFormConnectedRef.current = Boolean(instance);
                                     }}
                                     form={douyinMappingForm}
+                                    disabled={publishWriteDisabled}
                                     layout="vertical"
                                     className="product-draft-douyin-draft__form"
                                   >
@@ -5050,7 +5068,7 @@ export default function ProductDraftDetailPage() {
                               <Space wrap className="product-draft-douyin-flow__panel-actions">
                                 <Button
                                   icon={<CloudUploadOutlined />}
-                                  disabled={!douyinMapping}
+                                  disabled={publishWriteDisabled || !douyinMapping}
                                   loading={douyinImageUploading}
                                   onClick={() => void handleUploadDouyinImages(false)}
                                 >
@@ -5058,7 +5076,7 @@ export default function ProductDraftDetailPage() {
                                 </Button>
                                 <Button
                                   icon={<ReloadOutlined />}
-                                  disabled={!douyinMapping}
+                                  disabled={publishWriteDisabled || !douyinMapping}
                                   loading={douyinImageUploading}
                                   onClick={() => void handleUploadDouyinImages(true)}
                                 >
@@ -5109,6 +5127,7 @@ export default function ProductDraftDetailPage() {
                                                 <Button
                                                   size="small"
                                                   icon={<ReloadOutlined />}
+                                                  disabled={publishWriteDisabled}
                                                   loading={douyinImageRetryingKey === douyinImageKey(img, 'main', idx)}
                                                   onClick={() => void handleRetryDouyinImage(douyinImageKey(img, 'main', idx))}
                                                 >
@@ -5158,6 +5177,7 @@ export default function ProductDraftDetailPage() {
                                                 <Button
                                                   size="small"
                                                   icon={<ReloadOutlined />}
+                                                  disabled={publishWriteDisabled}
                                                   loading={douyinImageRetryingKey === douyinImageKey(img, 'detail', idx)}
                                                   onClick={() => void handleRetryDouyinImage(douyinImageKey(img, 'detail', idx))}
                                                 >
@@ -5195,7 +5215,7 @@ export default function ProductDraftDetailPage() {
                                   <Button
                                     size="small"
                                     loading={douyinSkuBindingSyncing}
-                                    disabled={!douyinPublication?.id}
+                                    disabled={skuBindDisabled || !douyinPublication?.id}
                                     onClick={() => void handleSyncDouyinSkuBindings()}
                                   >
                                     重新校准
@@ -5279,9 +5299,9 @@ export default function ProductDraftDetailPage() {
                                           fixed: 'right',
                                           render: (_, r) => (
                                             <Space size={4} wrap>
-                                              <Button type="link" size="small" className="product-draft-douyin-bind__action" onClick={() => { setDouyinSkuBindTarget(r); douyinSkuBindForm.setFieldsValue({ platformSkuId: r.externalSkuId || undefined }); setDouyinSkuBindOpen(true); }}>手动绑定</Button>
+                                              <Button type="link" size="small" className="product-draft-douyin-bind__action" disabled={skuBindDisabled} onClick={() => { setDouyinSkuBindTarget(r); douyinSkuBindForm.setFieldsValue({ platformSkuId: r.externalSkuId || undefined }); setDouyinSkuBindOpen(true); }}>手动绑定</Button>
                                               {r.externalSkuId ? (
-                                                <Button type="link" size="small" className="product-draft-douyin-bind__action" danger onClick={() => confirmSkuUnbind(() => void unbindDouyinSku(r.publicationSkuId).then(async () => { message.success('已解除绑定'); await reloadDouyinSkuBindings(); await reloadPublicationSkus(); }).catch((e: Error) => message.error(e.message || '解除失败')))}>解除绑定</Button>
+                                                <Button type="link" size="small" className="product-draft-douyin-bind__action" danger disabled={skuBindDisabled} onClick={() => confirmSkuUnbind(() => void unbindDouyinSku(r.publicationSkuId).then(async () => { message.success('已解除绑定'); await reloadDouyinSkuBindings(); await reloadPublicationSkus(); }).catch((e: Error) => message.error(e.message || '解除失败')))}>解除绑定</Button>
                                               ) : null}
                                             </Space>
                                           ),
@@ -5332,12 +5352,12 @@ export default function ProductDraftDetailPage() {
                           </div>
                           <div className="product-draft-douyin-flow__panel product-draft-douyin-flow__panel--create">
                             <div className="product-draft-douyin-flow__create-copy">
-                              <Typography.Text strong>6. 创建抖店商品草稿</Typography.Text>
-                              <Typography.Paragraph type="secondary">该操作会在抖店侧创建商品草稿，使用 save_as_platform_draft 模式；不等于正式发布，不等于商品已上线。成功后请查看下方任务记录，并到抖店后台确认后上架。</Typography.Paragraph>
+                              <Typography.Text strong>6. 进入运营任务审核</Typography.Text>
+                              <Typography.Paragraph type="secondary">在运营任务中心冻结当前商品、映射与请求内容，经人工审核后才能创建抖店平台草稿；本页不会直接调用平台写接口。</Typography.Paragraph>
                             </div>
                             <Space wrap className="product-draft-douyin-flow__panel-actions">
-                              <Button type="primary" disabled={douyinCreateDraftDisabled || !!douyinConfirmingAction} loading={douyinDraftCreating} onClick={() => void handleCreateDouyinDraft()}>
-                                创建抖店商品草稿
+                              <Button type="primary" disabled={douyinCreateDraftDisabled || !!douyinConfirmingAction} onClick={handleOpenDouyinOperationReview}>
+                                进入运营任务审核
                               </Button>
                               <Button onClick={() => openDraftLocation('publish', 'douyin-sku-bindings')}>查看 SKU 绑定状态</Button>
                             </Space>
@@ -5369,7 +5389,7 @@ export default function ProductDraftDetailPage() {
                                     { title: '抖店商品 ID', dataIndex: 'platformProductId', ellipsis: true, render: (v) => v || '—' },
                                     { title: '创建时间', dataIndex: 'createdAt', width: 168, render: (v) => formatDateTime(v) },
                                     { title: '失败原因', dataIndex: 'errorMessage', ellipsis: true, render: (v, r) => { const text = (v as string) || formatUserErrorMessage(r.errorCode); return text || '—'; } },
-                                    { title: '操作', width: 120, render: (_, r) => <Space size={4}><Link to={`/product/publish-tasks?productId=${id}`}>详情</Link>{r.status === 'failed' && r.retryable !== false ? <Button type="link" size="small" onClick={() => void retryProductPublishTask(r.id).then(() => { message.success('已重试刊登任务'); void reloadDouyinPublishTasks(); }).catch((e: Error) => message.error(e.message || '重试失败'))}>重试</Button> : null}</Space> },
+                                    { title: '操作', width: 120, render: () => <Link to={`/product/publish-tasks?productId=${id}`}>详情</Link> },
                                   ]}
                                 />
                               )}
@@ -5377,6 +5397,8 @@ export default function ProductDraftDetailPage() {
                           </div>
                         </Space>
                       </div>
+                      {!isProductionBuild ? (
+                      <>
                       <Alert
                         type="warning"
                         showIcon
@@ -5454,8 +5476,13 @@ export default function ProductDraftDetailPage() {
                       <Form
                         form={publishForm}
                         layout="vertical"
+                        disabled={publishWriteDisabled}
                         className="product-draft-publish__legacy-form"
                         onFinish={async (vals: { shopId?: string }) => {
+                          if (publishWriteDisabled) {
+                            message.error('当前账号无刊登草稿写权限');
+                            return;
+                          }
                           const shopId = String(vals.shopId ?? '').trim();
                           if (!shopId) {
                             message.error('请选择店铺');
@@ -5568,7 +5595,7 @@ export default function ProductDraftDetailPage() {
                               danger
                               htmlType="submit"
                               loading={publishSubmitting}
-                              disabled={!!publishReadiness && !publishReadiness.canPublish}
+                              disabled={publishWriteDisabled || (!!publishReadiness && !publishReadiness.canPublish)}
                             >
                               提交刊登
                             </Button>
@@ -5577,6 +5604,8 @@ export default function ProductDraftDetailPage() {
                         </Form.Item>
                       </Form>
                       </div>
+                      </>
+                      ) : null}
                       <div className="product-draft-publish__records-head">
                         <div>
                           <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 0 }}>
@@ -6342,6 +6371,7 @@ export default function ProductDraftDetailPage() {
         rootClassName="tm-product-draft-detail product-draft-douyin-bind__modal-root"
         className="product-draft-douyin-bind__modal"
         okText="确认绑定"
+        okButtonProps={{ disabled: skuBindDisabled }}
         confirmLoading={douyinSkuBindSubmitting}
         onCancel={() => {
           setDouyinSkuBindOpen(false);
@@ -6349,6 +6379,10 @@ export default function ProductDraftDetailPage() {
           douyinSkuBindForm.resetFields();
         }}
         onOk={() => {
+          if (skuBindDisabled) {
+            message.error('当前账号无规格绑定权限');
+            return Promise.reject();
+          }
           if (!douyinSkuBindTarget) return Promise.reject();
           return douyinSkuBindForm.validateFields().then((v) => {
             const platformSkuId = String(v.platformSkuId ?? '').trim();
@@ -6402,7 +6436,7 @@ export default function ProductDraftDetailPage() {
             </div>
           </div>
         </div>
-        <Form form={douyinSkuBindForm} layout="vertical">
+        <Form form={douyinSkuBindForm} layout="vertical" disabled={skuBindDisabled}>
           <Form.Item name="platformSkuId" label="抖店规格" rules={[{ required: true, message: '请选择抖店规格' }]}>
             <Select
               showSearch

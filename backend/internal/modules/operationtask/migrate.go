@@ -10,7 +10,7 @@ func Migrate(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("operationtask migrate: db is nil")
 	}
-	if err := db.AutoMigrate(&OperationTask{}, &PlatformDraft{}, &ApprovalRecord{}, &ExecutionAttempt{}, &ExecutionError{}, &OperationTaskEvent{}); err != nil {
+	if err := db.AutoMigrate(&OperationTask{}, &PlatformDraft{}, &ApprovalRecord{}, &ExecutionAttempt{}, &ExecutionOutbox{}, &ExecutionError{}, &OperationTaskEvent{}); err != nil {
 		return err
 	}
 	if err := migrateIndexes(db); err != nil {
@@ -42,6 +42,7 @@ func migrateIndexes(db *gorm.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_execution_attempts_task_created ON execution_attempts (tenant_id, operation_task_id, created_at DESC)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_execution_attempts_tenant_id ON execution_attempts (tenant_id, id)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_execution_attempts_task_attempt ON execution_attempts (tenant_id, operation_task_id, attempt_number)`,
+		`CREATE INDEX IF NOT EXISTS idx_execution_outbox_dispatch ON execution_outbox (tenant_id, status, next_dispatch_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_execution_errors_attempt_sequence ON execution_errors (tenant_id, execution_attempt_id, sequence ASC)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_execution_errors_attempt_sequence ON execution_errors (tenant_id, execution_attempt_id, sequence)`,
 		`CREATE INDEX IF NOT EXISTS idx_operation_task_events_task_sequence ON operation_task_events (tenant_id, operation_task_id, sequence ASC)`,
@@ -80,9 +81,9 @@ func migrateConstraints(db *gorm.DB) error {
 		`DO $$ BEGIN
 			ALTER TABLE platform_drafts ADD CONSTRAINT chk_platform_drafts_version CHECK (draft_version >= 1);
 		EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,
-		`DO $$ BEGIN
-			ALTER TABLE platform_drafts ADD CONSTRAINT chk_platform_drafts_adapter_mode CHECK (adapter_mode IN ('mock','sandbox','local_draft_only'));
-		EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,
+		`ALTER TABLE platform_drafts
+			DROP CONSTRAINT IF EXISTS chk_platform_drafts_adapter_mode,
+			ADD CONSTRAINT chk_platform_drafts_adapter_mode CHECK (adapter_mode IN ('mock','sandbox','local_draft_only','production_draft'))`,
 		`DO $$ BEGIN
 			ALTER TABLE platform_drafts ADD CONSTRAINT chk_platform_drafts_payload_hash CHECK (payload_hash = lower(payload_hash) AND payload_hash ~ '^[0-9a-f]{64}$');
 		EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,
@@ -95,12 +96,12 @@ func migrateConstraints(db *gorm.DB) error {
 		`DO $$ BEGIN
 			ALTER TABLE approval_records ADD CONSTRAINT chk_approval_records_payload_hash CHECK (draft_payload_hash = lower(draft_payload_hash) AND draft_payload_hash ~ '^[0-9a-f]{64}$');
 		EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,
-		`DO $$ BEGIN
-			ALTER TABLE execution_attempts ADD CONSTRAINT chk_execution_attempts_status CHECK (status IN ('queued','running','succeeded','failed','cancelled'));
-		EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,
-		`DO $$ BEGIN
-			ALTER TABLE execution_attempts ADD CONSTRAINT chk_execution_attempts_adapter_mode CHECK (adapter_mode IN ('mock','sandbox','local_draft_only'));
-		EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,
+		`ALTER TABLE execution_attempts
+			DROP CONSTRAINT IF EXISTS chk_execution_attempts_status,
+			ADD CONSTRAINT chk_execution_attempts_status CHECK (status IN ('queued','running','succeeded','failed','result_unknown','cancelled'))`,
+		`ALTER TABLE execution_attempts
+			DROP CONSTRAINT IF EXISTS chk_execution_attempts_adapter_mode,
+			ADD CONSTRAINT chk_execution_attempts_adapter_mode CHECK (adapter_mode IN ('mock','sandbox','local_draft_only','production_draft'))`,
 		`DO $$ BEGIN
 			ALTER TABLE execution_attempts ADD CONSTRAINT chk_execution_attempts_hashes CHECK (
 				approved_draft_payload_hash = lower(approved_draft_payload_hash)
@@ -112,9 +113,9 @@ func migrateConstraints(db *gorm.DB) error {
 		`DO $$ BEGIN
 			ALTER TABLE execution_errors ADD CONSTRAINT chk_execution_errors_category CHECK (category IN ('validation_error','permission_denied','state_conflict','adapter_unavailable','provider_timeout','provider_rejected','idempotency_conflict','internal_error'));
 		EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,
-		`DO $$ BEGIN
-			ALTER TABLE operation_task_events ADD CONSTRAINT chk_operation_task_events_type CHECK (event_type IN ('task_created','draft_generated','draft_updated','review_requested','approved','rejected','execution_queued','execution_started','draft_written','execution_failed','retry_requested','cancelled'));
-		EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,
+		`ALTER TABLE operation_task_events
+			DROP CONSTRAINT IF EXISTS chk_operation_task_events_type,
+			ADD CONSTRAINT chk_operation_task_events_type CHECK (event_type IN ('task_created','draft_generated','draft_updated','review_requested','approved','rejected','execution_queued','execution_started','draft_written','execution_failed','result_unknown','retry_requested','cancelled'))`,
 		`DO $$ BEGIN
 			ALTER TABLE operation_task_events ADD CONSTRAINT chk_operation_task_events_actor CHECK (actor_type IN ('user','system','ai','rule') AND (actor_type <> 'user' OR actor_id IS NOT NULL));
 		EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,

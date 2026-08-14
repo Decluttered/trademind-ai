@@ -1,5 +1,8 @@
 import { BrowserManager } from './browser/manager.js';
+import { loadCollectorDevelopmentEnv } from './config/local-env.js';
 import { listenCollectorHttp } from './http/server.js';
+
+loadCollectorDevelopmentEnv();
 
 const browser = new BrowserManager();
 const server = listenCollectorHttp(browser);

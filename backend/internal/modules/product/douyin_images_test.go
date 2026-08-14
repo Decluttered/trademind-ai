@@ -246,7 +246,7 @@ func validDouyinMapping(shopID string, price float64, stock int) *DouyinDraftMap
 		}},
 		Attributes: []DouyinDraftAttr{{AttrID: "brand", Name: "Brand", Value: "TradeMind"}},
 		SKUs: []DouyinDraftSKU{{
-			LocalSkuID: uuid.NewString(),
+			LocalSKUID: uuid.NewString(),
 			Name:       "Default",
 			Attrs:      map[string]any{"spec": "default"},
 			Price:      price,

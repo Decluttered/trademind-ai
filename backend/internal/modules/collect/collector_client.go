@@ -16,21 +16,30 @@ import (
 // CollectorClient calls the Node collector HTTP API with strict timeouts.
 type CollectorClient struct {
 	BaseURL string
+	Token   string
 	Client  *http.Client
 }
 
 // NewCollectorClient builds an HTTP client using baseURL (no trailing slash) and timeout.
-func NewCollectorClient(baseURL string, timeout time.Duration) *CollectorClient {
+func NewCollectorClient(baseURL string, timeout time.Duration, token string) *CollectorClient {
 	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if timeout <= 0 {
 		timeout = 60 * time.Second
 	}
 	return &CollectorClient{
 		BaseURL: baseURL,
+		Token:   strings.TrimSpace(token),
 		Client: &http.Client{
 			Timeout: timeout,
 		},
 	}
+}
+
+func (c *CollectorClient) authorize(req *http.Request) {
+	if c == nil || req == nil || strings.TrimSpace(c.Token) == "" {
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(c.Token))
 }
 
 // CollectorRejectedError is returned when collector responds with ok=false (e.g. HTTP 422).
@@ -112,6 +121,7 @@ func (c *CollectorClient) AnalyzePage(ctx context.Context, rawURL string, option
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	c.authorize(req)
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("collector request: %w", err)
@@ -163,6 +173,7 @@ func (c *CollectorClient) CustomRuleTest(ctx context.Context, rawURL string, opt
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	c.authorize(req)
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("collector request: %w", err)
@@ -228,6 +239,7 @@ func (c *CollectorClient) OpenBrowserProfileLogin(ctx context.Context, profileKe
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	c.authorize(req)
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("collector request: %w", err)
@@ -275,6 +287,7 @@ func (c *CollectorClient) CheckBrowserProfileAccess(ctx context.Context, profile
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	c.authorize(req)
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("collector request: %w", err)
@@ -337,6 +350,7 @@ func (c *CollectorClient) CollectWithTimeout(ctx context.Context, source, rawURL
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	c.authorize(req)
 
 	httpClient := c.Client
 	if timeout > 0 {
@@ -418,6 +432,7 @@ func (c *CollectorClient) FetchProviders(parent context.Context) ([]CollectProvi
 	if err != nil {
 		return nil, err
 	}
+	c.authorize(req)
 	client := &http.Client{Timeout: 3 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -459,6 +474,7 @@ func (c *CollectorClient) ProbeHealth(parent context.Context) (reachable bool, m
 	if err != nil {
 		return false, err.Error()
 	}
+	c.authorize(req)
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -492,6 +508,7 @@ func (c *CollectorClient) decodeDataEnvelope(parent context.Context, method, pat
 	if method == http.MethodPost {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	c.authorize(req)
 	client := &http.Client{Timeout: timeout}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -553,6 +570,7 @@ func (c *CollectorClient) decodeDataEnvelopeWithBody(
 	if method == http.MethodPost || method == http.MethodPut {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	c.authorize(req)
 	client := &http.Client{Timeout: timeout}
 	resp, err := client.Do(req)
 	if err != nil {

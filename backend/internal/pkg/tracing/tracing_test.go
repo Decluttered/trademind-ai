@@ -163,7 +163,7 @@ func TestHTTPExporterRetriesRetryableStatus(t *testing.T) {
 		OTLPEndpoint:  srv.URL,
 		ExportTimeout: time.Second,
 		RetryMax:      1,
-	})
+	}, nil)
 	if err := exp.ExportSpans(context.Background(), testSpanBatch()); err != nil {
 		t.Fatal(err)
 	}
@@ -175,6 +175,10 @@ func TestHTTPExporterRetriesRetryableStatus(t *testing.T) {
 func TestHTTPExporterDoesNotRetryClientStatus(t *testing.T) {
 	var attempts atomic.Int64
 	var failures atomic.Int64
+	provider := &Provider{}
+	if provider.ExportAttempted() {
+		t.Fatal("new provider must not report an export attempt")
+	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempts.Add(1)
 		w.WriteHeader(http.StatusBadRequest)
@@ -187,7 +191,7 @@ func TestHTTPExporterDoesNotRetryClientStatus(t *testing.T) {
 		OnExportError: func(n int) {
 			failures.Add(int64(n))
 		},
-	})
+	}, provider)
 	if err := exp.ExportSpans(context.Background(), testSpanBatch()); err == nil {
 		t.Fatal("expected exporter error")
 	}
@@ -196,6 +200,24 @@ func TestHTTPExporterDoesNotRetryClientStatus(t *testing.T) {
 	}
 	if failures.Load() == 0 {
 		t.Fatal("expected export failure callback")
+	}
+	if !provider.ExportAttempted() || !provider.ExportBlocked() || provider.ExportFailures() != 1 {
+		t.Fatalf("expected degraded provider after failed export, attempted=%v blocked=%v failures=%d", provider.ExportAttempted(), provider.ExportBlocked(), provider.ExportFailures())
+	}
+
+	recoverySrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer recoverySrv.Close()
+	exp.endpoint = strings.TrimSuffix(recoverySrv.URL, "/") + "/v1/traces"
+	if err := exp.ExportSpans(context.Background(), testSpanBatch()); err != nil {
+		t.Fatal(err)
+	}
+	if !provider.ExportAttempted() || provider.ExportBlocked() {
+		t.Fatal("expected a successful export to clear degraded provider state")
+	}
+	if provider.ExportFailures() != 1 {
+		t.Fatalf("successful recovery must preserve cumulative failure count, got %d", provider.ExportFailures())
 	}
 }
 

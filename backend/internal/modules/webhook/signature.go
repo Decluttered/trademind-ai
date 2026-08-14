@@ -54,7 +54,7 @@ func NewRegistry(cfg *config.Config) *Registry {
 		verifiers: make(map[string]SignatureVerifier),
 		appEnv:    appEnv,
 	}
-	if enableTest && (appEnv == config.EnvDevelopment || appEnv == config.EnvTest || (appEnv == config.EnvPerformance && cfg != nil && cfg.P7.PerformanceTestMode)) {
+	if enableTest && (appEnv == config.EnvDevelopment || appEnv == config.EnvTest || (appEnv == config.EnvPerformance && cfg != nil && cfg.RuntimeLimits.PerformanceTestMode)) {
 		secret := []byte(TestHMACSecret)
 		if cfg != nil {
 			if v := strings.TrimSpace(os.Getenv("P7V2_WEBHOOK_TEST_SECRET")); v != "" {

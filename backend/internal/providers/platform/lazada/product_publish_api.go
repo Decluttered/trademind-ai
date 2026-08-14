@@ -355,7 +355,7 @@ func buildLazadaSKUMappings(local []platformp.PlatformProductSKU, platformRows [
 	}
 	out := make([]platformp.PlatformSKUMapping, 0, len(local))
 	for _, sku := range local {
-		code := sellerSkuCode(sku)
+		code := sellerSKUCode(sku)
 		row := bySeller[code]
 		ext := firstNonEmptyStr(
 			lazadaIDString(row, "sku_id", "SkuId", "skuId"),

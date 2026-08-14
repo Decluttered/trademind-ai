@@ -96,7 +96,7 @@ func ValidateRuleJSON(raw []byte) error {
 				return fmt.Errorf("%w: attributes: %v", ErrRuleSchema, err)
 			}
 		case "skus":
-			if err := validateSkus(val); err != nil {
+			if err := validateSKUs(val); err != nil {
 				return fmt.Errorf("%w: skus: %v", ErrRuleSchema, err)
 			}
 		case "fallbacks":
@@ -157,7 +157,7 @@ func validateFallbacks(raw json.RawMessage) error {
 	return nil
 }
 
-func validateSkus(raw json.RawMessage) error {
+func validateSKUs(raw json.RawMessage) error {
 	var m struct {
 		Mode string `json:"mode"`
 	}

@@ -220,6 +220,7 @@ const smokeRoutes = [
   { path: "/product/drafts", name: /商品草稿|E2E 商品草稿/ },
   { path: "/inventory/overview", name: /库存中心/ },
   { path: "/ops/task-center/alerts", name: /告警中心/ },
+  { path: "/ops/task-center/operation-tasks", name: /运营任务中心/ },
   { path: "/ops/observability", name: /可观测性中心/ },
   { path: "/settings/alert-notify", name: /告警通知配置/ },
   { path: "/files", name: /文件管理/ },
@@ -332,14 +333,17 @@ test.describe("@smoke Admin route smoke", () => {
     await admin.writeGuard.expectRequestCount("unexpected", 0);
   });
 
-  test("renders observability alert rows without React key warnings", async ({
+  test("renders operational observability status without writes", async ({
     admin,
     page,
   }) => {
     await admin.goto("/ops/observability");
 
-    await expect(page.getByText("http_5xx_elevated")).toBeVisible();
-    await expect(page.getByText("worker_backlog")).toBeVisible();
+    await expect(page.getByText("需要处理").first()).toBeVisible();
+    await expect(page.getByText("活跃系统告警")).toBeVisible();
+    await expect(page.getByText("最近评估成功").first()).toBeVisible();
+    await expect(page.getByText("未配置导出后端").first()).toBeVisible();
+    await expectNoRootOverflow(page);
     await admin.writeGuard.expectRequestCount("unexpected", 0);
   });
 
@@ -458,7 +462,7 @@ test.describe("@smoke Admin route smoke", () => {
       .fill("告警中心");
     await dialog.getByRole("button", { name: /告警中心/ }).click();
 
-    await expect(page).toHaveURL(/\/ops\/task-center\/alerts$/);
+    await expect(page).toHaveURL(/\/ops\/task-center\/alerts\?source=business$/);
     await admin.writeGuard.expectRequestCount("unexpected", 0);
   });
 

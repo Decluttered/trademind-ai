@@ -7,8 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/rdb"
 )
 
@@ -134,13 +136,18 @@ type statusCountRow struct {
 }
 
 // GetCollectMonitor aggregates queue, DB, worker state, and collector /health for the admin dashboard.
-func (s *Service) GetCollectMonitor(ctx context.Context) (*CollectMonitorResponse, error) {
+func (s *Service) GetCollectMonitor(c *gin.Context) (*CollectMonitorResponse, error) {
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("collect: no db")
 	}
-	if ctx == nil {
-		ctx = context.Background()
+	if c == nil {
+		return nil, fmt.Errorf("collect: request context missing")
 	}
+	tenantID, err := adminperm.TenantIDFromGin(c)
+	if err != nil {
+		return nil, err
+	}
+	ctx := c.Request.Context()
 
 	qname := resolveQueueName(s.QueueName)
 	redisAvail, depth := RedisQueueDepth(ctx, s.Redis, qname)
@@ -162,8 +169,8 @@ func (s *Service) GetCollectMonitor(ctx context.Context) (*CollectMonitorRespons
 	}
 
 	var oldest CollectTask
-	err := s.DB.WithContext(ctx).
-		Where("status IN ?", []string{StatusPending, StatusRetrying}).
+	err = s.DB.WithContext(ctx).
+		Where("tenant_id = ? AND status IN ?", tenantID, []string{StatusPending, StatusRetrying}).
 		Order("created_at ASC").
 		First(&oldest).Error
 	if err == nil {
@@ -178,6 +185,7 @@ func (s *Service) GetCollectMonitor(ctx context.Context) (*CollectMonitorRespons
 
 	var taskRows []statusCountRow
 	if err := s.DB.WithContext(ctx).Model(&CollectTask{}).
+		Where("tenant_id = ?", tenantID).
 		Select("status, COUNT(*) AS n").
 		Group("status").
 		Scan(&taskRows).Error; err != nil {
@@ -204,14 +212,14 @@ func (s *Service) GetCollectMonitor(ctx context.Context) (*CollectMonitorRespons
 	nowUTC := time.Now().UTC()
 	var dueN int64
 	if err := s.DB.WithContext(ctx).Model(&CollectTask{}).
-		Where("status = ? AND next_retry_at IS NOT NULL AND next_retry_at <= ?", StatusRetrying, nowUTC).
+		Where("tenant_id = ? AND status = ? AND next_retry_at IS NOT NULL AND next_retry_at <= ?", tenantID, StatusRetrying, nowUTC).
 		Count(&dueN).Error; err != nil {
 		return nil, err
 	}
 
 	var retr []CollectTask
 	if err := s.DB.WithContext(ctx).
-		Where("status = ?", StatusRetrying).
+		Where("tenant_id = ? AND status = ?", tenantID, StatusRetrying).
 		Find(&retr).Error; err != nil {
 		return nil, err
 	}
@@ -247,6 +255,7 @@ func (s *Service) GetCollectMonitor(ctx context.Context) (*CollectMonitorRespons
 
 	var batchRows []statusCountRow
 	if err := s.DB.WithContext(ctx).Model(&CollectBatch{}).
+		Where("tenant_id = ?", tenantID).
 		Select("status, COUNT(*) AS n").
 		Group("status").
 		Scan(&batchRows).Error; err != nil {
@@ -269,7 +278,7 @@ func (s *Service) GetCollectMonitor(ctx context.Context) (*CollectMonitorRespons
 
 	var fails []CollectTask
 	if err := s.DB.WithContext(ctx).
-		Where("status = ?", StatusFailed).
+		Where("tenant_id = ? AND status = ?", tenantID, StatusFailed).
 		Order("updated_at DESC").
 		Limit(10).
 		Find(&fails).Error; err != nil {
@@ -295,7 +304,7 @@ func (s *Service) GetCollectMonitor(ctx context.Context) (*CollectMonitorRespons
 
 	var recentR []CollectTask
 	if err := s.DB.WithContext(ctx).
-		Where("status = ?", StatusRetrying).
+		Where("tenant_id = ? AND status = ?", tenantID, StatusRetrying).
 		Order("updated_at DESC").
 		Limit(10).
 		Find(&recentR).Error; err != nil {

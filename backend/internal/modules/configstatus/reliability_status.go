@@ -11,7 +11,7 @@ import (
 func (s *Service) reliabilityFoundationItem(ctx context.Context) Item {
 	it := Item{
 		Key:         "reliability_foundation",
-		Title:       "P2 可靠性基础",
+		Title:       "可靠性基础",
 		SettingsURL: "/settings/config-status",
 	}
 	env := config.EnvDevelopment

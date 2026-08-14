@@ -43,6 +43,8 @@ type Config struct {
 	CollectorBaseURL string
 	// CollectorTimeoutSeconds caps outbound HTTP calls to the collector (default 60).
 	CollectorTimeoutSeconds int
+	// CollectorServiceToken authenticates backend-to-collector HTTP calls.
+	CollectorServiceToken string
 
 	// CollectQueueEnabled gates async collect jobs (Redis list + worker).
 	CollectQueueEnabled bool
@@ -109,7 +111,7 @@ type Config struct {
 	// ProductPublishTaskTimeoutSeconds caps publish worker lease TTL and provider timeout (default 180).
 	ProductPublishTaskTimeoutSeconds int
 
-	// Publish batch matrix limits (Phase A2.1).
+	// Publish batch matrix limits.
 	PublishBatchMaxProducts int
 	PublishBatchMaxTargets  int
 	PublishBatchMaxTasks    int
@@ -164,16 +166,12 @@ type Config struct {
 	DouyinWebhookTestShopBindingID  string
 	EnableDouyinWebhookDemoFallback bool
 
-	// P5 observability
+	// Observability.
 	Observability ObservabilityConfig
-	// P6 backup, restore, release and DR foundation.
-	Backup         BackupConfig
-	PostgresBackup PostgresBackupConfig
-	Release        ReleaseConfig
-	// P7 performance, capacity, pagination and limiting foundation.
-	P7 P7Config
-	// P10 read-only productionization foundation. Runtime remains L0 until a later approval changes code and configuration.
-	P10 P10Config
+	// Performance, capacity, pagination, and limiting controls.
+	RuntimeLimits RuntimeLimitsConfig
+	// Production capability controls remain L0 until an explicit approval changes code and configuration.
+	ProductionCapabilities ProductionCapabilityConfig
 }
 
 // DBConfig selects PostgreSQL (default) or MySQL via GORM.
@@ -235,6 +233,7 @@ func Load() (*Config, error) {
 
 		CollectorBaseURL:        strings.TrimRight(strings.TrimSpace(firstNonEmpty(os.Getenv("COLLECTOR_BASE_URL"), "http://127.0.0.1:3100")), "/"),
 		CollectorTimeoutSeconds: atoiOrDefault(os.Getenv("COLLECTOR_TIMEOUT_SECONDS"), 120),
+		CollectorServiceToken:   strings.TrimSpace(os.Getenv("COLLECTOR_SERVICE_TOKEN")),
 
 		CollectQueueEnabled:      envBool(os.Getenv("COLLECT_QUEUE_ENABLED"), true),
 		CollectWorkerConcurrency: atoiOrDefault(os.Getenv("COLLECT_WORKER_CONCURRENCY"), 2),
@@ -343,11 +342,8 @@ func Load() (*Config, error) {
 		EnableDouyinWebhookDemoFallback: envBool(os.Getenv("ENABLE_DOUYIN_WEBHOOK_DEMO_FALLBACK"), false),
 	}
 	cfg.Observability = LoadObservabilityConfig(cfg.AppEnv, cfg.AppName, cfg.AppVersion)
-	cfg.Backup = loadBackupConfig(cfg.AppEnv)
-	cfg.PostgresBackup = loadPostgresBackupConfig()
-	cfg.Release = loadReleaseConfig(cfg.AppEnv)
-	cfg.P7 = loadP7Config(cfg.AppEnv)
-	cfg.P10 = loadP10Config(cfg.AppEnv)
+	cfg.RuntimeLimits = loadRuntimeLimitsConfig(cfg.AppEnv)
+	cfg.ProductionCapabilities = loadProductionCapabilityConfig(cfg.AppEnv)
 	// Test verifier must never run in production regardless of env flag.
 	if IsProduction(cfg.AppEnv) {
 		cfg.WebhookEnableTestVerifier = false
@@ -381,7 +377,7 @@ func Load() (*Config, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
-	if err := cfg.P10.Validate(cfg.AppEnv); err != nil {
+	if err := cfg.ProductionCapabilities.Validate(cfg.AppEnv); err != nil {
 		return nil, err
 	}
 

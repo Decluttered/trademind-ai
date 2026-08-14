@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 )
 
 const (
@@ -121,6 +122,10 @@ func (s *Service) failPublishBatchCreate(ctx context.Context, job *publishBatchA
 }
 
 func (s *Service) resolveExistingPublishBatch(ctx context.Context, res *idempotency.AcquireResult, idemKey string) (*BatchTargetsCreateDraftsResponse, error) {
+	tenant, err := security.RequireTenantContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	rid := ""
 	if res != nil {
 		rid = res.ResourceID
@@ -131,14 +136,14 @@ func (s *Service) resolveExistingPublishBatch(ctx context.Context, res *idempote
 	if rid != "" {
 		if bid, err := uuid.Parse(rid); err == nil {
 			var batch ProductPublishBatch
-			if err := s.DB.WithContext(ctx).First(&batch, "id = ?", bid).Error; err == nil {
+			if err := s.DB.WithContext(ctx).First(&batch, "id = ? AND tenant_id = ?", bid, tenant.TenantID).Error; err == nil {
 				return s.batchCreateResponseFromExisting(ctx, &batch)
 			}
 		}
 	}
 	if idemKey != "" {
 		var batch ProductPublishBatch
-		if err := s.DB.WithContext(ctx).Where("idempotency_key = ? AND status NOT IN ?", idemKey, []string{BatchFailed, BatchCancelled}).
+		if err := s.DB.WithContext(ctx).Where("tenant_id = ? AND idempotency_key = ? AND status NOT IN ?", tenant.TenantID, idemKey, []string{BatchFailed, BatchCancelled}).
 			Order("created_at DESC").First(&batch).Error; err == nil {
 			return s.batchCreateResponseFromExisting(ctx, &batch)
 		}

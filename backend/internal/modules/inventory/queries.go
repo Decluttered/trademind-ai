@@ -56,7 +56,7 @@ func (s *Service) taskToDTO(ctx context.Context, t *InventorySyncTask, skuHint s
 		ProductSKUID:     t.ProductSKUID,
 		SKUCode:          code,
 		PublicationID:    t.PublicationID,
-		PublicationSkuID: t.PublicationSkuID,
+		PublicationSKUID: t.PublicationSKUID,
 		ShopID:           t.ShopID,
 		ShopName:         s.shopNameLookup(ctx, t.ShopID),
 		Platform:         t.Platform,
@@ -99,15 +99,15 @@ func (s *Service) GetDTO(ctx context.Context, tenantID int64, id uuid.UUID, skuU
 	return s.taskToDTO(ctx, &t, hint, title), nil
 }
 
-// ListPublicationSkus lists listing SKU rows mapped to one product draft.
-func (s *Service) ListPublicationSkus(ctx context.Context, productID uuid.UUID, productSkuFilter *uuid.UUID) ([]PublicationSkuListingRow, error) {
+// ListPublicationSKUs lists listing SKU rows mapped to one product draft.
+func (s *Service) ListPublicationSKUs(ctx context.Context, productID uuid.UUID, productSKUFilter *uuid.UUID) ([]PublicationSKUListingRow, error) {
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("inventory: no db")
 	}
 	type rowLite struct {
 		ID                uuid.UUID  `gorm:"column:id"`
 		PublicationID     uuid.UUID  `gorm:"column:publication_id"`
-		ProductSkuIDCol   *uuid.UUID `gorm:"column:product_sku_id"`
+		ProductSKUIDCol   *uuid.UUID `gorm:"column:product_sku_id"`
 		ExternalSKU       string     `gorm:"column:external_sku_id"`
 		SKUCode           string     `gorm:"column:sku_code"`
 		Stock             *int       `gorm:"column:stock"`
@@ -126,14 +126,14 @@ func (s *Service) ListPublicationSkus(ctx context.Context, productID uuid.UUID, 
 			pp.shop_id AS shop_uid, sh.shop_name, pp.platform AS plat, pp.external_product_id AS ext_pid`).
 		Joins(`JOIN product_publications pp ON pp.id = ps.publication_id AND pp.product_id = ? AND pp.deleted_at IS NULL`, productID).
 		Joins(`JOIN shops sh ON sh.id = pp.shop_id`)
-	if productSkuFilter != nil && *productSkuFilter != uuid.Nil {
-		tx = tx.Where("ps.product_sku_id = ?", *productSkuFilter)
+	if productSKUFilter != nil && *productSKUFilter != uuid.Nil {
+		tx = tx.Where("ps.product_sku_id = ?", *productSKUFilter)
 	}
 	var rows []rowLite
 	if err := tx.Order("pp.updated_at DESC, ps.created_at ASC").Scan(&rows).Error; err != nil {
 		return nil, err
 	}
-	out := make([]PublicationSkuListingRow, 0, len(rows))
+	out := make([]PublicationSKUListingRow, 0, len(rows))
 	for _, r := range rows {
 		pl := strings.TrimSpace(strings.ToLower(r.PlatformRaw))
 		prov := platformp.Get(pl)
@@ -141,10 +141,10 @@ func (s *Service) ListPublicationSkus(ctx context.Context, productID uuid.UUID, 
 		if prov != nil {
 			cap = platformp.ImplementationStatusForCapability(prov, platformp.CapInventorySync)
 		}
-		out = append(out, PublicationSkuListingRow{
+		out = append(out, PublicationSKUListingRow{
 			PublicationSKUID:  r.ID,
 			PublicationID:     r.PublicationID,
-			ProductSKUID:      r.ProductSkuIDCol,
+			ProductSKUID:      r.ProductSKUIDCol,
 			ShopID:            r.ShopUID,
 			ShopName:          r.ShopName,
 			Platform:          pl,
@@ -388,11 +388,11 @@ func (s *Service) retryInventorySyncTaskScoped(ctx context.Context, tenantID int
 	if err := s.enqueueOrRunInventoryTask(ctx, taskID); err != nil {
 		return nil, err
 	}
-	var skuUuid uuid.UUID
+	var skuUUID uuid.UUID
 	if task.ProductSKUID != nil {
-		skuUuid = *task.ProductSKUID
+		skuUUID = *task.ProductSKUID
 	}
-	out, err := s.GetDTO(ctx, tenantID, taskID, skuUuid, "")
+	out, err := s.GetDTO(ctx, tenantID, taskID, skuUUID, "")
 	return &out, err
 }
 

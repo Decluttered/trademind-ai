@@ -102,13 +102,13 @@ type DouyinDraftAttr struct {
 }
 
 type DouyinDraftSKU struct {
-	LocalSkuID       string         `json:"localSkuId"`
+	LocalSKUID       string         `json:"localSkuId"`
 	Name             string         `json:"name"`
 	Attrs            map[string]any `json:"attrs"`
 	Price            float64        `json:"price"`
 	Stock            *int           `json:"stock"`
 	ImageURL         string         `json:"imageUrl"`
-	PlatformSkuDraft map[string]any `json:"platformSkuDraft"`
+	PlatformSKUDraft map[string]any `json:"platformSkuDraft"`
 }
 
 type DouyinDraftPrice struct {
@@ -416,14 +416,14 @@ func ApplyDouyinDraftValidation(m *DouyinDraftMapping, minProfit float64) {
 	}
 	priceMissing := true
 	for _, sku := range m.SKUs {
-		if strings.TrimSpace(sku.LocalSkuID) != "" {
+		if strings.TrimSpace(sku.LocalSKUID) != "" {
 			// Keep the related resource id on the most actionable SKU findings.
 		}
 		if sku.Price <= 0 {
 			errors = append(errors, DouyinMappingIssue{
 				Code: DouyinSKUPriceInvalid, Level: "error", Field: "skus.price",
 				Message: "SKU price must be greater than 0.", Suggestion: "Set a valid selling price for every SKU.",
-				RelatedResourceType: "product_sku", RelatedResourceID: sku.LocalSkuID,
+				RelatedResourceType: "product_sku", RelatedResourceID: sku.LocalSKUID,
 			})
 		} else {
 			priceMissing = false
@@ -432,20 +432,20 @@ func ApplyDouyinDraftValidation(m *DouyinDraftMapping, minProfit float64) {
 			warnings = append(warnings, DouyinMappingIssue{
 				Code: DouyinSKUStockUnconfirmed, Level: "warning", Field: "skus.stock",
 				Message: "SKU stock is not confirmed.", Suggestion: "Confirm stock manually; unknown stock will not be treated as 999.",
-				RelatedResourceType: "product_sku", RelatedResourceID: sku.LocalSkuID,
+				RelatedResourceType: "product_sku", RelatedResourceID: sku.LocalSKUID,
 			})
 		} else if *sku.Stock < 0 {
 			errors = append(errors, DouyinMappingIssue{
 				Code: DouyinStockInvalid, Level: "error", Field: "skus.stock",
 				Message: "SKU stock cannot be negative.", Suggestion: "Set stock to a non-negative number.",
-				RelatedResourceType: "product_sku", RelatedResourceID: sku.LocalSkuID,
+				RelatedResourceType: "product_sku", RelatedResourceID: sku.LocalSKUID,
 			})
 		}
 		if len(sku.Attrs) == 0 {
 			warnings = append(warnings, DouyinMappingIssue{
 				Code: DouyinSKUAttrIncomplete, Level: "warning", Field: "skus.attrs",
 				Message: "SKU specification is incomplete.", Suggestion: "Complete product specification values if the product has variants.",
-				RelatedResourceType: "product_sku", RelatedResourceID: sku.LocalSkuID,
+				RelatedResourceType: "product_sku", RelatedResourceID: sku.LocalSKUID,
 			})
 		}
 	}
@@ -615,7 +615,7 @@ func buildDouyinSKUs(p Product) []DouyinDraftSKU {
 			Attrs:            map[string]any{},
 			Price:            0,
 			Stock:            nil,
-			PlatformSkuDraft: map[string]any{"singleSpec": true},
+			PlatformSKUDraft: map[string]any{"singleSpec": true},
 		}}
 	}
 	out := make([]DouyinDraftSKU, 0, len(p.SKUs))
@@ -634,13 +634,13 @@ func buildDouyinSKUs(p Product) []DouyinDraftSKU {
 			name = "SKU"
 		}
 		out = append(out, DouyinDraftSKU{
-			LocalSkuID: s.ID.String(),
+			LocalSKUID: s.ID.String(),
 			Name:       name,
 			Attrs:      attrs,
 			Price:      price,
 			Stock:      s.Stock,
 			ImageURL:   strings.TrimSpace(s.ImageURL),
-			PlatformSkuDraft: map[string]any{
+			PlatformSKUDraft: map[string]any{
 				"localSkuCode": strings.TrimSpace(s.SKUCode),
 				"previewOnly":  true,
 			},

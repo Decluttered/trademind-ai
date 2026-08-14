@@ -15,6 +15,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	platformdouyin "github.com/trademind-ai/trademind/backend/internal/providers/platform/douyinshop"
 	"gorm.io/datatypes"
 )
@@ -43,7 +44,7 @@ type DouyinSKUBindingRow struct {
 	SKUCode          string     `json:"skuCode,omitempty"`
 	SpecName         string     `json:"specName,omitempty"`
 	ExternalSKUID    string     `json:"externalSkuId,omitempty"`
-	PlatformSkuName  string     `json:"platformSkuName,omitempty"`
+	PlatformSKUName  string     `json:"platformSkuName,omitempty"`
 	BindStatus       string     `json:"bindStatus,omitempty"`
 	BindConfidence   int        `json:"bindConfidence,omitempty"`
 	BindMessage      string     `json:"bindMessage,omitempty"`
@@ -56,7 +57,7 @@ type DouyinSKUBindingRow struct {
 type DouyinSKUBindingSummary struct {
 	PublicationID            uuid.UUID                    `json:"publicationId"`
 	ExternalProductID        string                       `json:"externalProductId,omitempty"`
-	SkuBindingSyncedAt       *time.Time                   `json:"skuBindingSyncedAt,omitempty"`
+	SKUBindingSyncedAt       *time.Time                   `json:"skuBindingSyncedAt,omitempty"`
 	Total                    int                          `json:"total"`
 	Bound                    int                          `json:"bound"`
 	Skipped                  int                          `json:"skipped"`
@@ -64,7 +65,7 @@ type DouyinSKUBindingSummary struct {
 	Ambiguous                int                          `json:"ambiguous"`
 	Failed                   int                          `json:"failed"`
 	Rows                     []DouyinSKUBindingRow        `json:"rows"`
-	PlatformSkus             []DouyinPlatformSKUCandidate `json:"platformSkus,omitempty"`
+	PlatformSKUs             []DouyinPlatformSKUCandidate `json:"platformSkus,omitempty"`
 	InventorySyncReady       bool                         `json:"inventorySyncReady"`
 	InventorySyncBlockReason string                       `json:"inventorySyncBlockReason,omitempty"`
 	ErrorCode                string                       `json:"errorCode,omitempty"`
@@ -85,7 +86,7 @@ func (s *Service) GetDouyinSKUBindings(ctx context.Context, publicationID uuid.U
 		return nil, err
 	}
 	sum := summarizeBindingRows(pub, rows)
-	sum.PlatformSkus = annotatePlatformSkuCandidates(platformSkusFromPublicationRaw(pub.RawData), sum.Rows)
+	sum.PlatformSKUs = annotatePlatformSKUCandidates(platformSKUsFromPublicationRaw(pub.RawData), sum.Rows)
 	sum.InventorySyncReady, sum.InventorySyncBlockReason = DouyinInventorySyncReady(sum.Rows)
 	return &sum, nil
 }
@@ -98,6 +99,9 @@ func (s *Service) SyncDouyinSKUBindings(c *gin.Context, publicationID uuid.UUID,
 	ctx := c.Request.Context()
 	pub, err := s.loadDouyinPublication(ctx, publicationID)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.ensureStoreOperate(c, pub.ShopID); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(pub.ExternalProductID) == "" {
@@ -226,14 +230,14 @@ func (s *Service) SyncDouyinSKUBindings(c *gin.Context, publicationID uuid.UUID,
 		Updates(map[string]any{
 			"sku_binding_synced_at": &now,
 			"last_synced_at":        &now,
-			"raw_data":              mergePublicationRawPlatformSkus(pub.RawData, detail.SKUs),
+			"raw_data":              mergePublicationRawPlatformSKUs(pub.RawData, detail.SKUs),
 			"updated_at":            now,
 		}).Error
 
 	sum := DouyinSKUBindingSummary{
 		PublicationID:      publicationID,
 		ExternalProductID:  pub.ExternalProductID,
-		SkuBindingSyncedAt: &now,
+		SKUBindingSyncedAt: &now,
 		Total:              len(resultRows),
 		Bound:              counts[BindStatusBound],
 		Skipped:            counts[BindStatusSkipped],
@@ -242,7 +246,7 @@ func (s *Service) SyncDouyinSKUBindings(c *gin.Context, publicationID uuid.UUID,
 		Failed:             counts[BindStatusFailed],
 		Rows:               resultRows,
 	}
-	sum.PlatformSkus = annotatePlatformSkuCandidates(platformSkusToCandidates(detail.SKUs), sum.Rows)
+	sum.PlatformSKUs = annotatePlatformSKUCandidates(platformSKUsToCandidates(detail.SKUs), sum.Rows)
 	sum.InventorySyncReady, sum.InventorySyncBlockReason = DouyinInventorySyncReady(sum.Rows)
 	if s.OpLog != nil {
 		_ = s.OpLog.Write(c, operationlog.WriteOpts{
@@ -276,8 +280,12 @@ func (s *Service) writeDouyinDetailSyncFailed(ctx context.Context, adminID *uuid
 }
 
 func (s *Service) loadDouyinPublication(ctx context.Context, publicationID uuid.UUID) (*ProductPublication, error) {
+	tenant, err := security.RequireTenantContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var pub ProductPublication
-	if err := s.DB.WithContext(ctx).First(&pub, "id = ?", publicationID).Error; err != nil {
+	if err := s.DB.WithContext(ctx).First(&pub, "id = ? AND tenant_id = ?", publicationID, tenant.TenantID).Error; err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(strings.ToLower(pub.Platform)) != "douyin_shop" {
@@ -314,7 +322,7 @@ func (s *Service) listDouyinBindingRows(ctx context.Context, pub *ProductPublica
 			SKUCode:          firstNonEmpty(row.SKUCode, lr.SKUCode),
 			SpecName:         lr.SpecName,
 			ExternalSKUID:    strings.TrimSpace(row.ExternalSKUID),
-			PlatformSkuName:  platformSkuNameFromCache(pub, strings.TrimSpace(row.ExternalSKUID)),
+			PlatformSKUName:  platformSKUNameFromCache(pub, strings.TrimSpace(row.ExternalSKUID)),
 			BindStatus:       strings.TrimSpace(row.BindStatus),
 			BindConfidence:   row.BindConfidence,
 			BindMessage:      row.BindMessage,
@@ -330,7 +338,7 @@ func summarizeBindingRows(pub *ProductPublication, rows []DouyinSKUBindingRow) D
 	sum := DouyinSKUBindingSummary{
 		PublicationID:      pub.ID,
 		ExternalProductID:  pub.ExternalProductID,
-		SkuBindingSyncedAt: pub.SkuBindingSyncedAt,
+		SKUBindingSyncedAt: pub.SKUBindingSyncedAt,
 		Total:              len(rows),
 		Rows:               rows,
 	}
@@ -358,12 +366,12 @@ func summarizeBindingRows(pub *ProductPublication, rows []DouyinSKUBindingRow) D
 }
 
 func (s *Service) loadLocalSKUsForBinding(ctx context.Context, publicationID, productID uuid.UUID) ([]localSKUForBinding, error) {
-	var pubSkus []ProductPublicationSKU
-	if err := s.DB.WithContext(ctx).Where("publication_id = ?", publicationID).Order("created_at ASC").Find(&pubSkus).Error; err != nil {
+	var pubSKUs []ProductPublicationSKU
+	if err := s.DB.WithContext(ctx).Where("publication_id = ?", publicationID).Order("created_at ASC").Find(&pubSKUs).Error; err != nil {
 		return nil, err
 	}
-	out := make([]localSKUForBinding, 0, len(pubSkus))
-	for _, ps := range pubSkus {
+	out := make([]localSKUForBinding, 0, len(pubSKUs))
+	for _, ps := range pubSKUs {
 		local := localSKUForBinding{
 			PublicationSKUID: ps.ID,
 			ProductSKUID:     ps.ProductSKUID,

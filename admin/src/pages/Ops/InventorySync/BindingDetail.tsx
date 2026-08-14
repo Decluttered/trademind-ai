@@ -11,7 +11,7 @@ import {
   type BindingHistory,
   type InventorySyncAPIError,
   type ManualBindingDecision,
-} from '@/services/inventorySyncP9';
+} from '@/services/inventorySync';
 import { formatDateTime } from '@/utils/formatTime';
 import {
   BINDING_STATUS_LABELS,
@@ -92,7 +92,7 @@ export default function InventorySyncBindingDetailPage() {
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         {renderInventorySyncError(error)}
         {binding ? (
-          <SectionCard title="绑定摘要" description="绑定由 P9 fixture 校准或人工确认产生，不会写入真实平台库存。" headerExtra={<StatusTag map={BINDING_STATUS_LABELS} value={binding.bindingStatus} />}>
+          <SectionCard title="绑定摘要" description="绑定由库存校准或人工确认产生，不会写入真实平台库存。" headerExtra={<StatusTag map={BINDING_STATUS_LABELS} value={binding.bindingStatus} />}>
             <Descriptions column={{ xs: 1, sm: 2, lg: 3 }} size="small">
               <Descriptions.Item label="绑定 ID">{copyableText(binding.id, 18)}</Descriptions.Item>
               <Descriptions.Item label="店铺连接">{copyableText(binding.shopConnectionId, 14)}</Descriptions.Item>

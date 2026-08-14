@@ -18,12 +18,12 @@ type pushAcquire struct {
 	Key      string
 }
 
-func pushRequestHash(platform string, shopID, skuID, pubSkuID uuid.UUID, target int) string {
+func pushRequestHash(platform string, shopID, skuID, pubSKUID uuid.UUID, target int) string {
 	payload, _ := json.Marshal(map[string]any{
 		"platform":         platform,
 		"shopId":           shopID.String(),
 		"skuId":            skuID.String(),
-		"publicationSkuId": pubSkuID.String(),
+		"publicationSkuId": pubSKUID.String(),
 		"targetStock":      target,
 	})
 	return idempotency.HashRequest(payload)
@@ -36,13 +36,13 @@ func pushOwner(admin *uuid.UUID) string {
 	return "inventory-push"
 }
 
-func (s *Service) acquireInventoryPush(ctx context.Context, platform string, shopID, skuID, pubSkuID uuid.UUID, target int, admin *uuid.UUID) (*pushAcquire, *idempotency.AcquireResult, error) {
+func (s *Service) acquireInventoryPush(ctx context.Context, platform string, shopID, skuID, pubSKUID uuid.UUID, target int, admin *uuid.UUID) (*pushAcquire, *idempotency.AcquireResult, error) {
 	if s == nil || s.Idempotency == nil {
 		return nil, nil, nil
 	}
 	key := idempotency.InventoryPush(platform, shopID.String(), skuID.String(), strconv.Itoa(target))
 	owner := pushOwner(admin)
-	hash := pushRequestHash(platform, shopID, skuID, pubSkuID, target)
+	hash := pushRequestHash(platform, shopID, skuID, pubSKUID, target)
 	res, err := s.Idempotency.Acquire(ctx, idempotency.ScopeInventoryPush, key, hash, owner, idempotency.DefaultLease)
 	decision, rec, _ := idempotency.Classify(res, err)
 	switch decision {

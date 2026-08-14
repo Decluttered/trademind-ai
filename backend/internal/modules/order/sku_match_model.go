@@ -52,7 +52,7 @@ type OrderSKUSettings struct {
 	AutoMatchOrderSKUs                bool
 	AutoDeductAfterSKUMatch           bool
 	AutoSyncInventoryAfterOrderDeduct bool
-	AllowManualSkuBindAfterDeduct     bool
+	AllowManualSKUBindAfterDeduct     bool
 }
 
 // MatchOrderItemResult is the outcome of MatchOrderItemToSKU before persistence.
@@ -100,14 +100,14 @@ type SKUMatchListRow struct {
 	ShopName         string `json:"shopName,omitempty"`
 	OrderNo          string `json:"orderNo,omitempty"`
 	LineProductTitle string `json:"productTitle,omitempty"`
-	LocalSkuCode     string `json:"localSkuCode,omitempty"`
+	LocalSKUCode     string `json:"localSkuCode,omitempty"`
 }
 
 // SKUMatchDetailDTO extends match rows with optional candidate SKUs (ambiguous).
 type SKUMatchDetailDTO struct {
 	OrderItemSKUMatch
 	ProductTitle  string            `json:"productTitle,omitempty"`
-	LocalSkuCode  string            `json:"localSkuCode,omitempty"`
+	LocalSKUCode  string            `json:"localSkuCode,omitempty"`
 	CandidateSKUs []SKUCandidateDTO `json:"candidateSkus,omitempty"`
 }
 

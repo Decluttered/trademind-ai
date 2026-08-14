@@ -17,11 +17,25 @@ describe('TradeMind API contract registry', () => {
       new Set([
         'GET /api/v1/auth/profile',
         'GET /api/v1/image/providers',
+        'GET /api/v1/p10/status',
+        'POST /api/v1/operation-tasks',
+        'GET /api/v1/operation-tasks/:id',
+        'POST /api/v1/operation-tasks/:id/approve',
+        'POST /api/v1/operation-tasks/:id/execute',
+        'GET /api/v1/observability/overview',
+        'GET /api/v1/observability/alerts',
+        'POST /api/v1/observability/alerts/:id/ack',
+        'POST /api/v1/observability/alerts/:id/silence',
         'GET /api/v1/products/:id',
         'GET /api/v1/products/:id/readiness',
         'GET /api/v1/products/:id/publications',
         'GET /api/v1/product-publications/:id/douyin/sku-bindings',
         'GET /api/v1/products/:id/publish-targets',
+        'POST /api/v1/products/:id/publish-targets/create-drafts',
+        'POST /api/v1/product-publish/batch-targets/create-drafts',
+        'POST /api/v1/product-publish/tasks/:id/retry',
+        'POST /api/v1/product-publish/tasks/:id/recover-douyin-draft',
+        'POST /api/v1/product-publish/batches/:id/retry-failed',
         'POST /api/v1/products/:id/platform-configs/douyin_shop/create-draft',
         'POST /api/v1/products/:id/publish',
         'GET /api/v1/customer/dashboard',
@@ -45,6 +59,22 @@ describe('TradeMind API contract registry', () => {
     expect(readiness?.query).toEqual(['platform', 'shopId', 'mode']);
   });
 
+  it('keeps Douyin writes exclusive to approved operation tasks', () => {
+    const endpoint = (key: string) => contracts.endpoints.find((item) => routeKey(item) === key) as {
+      fixedError?: { httpStatus: number; dataErrorCode: string };
+      douyinPolicy?: string;
+    } | undefined;
+    expect(endpoint('POST /api/v1/products/:id/platform-configs/douyin_shop/create-draft')?.fixedError).toEqual({
+      httpStatus: 409,
+      dataErrorCode: 'DOUYIN_OPERATION_TASK_REQUIRED',
+    });
+    expect(endpoint('POST /api/v1/products/:id/publish')?.douyinPolicy).toBe('reject_before_task_write');
+    expect(endpoint('POST /api/v1/products/:id/publish-targets/create-drafts')?.douyinPolicy).toBe('reject_entire_request_before_write');
+    expect(endpoint('POST /api/v1/product-publish/batch-targets/create-drafts')?.douyinPolicy).toBe('reject_entire_request_before_idempotency_or_batch_write');
+    expect(endpoint('POST /api/v1/product-publish/tasks/:id/retry')?.douyinPolicy).toBe('reject_without_task_state_change');
+    expect(endpoint('POST /api/v1/product-publish/batches/:id/retry-failed')?.douyinPolicy).toBe('reject_entire_batch_without_task_state_change');
+  });
+
   it('requires fail-closed customer auto-reply and idempotent send fields', () => {
     const setting = contracts.endpoints.find((item) => routeKey(item) === 'PUT /api/v1/customer/auto-reply-setting');
     const policy = contracts.endpoints.find((item) => routeKey(item) === 'PUT /api/v1/customer/shops/:shopId/auto-reply-policy');
@@ -63,8 +93,69 @@ describe('TradeMind API contract registry', () => {
     expect(send?.requestBody).toEqual(['reply', 'clientMessageId', 'suggestionId']);
   });
 
+  it('defines the reviewed production draft operation task contract', () => {
+    const runtimeStatus = contracts.endpoints.find((item) => routeKey(item) === 'GET /api/v1/p10/status');
+    const create = contracts.endpoints.find((item) => routeKey(item) === 'POST /api/v1/operation-tasks');
+    const approve = contracts.endpoints.find((item) => routeKey(item) === 'POST /api/v1/operation-tasks/:id/approve');
+    const execute = contracts.endpoints.find((item) => routeKey(item) === 'POST /api/v1/operation-tasks/:id/execute');
+
+    expect(runtimeStatus?.requiredResponseFields).toEqual(['providerWriteReady', 'productionReady']);
+    expect(create?.requestBody).toEqual(['sourceType', 'sourceReference', 'taskType', 'platform', 'title', 'summary', 'payload', 'priority']);
+    expect(approve?.requestBody).toEqual(['draftVersion', 'draftPayloadHash', 'reason', 'comment', 'expectedTaskRevision']);
+    expect(execute?.requestBody).toEqual(['expectedTaskRevision', 'adapterMode']);
+  });
+
+  it('limits manual Douyin reconciliation to unknown results', () => {
+    const recover = contracts.endpoints.find(
+      (item) => routeKey(item) === 'POST /api/v1/product-publish/tasks/:id/recover-douyin-draft',
+    ) as {
+      requestBody?: string[];
+      requiredPermission?: string;
+      douyinPolicy?: string;
+      fixedStateError?: { httpStatus: number; dataErrorCode: string };
+    } | undefined;
+
+    expect(recover?.requestBody).toEqual([]);
+    expect(recover?.requiredPermission).toBe('operationtask.execute');
+    expect(recover?.douyinPolicy).toBe('read_only_reconcile_result_unknown_only');
+    expect(recover?.fixedStateError).toEqual({
+      httpStatus: 409,
+      dataErrorCode: 'DOUYIN_RECOVERY_NOT_ALLOWED',
+    });
+  });
+
+  it('defines filtered system alert queries and audited silence fields', () => {
+    const overview = contracts.endpoints.find(
+      (item) => routeKey(item) === 'GET /api/v1/observability/overview',
+    );
+    const list = contracts.endpoints.find(
+      (item) => routeKey(item) === 'GET /api/v1/observability/alerts',
+    );
+    const acknowledge = contracts.endpoints.find(
+      (item) => routeKey(item) === 'POST /api/v1/observability/alerts/:id/ack',
+    );
+    const silence = contracts.endpoints.find(
+      (item) => routeKey(item) === 'POST /api/v1/observability/alerts/:id/silence',
+    );
+
+    expect(overview?.requiredResponseFields).toEqual([
+      'overallStatus',
+      'metrics',
+      'alerts',
+      'evaluation',
+      'slo',
+      'telemetry',
+      'environment',
+      'timestamp',
+    ]);
+
+    expect(list?.query).toEqual(['page', 'pageSize', 'status', 'severity', 'module']);
+    expect(acknowledge?.requestBody).toEqual([]);
+    expect(silence?.requestBody).toEqual(['reason', 'durationHours']);
+  });
+
   it('marks every protected Admin endpoint as authenticated', () => {
-    expect(contracts.endpoints).toHaveLength(16);
+    expect(contracts.endpoints).toHaveLength(30);
     expect(contracts.endpoints.every((endpoint) => endpoint.auth === true)).toBe(true);
   });
 });

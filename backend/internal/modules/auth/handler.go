@@ -14,8 +14,8 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/authcookie"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/ctxkey"
-	"github.com/trademind-ai/trademind/backend/internal/pkg/p7diag"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/response"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/runtimediag"
 	"github.com/trademind-ai/trademind/backend/internal/rdb"
 	"gorm.io/gorm"
 )
@@ -40,40 +40,40 @@ type loginBody struct {
 // Login POST /api/v1/auth/login
 func (h *Handler) Login(c *gin.Context) {
 	totalStart := time.Now()
-	totalOutcome := p7diag.OutcomeSuccess
+	totalOutcome := runtimediag.OutcomeSuccess
 	defer func() {
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "total", totalOutcome, totalStart)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "total", totalOutcome, totalStart)
 	}()
 	if h == nil || h.LoginSvc == nil {
-		totalOutcome = p7diag.OutcomeError
+		totalOutcome = runtimediag.OutcomeError
 		response.Fail(c, 500, response.CodeInternalError, "auth unavailable")
 		return
 	}
 	var body loginBody
 	stageStart := time.Now()
 	if err := c.ShouldBindJSON(&body); err != nil {
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "request_read", p7diag.OutcomeExpectedRejection, stageStart)
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "request_decode", p7diag.OutcomeExpectedRejection, stageStart)
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "json_decode", p7diag.OutcomeExpectedRejection, stageStart)
-		totalOutcome = p7diag.OutcomeExpectedRejection
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "request_read", runtimediag.OutcomeExpectedRejection, stageStart)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "request_decode", runtimediag.OutcomeExpectedRejection, stageStart)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "json_decode", runtimediag.OutcomeExpectedRejection, stageStart)
+		totalOutcome = runtimediag.OutcomeExpectedRejection
 		response.Fail(c, 400, response.CodeBadRequest, "invalid body")
 		return
 	}
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "request_read", p7diag.OutcomeSuccess, stageStart)
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "request_decode", p7diag.OutcomeSuccess, stageStart)
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "json_decode", p7diag.OutcomeSuccess, stageStart)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "request_read", runtimediag.OutcomeSuccess, stageStart)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "request_decode", runtimediag.OutcomeSuccess, stageStart)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "json_decode", runtimediag.OutcomeSuccess, stageStart)
 	stageStart = time.Now()
 	account := strings.TrimSpace(body.Account)
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "input_normalize", p7diag.OutcomeSuccess, stageStart)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "input_normalize", runtimediag.OutcomeSuccess, stageStart)
 	if account == "" {
-		totalOutcome = p7diag.OutcomeExpectedRejection
+		totalOutcome = runtimediag.OutcomeExpectedRejection
 		response.Fail(c, 400, response.CodeBadRequest, "account is required")
 		return
 	}
 	res, err := h.LoginSvc.Login(c.Request.Context(), account, body.Password, c.ClientIP(), c.Request.UserAgent())
 	if err != nil {
-		totalOutcome = p7diag.OutcomeExpectedRejection
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "invalid_decision", p7diag.OutcomeExpectedRejection, time.Now())
+		totalOutcome = runtimediag.OutcomeExpectedRejection
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "invalid_decision", runtimediag.OutcomeExpectedRejection, time.Now())
 		if h.OpLog != nil {
 			stageStart = time.Now()
 			_ = h.OpLog.Write(c, operationlog.WriteOpts{
@@ -84,9 +84,9 @@ func (h *Handler) Login(c *gin.Context) {
 				Message:  err.Error(),
 			})
 			// security_audit / operation_log / transaction_* stages are emitted inside OpLog.Write.
-			p7diag.ObserveAuditWrite(p7diag.RouteAuthInvalidLogin, "security_audit", p7diag.OutcomeSuccess, stageStart)
-			p7diag.Count(p7diag.RouteAuthInvalidLogin, "securityAuditWriteCount", 1)
-			p7diag.Count(p7diag.RouteAuthInvalidLogin, "operationLogWriteCount", 1)
+			runtimediag.ObserveAuditWrite(runtimediag.RouteAuthInvalidLogin, "security_audit", runtimediag.OutcomeSuccess, stageStart)
+			runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "securityAuditWriteCount", 1)
+			runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "operationLogWriteCount", 1)
 		}
 		code := response.CodeUnauthorized
 		msg := err.Error()
@@ -95,8 +95,8 @@ func (h *Handler) Login(c *gin.Context) {
 		}
 		stageStart = time.Now()
 		response.Fail(c, 401, code, msg)
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "response_encode", p7diag.OutcomeExpectedRejection, stageStart)
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "response_write", p7diag.OutcomeExpectedRejection, stageStart)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "response_encode", runtimediag.OutcomeExpectedRejection, stageStart)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "response_write", runtimediag.OutcomeExpectedRejection, stageStart)
 		return
 	}
 	uid, perr := uuid.Parse(res.User.ID)
@@ -109,7 +109,7 @@ func (h *Handler) Login(c *gin.Context) {
 			Resource:    "auth",
 			Status:      "success",
 		})
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "operation_log", p7diag.OutcomeSuccess, stageStart)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "operation_log", runtimediag.OutcomeSuccess, stageStart)
 	}
 	out := gin.H{
 		"token":     res.Token,
@@ -132,8 +132,8 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 	stageStart = time.Now()
 	response.OK(c, out)
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "response_encode", p7diag.OutcomeSuccess, stageStart)
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "response_write", p7diag.OutcomeSuccess, stageStart)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "response_encode", runtimediag.OutcomeSuccess, stageStart)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "response_write", runtimediag.OutcomeSuccess, stageStart)
 }
 
 // Profile GET /api/v1/auth/profile

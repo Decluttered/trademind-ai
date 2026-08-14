@@ -41,7 +41,7 @@
 .\scripts\seed-demo-data.ps1 -ApiBase https://<pre-api-domain> -OutFile docs/demo-dataset.preprod.json
 ```
 
-运行输出仅用于当次人工验收，不提交到 Git。页面、状态和真实业务链路按 [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md) 人工签收。
+运行输出仅用于当次人工验收，不提交到 Git。页面、状态和真实业务链路按 [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md) 人工签收。
 
 ## 变更记录
 

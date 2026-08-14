@@ -16,7 +16,10 @@ on:
       - ".env.example"
       - "**/Dockerfile"
       - "**/.dockerignore"
+      - "deploy/IMAGE_VERSION"
+      - "scripts/release/validate-image-version.sh"
       - ".github/workflows/docker.yml"
+      - ".github/workflows/container-images.yml"
   push:
     branches:
       - main
@@ -29,7 +32,10 @@ on:
       - ".env.example"
       - "**/Dockerfile"
       - "**/.dockerignore"
+      - "deploy/IMAGE_VERSION"
+      - "scripts/release/validate-image-version.sh"
       - ".github/workflows/docker.yml"
+      - ".github/workflows/container-images.yml"
 
 jobs:
   compose-config:
@@ -42,5 +48,11 @@ jobs:
       - name: Prepare env file
         run: cp .env.example .env
 
+      - name: Validate image version
+        run: bash scripts/release/validate-image-version.sh >/dev/null
+
       - name: Validate full compose file
+        env:
+          # Compose interpolation only; this job validates configuration and starts no services.
+          COLLECTOR_SERVICE_TOKEN: ci-compose-validation-token-0123456789abcdef0123456789abcdef
         run: docker compose -f docker-compose.full.yml config

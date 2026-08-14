@@ -9,7 +9,7 @@ import (
 
 const ErrCodeProductionTenantFallbackForbidden = "PRODUCTION_TENANT_FALLBACK_FORBIDDEN"
 
-// TenantConfig holds Phase P4.1 tenant isolation settings.
+// TenantConfig holds tenant isolation settings.
 type TenantConfig struct {
 	EnableDevDefaultTenant  bool
 	DevDefaultTenantID      int64

@@ -105,7 +105,7 @@ func (errGeneric) Error() string { return "network timeout" }
 
 func errGenericSend() error { return errGeneric{} }
 
-func TestHumanSkuMatchStatusNoRawCodes(t *testing.T) {
+func TestHumanSKUMatchStatusNoRawCodes(t *testing.T) {
 	cases := map[string]string{
 		"unmatched":    "未匹配",
 		"ambiguous":    "匹配歧义",
@@ -113,7 +113,7 @@ func TestHumanSkuMatchStatusNoRawCodes(t *testing.T) {
 		"matched":      "已匹配",
 	}
 	for in, want := range cases {
-		if got := humanSkuMatchStatus(in); got != want {
+		if got := humanSKUMatchStatus(in); got != want {
 			t.Fatalf("%s: expected %q, got %q", in, want, got)
 		}
 	}

@@ -80,7 +80,7 @@ Key 构造见 `scope.go` + `keys.go`，**不得嵌入密钥或 PII**：
 
 ## 索引与迁移
 
-P2 迁移（`migrate_p2.go`）创建表及索引：`ix_idempotency_status`、`ix_idempotency_locked_until`。
+可靠性迁移（`migrate_reliability.go`）创建表及索引：`ix_idempotency_status`、`ix_idempotency_locked_until`。
 
 ## 使用约定
 

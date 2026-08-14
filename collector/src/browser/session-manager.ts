@@ -1,4 +1,4 @@
-import { chromium, type BrowserContext, type Page } from 'playwright';
+import { chromium, type BrowserContext, type Page } from "playwright";
 import {
   countAuthCookies,
   evaluateAuthPage,
@@ -6,7 +6,7 @@ import {
   logAuthDebug,
   resolveAuthResult,
   type AuthCheckStatus,
-} from '../providers/source1688/auth-detect.js';
+} from "../providers/source1688/auth-detect.js";
 import {
   buildPinduoduoAuthCheckResult,
   evaluatePinduoduoAuthPage,
@@ -14,32 +14,36 @@ import {
   logPinduoduoAuthDebug,
   resolvePinduoduoAuthResult,
   type PinduoduoAuthCheckResult,
-} from '../providers/sourcePinduoduo/auth-detect.js';
+} from "../providers/sourcePinduoduo/auth-detect.js";
 import {
   resolvePinduoduoAuthCheckPlan,
   resolvePinduoduoOpenLoginUrl,
-} from '../providers/sourcePinduoduo/login-url.js';
-import { PINDUODUO_PROFILE_KEY } from '../providers/sourcePinduoduo/profile.js';
+} from "../providers/sourcePinduoduo/login-url.js";
+import { PINDUODUO_PROFILE_KEY } from "../providers/sourcePinduoduo/profile.js";
 import {
   buildTaobaoAuthCheckResult,
   evaluateTaobaoAuthPage,
   logTaobaoAuthDebug,
   resolveTaobaoAuthResult,
   type TaobaoAuthCheckResult,
-} from '../providers/sourceTaobaoTmall/auth-detect.js';
-import { TAOBAO_TMALL_PROFILE_KEY } from '../providers/sourceTaobaoTmall/profile.js';
+} from "../providers/sourceTaobaoTmall/auth-detect.js";
+import { TAOBAO_TMALL_PROFILE_KEY } from "../providers/sourceTaobaoTmall/profile.js";
 import {
   ensureBrowserDataDirs,
   get1688UserDataDir,
   getPinduoduoUserDataDir,
   getTaobaoTmallUserDataDir,
-} from './browser-paths.js';
-import { PAGE_EVALUATE_POLYFILL } from './evaluate-in-page.js';
-import { getBrowserHeadless, getDefaultNavigationTimeoutMs } from '../config/env.js';
+} from "./browser-paths.js";
+import { PAGE_EVALUATE_POLYFILL } from "./evaluate-in-page.js";
+import {
+  getBrowserHeadless,
+  getDefaultNavigationTimeoutMs,
+} from "../config/env.js";
+import { installPublicNetworkGuard } from "../security/public-url.js";
 
-const PROVIDER_1688 = '1688';
-const PROVIDER_PINDUODUO = 'pinduoduo';
-const PROVIDER_TAOBAO_TMALL = 'taobao_tmall';
+const PROVIDER_1688 = "1688";
+const PROVIDER_PINDUODUO = "pinduoduo";
+const PROVIDER_TAOBAO_TMALL = "taobao_tmall";
 
 export { PINDUODUO_PROFILE_KEY, TAOBAO_TMALL_PROFILE_KEY };
 
@@ -64,31 +68,36 @@ export type AuthStatus1688 = {
 function defaultUserAgent(): string {
   return (
     process.env.COLLECTOR_USER_AGENT ??
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   );
 }
 
 const PDD_LOGIN_VIEWPORT = { width: 1280, height: 900 };
 
-function persistentContextOptions(headless: boolean, provider: string = PROVIDER_1688) {
+function persistentContextOptions(
+  headless: boolean,
+  provider: string = PROVIDER_1688,
+) {
   if (provider === PROVIDER_PINDUODUO) {
     return {
       headless,
-      locale: 'zh-CN' as const,
+      locale: "zh-CN" as const,
       userAgent: defaultUserAgent(),
       args: [
-        '--disable-blink-features=AutomationControlled',
+        "--disable-blink-features=AutomationControlled",
         `--window-size=${PDD_LOGIN_VIEWPORT.width},${PDD_LOGIN_VIEWPORT.height}`,
       ],
       viewport: PDD_LOGIN_VIEWPORT,
+      serviceWorkers: "block" as const,
     };
   }
   return {
     headless,
-    locale: 'zh-CN' as const,
+    locale: "zh-CN" as const,
     userAgent: defaultUserAgent(),
-    args: ['--disable-blink-features=AutomationControlled'],
+    args: ["--disable-blink-features=AutomationControlled"],
     viewport: { width: 1280, height: 800 },
+    serviceWorkers: "block" as const,
   };
 }
 
@@ -161,6 +170,7 @@ export class BrowserSessionManager {
       persistentContextOptions(wantHeadless, provider),
     );
     await context.addInitScript(PAGE_EVALUATE_POLYFILL);
+    await installPublicNetworkGuard(context);
     context.setDefaultNavigationTimeout(getDefaultNavigationTimeoutMs());
     context.setDefaultTimeout(getDefaultNavigationTimeoutMs());
     this.contexts.set(provider, context);
@@ -192,27 +202,31 @@ export class BrowserSessionManager {
   }> {
     const loginUrl =
       provider === PROVIDER_PINDUODUO
-        ? 'https://mobile.yangkeduo.com/'
+        ? "https://mobile.yangkeduo.com/"
         : provider === PROVIDER_TAOBAO_TMALL
-          ? 'https://www.taobao.com/'
-          : 'https://www.1688.com/';
+          ? "https://www.taobao.com/"
+          : "https://www.1688.com/";
     const alreadyMsg =
       provider === PROVIDER_PINDUODUO
-        ? '采集浏览器已打开，请在窗口中完成拼多多登录或安全验证'
+        ? "采集浏览器已打开，请在窗口中完成拼多多登录或安全验证"
         : provider === PROVIDER_TAOBAO_TMALL
-          ? '采集浏览器已打开，请在窗口中完成淘宝/天猫登录或安全验证'
-          : '采集浏览器已打开，请在窗口中完成 1688 登录或安全验证';
+          ? "采集浏览器已打开，请在窗口中完成淘宝/天猫登录或安全验证"
+          : "采集浏览器已打开，请在窗口中完成 1688 登录或安全验证";
     const openedMsg =
       provider === PROVIDER_PINDUODUO
-        ? '已打开拼多多采集浏览器。若跳转到微信页面，请用微信扫码完成授权（系统不保存账号密码），完成后点击「重新检测」。'
+        ? "已打开拼多多采集浏览器。若跳转到微信页面，请用微信扫码完成授权（系统不保存账号密码），完成后点击「重新检测」。"
         : provider === PROVIDER_TAOBAO_TMALL
-          ? '已打开淘宝/天猫采集浏览器。请在窗口中完成登录或安全验证（系统不保存账号密码），完成后点击「重新检测」。'
-          : '已打开采集浏览器，请在此窗口完成 1688 登录与安全验证（普通 Chrome/Edge 登录无效）';
+          ? "已打开淘宝/天猫采集浏览器。请在窗口中完成登录或安全验证（系统不保存账号密码），完成后点击「重新检测」。"
+          : "已打开采集浏览器，请在此窗口完成 1688 登录与安全验证（普通 Chrome/Edge 登录无效）";
 
     return this.runLocked(async () => {
       const userDataDir = this.providerUserDataDir(provider);
       const existing = this.contexts.get(provider);
-      if (this.loginSessionActive.has(provider) && existing && !existing.isClosed()) {
+      if (
+        this.loginSessionActive.has(provider) &&
+        existing &&
+        !existing.isClosed()
+      ) {
         const page = existing.pages()[0] ?? (await existing.newPage());
         await page.bringToFront().catch(() => undefined);
         return {
@@ -223,10 +237,12 @@ export class BrowserSessionManager {
       }
 
       this.loginSessionActive.add(provider);
-      const context = await this.getOrCreateProviderContext(provider, { headless: false });
+      const context = await this.getOrCreateProviderContext(provider, {
+        headless: false,
+      });
       const page = context.pages()[0] ?? (await context.newPage());
       await page.goto(loginUrl, {
-        waitUntil: 'domcontentloaded',
+        waitUntil: "domcontentloaded",
         timeout: getDefaultNavigationTimeoutMs(),
       });
 
@@ -245,33 +261,40 @@ export class BrowserSessionManager {
   }> {
     const { url, hasContext } = resolvePinduoduoOpenLoginUrl(contextUrl);
     const openedHint = hasContext
-      ? '已打开目标商品页，请在采集浏览器中完成登录或微信授权，完成后点击「重新检测」。'
-      : '已打开拼多多批发入口。建议从失败任务或采集弹窗打开具体商品链接登录；若跳转微信请扫码授权。';
+      ? "已打开目标商品页，请在采集浏览器中完成登录或微信授权，完成后点击「重新检测」。"
+      : "已打开拼多多批发入口。建议从失败任务或采集弹窗打开具体商品链接登录；若跳转微信请扫码授权。";
     return this.runLocked(async () => {
       const userDataDir = getPinduoduoUserDataDir();
       const existing = this.contexts.get(PROVIDER_PINDUODUO);
-      if (this.loginSessionActive.has(PROVIDER_PINDUODUO) && existing && !existing.isClosed()) {
+      if (
+        this.loginSessionActive.has(PROVIDER_PINDUODUO) &&
+        existing &&
+        !existing.isClosed()
+      ) {
         const page = existing.pages()[0] ?? (await existing.newPage());
         await page.bringToFront().catch(() => undefined);
-        if (page.url() === 'about:blank' || !page.url().startsWith('http')) {
+        if (page.url() === "about:blank" || !page.url().startsWith("http")) {
           await page.goto(url, {
-            waitUntil: 'domcontentloaded',
+            waitUntil: "domcontentloaded",
             timeout: getDefaultNavigationTimeoutMs(),
           });
         }
         return {
           profilePath: userDataDir,
           message:
-            '采集浏览器已打开。若页面跳转到微信，请扫码完成授权后再点击「重新检测」。',
+            "采集浏览器已打开。若页面跳转到微信，请扫码完成授权后再点击「重新检测」。",
           alreadyOpen: true,
         };
       }
 
       this.loginSessionActive.add(PROVIDER_PINDUODUO);
-      const context = await this.getOrCreateProviderContext(PROVIDER_PINDUODUO, { headless: false });
+      const context = await this.getOrCreateProviderContext(
+        PROVIDER_PINDUODUO,
+        { headless: false },
+      );
       const page = context.pages()[0] ?? (await context.newPage());
       await page.goto(url, {
-        waitUntil: 'domcontentloaded',
+        waitUntil: "domcontentloaded",
         timeout: getDefaultNavigationTimeoutMs(),
       });
 
@@ -289,8 +312,12 @@ export class BrowserSessionManager {
       const userDataDir = get1688UserDataDir();
       const timeoutMs = getDefaultNavigationTimeoutMs();
 
-      const headless = this.loginSessionActive.has(PROVIDER_1688) ? false : true;
-      const context = await this.getOrCreateProviderContext(PROVIDER_1688, { headless });
+      const headless = this.loginSessionActive.has(PROVIDER_1688)
+        ? false
+        : true;
+      const context = await this.getOrCreateProviderContext(PROVIDER_1688, {
+        headless,
+      });
 
       const checkUrls = getAuthCheckUrls();
       let lastDebug: Parameters<typeof logAuthDebug>[0] | null = null;
@@ -301,9 +328,14 @@ export class BrowserSessionManager {
         page.setDefaultTimeout(timeoutMs);
 
         try {
-          await page.goto(checkUrl, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+          await page.goto(checkUrl, {
+            waitUntil: "domcontentloaded",
+            timeout: timeoutMs,
+          });
           await page
-            .waitForLoadState('networkidle', { timeout: Math.min(timeoutMs, 12_000) })
+            .waitForLoadState("networkidle", {
+              timeout: Math.min(timeoutMs, 12_000),
+            })
             .catch(() => undefined);
 
           const signals = await evaluateAuthPage(page);
@@ -348,15 +380,15 @@ export class BrowserSessionManager {
           lastDebug = {
             userDataDir,
             checkUrl,
-            finalUrl: '',
-            pageTitle: '',
+            finalUrl: "",
+            pageTitle: "",
             loggedInHit: false,
             notLoggedInHit: false,
             verificationHit: /verify|captcha|验证/i.test(err),
             pageAnomaly: true,
             cookieCount: 0,
             authCookieCount: 0,
-            result: 'unknown',
+            result: "unknown",
             message: `检测页异常：${err}`,
           };
           logAuthDebug(lastDebug);
@@ -365,10 +397,10 @@ export class BrowserSessionManager {
 
       return {
         provider: PROVIDER_1688,
-        status: 'unknown',
+        status: "unknown",
         loggedIn: false,
         needVerification: false,
-        message: lastDebug?.message ?? '检测页异常，请重新检测',
+        message: lastDebug?.message ?? "检测页异常，请重新检测",
         lastCheckedAt,
         profilePath: userDataDir,
       };
@@ -383,8 +415,13 @@ export class BrowserSessionManager {
       const lastCheckedAt = new Date().toISOString();
       const userDataDir = getPinduoduoUserDataDir();
       const timeoutMs = getDefaultNavigationTimeoutMs();
-      const headless = this.loginSessionActive.has(PROVIDER_PINDUODUO) ? false : true;
-      const context = await this.getOrCreateProviderContext(PROVIDER_PINDUODUO, { headless });
+      const headless = this.loginSessionActive.has(PROVIDER_PINDUODUO)
+        ? false
+        : true;
+      const context = await this.getOrCreateProviderContext(
+        PROVIDER_PINDUODUO,
+        { headless },
+      );
       const plan = resolvePinduoduoAuthCheckPlan(contextUrl, settingsTestUrl);
       const checkUrl = plan.checkUrl;
 
@@ -393,9 +430,14 @@ export class BrowserSessionManager {
       page.setDefaultTimeout(timeoutMs);
 
       try {
-        await page.goto(checkUrl, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+        await page.goto(checkUrl, {
+          waitUntil: "domcontentloaded",
+          timeout: timeoutMs,
+        });
         await page
-          .waitForLoadState('networkidle', { timeout: Math.min(timeoutMs, 12_000) })
+          .waitForLoadState("networkidle", {
+            timeout: Math.min(timeoutMs, 12_000),
+          })
           .catch(() => undefined);
 
         const finalUrl = page.url();
@@ -410,7 +452,7 @@ export class BrowserSessionManager {
         });
 
         const message =
-          plan.hint && resolved.status === 'homepage_only'
+          plan.hint && resolved.status === "homepage_only"
             ? plan.hint
             : resolved.message;
 
@@ -466,18 +508,18 @@ export class BrowserSessionManager {
           userDataDir,
           profileKey: PINDUODUO_PROFILE_KEY,
           checkUrl,
-          result: 'unknown',
+          result: "unknown",
           message: err,
         });
         return {
           ...buildPinduoduoAuthCheckResult({
-            status: 'unknown',
+            status: "unknown",
             loggedIn: false,
             needVerification: /verify|captcha|验证/i.test(err),
             message: `检测页异常：${err}`,
             lastCheckedAt,
             checkedUrl: checkUrl,
-            finalUrl: '',
+            finalUrl: "",
             checkMode: plan.mode,
             evidence: emptyEvidence,
           }),
@@ -492,61 +534,80 @@ export class BrowserSessionManager {
     message: string;
     alreadyOpen: boolean;
   }> {
-    const loginUrl = contextUrl?.trim() || 'https://www.taobao.com/';
+    const loginUrl = contextUrl?.trim() || "https://www.taobao.com/";
     return this.runLocked(async () => {
       const userDataDir = getTaobaoTmallUserDataDir();
       const existing = this.contexts.get(PROVIDER_TAOBAO_TMALL);
-      if (this.loginSessionActive.has(PROVIDER_TAOBAO_TMALL) && existing && !existing.isClosed()) {
+      if (
+        this.loginSessionActive.has(PROVIDER_TAOBAO_TMALL) &&
+        existing &&
+        !existing.isClosed()
+      ) {
         const page = existing.pages()[0] ?? (await existing.newPage());
         await page.bringToFront().catch(() => undefined);
         if (contextUrl?.trim()) {
           await page.goto(loginUrl, {
-            waitUntil: 'domcontentloaded',
+            waitUntil: "domcontentloaded",
             timeout: getDefaultNavigationTimeoutMs(),
           });
         }
         return {
           profilePath: userDataDir,
-          message: '采集浏览器已打开，请在窗口中完成淘宝/天猫登录或安全验证',
+          message: "采集浏览器已打开，请在窗口中完成淘宝/天猫登录或安全验证",
           alreadyOpen: true,
         };
       }
 
       this.loginSessionActive.add(PROVIDER_TAOBAO_TMALL);
-      const context = await this.getOrCreateProviderContext(PROVIDER_TAOBAO_TMALL, { headless: false });
+      const context = await this.getOrCreateProviderContext(
+        PROVIDER_TAOBAO_TMALL,
+        { headless: false },
+      );
       const page = context.pages()[0] ?? (await context.newPage());
       await page.goto(loginUrl, {
-        waitUntil: 'domcontentloaded',
+        waitUntil: "domcontentloaded",
         timeout: getDefaultNavigationTimeoutMs(),
       });
 
       return {
         profilePath: userDataDir,
         message: contextUrl?.trim()
-          ? '已打开目标商品页，请在采集浏览器中完成登录或安全验证，完成后点击「重新检测」。'
-          : '已打开淘宝/天猫采集浏览器。建议从失败任务或采集弹窗打开具体商品链接登录。（系统不保存账号密码）',
+          ? "已打开目标商品页，请在采集浏览器中完成登录或安全验证，完成后点击「重新检测」。"
+          : "已打开淘宝/天猫采集浏览器。建议从失败任务或采集弹窗打开具体商品链接登录。（系统不保存账号密码）",
         alreadyOpen: false,
       };
     });
   }
 
-  async checkTaobaoTmallAuthStatus(contextUrl?: string): Promise<AuthStatusTaobaoTmall> {
+  async checkTaobaoTmallAuthStatus(
+    contextUrl?: string,
+  ): Promise<AuthStatusTaobaoTmall> {
     return this.runLocked(async () => {
       const lastCheckedAt = new Date().toISOString();
       const userDataDir = getTaobaoTmallUserDataDir();
       const timeoutMs = getDefaultNavigationTimeoutMs();
-      const headless = this.loginSessionActive.has(PROVIDER_TAOBAO_TMALL) ? false : true;
-      const context = await this.getOrCreateProviderContext(PROVIDER_TAOBAO_TMALL, { headless });
-      const checkUrl = contextUrl?.trim() || 'https://www.taobao.com/';
+      const headless = this.loginSessionActive.has(PROVIDER_TAOBAO_TMALL)
+        ? false
+        : true;
+      const context = await this.getOrCreateProviderContext(
+        PROVIDER_TAOBAO_TMALL,
+        { headless },
+      );
+      const checkUrl = contextUrl?.trim() || "https://www.taobao.com/";
 
       const page = await context.newPage();
       page.setDefaultNavigationTimeout(timeoutMs);
       page.setDefaultTimeout(timeoutMs);
 
       try {
-        await page.goto(checkUrl, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+        await page.goto(checkUrl, {
+          waitUntil: "domcontentloaded",
+          timeout: timeoutMs,
+        });
         await page
-          .waitForLoadState('networkidle', { timeout: Math.min(timeoutMs, 12_000) })
+          .waitForLoadState("networkidle", {
+            timeout: Math.min(timeoutMs, 12_000),
+          })
           .catch(() => undefined);
 
         const finalUrl = page.url();
@@ -582,18 +643,18 @@ export class BrowserSessionManager {
           userDataDir,
           profileKey: TAOBAO_TMALL_PROFILE_KEY,
           checkUrl,
-          result: 'unknown',
+          result: "unknown",
           message: err,
         });
         return {
           ...buildTaobaoAuthCheckResult({
-            status: 'unknown',
+            status: "unknown",
             loggedIn: false,
             needVerification: /verify|captcha|验证/i.test(err),
             message: `检测页异常：${err}`,
             lastCheckedAt,
             checkedUrl: checkUrl,
-            finalUrl: '',
+            finalUrl: "",
           }),
           profilePath: userDataDir,
         };

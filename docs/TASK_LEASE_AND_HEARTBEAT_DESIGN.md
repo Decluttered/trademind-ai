@@ -21,7 +21,7 @@
 | `heartbeat_at` | timestamptz | 最近一次续租时间 |
 | `execution_id` | uuid (varchar36) | 本次 claim 生成的执行身份 |
 
-迁移：`database/migrate_p2_1.go`（PostgreSQL `ADD COLUMN IF NOT EXISTS` + 索引）。
+迁移：`database/migrate_task_execution_tracking.go`（PostgreSQL `ADD COLUMN IF NOT EXISTS` + 索引）。
 
 ## API（`tasklease` 包）
 

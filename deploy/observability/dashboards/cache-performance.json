@@ -1,5 +1,5 @@
 {
-  "title": "P7 Cache Performance",
+  "title": "Cache Performance",
   "tags": ["trademind", "p7", "cache"],
   "panels": [
     { "title": "Cache Hit Rate", "type": "timeseries" },

@@ -136,7 +136,7 @@ func (s *Service) maybePauseTaobaoTmallBatchOnAuthFailure(ctx context.Context, t
 		if !s.taobaoTmallBatchPauseOnLogin(ctx) {
 			return
 		}
-		s.cancelRemainingBatchTasks(ctx, *task.BatchID, "batch paused: login required")
+		s.cancelRemainingBatchTasks(ctx, task.TenantID, *task.BatchID, "batch paused: login required")
 		if s.OpLog != nil {
 			_ = s.OpLog.WriteBackground(ctx, operationlog.WriteOpts{
 				AdminUserID: task.CreatedBy,
@@ -151,7 +151,7 @@ func (s *Service) maybePauseTaobaoTmallBatchOnAuthFailure(ctx context.Context, t
 		if !s.taobaoTmallBatchPauseOnVerify(ctx) {
 			return
 		}
-		s.cancelRemainingBatchTasks(ctx, *task.BatchID, "batch paused: verification required")
+		s.cancelRemainingBatchTasks(ctx, task.TenantID, *task.BatchID, "batch paused: verification required")
 		if s.OpLog != nil {
 			_ = s.OpLog.WriteBackground(ctx, operationlog.WriteOpts{
 				AdminUserID: task.CreatedBy,
@@ -165,7 +165,7 @@ func (s *Service) maybePauseTaobaoTmallBatchOnAuthFailure(ctx context.Context, t
 	}
 }
 
-func (s *Service) cancelRemainingBatchTasks(ctx context.Context, batchID uuid.UUID, reason string) {
+func (s *Service) cancelRemainingBatchTasks(ctx context.Context, tenantID int64, batchID uuid.UUID, reason string) {
 	if s == nil || s.DB == nil {
 		return
 	}
@@ -173,14 +173,14 @@ func (s *Service) cancelRemainingBatchTasks(ctx context.Context, batchID uuid.UU
 	msg := truncateRunes(strings.TrimSpace(reason), 500)
 	var pending []CollectTask
 	if err := s.DB.WithContext(ctx).
-		Where("batch_id = ? AND status IN ?", batchID, []string{StatusPending, StatusRetrying}).
+		Where("tenant_id = ? AND batch_id = ? AND status IN ?", tenantID, batchID, []string{StatusPending, StatusRetrying}).
 		Find(&pending).Error; err != nil {
 		return
 	}
 	for i := range pending {
 		t := pending[i]
 		up := s.DB.WithContext(ctx).Model(&CollectTask{}).
-			Where("id = ? AND status IN ?", t.ID, []string{StatusPending, StatusRetrying}).
+			Where("id = ? AND tenant_id = ? AND status IN ?", t.ID, tenantID, []string{StatusPending, StatusRetrying}).
 			Updates(map[string]interface{}{
 				"status":            StatusCancelled,
 				"error_message":     msg,

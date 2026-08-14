@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -16,9 +15,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
-	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
-	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
-	"github.com/trademind-ai/trademind/backend/internal/modules/worker"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/tasklease"
 	platformdouyin "github.com/trademind-ai/trademind/backend/internal/providers/platform/douyinshop"
 	"gorm.io/datatypes"
@@ -34,189 +30,22 @@ type DouyinCreateDraftBody struct {
 }
 
 type douyinDraftSnapshot struct {
-	PublicationID uuid.UUID      `json:"publicationId"`
-	ConfigID      string         `json:"configId,omitempty"`
-	PublishMode   string         `json:"publishMode"`
-	MappingHash   string         `json:"mappingHash,omitempty"`
-	Mapping       map[string]any `json:"mappingSnapshot,omitempty"`
+	PublicationID      uuid.UUID                                 `json:"publicationId"`
+	ConfigID           string                                    `json:"configId,omitempty"`
+	PublishMode        string                                    `json:"publishMode"`
+	MappingHash        string                                    `json:"mappingHash,omitempty"`
+	Mapping            map[string]any                            `json:"mappingSnapshot,omitempty"`
+	FrozenRequest      *platformdouyin.CreateProductDraftRequest `json:"frozenRequest,omitempty"`
+	FrozenMapping      *product.DouyinDraftMapping               `json:"frozenMapping,omitempty"`
+	ExecutionAttemptID *uuid.UUID                                `json:"executionAttemptId,omitempty"`
+	OperationTaskID    *uuid.UUID                                `json:"operationTaskId,omitempty"`
+	FrozenPayloadHash  string                                    `json:"frozenPayloadHash,omitempty"`
 }
 
-// CreateDouyinDraftTask validates readiness, builds payload, persists task and runs worker.
+// CreateDouyinDraftTask is retained for API compatibility. Real Douyin writes
+// must be created from a frozen and approved operation task.
 func (s *Service) CreateDouyinDraftTask(c *gin.Context, productID uuid.UUID, body DouyinCreateDraftBody, adminID *uuid.UUID) (*TaskDTO, error) {
-	if s == nil || s.DB == nil || s.Shops == nil {
-		return nil, fmt.Errorf("product publish unavailable")
-	}
-	ctx := c.Request.Context()
-	publishMode := strings.TrimSpace(body.PublishMode)
-	if publishMode == "" {
-		publishMode = PublishModeSaveAsPlatformDraft
-	}
-	if publishMode != PublishModeSaveAsPlatformDraft {
-		return nil, fmt.Errorf("only save_as_platform_draft is supported in this phase")
-	}
-	sid, err := uuid.Parse(strings.TrimSpace(body.ShopID))
-	if err != nil || sid == uuid.Nil {
-		return nil, fmt.Errorf("invalid shopId")
-	}
-
-	var cfg product.ProductPlatformPublishConfig
-	if err := s.DB.WithContext(ctx).Where("product_id = ? AND platform = ?", productID, "douyin_shop").First(&cfg).Error; err != nil {
-		return nil, fmt.Errorf("douyin mapping config not found")
-	}
-	if cfg.ShopID == nil || *cfg.ShopID != sid {
-		return nil, fmt.Errorf("douyin shopId does not match saved config")
-	}
-	if cfg.LastMappedAt == nil || strings.TrimSpace(cfg.MappedTitle) == "" {
-		return nil, fmt.Errorf("douyin mapping does not exist")
-	}
-
-	shopRow, _, err := s.Shops.PlainAuthForProviderCtx(ctx, sid)
-	if err != nil || shopRow == nil {
-		return nil, fmt.Errorf("shop not found")
-	}
-	if strings.TrimSpace(shopRow.AuthStatus) != shop.AuthAuthorized {
-		return nil, fmt.Errorf("shop is not authorized")
-	}
-
-	var readinessSnap *productcheck.CheckProductReadinessResult
-	if s.Readiness != nil {
-		rres, err := s.Readiness.CheckProductReadiness(ctx, productcheck.CheckProductReadinessRequest{
-			ProductID: productID,
-			Platform:  "douyin_shop",
-			ShopID:    &sid,
-			Mode:      "publish",
-		})
-		if err != nil {
-			return nil, err
-		}
-		if rres.ErrorCount > 0 {
-			return nil, &productcheck.BlockedError{Result: rres}
-		}
-		if rres.WarningCount > 0 {
-			readinessSnap = rres
-		}
-	}
-
-	buildRes, err := BuildDouyinProductPayload(ctx, s.DB, productID, cfg.ID.String())
-	if err != nil {
-		return nil, err
-	}
-	if len(buildRes.Errors) > 0 {
-		return nil, fmt.Errorf("douyin payload invalid: %s", buildRes.Errors[0].Message)
-	}
-
-	running := []string{TaskPending, TaskRunning}
-	var existing ProductPublishTask
-	dupQ := s.DB.WithContext(ctx).Where(
-		"product_id = ? AND shop_id = ? AND platform = ? AND publish_mode = ? AND status IN ?",
-		productID, sid, "douyin_shop", publishMode, running,
-	)
-	if err := dupQ.First(&existing).Error; err == nil {
-		return nil, fmt.Errorf("a running douyin draft task already exists")
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
-	}
-
-	var priorPub ProductPublication
-	if err := s.DB.WithContext(ctx).Where("product_id = ? AND shop_id = ? AND platform = ? AND external_product_id <> ''",
-		productID, sid, "douyin_shop").Order("updated_at DESC").First(&priorPub).Error; err == nil {
-		if !body.Force {
-			return nil, fmt.Errorf("platform product already exists; confirm to create again")
-		}
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
-	}
-
-	mapping := product.DouyinDraftMappingFromConfig(cfg)
-	mapSnap, _ := json.Marshal(mapping)
-	checkSnap, _ := json.Marshal(readinessSnap)
-	payloadSnap, _ := json.Marshal(sanitizeDouyinPayloadForDisplay(buildRes.Payload))
-
-	pubRow := ProductPublication{
-		ProductID:     productID,
-		ShopID:        sid,
-		Platform:      "douyin_shop",
-		Status:        StatusDraft,
-		PublishStatus: StatusDraftCreated,
-		Title:         strings.TrimSpace(buildRes.Payload.Name),
-		Currency:      "CNY",
-		CreatedBy:     adminID,
-	}
-	if err := s.DB.WithContext(ctx).Create(&pubRow).Error; err != nil {
-		return nil, err
-	}
-
-	snap := douyinDraftSnapshot{
-		PublicationID: pubRow.ID,
-		ConfigID:      cfg.ID.String(),
-		PublishMode:   publishMode,
-		MappingHash:   douyinMappingContentHash(mapping),
-	}
-	snapRaw, _ := json.Marshal(snap)
-
-	task := ProductPublishTask{
-		ProductID:       productID,
-		ShopID:          sid,
-		TargetStoreID:   sid,
-		Platform:        "douyin_shop",
-		TaskType:        TaskTypeDouyinDraftCreate,
-		Status:          TaskPending,
-		PublishStatus:   StatusChecking,
-		Mode:            publishMode,
-		PublishMode:     publishMode,
-		Title:           buildRes.Payload.Name,
-		Description:     buildRes.Payload.Description,
-		CheckResult:     datatypes.JSON(checkSnap),
-		MappingSnapshot: datatypes.JSON(mapSnap),
-		PlatformPayload: datatypes.JSON(payloadSnap),
-		Input:           datatypes.JSON(snapRaw),
-		CreatedBy:       adminID,
-	}
-	if err := s.DB.WithContext(ctx).Create(&task).Error; err != nil {
-		return nil, err
-	}
-	_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).Where("id = ?", pubRow.ID).
-		Updates(map[string]any{"publish_task_id": task.ID}).Error
-
-	if s.OpLog != nil {
-		_ = s.OpLog.Write(c, operationlog.WriteOpts{
-			AdminUserID: adminID,
-			Action:      "douyin.product.draft.create.start",
-			Resource:    "product_publish_task",
-			ResourceID:  task.ID.String(),
-			Status:      "success",
-			Message:     fmt.Sprintf("taskId=%s productId=%s shopId=%s", task.ID, productID, sid),
-		})
-	}
-
-	runInline := func() error {
-		return s.ProcessDouyinDraftTask(context.Background(), task.ID, worker.GenerateInlineWorkerID(worker.TypeProductPublish))
-	}
-	if s.QueueEnabled && s.Redis != nil && s.Redis.Client != nil {
-		var enqueueErr error
-		if body.BatchID != nil && *body.BatchID != uuid.Nil {
-			enqueueErr = s.enqueuePublishTaskIdempotent(ctx, c, *body.BatchID, task.ID, task.TaskType)
-		} else {
-			enqueueErr = s.enqueue(ctx, task.ID)
-		}
-		if enqueueErr != nil {
-			slog.Warn("douyin_draft_enqueue_failed_run_inline", "taskId", task.ID.String(), "error", enqueueErr)
-			if err := runInline(); err != nil {
-				return nil, err
-			}
-		}
-	} else if err := runInline(); err != nil {
-		return nil, err
-	}
-
-	out, err := s.GetDTO(ctx, task.TenantID, task.ID)
-	if err != nil {
-		return nil, err
-	}
-	if readinessSnap != nil {
-		out.Readiness = readinessSnap
-	}
-	return &out, nil
+	return nil, ErrDouyinOperationTaskRequired
 }
 
 // ProcessDouyinDraftTask executes douyin_shop save_as_platform_draft publish tasks.
@@ -228,13 +57,25 @@ func (s *Service) ProcessDouyinDraftTask(ctx context.Context, taskID uuid.UUID, 
 	if err != nil || !claimed || taskRow == nil {
 		return err
 	}
+	snap, buildRes, bindingErr := s.validateProductionDouyinTask(ctx, taskRow)
+	if bindingErr != nil {
+		fin := time.Now().UTC()
+		_ = s.finishProductPublishTask(ctx, taskID, workerID, claim, map[string]any{
+			"status": TaskFailed, "publish_status": StatusPubFailed, "error_code": ErrorDouyinOperationTaskRequired,
+			"error_message": ErrDouyinOperationTaskRequired.Error(), "retryable": false, "finished_at": &fin,
+		})
+		if taskRow.ExecutionAttemptID != nil && *taskRow.ExecutionAttemptID != uuid.Nil && s.OperationResults != nil {
+			_ = s.OperationResults.MarkFailed(ctx, *taskRow.ExecutionAttemptID, taskID, ErrorDouyinOperationTaskRequired, ErrDouyinOperationTaskRequired.Error(), false, false, datatypes.JSON([]byte(`{}`)))
+		}
+		return bindingErr
+	}
 	if err := s.guardDouyinWorker(ctx, taskID, taskRow.ShopID, platformdouyin.FeatureProductDraft, false, taskRow.CreatedBy); err != nil {
 		return err
 	}
 	cancelRen := s.startPublishLeaseRenewal(ctx, taskID, workerID, claim, s.publishLeaseTTL())
 	defer cancelRen()
 
-	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, taskRow.TenantID).
 		Updates(map[string]any{"publish_status": StatusCreatingPlatformDraft}).Error
 
 	fail := func(code, msg string, retryable bool, requestID string, raw map[string]any) error {
@@ -252,7 +93,8 @@ func (s *Service) ProcessDouyinDraftTask(ctx context.Context, taskID uuid.UUID, 
 		}
 		_ = s.finishProductPublishTask(ctx, taskID, workerID, claim, updates)
 		if snap, ok := parseDouyinDraftSnapshot(taskRow.Input); ok {
-			_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).Where("id = ?", snap.PublicationID).
+			_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).
+				Where("id = ? AND tenant_id = ? AND product_id = ? AND shop_id = ?", snap.PublicationID, taskRow.TenantID, taskRow.ProductID, taskRow.ShopID).
 				Updates(map[string]any{"status": StatusPubFailed, "publish_status": StatusPubFailed, "updated_at": fin}).Error
 		}
 		if s.OpLog != nil {
@@ -266,23 +108,18 @@ func (s *Service) ProcessDouyinDraftTask(ctx context.Context, taskID uuid.UUID, 
 			})
 		}
 		douyinmetrics.RecordProductDraftCreate(false)
+		if snap, ok := parseDouyinDraftSnapshot(taskRow.Input); ok && snap.ExecutionAttemptID != nil && *snap.ExecutionAttemptID != uuid.Nil && s.OperationResults != nil {
+			resultUnknown := code == platformdouyin.CodeDouyinUnknownResult || code == platformdouyin.CodeDouyinRequestTimeout
+			_ = s.OperationResults.MarkFailed(ctx, *snap.ExecutionAttemptID, taskID, code, msg, retryable && !resultUnknown, resultUnknown, datatypes.JSON(rawJSON))
+		}
 		return fmt.Errorf("%s", msg)
 	}
 
-	snap, ok := parseDouyinDraftSnapshot(taskRow.Input)
-	if !ok {
-		return fail(ErrorDouyinProductPayloadInvalid, "invalid task snapshot", false, "", nil)
+	if err := s.WriteControl.EvaluateWrite(ctx, taskRow.TenantID, taskRow.ShopID, taskRow.ProductID, len(buildRes.APIReq.SpecPricesV2)); err != nil {
+		return fail("PRODUCTION_WRITE_BLOCKED", "production write blocked by runtime control", false, "", nil)
 	}
-
-	buildRes, err := BuildDouyinProductPayload(ctx, s.DB, taskRow.ProductID, snap.ConfigID)
-	if err != nil || len(buildRes.Errors) > 0 {
-		msg := "payload build failed"
-		if err != nil {
-			msg = err.Error()
-		} else if len(buildRes.Errors) > 0 {
-			msg = buildRes.Errors[0].Message
-		}
-		return fail(ErrorDouyinProductPayloadInvalid, msg, false, "", nil)
+	if err := s.OperationResults.MarkRunning(ctx, *snap.ExecutionAttemptID, taskID); err != nil {
+		return fail("OPERATION_ATTEMPT_CONFLICT", "operation attempt could not enter running state", false, "", nil)
 	}
 	if s.OpLog != nil {
 		_ = s.OpLog.WriteBackground(ctx, operationlog.WriteOpts{
@@ -300,14 +137,6 @@ func (s *Service) ProcessDouyinDraftTask(ctx context.Context, taskID uuid.UUID, 
 		code := inferDouyinPublishErrorCode(err)
 		return fail(code, err.Error(), douyinErrRetryable(err), "", nil)
 	}
-
-	pubCfg := map[string]string{}
-	if s.Settings != nil {
-		if m, err := s.Settings.PlainByGroup(ctx, 0, "platform_publish_douyin_shop"); err == nil {
-			pubCfg = m
-		}
-	}
-	buildRes.APIReq.PublishConfig = pubCfg
 
 	xctx, cancel := context.WithTimeout(ctx, s.execTimeout())
 	defer cancel()
@@ -413,18 +242,25 @@ func (s *Service) completeDouyinDraftSuccess(ctx context.Context, taskRow *Produ
 		"output":              datatypes.JSON(rawOut),
 		"platform_result":     datatypes.JSON(rawOut),
 	}
-	if claim != nil && strings.TrimSpace(workerID) != "" {
-		_ = s.finishProductPublishTask(ctx, taskID, workerID, claim, updates)
-	} else {
+	rd, _ := json.Marshal(sanitizeRawErrorMap(res.Raw))
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		updates["locked_by"] = nil
 		updates["locked_until"] = nil
 		updates["updated_at"] = fin
-		_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).Updates(updates).Error
-	}
-
-	rd, _ := json.Marshal(sanitizeRawErrorMap(res.Raw))
-	_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).Where("id = ?", snap.PublicationID).
-		Updates(map[string]any{
+		taskUpdate := tx.Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, taskRow.TenantID)
+		if claim != nil && strings.TrimSpace(workerID) != "" {
+			taskUpdate = taskUpdate.Where("status = ? AND locked_by = ? AND execution_id = ? AND lock_version = ?",
+				TaskRunning, workerID, claim.ExecutionID.String(), claim.LeaseVersion)
+		}
+		result := taskUpdate.Updates(updates)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return tasklease.ErrLeaseLost
+		}
+		publicationUpdate := tx.Model(&ProductPublication{}).Where("id = ? AND tenant_id = ? AND product_id = ? AND shop_id = ? AND platform = ?",
+			snap.PublicationID, taskRow.TenantID, taskRow.ProductID, taskRow.ShopID, "douyin_shop").Updates(map[string]any{
 			"external_product_id":  res.PlatformProductID,
 			"status":               StatusDraft,
 			"publish_status":       StatusDraftCreated,
@@ -433,36 +269,53 @@ func (s *Service) completeDouyinDraftSuccess(ctx context.Context, taskRow *Produ
 			"raw_data":             datatypes.JSON(rd),
 			"last_synced_at":       &fin,
 			"updated_at":           fin,
-		}).Error
+		})
+		if publicationUpdate.Error != nil {
+			return publicationUpdate.Error
+		}
+		if publicationUpdate.RowsAffected != 1 {
+			return fmt.Errorf("bound publication not found")
+		}
 
-	mapping := product.DouyinDraftMappingFromConfig(product.ProductPlatformPublishConfig{ProductID: taskRow.ProductID})
-	var cfg product.ProductPlatformPublishConfig
-	if err := s.DB.WithContext(ctx).Where("product_id = ? AND platform = ?", taskRow.ProductID, "douyin_shop").First(&cfg).Error; err == nil {
-		mapping = product.DouyinDraftMappingFromConfig(cfg)
-	}
-	_ = s.DB.WithContext(ctx).Where("publication_id = ?", snap.PublicationID).Delete(&ProductPublicationSKU{}).Error
-	skuMap := map[string]platformdouyin.SKUMapping{}
-	for _, sm := range res.SKUMappings {
-		if sm.OuterSKUID != "" {
-			skuMap[sm.OuterSKUID] = sm
+		mapping := snap.FrozenMapping
+		if mapping == nil {
+			return ErrDouyinOperationTaskRequired
 		}
-	}
-	for _, sku := range mapping.SKUs {
-		row := ProductPublicationSKU{
-			PublicationID: snap.PublicationID,
-			SKUCode:       strings.TrimSpace(sku.Name),
-			Price:         &sku.Price,
-			Stock:         sku.Stock,
+		if err := tx.Where("publication_id = ?", snap.PublicationID).Delete(&ProductPublicationSKU{}).Error; err != nil {
+			return err
 		}
-		if uid, err := uuid.Parse(strings.TrimSpace(sku.LocalSkuID)); err == nil {
-			row.ProductSKUID = &uid
+		skuMap := map[string]platformdouyin.SKUMapping{}
+		for _, sm := range res.SKUMappings {
+			if sm.OuterSKUID != "" {
+				skuMap[sm.OuterSKUID] = sm
+			}
 		}
-		if sm, ok := skuMap[sku.LocalSkuID]; ok {
-			row.ExternalSKUID = strings.TrimSpace(sm.PlatformSKUID)
+		for _, sku := range mapping.SKUs {
+			row := ProductPublicationSKU{
+				PublicationID: snap.PublicationID,
+				SKUCode:       strings.TrimSpace(sku.Name),
+				Price:         &sku.Price,
+				Stock:         sku.Stock,
+			}
+			if uid, parseErr := uuid.Parse(strings.TrimSpace(sku.LocalSKUID)); parseErr == nil {
+				row.ProductSKUID = &uid
+			}
+			if sm, ok := skuMap[sku.LocalSKUID]; ok {
+				row.ExternalSKUID = strings.TrimSpace(sm.PlatformSKUID)
+			}
+			rdm, marshalErr := json.Marshal(map[string]any{"outerSkuId": sku.LocalSKUID})
+			if marshalErr != nil {
+				return marshalErr
+			}
+			row.RawData = datatypes.JSON(rdm)
+			if err := tx.Create(&row).Error; err != nil {
+				return err
+			}
 		}
-		rdm, _ := json.Marshal(map[string]any{"outerSkuId": sku.LocalSkuID})
-		row.RawData = datatypes.JSON(rdm)
-		_ = s.DB.WithContext(ctx).Create(&row).Error
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	if s.OpLog != nil {
@@ -476,7 +329,37 @@ func (s *Service) completeDouyinDraftSuccess(ctx context.Context, taskRow *Produ
 		})
 	}
 	douyinmetrics.RecordProductDraftCreate(true)
+	if snap.ExecutionAttemptID != nil && *snap.ExecutionAttemptID != uuid.Nil && s.OperationResults != nil {
+		meta, _ := json.Marshal(map[string]any{"platformStatus": res.PlatformStatus, "requestId": res.RequestID})
+		if err := s.OperationResults.MarkSucceeded(ctx, *snap.ExecutionAttemptID, taskID, res.PlatformProductID, res.RequestID, datatypes.JSON(meta)); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func (s *Service) douyinBuildResultFromSnapshot(ctx context.Context, task *ProductPublishTask, snap douyinDraftSnapshot) (*DouyinPayloadBuildResult, error) {
+	if snap.FrozenRequest != nil {
+		return &DouyinPayloadBuildResult{Payload: frozenRequestDisplayPayload(*snap.FrozenRequest), APIReq: *snap.FrozenRequest}, nil
+	}
+	return BuildDouyinProductPayload(ctx, s.DB, task.ProductID, snap.ConfigID)
+}
+
+func frozenRequestDisplayPayload(req platformdouyin.CreateProductDraftRequest) *DouyinProductPayload {
+	return &DouyinProductPayload{
+		OuterProductID: req.OuterProductID, Name: req.Name, CategoryLeafID: req.CategoryLeafID,
+		Pic: req.Pic, Description: req.Description, ProductFormat: req.ProductFormat,
+		SpecInfo: req.SpecInfo, SpecPricesV2: specPriceMapsToAny(req.SpecPricesV2),
+		Commit: false, StartSaleType: 1, FreightID: req.FreightID, Mobile: req.Mobile,
+	}
+}
+
+func specPriceMapsToAny(values []map[string]any) []any {
+	out := make([]any, 0, len(values))
+	for _, value := range values {
+		out = append(out, value)
+	}
+	return out
 }
 
 func parseDouyinDraftSnapshot(raw datatypes.JSON) (douyinDraftSnapshot, bool) {

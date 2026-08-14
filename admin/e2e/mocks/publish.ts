@@ -1,10 +1,18 @@
 import { ok } from './envelope';
 import { E2E_PRODUCT_ID, E2E_PUBLICATION_OLD, E2E_PUBLICATION_NEW, E2E_SHOP_ID, publication } from './product.fixture';
 
+export const E2E_SHOPEE_SHOP_ID = 'e2e-shop-shopee';
+
 export const e2ePlatformProviders = [
   {
     platform: 'douyin_shop',
     label: '抖店',
+    status: 'available',
+    capabilityStatus: { product_publish: 'available', inventory_sync: 'available' },
+  },
+  {
+    platform: 'shopee',
+    label: 'Shopee',
     status: 'available',
     capabilityStatus: { product_publish: 'available', inventory_sync: 'available' },
   },
@@ -15,6 +23,16 @@ export const e2eShops = [
     id: E2E_SHOP_ID,
     platform: 'douyin_shop',
     shopName: 'E2E 抖店测试店铺',
+    status: 'active',
+    authStatus: 'authorized',
+    capabilities: { product_publish: 'available', inventory_sync: 'available' },
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: E2E_SHOPEE_SHOP_ID,
+    platform: 'shopee',
+    shopName: 'E2E Shopee 测试店铺',
     status: 'active',
     authStatus: 'authorized',
     capabilities: { product_publish: 'available', inventory_sync: 'available' },
@@ -34,6 +52,16 @@ export const e2ePublishTargets = {
       settingsPath: '/settings/platforms',
       shops: [
         { shopId: E2E_SHOP_ID, shopName: 'E2E 抖店测试店铺', authStatus: 'authorized', authStatusLabel: '已授权', enabled: true },
+      ],
+    },
+    {
+      platform: 'shopee',
+      platformLabel: 'Shopee',
+      capability: 'local_draft_only',
+      capabilityLabel: '本地刊登草稿',
+      settingsPath: '/settings/platforms',
+      shops: [
+        { shopId: E2E_SHOPEE_SHOP_ID, shopName: 'E2E Shopee 测试店铺', authStatus: 'authorized', authStatusLabel: '已授权', enabled: true },
       ],
     },
   ],
@@ -63,7 +91,7 @@ export const e2eDouyinMapping = {
 
 export function publishResponse(path: string) {
   if (path === '/api/v1/platform/providers') return ok({ list: e2ePlatformProviders });
-  if (path === '/api/v1/shops') return ok({ list: e2eShops, pagination: { page: 1, pageSize: 500, total: 1, totalPages: 1 } });
+  if (path === '/api/v1/shops') return ok({ list: e2eShops, pagination: { page: 1, pageSize: 500, total: e2eShops.length, totalPages: 1 } });
   if (path === `/api/v1/products/${E2E_PRODUCT_ID}/publish-targets`) return ok(e2ePublishTargets);
   if (path === `/api/v1/products/${E2E_PRODUCT_ID}/publications`) return ok({ list: [publication(E2E_PUBLICATION_OLD)] });
   if (path === `/api/v1/products/${E2E_PRODUCT_ID}/platform-configs/douyin_shop`) return ok(e2eDouyinConfig);

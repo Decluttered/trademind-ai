@@ -310,6 +310,35 @@ func (r *PlatformDraftRepository) ListVersions(ctx context.Context, tenantID int
 	return drafts, nil
 }
 
+func (r *PlatformDraftRepository) ListLatestByTasks(ctx context.Context, tenantID int64, taskIDs []uuid.UUID) (map[uuid.UUID]PlatformDraft, error) {
+	if r == nil || r.DB == nil {
+		return nil, fmt.Errorf("platform draft repository: db is nil")
+	}
+	out := make(map[uuid.UUID]PlatformDraft, len(taskIDs))
+	if tenantID < 0 {
+		return nil, ErrValidation
+	}
+	if len(taskIDs) == 0 {
+		return out, nil
+	}
+	latest := r.DB.WithContext(ctx).Model(&PlatformDraft{}).
+		Select("operation_task_id, MAX(draft_version) AS max_version").
+		Where("tenant_id = ? AND operation_task_id IN ?", tenantID, taskIDs).
+		Group("operation_task_id")
+	var drafts []PlatformDraft
+	err := r.DB.WithContext(ctx).Model(&PlatformDraft{}).
+		Joins("JOIN (?) AS latest ON latest.operation_task_id = platform_drafts.operation_task_id AND latest.max_version = platform_drafts.draft_version", latest).
+		Where("platform_drafts.tenant_id = ?", tenantID).
+		Find(&drafts).Error
+	if err != nil {
+		return nil, stableError(err, ErrConflict)
+	}
+	for _, draft := range drafts {
+		out[draft.OperationTaskID] = draft
+	}
+	return out, nil
+}
+
 type ApprovalRecordRepository struct {
 	DB *gorm.DB
 }
@@ -533,6 +562,35 @@ func (r *ExecutionAttemptRepository) ListByTask(ctx context.Context, tenantID in
 		return nil, stableError(err, ErrConflict)
 	}
 	return attempts, nil
+}
+
+func (r *ExecutionAttemptRepository) ListLatestByTasks(ctx context.Context, tenantID int64, taskIDs []uuid.UUID) (map[uuid.UUID]ExecutionAttempt, error) {
+	if r == nil || r.DB == nil {
+		return nil, fmt.Errorf("execution attempt repository: db is nil")
+	}
+	out := make(map[uuid.UUID]ExecutionAttempt, len(taskIDs))
+	if tenantID < 0 {
+		return nil, ErrValidation
+	}
+	if len(taskIDs) == 0 {
+		return out, nil
+	}
+	latest := r.DB.WithContext(ctx).Model(&ExecutionAttempt{}).
+		Select("operation_task_id, MAX(attempt_number) AS max_attempt_number").
+		Where("tenant_id = ? AND operation_task_id IN ?", tenantID, taskIDs).
+		Group("operation_task_id")
+	var attempts []ExecutionAttempt
+	err := r.DB.WithContext(ctx).Model(&ExecutionAttempt{}).
+		Joins("JOIN (?) AS latest ON latest.operation_task_id = execution_attempts.operation_task_id AND latest.max_attempt_number = execution_attempts.attempt_number", latest).
+		Where("execution_attempts.tenant_id = ?", tenantID).
+		Find(&attempts).Error
+	if err != nil {
+		return nil, stableError(err, ErrConflict)
+	}
+	for _, attempt := range attempts {
+		out[attempt.OperationTaskID] = attempt
+	}
+	return out, nil
 }
 
 func (r *ExecutionAttemptRepository) UpdateLifecycle(ctx context.Context, tenantID int64, id uuid.UUID, expectedRevision int, patch ExecutionAttemptLifecyclePatch) (*ExecutionAttempt, error) {

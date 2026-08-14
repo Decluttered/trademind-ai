@@ -102,7 +102,7 @@ func TestShopScope_OperatorListOnlyOwnShops(t *testing.T) {
 	_ = seedShop(t, db, "B")
 	c := ginCtx(tenantID, uuid.New(), adminperm.RoleOperator, []uuid.UUID{shopA})
 	// List is tenant-scoped; operator still sees both shops at tenant level unless store scope applied to shop list
-	// Shop list uses tenant only — store scope for shop module is tenant-level in P4.1 MVP; operator shop denial is on Get/Update
+	// Shop list uses tenant only; store scope for the shop module is tenant-level, while Get/Update enforce operator shop denial.
 	svc := &shop.Service{DB: db}
 	_, err := svc.GetDetail(c, shopA)
 	if err != nil {

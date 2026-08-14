@@ -22,7 +22,7 @@ const (
 	PermOperationLogView   = "operationlog.view"
 	PermStoreView          = "store.view"
 	PermStoreOperate       = "store.operate"
-	// P4 security permissions
+	// Security permissions
 	PermSecuritySessionManage = "security.session.manage"
 	PermSecurityKeyRotate     = "security.key.rotate"
 	PermAuditRead             = "audit.read"
@@ -34,7 +34,7 @@ const (
 	PermConfigManage          = "config.manage"
 	PermExportRead            = "export.read"
 	PermExportCreate          = "export.create"
-	// P5 observability permissions
+	// Observability permissions
 	PermObservabilityRead   = "observability.read"
 	PermObservabilityManage = "observability.manage"
 	PermAlertsRead          = "alerts.read"
@@ -42,29 +42,13 @@ const (
 	PermAlertsSilence       = "alerts.silence"
 	PermSLORead             = "slo.read"
 	PermSLOManage           = "slo.manage"
-	// P6 backup / restore / release / DR permissions
-	PermBackupRead      = "backup.read"
-	PermBackupCreate    = "backup.create"
-	PermBackupVerify    = "backup.verify"
-	PermBackupDownload  = "backup.download"
-	PermBackupDelete    = "backup.delete"
-	PermBackupHold      = "backup.hold"
-	PermRestoreRead     = "restore.read"
-	PermRestoreExecute  = "restore.execute"
-	PermRestoreVerify   = "restore.verify"
-	PermReleaseRead     = "release.read"
-	PermReleaseCreate   = "release.create"
-	PermReleaseExecute  = "release.execute"
-	PermReleaseRollback = "release.rollback"
-	PermDRRead          = "dr.read"
-	PermDRExecute       = "dr.execute"
-	// P8 operation task permissions
+	// Operation task permissions
 	PermOperationTaskEdit      = "operationtask.edit"
 	PermOperationTaskReview    = "operationtask.review"
 	PermOperationTaskExecute   = "operationtask.execute"
 	PermOperationTaskRetry     = "operationtask.retry"
 	PermOperationTaskAuditRead = "operationtask.audit.read"
-	// P9 inventory sync permissions
+	// Inventory sync permissions
 	PermInventorySyncRead       = "inventory_sync.read"
 	PermInventorySyncRun        = "inventory_sync.run"
 	PermInventorySyncRerun      = "inventory_sync.rerun"
@@ -112,21 +96,6 @@ var allPermissions = []string{
 	PermAlertsSilence,
 	PermSLORead,
 	PermSLOManage,
-	PermBackupRead,
-	PermBackupCreate,
-	PermBackupVerify,
-	PermBackupDownload,
-	PermBackupDelete,
-	PermBackupHold,
-	PermRestoreRead,
-	PermRestoreExecute,
-	PermRestoreVerify,
-	PermReleaseRead,
-	PermReleaseCreate,
-	PermReleaseExecute,
-	PermReleaseRollback,
-	PermDRRead,
-	PermDRExecute,
 	PermOperationTaskEdit,
 	PermOperationTaskReview,
 	PermOperationTaskExecute,
@@ -182,10 +151,6 @@ var operatorPermissions = []string{
 	PermObservabilityRead,
 	PermAlertsRead,
 	PermSLORead,
-	PermBackupRead,
-	PermRestoreRead,
-	PermReleaseRead,
-	PermDRRead,
 	PermOperationTaskEdit,
 	PermOperationTaskAuditRead,
 	PermInventorySyncRead,
@@ -209,10 +174,6 @@ var readonlyPermissions = []string{
 	PermObservabilityRead,
 	PermAlertsRead,
 	PermSLORead,
-	PermBackupRead,
-	PermRestoreRead,
-	PermReleaseRead,
-	PermDRRead,
 	PermOperationTaskAuditRead,
 	PermInventorySyncRead,
 	PermInventorySnapshotRead,

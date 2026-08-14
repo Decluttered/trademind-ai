@@ -92,7 +92,7 @@ type PublicationDTO struct {
 	PublishStatus      string     `json:"publishStatus"`
 	PublishedAt        *time.Time `json:"publishedAt,omitempty"`
 	LastSyncedAt       *time.Time `json:"lastSyncedAt,omitempty"`
-	SkuBindingSyncedAt *time.Time `json:"skuBindingSyncedAt,omitempty"`
+	SKUBindingSyncedAt *time.Time `json:"skuBindingSyncedAt,omitempty"`
 	SKUMappingSummary  []string   `json:"skuMappingsSummary,omitempty"`
 }
 
@@ -121,8 +121,8 @@ func dtoTrimJSON(raw datatypes.JSON) any {
 
 // DouyinManualBindBody POST /product-publication-skus/:id/douyin/bind-sku
 type DouyinManualBindBody struct {
-	PlatformSkuID   string `json:"platformSkuId"`
-	PlatformSkuName string `json:"platformSkuName"`
+	PlatformSKUID   string `json:"platformSkuId"`
+	PlatformSKUName string `json:"platformSkuName"`
 	BindReason      string `json:"bindReason"`
 }
 

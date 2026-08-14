@@ -220,7 +220,7 @@ func buildDouyinSpecPayload(m *product.DouyinDraftMapping) (map[string]any, []an
 		if sku.Price <= 0 {
 			errs = append(errs, product.DouyinMappingIssue{
 				Code: product.DouyinSKUPriceInvalid, Level: "error", Field: "skus.price",
-				Message: "SKU price must be greater than 0.", RelatedResourceID: sku.LocalSkuID,
+				Message: "SKU price must be greater than 0.", RelatedResourceID: sku.LocalSKUID,
 			})
 			continue
 		}
@@ -229,7 +229,7 @@ func buildDouyinSpecPayload(m *product.DouyinDraftMapping) (map[string]any, []an
 			if *sku.Stock < 0 {
 				errs = append(errs, product.DouyinMappingIssue{
 					Code: product.DouyinStockInvalid, Level: "error", Field: "skus.stock",
-					Message: "SKU stock cannot be negative.", RelatedResourceID: sku.LocalSkuID,
+					Message: "SKU stock cannot be negative.", RelatedResourceID: sku.LocalSKUID,
 				})
 				continue
 			}
@@ -241,7 +241,7 @@ func buildDouyinSpecPayload(m *product.DouyinDraftMapping) (map[string]any, []an
 			"stock_num":       stock,
 			"price":           yuanToFen(sku.Price),
 		}
-		if id := strings.TrimSpace(sku.LocalSkuID); id != "" {
+		if id := strings.TrimSpace(sku.LocalSKUID); id != "" {
 			row["outer_sku_id"] = id
 		}
 		specPrices = append(specPrices, row)

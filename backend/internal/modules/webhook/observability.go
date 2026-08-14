@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// ObserveWebhook records webhook metrics through the shared P5 catalog.
+// ObserveWebhook records webhook metrics through the shared metrics catalog.
 func (s *Service) ObserveWebhook(platform, eventType, event, result, errorClass string, dur time.Duration) {
 	if s == nil || s.Metrics == nil {
 		return

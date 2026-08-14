@@ -10,7 +10,7 @@ export function createInternalInventorySyncRoutes(
   return [
     {
       path: '/ops/inventory-sync',
-      name: 'P9 库存同步',
+      name: '库存同步',
       icon: 'InboxOutlined',
       component: './Ops/InventorySync',
       hideInMenu: true,
@@ -47,39 +47,6 @@ export function createInternalInventorySyncRoutes(
       name: '绑定历史详情',
       component: './Ops/InventorySync/BindingDetail',
       hideInMenu: true,
-    },
-  ];
-}
-
-export function createDevelopmentOpsRoutes(
-  enabled = process.env.NODE_ENV !== 'production',
-) {
-  if (!enabled) return [];
-
-  return [
-    {
-      path: '/ops/backups',
-      name: '备份管理',
-      icon: 'DatabaseOutlined',
-      component: './Ops/Backups',
-    },
-    {
-      path: '/ops/restores',
-      name: '恢复验证',
-      icon: 'SafetyCertificateOutlined',
-      component: './Ops/Restores',
-    },
-    {
-      path: '/ops/releases',
-      name: '发布流程记录',
-      icon: 'BranchesOutlined',
-      component: './Ops/Releases',
-    },
-    {
-      path: '/ops/disaster-recovery',
-      name: '灾备演练记录',
-      icon: 'DeploymentUnitOutlined',
-      component: './Ops/DisasterRecovery',
     },
   ];
 }
@@ -166,7 +133,6 @@ export default [
         icon: 'LineChartOutlined',
         component: './Ops/Observability',
       },
-      ...createDevelopmentOpsRoutes(),
       {
         path: '/ops/platform-runtime',
         name: '平台运行状态',

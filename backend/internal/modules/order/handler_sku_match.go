@@ -37,7 +37,7 @@ func (h *Handler) GetOrderSKUMatches(c *gin.Context) {
 	response.OK(c, gin.H{"items": rows})
 }
 
-type matchSkusBody struct {
+type matchSKUsBody struct {
 	Overwrite bool `json:"overwrite"`
 	Force     bool `json:"force"`
 }
@@ -56,7 +56,7 @@ func (h *Handler) PostMatchOrderSKUs(c *gin.Context) {
 		response.Fail(c, 400, response.CodeBadRequest, "invalid id")
 		return
 	}
-	var body matchSkusBody
+	var body matchSKUsBody
 	_ = c.ShouldBindJSON(&body)
 	sum, err := h.Svc.MatchOrderItemsForOrder(c.Request.Context(), oid, MatchOrderItemsOptions{
 		Overwrite: body.Overwrite,
@@ -193,7 +193,7 @@ func (h *Handler) PostBindOrderItemSKU(c *gin.Context) {
 			response.HandleError(c, err)
 			return
 		}
-		if has && !pol.AllowManualSkuBindAfterDeduct {
+		if has && !pol.AllowManualSKUBindAfterDeduct {
 			response.Fail(c, 403, response.CodeForbidden, "manual sku bind after deduct is disabled in settings")
 			return
 		}

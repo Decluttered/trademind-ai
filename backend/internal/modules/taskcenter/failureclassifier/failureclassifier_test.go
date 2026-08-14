@@ -35,7 +35,7 @@ func TestClassify_1688CollectorLogin(t *testing.T) {
 	}
 }
 
-func TestClassify_custom1688Url(t *testing.T) {
+func TestClassify_custom1688URL(t *testing.T) {
 	in := Input{
 		TaskType:     taskTypeCollect,
 		Platform:     "custom",

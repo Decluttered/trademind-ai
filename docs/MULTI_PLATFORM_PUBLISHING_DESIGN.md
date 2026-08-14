@@ -148,7 +148,7 @@ MVP 统一字段：`priceRule`、`imageStrategy`、`stockStrategy`、`packageWei
 
 - 集成测试：`backend/internal/modules/productpublish/batch_targets_integration_test.go`
 - 性能回归由 GitHub Actions 执行，产品体验由维护者人工验收；不保存一次性性能报告。
-- UX 与业务流程按 [`P10_MANUAL_ACCEPTANCE_CHECKLIST.md`](P10_MANUAL_ACCEPTANCE_CHECKLIST.md) 人工签收。
+- UX 与业务流程按 [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md) 人工签收。
 
 ## Phase A2.2 统一配置与覆盖配置 UI（2026-06-19）
 

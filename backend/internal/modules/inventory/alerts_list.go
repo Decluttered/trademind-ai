@@ -24,13 +24,13 @@ type alertSKUScan struct {
 }
 
 type pubJoinScan struct {
-	PublicationSkuID  uuid.UUID  `gorm:"column:publication_sku_id"`
-	ProductSkuID      *uuid.UUID `gorm:"column:product_sku_id"`
+	PublicationSKUID  uuid.UUID  `gorm:"column:publication_sku_id"`
+	ProductSKUID      *uuid.UUID `gorm:"column:product_sku_id"`
 	ShopID            uuid.UUID  `gorm:"column:shop_id"`
 	ShopName          string     `gorm:"column:shop_name"`
 	Platform          string     `gorm:"column:platform"`
 	ExternalProductID string     `gorm:"column:external_product_id"`
-	ExternalSkuID     string     `gorm:"column:external_sku_id"`
+	ExternalSKUID     string     `gorm:"column:external_sku_id"`
 	SKUCode           string     `gorm:"column:sku_code"`
 	BindStatus        string     `gorm:"column:bind_status"`
 	PlatformStock     *int       `gorm:"column:platform_stock"`
@@ -38,7 +38,7 @@ type pubJoinScan struct {
 }
 
 type latestTaskScan struct {
-	PublicationSkuID uuid.UUID  `gorm:"column:publication_sku_id"`
+	PublicationSKUID uuid.UUID  `gorm:"column:publication_sku_id"`
 	TaskID           uuid.UUID  `gorm:"column:id"`
 	Status           string     `gorm:"column:status"`
 	ErrorMessage     string     `gorm:"column:error_message"`
@@ -58,8 +58,8 @@ func clipErr(msg string, max int) string {
 type skuAlertBaseQuery struct {
 	Keyword       string
 	ProductID     *uuid.UUID
-	ProductSkuID  *uuid.UUID
-	ProductSkuIDs []uuid.UUID
+	ProductSKUID  *uuid.UUID
+	ProductSKUIDs []uuid.UUID
 	Platform      string
 	ShopID        *uuid.UUID
 	StockStatus   string
@@ -70,8 +70,8 @@ func (s *Service) buildAlertsBaseTX(ctx context.Context, q AlertsListQuery) *gor
 	return s.buildSKUAlertBaseTX(ctx, skuAlertBaseQuery{
 		Keyword:       q.Keyword,
 		ProductID:     q.ProductID,
-		ProductSkuID:  q.ProductSkuID,
-		ProductSkuIDs: nil,
+		ProductSKUID:  q.ProductSKUID,
+		ProductSKUIDs: nil,
 		Platform:      q.Platform,
 		ShopID:        q.ShopID,
 		StockStatus:   q.StockStatus,
@@ -86,9 +86,9 @@ func (s *Service) buildSKUAlertBaseTX(ctx context.Context, q skuAlertBaseQuery) 
 	if pid := q.ProductID; pid != nil && *pid != uuid.Nil {
 		tx = tx.Where("sk.product_id = ?", *pid)
 	}
-	if len(q.ProductSkuIDs) > 0 {
-		tx = tx.Where("sk.id IN ?", q.ProductSkuIDs)
-	} else if sid := q.ProductSkuID; sid != nil && *sid != uuid.Nil {
+	if len(q.ProductSKUIDs) > 0 {
+		tx = tx.Where("sk.id IN ?", q.ProductSKUIDs)
+	} else if sid := q.ProductSKUID; sid != nil && *sid != uuid.Nil {
 		tx = tx.Where("sk.id = ?", *sid)
 	}
 	kw := strings.TrimSpace(q.Keyword)
@@ -259,7 +259,7 @@ func (s *Service) applyNonNormalAlertScope(tx *gorm.DB, pol inventoryAlertPolicy
 	return tx.Where(q, StatusFailed)
 }
 
-func (s *Service) loadLatestTasksByPubSku(ctx context.Context, pubIDs []uuid.UUID) map[uuid.UUID]latestTaskScan {
+func (s *Service) loadLatestTasksByPubSKU(ctx context.Context, pubIDs []uuid.UUID) map[uuid.UUID]latestTaskScan {
 	out := map[uuid.UUID]latestTaskScan{}
 	if len(pubIDs) == 0 {
 		return out
@@ -273,12 +273,12 @@ WHERE publication_sku_id IN ?
 ORDER BY publication_sku_id, created_at DESC
 `, pubIDs).Scan(&rows).Error
 	for _, r := range rows {
-		out[r.PublicationSkuID] = r
+		out[r.PublicationSKUID] = r
 	}
 	return out
 }
 
-func (s *Service) loadMaxLogTimeBySku(ctx context.Context, skuIDs []uuid.UUID) map[uuid.UUID]time.Time {
+func (s *Service) loadMaxLogTimeBySKU(ctx context.Context, skuIDs []uuid.UUID) map[uuid.UUID]time.Time {
 	out := map[uuid.UUID]time.Time{}
 	if len(skuIDs) == 0 || s == nil || s.DB == nil {
 		return out
@@ -373,7 +373,7 @@ func (s *Service) ListInventoryAlerts(ctx context.Context, q AlertsListQuery) (*
 		skuIDs = append(skuIDs, r.ID)
 	}
 
-	pubBySku := map[uuid.UUID][]pubJoinScan{}
+	pubBySKU := map[uuid.UUID][]pubJoinScan{}
 	if len(skuIDs) > 0 {
 		var pubs []pubJoinScan
 		_ = s.DB.WithContext(ctx).Table("product_publication_skus AS ps").
@@ -384,21 +384,21 @@ func (s *Service) ListInventoryAlerts(ctx context.Context, q AlertsListQuery) (*
 			Where("ps.product_sku_id IN ?", skuIDs).
 			Scan(&pubs).Error
 		for _, p := range pubs {
-			if p.ProductSkuID == nil {
+			if p.ProductSKUID == nil {
 				continue
 			}
-			pubBySku[*p.ProductSkuID] = append(pubBySku[*p.ProductSkuID], p)
+			pubBySKU[*p.ProductSKUID] = append(pubBySKU[*p.ProductSKUID], p)
 		}
 	}
 
 	pubIDs := make([]uuid.UUID, 0, 32)
 	for _, r := range scans {
-		for _, p := range pubBySku[r.ID] {
-			pubIDs = append(pubIDs, p.PublicationSkuID)
+		for _, p := range pubBySKU[r.ID] {
+			pubIDs = append(pubIDs, p.PublicationSKUID)
 		}
 	}
-	taskByPub := s.loadLatestTasksByPubSku(ctx, pubIDs)
-	lastLog := s.loadMaxLogTimeBySku(ctx, skuIDs)
+	taskByPub := s.loadLatestTasksByPubSKU(ctx, pubIDs)
+	lastLog := s.loadMaxLogTimeBySKU(ctx, skuIDs)
 
 	items := make([]InventoryAlertEntry, 0, len(scans))
 	for _, row := range scans {
@@ -417,9 +417,9 @@ func (s *Service) ListInventoryAlerts(ctx context.Context, q AlertsListQuery) (*
 			}
 		}
 
-		stocks := make([]PlatformStockAlertEntry, 0, len(pubBySku[row.ID]))
+		stocks := make([]PlatformStockAlertEntry, 0, len(pubBySKU[row.ID]))
 		var worstFail *latestTaskScan
-		for _, p := range pubBySku[row.ID] {
+		for _, p := range pubBySKU[row.ID] {
 			pl := strings.TrimSpace(strings.ToLower(p.Platform))
 			pst := platformLineStatus(derefStock(row.Stock), p.PlatformStock, th, pol.AlertPlatformStockMismatch)
 			switch pst {
@@ -431,17 +431,17 @@ func (s *Service) ListInventoryAlerts(ctx context.Context, q AlertsListQuery) (*
 				}
 			}
 			ent := PlatformStockAlertEntry{
-				PublicationSkuID:    p.PublicationSkuID,
+				PublicationSKUID:    p.PublicationSKUID,
 				ShopID:              p.ShopID,
 				ShopName:            p.ShopName,
 				Platform:            pl,
 				ExternalProductID:   p.ExternalProductID,
-				ExternalSkuID:       p.ExternalSkuID,
+				ExternalSKUID:       p.ExternalSKUID,
 				PlatformStock:       p.PlatformStock,
 				PlatformStockStatus: pst,
 				LastSyncedAt:        p.LastSyncedAt,
 			}
-			if t, ok := taskByPub[p.PublicationSkuID]; ok {
+			if t, ok := taskByPub[p.PublicationSKUID]; ok {
 				tidVal := t.TaskID
 				ent.LastSyncTaskID = &tidVal
 				ent.LastSyncStatus = t.Status
@@ -462,7 +462,7 @@ func (s *Service) ListInventoryAlerts(ctx context.Context, q AlertsListQuery) (*
 		entry := InventoryAlertEntry{
 			ProductID:             row.ProductID,
 			ProductTitle:          row.ProductTitle,
-			ProductSkuID:          row.ID,
+			ProductSKUID:          row.ID,
 			SKUCode:               row.SKUCode,
 			SKUName:               row.SKUName,
 			Stock:                 derefStock(row.Stock),

@@ -1,6 +1,6 @@
 {
   "title": "orders-and-inventory",
-  "description": "TradeMind P5 dashboard definition (version controlled, no credentials)",
+  "description": "TradeMind observability dashboard definition (version controlled, no credentials)",
   "panels": [
     {
       "type": "stat",

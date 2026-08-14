@@ -269,6 +269,6 @@ AI 不应把“成长”理解成在本地偷偷保存私有记忆；TradeMind �
 历史 F1–F9 规划、冻结审计和增强计划已从当前工作树移除，必要时从 Git 历史查询。当前任务按以下入口执行：
 
 - 从 [文档中心](README.md)、[模块关联索引](module-map.md) 和 [当前维护状态](PROGRESS.md) 确认范围。
-- 自动化回归由 GitHub Actions 执行，产品流程按 [P10 人工验收清单](P10_MANUAL_ACCEPTANCE_CHECKLIST.md) 签收。
+- 自动化回归由 GitHub Actions 执行，产品流程按 [P10 人工验收清单](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md) 签收。
 - 需要 Demo 数据时按 [Demo 数据种子指南](DEMO_SEEDING_GUIDE.md) 临时生成，不提交运行输出。
 - 维护优先处理稳定性、安全问题和必要功能修复，不恢复阶段 gate、一次性报告或冻结证据。

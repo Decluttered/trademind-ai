@@ -24,7 +24,7 @@ type StockOrderPolicy struct {
 	AutoRestoreCancelledOrders           bool
 	AutoSyncPlatformInventoryAfterDeduct bool // effective: auto_sync_inventory_after_order_deduct or legacy key
 	AllowNegativeStock                   bool
-	AllowManualSkuBindAfterDeduct        bool
+	AllowManualSKUBindAfterDeduct        bool
 	AutoDeductAfterSKUMatch              bool // platform sync: require true with auto_deduct_platform_orders to auto deduct
 }
 
@@ -62,7 +62,7 @@ func (s *Service) InventoryPolicy(ctx context.Context) (StockOrderPolicy, error)
 		AutoRestoreCancelledOrders:           truthyInventorySetting(m["auto_restore_cancelled_orders"]),
 		AutoSyncPlatformInventoryAfterDeduct: syncOn,
 		AllowNegativeStock:                   truthyInventorySetting(m["allow_negative_stock"]),
-		AllowManualSkuBindAfterDeduct:        flagOr("allow_manual_sku_bind_after_deduct", true),
+		AllowManualSKUBindAfterDeduct:        flagOr("allow_manual_sku_bind_after_deduct", true),
 		AutoDeductAfterSKUMatch:              truthyInventorySetting(m["auto_deduct_after_sku_match"]),
 	}, nil
 }
@@ -620,7 +620,7 @@ func (s *Service) SummarizeOrderInventoryEffects(ctx context.Context, orderID uu
 		return sum, fmt.Errorf("inventory: no db")
 	}
 
-	var deductN, deductSkuN int64
+	var deductN, deductSKUN int64
 	_ = s.DB.WithContext(ctx).Model(&OrderInventoryEffect{}).
 		Where("order_id = ? AND effect_type = ? AND status = ?", orderID, EffectTypeDeduct, InventoryEffectSuccess).
 		Count(&deductN).Error
@@ -628,14 +628,14 @@ func (s *Service) SummarizeOrderInventoryEffects(ctx context.Context, orderID uu
 
 	_ = s.DB.WithContext(ctx).Model(&OrderInventoryEffect{}).
 		Where("order_id = ? AND effect_type = ? AND status = ? AND product_sku_id <> ?", orderID, EffectTypeDeduct, InventoryEffectSuccess, NilInventorySKUUID).
-		Count(&deductSkuN).Error
+		Count(&deductSKUN).Error
 
 	var restoreSKU int64
 	_ = s.DB.WithContext(ctx).Model(&OrderInventoryEffect{}).
 		Where("order_id = ? AND effect_type = ? AND status = ?", orderID, EffectTypeRestore, InventoryEffectSuccess).
 		Count(&restoreSKU).Error
 	sum.HasRestoreSuccess = restoreSKU > 0
-	if deductSkuN > 0 && restoreSKU >= deductSkuN {
+	if deductSKUN > 0 && restoreSKU >= deductSKUN {
 		sum.FullyRestored = true
 	}
 	return sum, nil

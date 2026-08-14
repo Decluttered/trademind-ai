@@ -23,7 +23,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/aitask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/alerting"
 	"github.com/trademind-ai/trademind/backend/internal/modules/auth"
-	"github.com/trademind-ai/trademind/backend/internal/modules/backup"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collect"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectbrowserprofile"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectrule"
@@ -32,7 +31,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/customerchat"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customersync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/demoseed"
-	"github.com/trademind-ai/trademind/backend/internal/modules/disasterrecovery"
 	"github.com/trademind-ai/trademind/backend/internal/modules/douyinpreflight"
 	"github.com/trademind-ai/trademind/backend/internal/modules/douyinruntime"
 	"github.com/trademind-ai/trademind/backend/internal/modules/exportmod"
@@ -40,7 +38,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
 	"github.com/trademind-ai/trademind/backend/internal/modules/imagetask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventory"
-	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysyncp9"
+	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/observabilitymod"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationdashboard"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
@@ -51,9 +49,8 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/pricing"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
+	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrol"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
-	"github.com/trademind-ai/trademind/backend/internal/modules/release"
-	"github.com/trademind-ai/trademind/backend/internal/modules/restore"
 	"github.com/trademind-ai/trademind/backend/internal/modules/securitymod"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
@@ -163,7 +160,7 @@ type Deps struct {
 	MigrationsReady bool
 	// OpLog optional; when nil Register creates a default operation log service from DB.
 	OpLog *operationlog.Service
-	// Obs optional P5 observability facade.
+	// Obs is the optional observability facade.
 	Obs *observability.Observability
 }
 
@@ -189,7 +186,7 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 			metricsPath = "/internal/metrics"
 		}
 		internal := r.Group(metricsPath)
-		internal.Use(middleware.MetricsGuard(dep.Config.Observability.MetricsInternalOnly, nil))
+		internal.Use(middleware.MetricsGuard(dep.Config.Observability.MetricsInternalOnly, dep.Config.Observability.MetricsAllowlistCIDRs))
 		internal.GET("", observabilitymod.MetricsEndpoint(dep.Obs))
 	}
 
@@ -239,7 +236,11 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	if dep.Config != nil && dep.Config.CollectorBaseURL != "" {
 		collectorBase = dep.Config.CollectorBaseURL
 	}
-	collectorClient := collect.NewCollectorClient(collectorBase, collectorTimeout)
+	collectorToken := ""
+	if dep.Config != nil {
+		collectorToken = dep.Config.CollectorServiceToken
+	}
+	collectorClient := collect.NewCollectorClient(collectorBase, collectorTimeout, collectorToken)
 
 	profileSvc := &collectbrowserprofile.Service{
 		DB:        dep.DB,
@@ -352,12 +353,12 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		collectSvc.RetryBaseDelaySec = dep.Config.CollectRetryBaseDelaySeconds
 		collectSvc.RetryMaxDelaySec = dep.Config.CollectRetryMaxDelaySeconds
 		collectSvc.TaskLeaseTimeoutSeconds = dep.Config.CollectTaskTimeoutSeconds
-		collectSvc.Batch1688Concurrency = dep.Config.CollectBatchConcurrency1688
-		collectSvc.Batch1688DelayMinMs = dep.Config.CollectBatchDelayMinMs1688
-		collectSvc.Batch1688DelayMaxMs = dep.Config.CollectBatchDelayMaxMs1688
+		collectSvc.Source1688BatchConcurrency = dep.Config.CollectBatchConcurrency1688
+		collectSvc.Source1688BatchDelayMinMs = dep.Config.CollectBatchDelayMinMs1688
+		collectSvc.Source1688BatchDelayMaxMs = dep.Config.CollectBatchDelayMaxMs1688
 		collectSvc.BatchRetryOnBlocked = dep.Config.CollectBatchRetryOnBlocked
 		collectSvc.BatchRetryOnTimeout = dep.Config.CollectBatchRetryOnTimeout
-		collectSvc.Batch1688MaxRetries = dep.Config.CollectBatchMaxRetries1688
+		collectSvc.Source1688BatchMaxRetries = dep.Config.CollectBatchMaxRetries1688
 		collectSvc.Settings = settingsSvc
 	}
 	collectH := &collect.Handler{Svc: collectSvc}
@@ -565,6 +566,16 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		Idempotency: idempotencySvc,
 	}
 	if dep.Config != nil {
+		productPublishSvc.Environment = dep.Config.AppEnv
+	}
+	writeControlSvc := &productioncontrol.Service{DB: dep.DB, Config: dep.Config, ProviderWriteGuard: func(ctx context.Context, shopID uuid.UUID) error {
+		if guardErr := platformdouyin.GuardWorkerWithShop(ctx, shopID.String(), platformdouyin.FeatureProductDraft, true, false); guardErr != nil {
+			return guardErr
+		}
+		return nil
+	}}
+	productPublishSvc.WriteControl = writeControlSvc
+	if dep.Config != nil {
 		productPublishSvc.QueueEnabled = dep.Config.ProductPublishQueueEnabled
 		if strings.TrimSpace(dep.Config.ProductPublishQueueName) != "" {
 			productPublishSvc.QueueName = strings.TrimSpace(dep.Config.ProductPublishQueueName)
@@ -723,10 +734,18 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	if dep.Config != nil {
 		operationTaskSvc.Executor.AppEnv = dep.Config.AppEnv
 	}
+	resultSvc := &operationtask.ProductionResultService{DB: dep.DB}
+	operationTaskSvc.SnapshotBuilder = productPublishSvc
+	operationTaskSvc.Production = &operationtask.ProductionExecutionService{
+		DB: dep.DB, Authorizer: operationTaskSvc.Authorizer, RetryAuth: operationTaskSvc.Authorizer,
+		WriteGuard: writeControlSvc, Factory: productPublishSvc,
+	}
+	productPublishSvc.OperationResults = resultSvc
+	productPublishSvc.ProductionOutbox = &operationtask.OutboxDispatcher{DB: dep.DB, Delivery: productPublishSvc}
 	operationTaskH := &operationtask.Handler{Svc: operationTaskSvc}
 	operationtask.Register(authed, operationTaskH)
-	inventorySyncP9H := &inventorysyncp9.Handler{Svc: inventorysyncp9.NewAPIService(dep.DB)}
-	inventorysyncp9.Register(authed, inventorySyncP9H)
+	inventorySyncH := &inventorysync.Handler{Svc: inventorysync.NewAPIService(dep.DB)}
+	inventorysync.Register(authed, inventorySyncH)
 
 	tcSvc := &taskcenter.Service{
 		DB:             dep.DB,
@@ -784,21 +803,8 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	exportH := &exportmod.Handler{Svc: exportSvc}
 	exportmod.RegisterRoutes(authed, exportH)
 
-	backupSvc := &backup.Service{DB: dep.DB, Cfg: dep.Config, Enc: dep.Encrypter, OpLog: opLogSvc, Metrics: metricCatalog}
-	backupH := &backup.Handler{Svc: backupSvc}
-	backup.Register(authed, backupH)
-	restoreSvc := &restore.Service{DB: dep.DB, Cfg: dep.Config, Enc: dep.Encrypter, Backup: backupSvc, OpLog: opLogSvc}
-	restoreH := &restore.Handler{Svc: restoreSvc}
-	restore.Register(authed, restoreH)
-	releaseSvc := &release.Service{DB: dep.DB, Cfg: dep.Config, Backup: backupSvc, OpLog: opLogSvc}
-	releaseH := &release.Handler{Svc: releaseSvc}
-	release.Register(authed, releaseH)
-	drSvc := &disasterrecovery.Service{DB: dep.DB, Cfg: dep.Config}
-	drH := &disasterrecovery.Handler{Svc: drSvc}
-	disasterrecovery.Register(authed, drH)
-
 	alertSvc := alerting.NewService(dep.DB, alertCooldown, alertRecovery)
-	obsH := &observabilitymod.Handler{DB: dep.DB, Cfg: dep.Config, Obs: dep.Obs, Alert: alertSvc}
+	obsH := &observabilitymod.Handler{DB: dep.DB, Cfg: dep.Config, Obs: dep.Obs, Alert: alertSvc, OpLog: opLogSvc}
 	observabilitymod.Register(authed, obsH)
 
 	if dep.Config != nil && dep.Config.EnableDemoSeed && !config.IsProduction(dep.Config.AppEnv) {

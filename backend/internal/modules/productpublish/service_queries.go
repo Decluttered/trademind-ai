@@ -15,14 +15,15 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/worker"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/repository"
+	"gorm.io/gorm"
 )
 
-func (s *Service) shopNameLookup(ctx context.Context, id uuid.UUID) string {
+func (s *Service) shopNameLookup(ctx context.Context, tenantID int64, id uuid.UUID) string {
 	var row struct {
 		ShopName string `gorm:"column:shop_name"`
 	}
 	_ = s.DB.WithContext(ctx).Table(`shops`).
-		Select(`shop_name`).Where(`id = ?`, id).
+		Select(`shop_name`).Where(`id = ? AND tenant_id = ?`, id, tenantID).
 		Take(&row).Error
 	return strings.TrimSpace(row.ShopName)
 }
@@ -32,7 +33,7 @@ func (s *Service) taskToDTO(ctx context.Context, t *ProductPublishTask) TaskDTO 
 		return TaskDTO{}
 	}
 	var p product.Product
-	_ = s.DB.WithContext(ctx).First(&p, "id = ?", t.ProductID).Error
+	_ = s.DB.WithContext(ctx).First(&p, "id = ? AND tenant_id = ?", t.ProductID, t.TenantID).Error
 	pt := strings.TrimSpace(p.Title)
 	if pt == "" {
 		pt = strings.TrimSpace(p.AITitle)
@@ -42,7 +43,7 @@ func (s *Service) taskToDTO(ctx context.Context, t *ProductPublishTask) TaskDTO 
 		ProductID:         t.ProductID,
 		ShopID:            t.ShopID,
 		TargetStoreID:     t.TargetStoreID,
-		ShopName:          s.shopNameLookup(ctx, t.ShopID),
+		ShopName:          s.shopNameLookup(ctx, t.TenantID, t.ShopID),
 		ProductTitle:      pt,
 		Platform:          t.Platform,
 		TargetPlatform:    t.Platform,
@@ -196,11 +197,27 @@ func (s *Service) RetryFailed(c *gin.Context, taskID uuid.UUID, adminID *uuid.UU
 	if err := repository.FindByID(c.Request.Context(), s.DB, &task, tid, taskID); err != nil {
 		return nil, err
 	}
+	principal, err := adminperm.LoadPrincipal(c, s.DB)
+	if err != nil {
+		return nil, err
+	}
+	if principal == nil || !principal.CanOperateStore(task.ShopID) {
+		return nil, gorm.ErrRecordNotFound
+	}
+	if !task.Retryable {
+		return nil, fmt.Errorf("task is not retryable")
+	}
+	if strings.EqualFold(strings.TrimSpace(task.Platform), "douyin_shop") || strings.EqualFold(strings.TrimSpace(task.Platform), "douyin") {
+		return nil, ErrDouyinOperationTaskRequired
+	}
+	if !s.traditionalPublishAllowed() {
+		return nil, ErrTraditionalPublishProductionDisabled
+	}
 	if strings.TrimSpace(task.Status) != TaskFailed {
 		return nil, fmt.Errorf("only failed tasks can be retried")
 	}
 	reset := time.Now().UTC()
-	if err := s.DB.WithContext(c.Request.Context()).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+	if err := s.DB.WithContext(c.Request.Context()).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, tid).
 		Updates(map[string]any{
 			"status":          TaskPending,
 			"publish_status":  StatusReady,
@@ -217,7 +234,8 @@ func (s *Service) RetryFailed(c *gin.Context, taskID uuid.UUID, adminID *uuid.UU
 		return nil, err
 	}
 	if rid, ok := snapshotPublicationFromTask(&task); ok {
-		_ = s.DB.WithContext(c.Request.Context()).Model(&ProductPublication{}).Where("id = ?", rid).
+		_ = s.DB.WithContext(c.Request.Context()).Model(&ProductPublication{}).
+			Where("id = ? AND tenant_id = ? AND product_id = ? AND shop_id = ?", rid, tid, task.ProductID, task.ShopID).
 			Updates(map[string]any{
 				"status":          StatusPublishing,
 				"publish_status":  StatusPublishing,
@@ -282,13 +300,25 @@ func (s *Service) skuMappingSummaryLines(ctx context.Context, publicationID uuid
 }
 
 // ListPublicationsByProduct returns persisted publication rows for a draft product.
-func (s *Service) ListPublicationsByProduct(ctx context.Context, productID uuid.UUID) ([]PublicationDTO, error) {
+func (s *Service) ListPublicationsByProduct(c *gin.Context, productID uuid.UUID) ([]PublicationDTO, error) {
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("productpublish: no db")
 	}
+	if c == nil {
+		return nil, gorm.ErrRecordNotFound
+	}
+	tenantID, err := adminperm.TenantIDFromGin(c)
+	if err != nil {
+		return nil, err
+	}
+	ctx := c.Request.Context()
 	var rows []ProductPublication
-	if err := s.DB.WithContext(ctx).
-		Where("product_id = ?", productID).
+	query := s.DB.WithContext(ctx).Model(&ProductPublication{}).
+		Where("tenant_id = ? AND product_id = ?", tenantID, productID)
+	if query, err = adminperm.ApplyStoreScope(c, s.DB, query, "shop_id"); err != nil {
+		return nil, err
+	}
+	if err := query.
 		Order("updated_at DESC").
 		Find(&rows).Error; err != nil {
 		return nil, err
@@ -301,7 +331,7 @@ func (s *Service) ListPublicationsByProduct(ctx context.Context, productID uuid.
 			ID:                 rows[i].ID,
 			ProductID:          rows[i].ProductID,
 			ShopID:             rows[i].ShopID,
-			ShopName:           s.shopNameLookup(ctx, rows[i].ShopID),
+			ShopName:           s.shopNameLookup(ctx, rows[i].TenantID, rows[i].ShopID),
 			Platform:           rows[i].Platform,
 			PublishTaskID:      pid,
 			ExternalProductID:  rows[i].ExternalProductID,
@@ -310,7 +340,7 @@ func (s *Service) ListPublicationsByProduct(ctx context.Context, productID uuid.
 			PublishStatus:      rows[i].PublishStatus,
 			PublishedAt:        rows[i].PublishedAt,
 			LastSyncedAt:       rows[i].LastSyncedAt,
-			SkuBindingSyncedAt: rows[i].SkuBindingSyncedAt,
+			SKUBindingSyncedAt: rows[i].SKUBindingSyncedAt,
 			SKUMappingSummary:  sum,
 		})
 	}

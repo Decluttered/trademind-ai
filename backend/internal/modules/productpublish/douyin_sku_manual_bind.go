@@ -3,6 +3,7 @@ package productpublish
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -24,38 +25,41 @@ type DouyinPlatformSKUCandidate struct {
 	SpecName                string     `json:"specName,omitempty"`
 	PriceYuan               float64    `json:"priceYuan,omitempty"`
 	Stock                   int        `json:"stock,omitempty"`
-	BoundToPublicationSkuID *uuid.UUID `json:"boundToPublicationSkuId,omitempty"`
+	BoundToPublicationSKUID *uuid.UUID `json:"boundToPublicationSkuId,omitempty"`
 }
 
 // ManualBindDouyinSKU binds one publication SKU to a chosen platform SKU.
-func (s *Service) ManualBindDouyinSKU(c *gin.Context, publicationSkuID uuid.UUID, body DouyinManualBindBody, adminID *uuid.UUID) (*DouyinSKUBindingRow, error) {
+func (s *Service) ManualBindDouyinSKU(c *gin.Context, publicationSKUID uuid.UUID, body DouyinManualBindBody, adminID *uuid.UUID) (*DouyinSKUBindingRow, error) {
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("%s: product publish unavailable", platformdouyin.CodeDouyinSKUManualBindFailed)
 	}
 	ctx := c.Request.Context()
-	platformSkuID := strings.TrimSpace(body.PlatformSkuID)
-	if platformSkuID == "" {
+	platformSKUID := strings.TrimSpace(body.PlatformSKUID)
+	if platformSKUID == "" {
 		return nil, fmt.Errorf("%s: platform sku id required", platformdouyin.CodeDouyinPlatformSKUIDMissing)
 	}
 
-	psku, pub, err := s.loadDouyinPublicationSKU(ctx, publicationSkuID)
+	psku, pub, err := s.loadDouyinPublicationSKU(ctx, publicationSKUID)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.ensureStoreOperate(c, pub.ShopID); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(pub.ExternalProductID) == "" {
 		return nil, fmt.Errorf("%s: platform product id missing", platformdouyin.CodeDouyinProductNotBound)
 	}
 
-	if err := s.checkDouyinSKUBindingConflict(ctx, pub.ID, publicationSkuID, platformSkuID); err != nil {
+	if err := s.checkDouyinSKUBindingConflict(ctx, pub.ID, publicationSKUID, platformSKUID); err != nil {
 		if s.OpLog != nil {
 			_ = s.OpLog.Write(c, operationlog.WriteOpts{
 				AdminUserID: adminID,
 				Action:      "douyin.sku.binding.conflict",
 				Resource:    "product_publication_sku",
-				ResourceID:  publicationSkuID.String(),
+				ResourceID:  publicationSKUID.String(),
 				Status:      "failed",
 				Message: fmt.Sprintf("publicationId=%s platformSkuId=%s err=%s",
-					pub.ID, platformSkuID, bindingTruncateMsg(err.Error())),
+					pub.ID, platformSKUID, bindingTruncateMsg(err.Error())),
 			})
 		}
 		return nil, err
@@ -64,38 +68,40 @@ func (s *Service) ManualBindDouyinSKU(c *gin.Context, publicationSkuID uuid.UUID
 	oldExt := strings.TrimSpace(psku.ExternalSKUID)
 	now := time.Now().UTC()
 	updates := map[string]any{
-		"external_sku_id": platformSkuID,
+		"external_sku_id": platformSKUID,
 		"bind_status":     BindStatusBound,
 		"bind_confidence": 100,
 		"bind_message":    "手动绑定",
 		"last_synced_at":  &now,
 		"updated_at":      now,
 	}
-	if err := s.DB.WithContext(ctx).Model(&ProductPublicationSKU{}).Where("id = ?", publicationSkuID).Updates(updates).Error; err != nil {
+	if err := s.DB.WithContext(ctx).Model(&ProductPublicationSKU{}).
+		Where("id = ? AND publication_id = ?", publicationSKUID, pub.ID).
+		Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("%s: %s", platformdouyin.CodeDouyinSKUManualBindFailed, err.Error())
 	}
 
 	if s.OpLog != nil {
 		msg := fmt.Sprintf("publicationId=%s platformSkuId=%s bindReason=%s",
-			pub.ID, platformSkuID, strings.TrimSpace(body.BindReason))
-		if oldExt != "" && oldExt != platformSkuID {
+			pub.ID, platformSKUID, strings.TrimSpace(body.BindReason))
+		if oldExt != "" && oldExt != platformSKUID {
 			msg += fmt.Sprintf(" previousPlatformSkuId=%s", oldExt)
 		}
-		if name := strings.TrimSpace(body.PlatformSkuName); name != "" {
+		if name := strings.TrimSpace(body.PlatformSKUName); name != "" {
 			msg += fmt.Sprintf(" platformSkuName=%s", bindingTruncateMsg(name))
 		}
 		_ = s.OpLog.Write(c, operationlog.WriteOpts{
 			AdminUserID: adminID,
 			Action:      "douyin.sku.binding.manual_bind",
 			Resource:    "product_publication_sku",
-			ResourceID:  publicationSkuID.String(),
+			ResourceID:  publicationSKUID.String(),
 			Status:      "success",
 			Message:     msg,
 		})
 	}
 	douyinmetrics.RecordSKUManualBound()
 
-	row, err := s.buildDouyinBindingRow(ctx, pub, publicationSkuID)
+	row, err := s.buildDouyinBindingRow(ctx, pub, publicationSKUID)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", platformdouyin.CodeDouyinSKUManualBindFailed, err.Error())
 	}
@@ -103,13 +109,16 @@ func (s *Service) ManualBindDouyinSKU(c *gin.Context, publicationSkuID uuid.UUID
 }
 
 // UnbindDouyinSKU clears manual/platform binding for one publication SKU.
-func (s *Service) UnbindDouyinSKU(c *gin.Context, publicationSkuID uuid.UUID, body DouyinManualUnbindBody, adminID *uuid.UUID) (*DouyinSKUBindingRow, error) {
+func (s *Service) UnbindDouyinSKU(c *gin.Context, publicationSKUID uuid.UUID, body DouyinManualUnbindBody, adminID *uuid.UUID) (*DouyinSKUBindingRow, error) {
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("%s: product publish unavailable", platformdouyin.CodeDouyinSKUManualUnbindFailed)
 	}
 	ctx := c.Request.Context()
-	psku, pub, err := s.loadDouyinPublicationSKU(ctx, publicationSkuID)
+	psku, pub, err := s.loadDouyinPublicationSKU(ctx, publicationSKUID)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.ensureStoreOperate(c, pub.ShopID); err != nil {
 		return nil, err
 	}
 
@@ -123,7 +132,9 @@ func (s *Service) UnbindDouyinSKU(c *gin.Context, publicationSkuID uuid.UUID, bo
 		"last_synced_at":  &now,
 		"updated_at":      now,
 	}
-	if err := s.DB.WithContext(ctx).Model(&ProductPublicationSKU{}).Where("id = ?", publicationSkuID).Updates(updates).Error; err != nil {
+	if err := s.DB.WithContext(ctx).Model(&ProductPublicationSKU{}).
+		Where("id = ? AND publication_id = ?", publicationSKUID, pub.ID).
+		Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("%s: %s", platformdouyin.CodeDouyinSKUManualUnbindFailed, err.Error())
 	}
 
@@ -140,22 +151,22 @@ func (s *Service) UnbindDouyinSKU(c *gin.Context, publicationSkuID uuid.UUID, bo
 			AdminUserID: adminID,
 			Action:      "douyin.sku.binding.manual_unbind",
 			Resource:    "product_publication_sku",
-			ResourceID:  publicationSkuID.String(),
+			ResourceID:  publicationSKUID.String(),
 			Status:      "success",
 			Message:     msg,
 		})
 	}
 
-	row, err := s.buildDouyinBindingRow(ctx, pub, publicationSkuID)
+	row, err := s.buildDouyinBindingRow(ctx, pub, publicationSKUID)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", platformdouyin.CodeDouyinSKUManualUnbindFailed, err.Error())
 	}
 	return row, nil
 }
 
-func (s *Service) loadDouyinPublicationSKU(ctx context.Context, publicationSkuID uuid.UUID) (*ProductPublicationSKU, *ProductPublication, error) {
+func (s *Service) loadDouyinPublicationSKU(ctx context.Context, publicationSKUID uuid.UUID) (*ProductPublicationSKU, *ProductPublication, error) {
 	var psku ProductPublicationSKU
-	if err := s.DB.WithContext(ctx).First(&psku, "id = ?", publicationSkuID).Error; err != nil {
+	if err := s.DB.WithContext(ctx).First(&psku, "id = ?", publicationSKUID).Error; err != nil {
 		return nil, nil, err
 	}
 	pub, err := s.loadDouyinPublication(ctx, psku.PublicationID)
@@ -165,29 +176,32 @@ func (s *Service) loadDouyinPublicationSKU(ctx context.Context, publicationSkuID
 	return &psku, pub, nil
 }
 
-func (s *Service) checkDouyinSKUBindingConflict(ctx context.Context, publicationID, excludeSkuID uuid.UUID, platformSkuID string) error {
-	platformSkuID = strings.TrimSpace(platformSkuID)
-	if platformSkuID == "" {
+func (s *Service) checkDouyinSKUBindingConflict(ctx context.Context, publicationID, excludeSKUID uuid.UUID, platformSKUID string) error {
+	platformSKUID = strings.TrimSpace(platformSKUID)
+	if platformSKUID == "" {
 		return fmt.Errorf("%s: platform sku id required", platformdouyin.CodeDouyinPlatformSKUIDMissing)
 	}
 	var other ProductPublicationSKU
 	err := s.DB.WithContext(ctx).
-		Where("publication_id = ? AND id <> ? AND external_sku_id = ?", publicationID, excludeSkuID, platformSkuID).
+		Where("publication_id = ? AND id <> ? AND external_sku_id = ?", publicationID, excludeSKUID, platformSKUID).
 		First(&other).Error
 	if err == nil {
 		return fmt.Errorf("%s: platform sku already bound to another local spec", platformdouyin.CodeDouyinSKUBindingConflict)
 	}
-	return nil
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil
+	}
+	return fmt.Errorf("check douyin sku binding conflict: %w", err)
 }
 
-func (s *Service) buildDouyinBindingRow(ctx context.Context, pub *ProductPublication, publicationSkuID uuid.UUID) (*DouyinSKUBindingRow, error) {
+func (s *Service) buildDouyinBindingRow(ctx context.Context, pub *ProductPublication, publicationSKUID uuid.UUID) (*DouyinSKUBindingRow, error) {
 	localRows, err := s.loadLocalSKUsForBinding(ctx, pub.ID, pub.ProductID)
 	if err != nil {
 		return nil, err
 	}
 	var local *localSKUForBinding
 	for i := range localRows {
-		if localRows[i].PublicationSKUID == publicationSkuID {
+		if localRows[i].PublicationSKUID == publicationSKUID {
 			local = &localRows[i]
 			break
 		}
@@ -196,7 +210,7 @@ func (s *Service) buildDouyinBindingRow(ctx context.Context, pub *ProductPublica
 		return nil, fmt.Errorf("publication sku not found")
 	}
 	var row ProductPublicationSKU
-	if err := s.DB.WithContext(ctx).First(&row, "id = ?", publicationSkuID).Error; err != nil {
+	if err := s.DB.WithContext(ctx).First(&row, "id = ? AND publication_id = ?", publicationSKUID, pub.ID).Error; err != nil {
 		return nil, err
 	}
 	out := DouyinSKUBindingRow{
@@ -205,7 +219,7 @@ func (s *Service) buildDouyinBindingRow(ctx context.Context, pub *ProductPublica
 		SKUCode:          firstNonEmpty(row.SKUCode, local.SKUCode),
 		SpecName:         local.SpecName,
 		ExternalSKUID:    strings.TrimSpace(row.ExternalSKUID),
-		PlatformSkuName:  platformSkuNameFromCache(pub, strings.TrimSpace(row.ExternalSKUID)),
+		PlatformSKUName:  platformSKUNameFromCache(pub, strings.TrimSpace(row.ExternalSKUID)),
 		BindStatus:       strings.TrimSpace(row.BindStatus),
 		BindConfidence:   row.BindConfidence,
 		BindMessage:      row.BindMessage,
@@ -216,30 +230,30 @@ func (s *Service) buildDouyinBindingRow(ctx context.Context, pub *ProductPublica
 	return &out, nil
 }
 
-func localStockForBinding(ctx context.Context, db *gorm.DB, productID uuid.UUID, productSkuID *uuid.UUID) *int {
-	if db == nil || productSkuID == nil {
+func localStockForBinding(ctx context.Context, db *gorm.DB, productID uuid.UUID, productSKUID *uuid.UUID) *int {
+	if db == nil || productSKUID == nil {
 		return nil
 	}
 	var sku product.ProductSKU
-	if err := db.WithContext(ctx).First(&sku, "id = ? AND product_id = ?", *productSkuID, productID).Error; err != nil {
+	if err := db.WithContext(ctx).First(&sku, "id = ? AND product_id = ?", *productSKUID, productID).Error; err != nil {
 		return nil
 	}
 	return sku.Stock
 }
 
-func platformSkuNameFromCache(pub *ProductPublication, platformSkuID string) string {
-	if pub == nil || platformSkuID == "" {
+func platformSKUNameFromCache(pub *ProductPublication, platformSKUID string) string {
+	if pub == nil || platformSKUID == "" {
 		return ""
 	}
-	for _, c := range platformSkusFromPublicationRaw(pub.RawData) {
-		if strings.TrimSpace(c.PlatformSKUID) == platformSkuID {
+	for _, c := range platformSKUsFromPublicationRaw(pub.RawData) {
+		if strings.TrimSpace(c.PlatformSKUID) == platformSKUID {
 			return strings.TrimSpace(c.SpecName)
 		}
 	}
 	return ""
 }
 
-func platformSkusFromPublicationRaw(raw datatypes.JSON) []DouyinPlatformSKUCandidate {
+func platformSKUsFromPublicationRaw(raw datatypes.JSON) []DouyinPlatformSKUCandidate {
 	if len(raw) == 0 || string(raw) == "null" {
 		return nil
 	}
@@ -274,7 +288,7 @@ func platformSkusFromPublicationRaw(raw datatypes.JSON) []DouyinPlatformSKUCandi
 	return out
 }
 
-func platformSkusToCandidates(skus []platformdouyin.PlatformProductSKU) []DouyinPlatformSKUCandidate {
+func platformSKUsToCandidates(skus []platformdouyin.PlatformProductSKU) []DouyinPlatformSKUCandidate {
 	out := make([]DouyinPlatformSKUCandidate, 0, len(skus))
 	for _, p := range skus {
 		out = append(out, DouyinPlatformSKUCandidate{
@@ -287,7 +301,7 @@ func platformSkusToCandidates(skus []platformdouyin.PlatformProductSKU) []Douyin
 	return out
 }
 
-func platformSkusToRaw(skus []platformdouyin.PlatformProductSKU) []map[string]any {
+func platformSKUsToRaw(skus []platformdouyin.PlatformProductSKU) []map[string]any {
 	out := make([]map[string]any, 0, len(skus))
 	for _, p := range skus {
 		out = append(out, map[string]any{
@@ -300,7 +314,7 @@ func platformSkusToRaw(skus []platformdouyin.PlatformProductSKU) []map[string]an
 	return out
 }
 
-func mergePublicationRawPlatformSkus(existing datatypes.JSON, skus []platformdouyin.PlatformProductSKU) datatypes.JSON {
+func mergePublicationRawPlatformSKUs(existing datatypes.JSON, skus []platformdouyin.PlatformProductSKU) datatypes.JSON {
 	var m map[string]any
 	if len(existing) > 0 && string(existing) != "null" {
 		_ = json.Unmarshal(existing, &m)
@@ -308,7 +322,7 @@ func mergePublicationRawPlatformSkus(existing datatypes.JSON, skus []platformdou
 	if m == nil {
 		m = map[string]any{}
 	}
-	m["platformSkus"] = platformSkusToRaw(skus)
+	m["platformSkus"] = platformSKUsToRaw(skus)
 	b, _ := json.Marshal(m)
 	return datatypes.JSON(b)
 }
@@ -342,12 +356,12 @@ func DouyinInventorySyncReady(rows []DouyinSKUBindingRow) (ready bool, reason st
 }
 
 // ValidateDouyinSKUBindingForInventorySync checks one publication SKU row before inventory push.
-func ValidateDouyinSKUBindingForInventorySync(platform string, externalSkuID, bindStatus string) error {
+func ValidateDouyinSKUBindingForInventorySync(platform string, externalSKUID, bindStatus string) error {
 	pl := strings.TrimSpace(strings.ToLower(platform))
 	if pl != "douyin_shop" {
 		return nil
 	}
-	ext := strings.TrimSpace(externalSkuID)
+	ext := strings.TrimSpace(externalSKUID)
 	st := strings.TrimSpace(strings.ToLower(bindStatus))
 	if ext == "" {
 		return fmt.Errorf("%s: external sku id missing; please bind douyin sku first", platformdouyin.CodeDouyinSKUBindingRequired)
@@ -363,7 +377,7 @@ func ValidateDouyinSKUBindingForInventorySync(platform string, externalSkuID, bi
 	return nil
 }
 
-func annotatePlatformSkuCandidates(cands []DouyinPlatformSKUCandidate, rows []DouyinSKUBindingRow) []DouyinPlatformSKUCandidate {
+func annotatePlatformSKUCandidates(cands []DouyinPlatformSKUCandidate, rows []DouyinSKUBindingRow) []DouyinPlatformSKUCandidate {
 	bound := map[string]uuid.UUID{}
 	for _, r := range rows {
 		ext := strings.TrimSpace(r.ExternalSKUID)
@@ -376,7 +390,7 @@ func annotatePlatformSkuCandidates(cands []DouyinPlatformSKUCandidate, rows []Do
 		cp := c
 		if id, ok := bound[strings.TrimSpace(c.PlatformSKUID)]; ok {
 			idCopy := id
-			cp.BoundToPublicationSkuID = &idCopy
+			cp.BoundToPublicationSKUID = &idCopy
 		}
 		out = append(out, cp)
 	}

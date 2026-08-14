@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
 )
 
@@ -188,8 +189,12 @@ func (s *Service) batchTargetScope(ctx context.Context, targets []PublishTargetR
 		}
 	}
 	if s != nil && s.DB != nil && len(shopIDs) > 0 {
+		tenant, tenantErr := security.RequireTenantContext(ctx)
+		if tenantErr != nil {
+			return nil, nil, nil, tenantErr
+		}
 		var rows []shop.Shop
-		if e := s.DB.WithContext(ctx).Where("id IN ?", shopIDs).Find(&rows).Error; e != nil {
+		if e := s.DB.WithContext(ctx).Where("tenant_id = ? AND id IN ?", tenant.TenantID, shopIDs).Find(&rows).Error; e != nil {
 			return nil, nil, nil, e
 		}
 		for _, row := range rows {

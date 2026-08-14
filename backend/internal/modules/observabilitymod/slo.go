@@ -82,7 +82,7 @@ func EvaluateSLOs(ctx context.Context, db *gorm.DB, cat *metrics.Catalog, sample
 	return written, nil
 }
 
-func StartSLOEvaluatorWorker(ctx context.Context, wg *sync.WaitGroup, log *slog.Logger, db *gorm.DB, cat *metrics.Catalog, interval time.Duration, sample func() map[string]float64) {
+func StartSLOEvaluatorWorker(ctx context.Context, wg *sync.WaitGroup, log *slog.Logger, db *gorm.DB, cat *metrics.Catalog, interval time.Duration, sample func() metrics.Snapshot) {
 	if wg == nil || db == nil || sample == nil {
 		return
 	}
@@ -94,12 +94,15 @@ func StartSLOEvaluatorWorker(ctx context.Context, wg *sync.WaitGroup, log *slog.
 		defer wg.Done()
 		tick := time.NewTicker(interval)
 		defer tick.Stop()
+		history := make([]metrics.Snapshot, 0, 64)
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-tick.C:
-				if n, err := EvaluateSLOs(ctx, db, cat, sample()); err != nil && log != nil {
+				current := sample()
+				history = appendSLOSnapshot(history, current)
+				if n, err := EvaluateSLOWindow(ctx, db, cat, history, current); err != nil && log != nil {
 					log.Warn("slo_evaluator_failed", "error", err)
 				} else if log != nil {
 					log.Debug("slo_evaluator_completed", "snapshots", n)
@@ -107,6 +110,166 @@ func StartSLOEvaluatorWorker(ctx context.Context, wg *sync.WaitGroup, log *slog.
 			}
 		}
 	}()
+}
+
+// EvaluateSLOWindow evaluates configured SLOs from counter and histogram
+// increases within their declared windows.
+func EvaluateSLOWindow(ctx context.Context, db *gorm.DB, cat *metrics.Catalog, history []metrics.Snapshot, current metrics.Snapshot) (int, error) {
+	if db == nil {
+		return 0, fmt.Errorf("slo evaluator unavailable")
+	}
+	var defs []database.SLODefinition
+	if err := db.WithContext(ctx).Where("enabled = ?", true).Find(&defs).Error; err != nil {
+		return 0, err
+	}
+	written := 0
+	for _, def := range defs {
+		window := sloWindowDuration(def.Window)
+		baseline, ready := sloBaseline(history, current.TakenAt.Add(-window))
+		if !ready {
+			continue
+		}
+		total, errors, dataReady := sloWindowInputs(def.ID, baseline, current)
+		if !dataReady {
+			continue
+		}
+		compliance, remaining, burn, status := calculateSLO(total, errors, def.TargetRatio)
+		snapshot := database.SLOSnapshot{
+			SLOID: def.ID, Compliance: compliance, ErrorBudget: remaining, BurnRate: burn,
+			Window: normalizeWindow(def.Window), Status: status, RecordedAt: current.TakenAt.UTC().Unix(),
+		}
+		if err := db.WithContext(ctx).Create(&snapshot).Error; err != nil {
+			return written, err
+		}
+		if cat != nil {
+			cat.ObserveSLO(def.ID, snapshot.Window, compliance, remaining, burn)
+		}
+		written++
+	}
+	return written, nil
+}
+
+func appendSLOSnapshot(history []metrics.Snapshot, current metrics.Snapshot) []metrics.Snapshot {
+	cutoff := current.TakenAt.Add(-30 * 24 * time.Hour)
+	recentCutoff := current.TakenAt.Add(-2 * time.Hour)
+	next := make([]metrics.Snapshot, 0, len(history)+1)
+	olderHours := make(map[int64]int)
+	for _, snapshot := range history {
+		if snapshot.TakenAt.Before(cutoff) || !snapshot.TakenAt.Before(current.TakenAt) {
+			continue
+		}
+		if snapshot.TakenAt.Before(recentCutoff) {
+			hour := snapshot.TakenAt.UTC().Truncate(time.Hour).Unix()
+			if index, exists := olderHours[hour]; exists {
+				next[index] = snapshot
+				continue
+			}
+			olderHours[hour] = len(next)
+		}
+		next = append(next, snapshot)
+	}
+	next = append(next, current)
+	if len(next) > 900 {
+		next = next[len(next)-900:]
+	}
+	return next
+}
+
+func sloBaseline(history []metrics.Snapshot, target time.Time) (metrics.Snapshot, bool) {
+	var baseline metrics.Snapshot
+	found := false
+	for _, snapshot := range history {
+		if snapshot.TakenAt.After(target) {
+			continue
+		}
+		if !found || snapshot.TakenAt.After(baseline.TakenAt) {
+			baseline = snapshot
+			found = true
+		}
+	}
+	return baseline, found
+}
+
+func sloWindowInputs(id string, previous, current metrics.Snapshot) (float64, float64, bool) {
+	delta := func(name string, labels map[string]string) (float64, bool) {
+		return metrics.CounterDelta(previous, current, name, labels)
+	}
+	sum := func(selectors ...struct {
+		name   string
+		labels map[string]string
+	}) (float64, bool) {
+		total := 0.0
+		for _, selector := range selectors {
+			value, ok := delta(selector.name, selector.labels)
+			if !ok {
+				return 0, false
+			}
+			total += value
+		}
+		return total, true
+	}
+	switch id {
+	case "api_availability":
+		total, totalOK := delta("http_server_requests_total", nil)
+		errors, errorsOK := delta("http_server_requests_total", map[string]string{"status_class": "5xx"})
+		return total, errors, totalOK && errorsOK
+	case "api_latency":
+		within, total, ok := metrics.HistogramThresholdDelta(previous, current, "http_server_request_duration_seconds", nil, 1)
+		return float64(total), float64(total - within), ok
+	case "worker_success":
+		completed, completedOK := delta("tasks_completed_total", nil)
+		failed, failedOK := delta("tasks_failed_total", nil)
+		dead, deadOK := delta("tasks_dead_letter_total", nil)
+		return completed + failed + dead, failed + dead, completedOK && failedOK && deadOK
+	case "webhook_processing":
+		processed, processedOK := delta("webhook_events_processed_total", nil)
+		rejected, rejectedOK := delta("webhook_payload_rejected_total", nil)
+		resolution, resolutionOK := delta("webhook_shop_resolution_failures_total", nil)
+		return processed + rejected, rejected + resolution, processedOK && rejectedOK && resolutionOK
+	case "provider_success":
+		total, totalOK := delta("provider_requests_total", nil)
+		timeouts, timeoutsOK := delta("provider_request_timeouts_total", nil)
+		contract, contractOK := delta("provider_contract_mismatches_total", nil)
+		return total, timeouts + contract, totalOK && timeoutsOK && contractOK
+	case "order_sync_freshness":
+		total, totalOK := delta("order_sync_runs_total", nil)
+		errors, errorsOK := delta("order_sync_failures_total", nil)
+		return total, errors, totalOK && errorsOK
+	case "file_scan_completion":
+		total, totalOK := delta("file_scan_tasks_total", nil)
+		errors, errorsOK := sum(
+			struct {
+				name   string
+				labels map[string]string
+			}{"file_scan_failures_total", nil},
+			struct {
+				name   string
+				labels map[string]string
+			}{"file_scan_stuck_total", nil},
+		)
+		return total, errors, totalOK && errorsOK
+	case "audit_write_success":
+		total, totalOK := delta("security_events_total", nil)
+		errors, errorsOK := delta("audit_chain_mismatch_total", nil)
+		return total + errors, errors, totalOK && errorsOK
+	default:
+		return 0, 0, false
+	}
+}
+
+func sloWindowDuration(raw string) time.Duration {
+	switch normalizeWindow(raw) {
+	case "6h":
+		return 6 * time.Hour
+	case "24h":
+		return 24 * time.Hour
+	case "7d":
+		return 7 * 24 * time.Hour
+	case "30d":
+		return 30 * 24 * time.Hour
+	default:
+		return time.Hour
+	}
 }
 
 func sloInputs(id string, samples map[string]float64) (float64, float64) {

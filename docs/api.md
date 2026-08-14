@@ -6,7 +6,7 @@
 
 - 基础路径：`/api/v1`
 - 健康检查：`GET /health`、`GET /api/v1/health`（综合）；`GET /health/live`（存活）；`GET /health/ready`（就绪，DB/Redis/迁移/生产门闸）
-- 可观测性（P5 / P5.1 / P5-V，需权限）：`GET /api/v1/observability/overview|http|tasks|providers|security`；`overview` 会返回运行态 `runtimeStatus` 与 telemetry 导出摘要，用于区分 `standard_protocol_ready` / `mock_verified` / `real_backend_deferred` / `export_degraded` / `disabled` / `incomplete`；`GET /api/v1/observability/alerts` 返回 `items[]`，字段为 `id`、`ruleId`、`severity`、`status`、`module`、`summary`、`occurrenceCount`、`lastSeenAt`；`POST /api/v1/observability/alerts/:id/ack|silence`；内部指标：`GET /internal/metrics`（默认仅内网/本机）
+- 可观测性（需权限）：`GET /api/v1/observability/overview` 返回 `overallStatus`、受保护指标端点、活跃系统告警、最近告警窗口评估、SLO 评估和 telemetry 导出摘要。OTLP 状态区分等待首次导出、最近成功和最近失败，未完成首次导出不会显示为健康。总体状态只表示当前可观测性运行情况，不表示系统已经完成生产发布。系统告警统一在 Admin 告警中心处置，`GET /api/v1/observability/alerts` 支持 `page`、`pageSize`（最大 200）、`status`、`severity`、`module`，并返回 `items[]` 与 `pagination`，旧 `limit` 参数继续兼容；列表字段为 `id`、`ruleId`、`severity`、`status`、`module`、`summary`、`occurrenceCount`、`lastSeenAt`；`POST /api/v1/observability/alerts/:id/ack` 确认告警，`POST /api/v1/observability/alerts/:id/silence` 必须提交 `reason` 与 1-720 小时的 `durationHours`；内部指标：`GET /internal/metrics`，由 Nginx 精确路径与 Gin CIDR 双层保护。固定返回聚合占位值的旧 `/http`、`/tasks`、`/providers`、`/security` 接口不再注册。
 - 鉴权：管理端受保护接口使用 `Authorization: Bearer <token>`
 - 返回格式：统一 JSON 响应，核心字段为 `code`、`message`、`data`、`traceId`
 - 敏感信息：接口不得返回完整 API Key、Token、Secret、Cookie 或密码
@@ -177,18 +177,20 @@
 | --- | --- | --- |
 | `GET` | `/api/v1/products/:id/publish-targets` | 可刊登平台、店铺与能力分级（`real_draft_create` / `local_draft_only` / …） |
 | `POST` | `/api/v1/products/:id/publish-targets/check` | 多目标独立预检查；body 含 `targets[]`、`commonConfig`、`targetConfigs` |
-| `POST` | `/api/v1/products/:id/publish-targets/create-drafts` | 批量创建刊登草稿；形成 `product_publish_batches` + 子任务；支持 `onlyReady`、`retryFailedOnly` + `batchId` |
+| `POST` | `/api/v1/products/:id/publish-targets/create-drafts` | 批量创建非抖店刊登草稿；请求只要包含 `douyin_shop` 就在幂等/批次/任务写入前整单拒绝，抖店必须进入运营任务中心。 |
 | `GET` | `/api/v1/product-publish/targets` | 全局可刊登平台与店铺（批量向导） |
 | `POST` | `/api/v1/product-publish/batch-targets/check` | 多商品 × 多目标矩阵预检查；body 含 `productIds[]`、`targets[]`、`commonConfig`、`overrides` |
-| `POST` | `/api/v1/product-publish/batch-targets/create-drafts` | 多商品批量创建刊登草稿；`onlyReady`、`includeWarnings` |
+| `POST` | `/api/v1/product-publish/batch-targets/create-drafts` | 多商品批量创建非抖店刊登草稿；请求只要包含 `douyin_shop` 就在任何本地写入前整单拒绝。 |
 | `GET` | `/api/v1/product-publish/batches` | 多商品刊登批次列表 |
 | `GET` | `/api/v1/product-publish/batches/:id` | 批次详情与子任务（仅创建者可访问，历史无 `createdBy` 批次兼容） |
-| `POST` | `/api/v1/product-publish/batches/:id/retry-failed` | 只重试失败子任务 |
-| `POST` | `/api/v1/product-publish/batches/:id/cancel-pending` | 只取消 pending 子任务 |
+| `POST` | `/api/v1/product-publish/batches/:id/retry-failed` | 只重试失败的非抖店子任务；批次含抖店任务时整批拒绝且不修改任务状态。每个旧任务的认领与替代任务创建在同一事务中，替代失败时旧任务保持 `failed`。 |
+| `POST` | `/api/v1/product-publish/batches/:id/cancel-pending` | 只取消 pending 子任务；任务状态、批次计数与批次状态在同一事务中更新。 |
 
 **批量规模限制（Phase A2.1）**：环境变量 `PUBLISH_BATCH_MAX_PRODUCTS`（默认 100）、`PUBLISH_BATCH_MAX_TARGETS`（默认 20）、`PUBLISH_BATCH_MAX_TASKS`（默认 300，即商品数 × 目标数）。超限时 HTTP 400，message：`本次选择的商品和刊登目标较多，请分批创建刊登草稿。`
 
-**幂等**：`create-drafts` 对相同 admin + 商品 + 目标 + 配置 hash 返回已有活跃批次；任务级 dedup 按 `product + platform + shop + config hash` 跳过已成功项。
+**权限与隔离**：采集/刊登读取需要 `product.view`，采集写入需要 `product.write`，创建刊登草稿需要 `publish.create_draft`，任务重试需要 `task.retry`，刊登 SKU 同步/绑定/解绑需要 `sku.bind`。商品、采集任务、刊登任务、publication 和批次均按当前 tenant 查询；店铺目标还要求对应店铺查看或操作授权，越权资源按未找到处理。
+
+**幂等与原子性**：`create-drafts` 对相同 tenant + admin + 商品 + 目标 + 配置 hash 返回已有活跃批次；任务级 dedup 按 `tenant + product + platform + shop + config hash` 跳过已成功项。本地 publication、刊登任务和反向关联在同一事务中创建，多商品批次与其本地草稿也整体提交或回滚。
 
 **配置校验（Phase A2.2）**：`batch-targets/check` 与 `create-drafts` 校验 `commonConfig` / `overrides`（数值非负、策略枚举、商品 / 平台 / 店铺越权与匹配）。失败时 HTTP 400，`code=40004`（`PUBLISH_CONFIG_INVALID`），`data` 含 `title`、`message`、`technicalDetails.field`。
 
@@ -200,7 +202,7 @@
 
 详见 [`docs/MULTI_PLATFORM_PUBLISHING_DESIGN.md`](MULTI_PLATFORM_PUBLISHING_DESIGN.md)。
 
-刊登任务 `POST /api/v1/products/:id/publish` 会保存 `product_publish_tasks`，任务字段包括 `productId`、`targetPlatform`、`targetStoreId`、`status`（队列态，兼容旧值）、`publishStatus`（业务态：`draft` / `checking` / `ready` / `publishing` / `success` / `failed` / `cancelled`）、`publishMode`、`title`、`description`、`images`、`skus`、`price`、`currency`、`checkResult`、`platformPayload`、`platformResult`、`errorCode`、`errorMessage`、`createdAt`、`updatedAt`。平台字段映射快照包含 `platformTitle`、`platformDescription`、`platformImages`、`platformSkus`、`platformPrice`、`platformStock`、`platformCategory`、`platformAttributes`。
+刊登任务 `POST /api/v1/products/:id/publish` 只为非抖店平台保存 `product_publish_tasks`，并在 `APP_ENV=staging|production` 固定拒绝传统直发，返回 `TRADITIONAL_PUBLISH_PRODUCTION_DISABLED`。`douyin_shop` 在任务写入前固定拒绝并返回 `DOUYIN_OPERATION_TASK_REQUIRED`。非抖店任务字段包括 `productId`、`targetPlatform`、`targetStoreId`、`status`（队列态，兼容旧值）、`publishStatus`（业务态：`draft` / `checking` / `ready` / `publishing` / `success` / `failed` / `cancelled`）、`publishMode`、`title`、`description`、`images`、`skus`、`price`、`currency`、`checkResult`、`platformPayload`、`platformResult`、`errorCode`、`errorMessage`、`createdAt`、`updatedAt`。平台字段映射快照包含 `platformTitle`、`platformDescription`、`platformImages`、`platformSkus`、`platformPrice`、`platformStock`、`platformCategory`、`platformAttributes`。
 
 ## AI
 
@@ -249,6 +251,8 @@
 | `POST` | `/api/v1/collect/providers/taobao_tmall/check-login` | 淘宝/天猫登录态检测（批量采集开始前也会调用）。body 可选 `{ "url": "商品详情链接", "testUrl": "设置页检测链接" }`；未登录返回业务错误文案；需安全验证时阻止批量开始。 |
 | `POST` | `/api/collector/providers/taobao_tmall/check-login` | 同上（`/api/collector` 别名）。 |
 | `POST` | `/api/collector/providers/taobao_tmall/open-login-browser` | 打开淘宝/天猫采集浏览器手动登录；body 可选 `{ "url": "商品链接" }`。 |
+
+以上是 backend 鉴权代理接口。Collector 原生 `/v1/*` 不对浏览器或公网开放，除 `/health` 外均要求 backend 使用 `COLLECTOR_SERVICE_TOKEN` Bearer 鉴权；完整 Compose 不发布 Collector 宿主机端口。采集 URL 仅允许公网 HTTP/HTTPS，解析到私网、回环、链路本地、保留地址或在浏览器阶段转向受限地址时拒绝。
 
 `GET /api/collector/providers/1688/auth-status` 返回示例：
 
@@ -314,9 +318,44 @@
 | `POST` | `/api/v1/products/:id/platform-configs/douyin_shop/images/upload` | 上传当前抖店刊登草稿中的待上传图片到抖店素材中心。body：`imageTypes`（`main` / `detail`）、`retryFailed`、`force`。外链会先下载并写入当前 Storage Provider，再通过后端 Douyin Client 上传；不创建抖店商品。 |
 | `POST` | `/api/v1/products/:id/platform-configs/douyin_shop/images/:imageKey/retry` | 重试单张抖店图片上传。`imageKey` 可用 `localImageId`、`main:0` / `detail:0`、`storageKey` 或已有 `platformImageId`。 |
 | `GET` | `/api/v1/products/:id/platform-configs/douyin_shop/images/status` | 读取当前抖店图片上传状态、Storage 状态、平台图片 ID / URL、失败原因和统计。 |
-| `POST` | `/api/v1/products/:id/platform-configs/douyin_shop/create-draft` | 根据已保存抖店映射与已上传素材图创建抖店平台商品草稿。body：`shopId`（必填）、`publishMode`（默认 `save_as_platform_draft`）、`force`（已有 platformProductId 时二次确认）。会先执行发布前检查；`failed` 阻止创建。 |
+| `POST` | `/api/v1/products/:id/platform-configs/douyin_shop/create-draft` | 兼容保留但不再创建草稿。固定返回 HTTP 409，`data.errorCode=DOUYIN_OPERATION_TASK_REQUIRED`，且不写 publication、刊登任务或幂等记录。 |
 | `GET` | `/api/v1/products/:id/platform-configs/douyin_shop/publish-tasks` | 列出当前商品的抖店刊登任务（分页）。 |
 | `POST` | `/api/v1/product-publish/tasks/:id/cancel` | 取消 pending/running 刊登任务。 |
+
+### 运营任务中心与唯一抖店草稿写链
+
+所有运营任务写请求必须携带 `Idempotency-Key`，并使用登录管理员的租户上下文与细分 RBAC 权限。抖店生产任务的创建 payload 是严格意图：`schemaVersion=douyin_draft_v1`、`productId`、`shopId`、`publishMode=save_as_platform_draft`。服务在只读事务中冻结商品、SKU、平台请求和映射并计算 canonical JSON SHA-256；冻结内容提交人工审核后才允许执行，后续实时商品/映射变化不会替换已批准快照。
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/v1/operation-tasks` | 创建运营任务；真实抖店商品任务会同步生成不可编辑的冻结平台草稿，等待人工审核，不自动执行。 |
+| `GET` | `/api/v1/operation-tasks` | 按 `status`、`platform`、`taskType`、签名游标分页查询。 |
+| `GET` | `/api/v1/operation-tasks/:taskId` | 返回任务、最新草稿/审批/尝试和基于 RBAC/状态机计算的 `allowedActions`。 |
+| `POST` | `/api/v1/operation-tasks/:taskId/cancel` | 按 revision 取消未进入终态的任务。 |
+| `POST` / `PATCH` | `/api/v1/operation-tasks/:taskId/drafts` / `drafts/latest` | 本地运营任务草稿版本操作；生产抖店冻结草稿固定拒绝编辑。 |
+| `GET` | `/api/v1/operation-tasks/:taskId/drafts` | 读取版本摘要；生产草稿只暴露审核视图，不返回被冻结的 Provider 请求或敏感配置。 |
+| `POST` | `/api/v1/operation-tasks/:taskId/approve` / `reject` | 人工审核指定 `draftVersion + draftPayloadHash`，按 task revision 防并发漂移。 |
+| `POST` | `/api/v1/operation-tasks/:taskId/execute` | 只接受已审核生产草稿的 `adapterMode=production_draft`；事务内创建 execution attempt、下游刊登任务与 outbox。 |
+| `POST` | `/api/v1/operation-tasks/:taskId/retry` | 仅允许明确 `retryable=true` 的已知失败；`result_unknown` 不可重试。 |
+| `GET` | `/api/v1/operation-tasks/:taskId/attempts` / `events` | 查询执行尝试与审计时间线。 |
+| `POST` | `/api/v1/product-publish/tasks/:id/recover-douyin-draft` | 需要 `operationtask.execute` 与店铺操作权限；仅下游任务、执行尝试和运营任务均为 `result_unknown` 时人工触发只读 `product.detail` 对账，否则固定 409 `DOUYIN_RECOVERY_NOT_ALLOWED`。不会重新创建；确认同一 `outer_product_id` 已存在时收敛为成功，否则保持不可重试的待核对状态。别名路径为 `/:id/douyin/recover`。 |
+
+生产调用前 Worker 会重复验证运营任务/草稿/审批/尝试/下游任务绑定、冻结请求与映射副本 Hash、商品/店铺/SKU 数、L3 开关、已授权单店、单租户白名单、active 灰度、Owner 与 Technical Lead 两名不同管理员审批，以及 provider/tenant/shop/write kill switch。`result_unknown` 禁止自动重建。平台成功后的刊登任务、publication 与 SKU 更新在同一数据库事务内完成，运营任务终态可由待交付 outbox/消费后对账重放。
+
+L3 只代表上述 `save_as_platform_draft` 能力；不包含正式发布、上架、库存写入、自动业务重试、无审核执行或多店扩容。默认 L0 和所有真实能力关闭。旧直接创建、传统 publish、多目标/批量创建、刊登任务重试和批次重试均不得成为抖店旁路，拒绝时不产生本地写入或状态修改。
+
+### P10 生产控制面
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/p10/status` | 返回环境、能力开关、五级 kill switch、白名单、灰度、首版范围和 `productionReady`；状态不等于发布审批。 |
+| `PUT` | `/api/v1/p10/controls/kill-switches` | 带 `expectedRevision` 更新 provider/tenant/shop/read/write kill switch；缺失控制行默认全部阻断。 |
+| `PUT` | `/api/v1/p10/controls/allowlist` | 维护单租户、单店白名单；`enabled=true` 在数据库层全局最多一条。 |
+| `PUT` | `/api/v1/p10/gray` | 保存单店灰度与 `maxSku<=100`，修改范围会重置审批。 |
+| `POST` | `/api/v1/p10/gray/approve` | 由两名不同全局管理员分别以 `owner` 和 `technical_lead` 职责审批同一 revision。岗位真实性由发布工单核验。 |
+| `POST` | `/api/v1/p10/gray/activate` / `pause` / `stop` | 激活、暂停或停止灰度；所有操作带 revision 并写安全审计。 |
+
+配置默认 L0。L3 启动必须同时满足真实 Provider/网络/凭据/草稿写/Worker 开关、`PRODUCT_PUBLISH_QUEUE_ENABLED=true`、`WORKER_REAPER_ENABLED=true`，且自动业务重试和库存 mutation 关闭。CI、真实凭据工单、备份/恢复/回滚、灰度与人工验收未完成前，不得将 API 可用描述为已上线。
 
 抖店 SKU 绑定校准与手动兜底（Phase 9.1 / 9.2，`product_publications.id` 或 `product_publication_skus.id` 为路径参数）：
 
@@ -374,13 +413,13 @@ Batch 5 的 fixture/mock-only 后端 API 使用 `/api/v1/inventory-sync`，复�
 
 List endpoints return `{items, nextCursor, hasMore, limit}` and never expose offset/page totals. DTOs intentionally omit raw provider cursors, checkpoints, payloads, credential fields, and idempotency hashes.
 
-通用刊登任务接口（含抖店）：
+通用刊登任务查询接口（抖店写入只能由运营任务中心创建）：
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/v1/product-publish/tasks` | 刊登任务列表 |
 | `GET` | `/api/v1/product-publish/tasks/:id` | 任务详情（含 `platformPayload` 平台提交内容、`platformProductId` 抖店商品 ID、`retryable` 是否可重试） |
-| `POST` | `/api/v1/product-publish/tasks/:id/retry` | 重试 failed 任务 |
+| `POST` | `/api/v1/product-publish/tasks/:id/retry` | 仅 development/test 可重试明确可重试的非抖店 failed 任务；staging/production 固定返回 `TRADITIONAL_PUBLISH_PRODUCTION_DISABLED` 且不修改旧任务，抖店固定返回 `DOUYIN_OPERATION_TASK_REQUIRED` 且不修改状态。 |
 
 `product_platform_publish_configs.mapped_images` 在抖店 Phase 6 保存扩展结构：
 
@@ -471,31 +510,9 @@ List endpoints return `{items, nextCursor, hasMore, limit}` and never expose off
 | `GET` | `/api/v1/ai/operation-workbench/todos/:id` | 单条待办详情 |
 | `POST` | `/api/v1/ai/operation-workbench/todos/refresh` | 重新聚合待办（只读，不写库、不调平台 API） |
 
-## P6 Backup / Restore / Release / DR API
+## Operations API retirement
 
-All P6 write operations require Bearer authentication and backend RBAC. The frontend never receives shell commands, full backup paths, storage secrets or database credentials.
-
-| 方法 | 路径 | 权限 | 说明 |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/ops/backups` | `backup.read` | 备份记录列表；不返回完整对象路径。 |
-| `POST` | `/api/v1/ops/backups` | `backup.create` | 创建备份任务；未启用备份时生成待复核记录。 |
-| `GET` | `/api/v1/ops/backups/:id` | `backup.read` | 备份详情。 |
-| `POST` | `/api/v1/ops/backups/:id/verify` | `backup.verify` | 执行备份校验。 |
-| `POST` | `/api/v1/ops/backups/:id/hold` | `backup.hold` | 添加手动保留。 |
-| `DELETE` | `/api/v1/ops/backups/:id` | `backup.delete` | 删除非运行、非 hold 的备份记录。 |
-| `GET` | `/api/v1/ops/restores` | `restore.read` | 恢复验证列表。 |
-| `POST` | `/api/v1/ops/restores` | `restore.execute` | 创建隔离恢复验证；production 目标默认拒绝。 |
-| `GET` | `/api/v1/ops/restores/:id` | `restore.read` | 恢复验证详情。 |
-| `POST` | `/api/v1/ops/restores/:id/verify` | `restore.verify` | 写入恢复完整性验证。 |
-| `GET` | `/api/v1/ops/releases` | `release.read` | 发布记录列表。 |
-| `POST` | `/api/v1/ops/releases` | `release.create` | 创建发布记录和 manifest 摘要。 |
-| `GET` | `/api/v1/ops/releases/:id` | `release.read` | 发布详情。 |
-| `POST` | `/api/v1/ops/releases/:id/execute` | `release.execute` | 执行受控发布状态机。 |
-| `POST` | `/api/v1/ops/releases/:id/rollback` | `release.rollback` | 应用层回滚；禁止自动数据库恢复。 |
-| `GET` | `/api/v1/ops/dr/status` | `dr.read` | 灾备状态与 Deferred 项。 |
-| `POST` | `/api/v1/ops/dr/drills` | `dr.execute` | 记录隔离演练；必须确认隔离环境。 |
-
-Historical P6-VR closure evidence is available from Git history. The current working tree keeps the reusable backup, isolated restore and application rollback paths only; this still does not mark Production Ready or perform a real production restore, PITR drill or traffic switch.
+The application-level backup management, restore validation, release recorder and disaster-recovery drill recorder APIs have been retired. Backup execution, retention, encryption, point-in-time recovery, monitoring and restore drills are owned by the cloud database and operations platform. Existing historical operation tables are not exposed and are not dropped automatically.
 
 ## P7 Performance / Capacity API Status
 

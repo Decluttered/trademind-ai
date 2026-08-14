@@ -19,8 +19,8 @@ type AdjustStockBody struct {
 	Sync   bool   `json:"sync"`
 }
 
-// PublicationSkuSyncBody POST /product-publication-skus/:id/sync-inventory
-type PublicationSkuSyncBody struct {
+// PublicationSKUSyncBody POST /product-publication-skus/:id/sync-inventory
+type PublicationSKUSyncBody struct {
 	Stock              int            `json:"stock"`
 	Options            map[string]any `json:"options"`
 	FromInventoryAlert bool           `json:"fromInventoryAlert"`
@@ -56,7 +56,7 @@ type TaskDTO struct {
 	ProductSKUID     *uuid.UUID `json:"productSkuId,omitempty"`
 	SKUCode          string     `json:"skuCode,omitempty"`
 	PublicationID    *uuid.UUID `json:"publicationId,omitempty"`
-	PublicationSkuID *uuid.UUID `json:"publicationSkuId,omitempty"`
+	PublicationSKUID *uuid.UUID `json:"publicationSkuId,omitempty"`
 	ShopID           uuid.UUID  `json:"shopId"`
 	ShopName         string     `json:"shopName,omitempty"`
 	Platform         string     `json:"platform"`
@@ -99,8 +99,8 @@ type ChangeLogDTO struct {
 	RefOrderItemID *uuid.UUID `json:"refOrderItemId,omitempty"`
 }
 
-// PublicationSkuListingRow lists platform mapping rows for SKU inventory UI.
-type PublicationSkuListingRow struct {
+// PublicationSKUListingRow lists platform mapping rows for SKU inventory UI.
+type PublicationSKUListingRow struct {
 	PublicationSKUID  uuid.UUID  `json:"publicationSkuId"`
 	PublicationID     uuid.UUID  `json:"publicationId"`
 	ProductSKUID      *uuid.UUID `json:"productSkuId,omitempty"`
@@ -141,12 +141,12 @@ type PaginatedLogs struct {
 
 // PlatformStockAlertEntry is one mapped listing SKU line in an alert row.
 type PlatformStockAlertEntry struct {
-	PublicationSkuID    uuid.UUID  `json:"publicationSkuId"`
+	PublicationSKUID    uuid.UUID  `json:"publicationSkuId"`
 	ShopID              uuid.UUID  `json:"shopId"`
 	ShopName            string     `json:"shopName,omitempty"`
 	Platform            string     `json:"platform"`
 	ExternalProductID   string     `json:"externalProductId,omitempty"`
-	ExternalSkuID       string     `json:"externalSkuId,omitempty"`
+	ExternalSKUID       string     `json:"externalSkuId,omitempty"`
 	PlatformStock       *int       `json:"platformStock,omitempty"`
 	PlatformStockStatus string     `json:"platformStockStatus"`
 	LastSyncedAt        *time.Time `json:"lastSyncedAt,omitempty"`
@@ -160,7 +160,7 @@ type PlatformStockAlertEntry struct {
 type InventoryAlertEntry struct {
 	ProductID             uuid.UUID                 `json:"productId"`
 	ProductTitle          string                    `json:"productTitle"`
-	ProductSkuID          uuid.UUID                 `json:"productSkuId"`
+	ProductSKUID          uuid.UUID                 `json:"productSkuId"`
 	SKUCode               string                    `json:"skuCode"`
 	SKUName               string                    `json:"skuName"`
 	Stock                 int                       `json:"stock"`
@@ -181,7 +181,7 @@ type InventoryAlertEntry struct {
 type AlertsListQuery struct {
 	Keyword       string
 	ProductID     *uuid.UUID
-	ProductSkuID  *uuid.UUID
+	ProductSKUID  *uuid.UUID
 	Platform      string
 	ShopID        *uuid.UUID
 	AlertType     string
@@ -207,8 +207,8 @@ type CreateInventorySyncBatchBody struct {
 	Platform          string         `json:"platform"`
 	ShopID            string         `json:"shopId"`
 	ProductID         string         `json:"productId"`
-	ProductSkuIds     []string       `json:"productSkuIds"`
-	PublicationSkuIds []string       `json:"publicationSkuIds"`
+	ProductSKUIDs     []string       `json:"productSkuIds"`
+	PublicationSKUIDs []string       `json:"publicationSkuIds"`
 	OnlyAlerts        bool           `json:"onlyAlerts"`
 	AlertTypes        []string       `json:"alertTypes"`
 	OnlyPublished     *bool          `json:"onlyPublished"`
@@ -275,13 +275,13 @@ type InventorySyncBatchListResult struct {
 
 // RetryInventorySyncTasksBatchBody POST batch retry-from-task-ids (≤100).
 type RetryInventorySyncTasksBatchBody struct {
-	TaskIds []string `json:"taskIds"`
+	TaskIDs []string `json:"taskIds"`
 }
 
 // StockSettingsBatchPreviewBody POST /inventory/stock-settings/batch-preview
 type StockSettingsBatchPreviewBody struct {
 	ProductID     string   `json:"productId"`
-	ProductSkuIDs []string `json:"productSkuIds"`
+	ProductSKUIDs []string `json:"productSkuIds"`
 	Platform      string   `json:"platform"`
 	ShopID        string   `json:"shopId"`
 	StockStatus   string   `json:"stockStatus"`
@@ -306,7 +306,7 @@ type StockSettingsBatchUpdateBody struct {
 // StockSettingsSampleSKU is a preview row without platform payloads.
 type StockSettingsSampleSKU struct {
 	ProductID    uuid.UUID `json:"productId"`
-	ProductSkuID uuid.UUID `json:"productSkuId"`
+	ProductSKUID uuid.UUID `json:"productSkuId"`
 	SKUCode      string    `json:"skuCode"`
 	ProductTitle string    `json:"productTitle,omitempty"`
 }
@@ -314,7 +314,7 @@ type StockSettingsSampleSKU struct {
 // StockSettingsBatchPreviewResult matches POST /inventory/stock-settings/batch-preview data.
 type StockSettingsBatchPreviewResult struct {
 	MatchedCount int64                    `json:"matchedCount"`
-	SampleSkus   []StockSettingsSampleSKU `json:"sampleSkus"`
+	SampleSKUs   []StockSettingsSampleSKU `json:"sampleSkus"`
 	Page         int                      `json:"page"`
 	PageSize     int                      `json:"pageSize"`
 	TotalPages   int                      `json:"totalPages"`

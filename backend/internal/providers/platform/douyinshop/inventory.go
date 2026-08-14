@@ -9,7 +9,7 @@ import (
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
 )
 
-const MethodSkuSyncStock = "sku.syncStock"
+const MethodSKUSyncStock = "sku.syncStock"
 
 // SyncInventory pushes one absolute stock snapshot to Douyin via sku.syncStock (full update).
 // Official Douyin OpenAPI (Phase 9): sku.syncStock — product_id, sku_id, stock_num (>=0), incremental=false.
@@ -50,7 +50,7 @@ func (provider) SyncInventory(ctx context.Context, req platformp.SyncInventoryRe
 	}
 
 	var data map[string]any
-	if err := client.Do(ctx, MethodSkuSyncStock, params, &data); err != nil {
+	if err := client.Do(ctx, MethodSKUSyncStock, params, &data); err != nil {
 		_ = setAuthStatusMaybe(ctx, req.ShopID, "error")
 		return nil, mapInventorySyncError(err)
 	}
@@ -61,7 +61,7 @@ func (provider) SyncInventory(ctx context.Context, req platformp.SyncInventoryRe
 		"skuId":          extSKU,
 		"appliedStock":   req.Stock,
 		"incremental":    false,
-		"method":         MethodSkuSyncStock,
+		"method":         MethodSKUSyncStock,
 		"skuCode":        strings.TrimSpace(req.SKUCode),
 		"publicationId":  req.PublicationID.String(),
 		"publicationSku": req.PublicationSKUID.String(),

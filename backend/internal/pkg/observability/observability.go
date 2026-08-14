@@ -64,7 +64,7 @@ func Init(cfg Config) (*Observability, error) {
 			}
 		}
 		cfg.Tracer.OnExportError = func(n int) {
-			o.RecordTelemetryExportFailure()
+			o.RecordTelemetryExportFailure(n)
 			if n > 0 {
 				o.RecordTelemetryDropped(n)
 			}
@@ -127,10 +127,10 @@ func (o *Observability) MetricsHandler() http.Handler {
 	})
 }
 
-// RecordTelemetryExportFailure increments export failure metric.
-func (o *Observability) RecordTelemetryExportFailure() {
-	if o != nil && o.Catalog != nil && o.Catalog.TelemetryExportFailures != nil {
-		o.Catalog.TelemetryExportFailures.Inc()
+// RecordTelemetryExportFailure increments failed telemetry item count.
+func (o *Observability) RecordTelemetryExportFailure(n int) {
+	if o != nil && o.Catalog != nil && o.Catalog.TelemetryExportFailures != nil && n > 0 {
+		o.Catalog.TelemetryExportFailures.Add(float64(n))
 	}
 }
 

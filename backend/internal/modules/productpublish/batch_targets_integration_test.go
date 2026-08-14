@@ -14,9 +14,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/ctxkey"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/model"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -44,10 +49,71 @@ func newBatchIntegrationDB(t *testing.T) *gorm.DB {
 		&ProductPublishBatch{},
 		&ProductPublishTask{},
 		&ProductPublication{},
+		&ProductPublicationSKU{},
+		&idempotency.Record{},
 	); err != nil {
 		t.Fatal(err)
 	}
 	return db
+}
+
+func TestDouyinTargetsAreRejectedBeforeAnySingleOrBatchWrite(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	svc.Idempotency = &idempotency.Service{DB: db}
+	productID, shopID := uuid.New(), uuid.New()
+	shopIDRaw := shopID.String()
+	targets := []PublishTargetRef{{Platform: "douyin_shop", ShopID: &shopIDRaw}}
+	adminID := uuid.New()
+
+	_, err := svc.CreateDraftsForTargets(testGinContext(), productID, PublishTargetsCreateDraftsRequest{Targets: targets}, &adminID)
+	require.ErrorIs(t, err, ErrDouyinOperationTaskRequired)
+	_, err = svc.CreateBatchTargetDrafts(testGinContext(), BatchTargetsCreateDraftsRequest{
+		ProductIDs: []string{productID.String()}, Targets: targets, IncludeWarnings: true,
+	}, &adminID)
+	require.ErrorIs(t, err, ErrDouyinOperationTaskRequired)
+
+	for _, modelValue := range []any{&ProductPublishBatch{}, &ProductPublishTask{}, &ProductPublication{}, &idempotency.Record{}} {
+		var count int64
+		require.NoError(t, db.Model(modelValue).Count(&count).Error)
+		require.Zero(t, count)
+	}
+}
+
+func TestDouyinRetryPathsDoNotMutateLegacyTasks(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	adminID := uuid.New()
+	productID, shopID, batchID := uuid.New(), uuid.New(), uuid.New()
+	batch := ProductPublishBatch{
+		HardDeleteBase: model.HardDeleteBase{ID: batchID}, BatchType: BatchTypeMultiProduct, Status: BatchFailed,
+		ProductCount: 1, TargetCount: 1, TaskCount: 1, FailedCount: 1, CreatedBy: &adminID,
+	}
+	require.NoError(t, db.Create(&batch).Error)
+	task := ProductPublishTask{
+		HardDeleteBase: model.HardDeleteBase{ID: uuid.New()}, ProductID: productID, ShopID: shopID, TargetStoreID: shopID,
+		BatchID: &batchID, Platform: "douyin_shop", TaskType: TaskTypeDouyinDraftCreate, Status: TaskFailed,
+		PublishStatus: StatusPubFailed, Mode: PublishModeSaveAsPlatformDraft, PublishMode: PublishModeSaveAsPlatformDraft,
+		ErrorCode: "LEGACY_FAILURE", ErrorMessage: "legacy failure", Retryable: true,
+	}
+	require.NoError(t, db.Create(&task).Error)
+
+	c := testGinContext()
+	c.Set("tenant_id", int64(0))
+	_, err := svc.RetryFailed(c, task.ID, &adminID)
+	require.ErrorIs(t, err, ErrDouyinOperationTaskRequired)
+	_, err = svc.RetryFailedBatchTasks(testGinContext(), batchID, &adminID)
+	require.ErrorIs(t, err, ErrDouyinOperationTaskRequired)
+
+	var storedTask ProductPublishTask
+	require.NoError(t, db.First(&storedTask, "id = ?", task.ID).Error)
+	require.Equal(t, TaskFailed, storedTask.Status)
+	require.Equal(t, "LEGACY_FAILURE", storedTask.ErrorCode)
+	require.True(t, storedTask.Retryable)
+	var storedBatch ProductPublishBatch
+	require.NoError(t, db.First(&storedBatch, "id = ?", batchID).Error)
+	require.Equal(t, BatchFailed, storedBatch.Status)
+	require.Equal(t, 1, storedBatch.FailedCount)
 }
 
 func newBatchTestService(db *gorm.DB) *Service {
@@ -64,7 +130,31 @@ func testGinContext() *gin.Context {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("POST", "/test", nil)
+	c.Set(ctxkey.TenantID, int64(0))
+	tenant := &security.TenantContext{TenantID: 0, AuthSource: security.AuthSourceLegacyDevZero}
+	security.SetGin(c, tenant)
+	c.Request = c.Request.WithContext(security.WithTenantContext(c.Request.Context(), tenant))
 	return c
+}
+
+func testLegacyTenantContext() context.Context {
+	return security.WithTenantContext(context.Background(), &security.TenantContext{TenantID: 0, AuthSource: security.AuthSourceLegacyDevZero})
+}
+
+func testTenantGinContext(tenantID int64, principal *adminperm.Principal) *gin.Context {
+	c := testGinContext()
+	tenant := &security.TenantContext{TenantID: tenantID, AuthSource: security.AuthSourceAccessToken}
+	c.Set(ctxkey.TenantID, tenantID)
+	security.SetGin(c, tenant)
+	c.Request = c.Request.WithContext(security.WithTenantContext(c.Request.Context(), tenant))
+	if principal != nil {
+		c.Set("adminperm.principal", principal)
+	}
+	return c
+}
+
+func testTenantContext(tenantID int64) context.Context {
+	return security.WithTenantContext(context.Background(), &security.TenantContext{TenantID: tenantID, AuthSource: security.AuthSourceWorker})
 }
 
 func seedBatchProduct(t *testing.T, db *gorm.DB) (uuid.UUID, uuid.UUID) {
@@ -245,6 +335,113 @@ func TestRetryFailedDoesNotRetrySuccess(t *testing.T) {
 	}
 }
 
+func TestRetryFailedBatchKeepsRunningWhileAnotherChildIsActive(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	pid, sid := seedBatchProduct(t, db)
+	adminID := uuid.New()
+	batchID := uuid.New()
+	inRaw, _ := json.Marshal(batchCreateReq(pid, sid, nil))
+	batch := ProductPublishBatch{
+		HardDeleteBase: model.HardDeleteBase{ID: batchID},
+		BatchType:      BatchTypeMultiProduct,
+		Status:         BatchRunning,
+		ProductCount:   1,
+		TargetCount:    2,
+		TaskCount:      2,
+		FailedCount:    1,
+		Input:          datatypes.JSON(inRaw),
+		CreatedBy:      &adminID,
+	}
+	require.NoError(t, db.Create(&batch).Error)
+	baseTask := ProductPublishTask{
+		ProductID:     pid,
+		ShopID:        sid,
+		TargetStoreID: sid,
+		BatchID:       &batchID,
+		TargetKey:     publishTargetKey("shopee", &sid),
+		Platform:      "shopee",
+		TaskType:      TaskTypeLocalDraftCreate,
+		Mode:          PublishModeSaveAsPlatformDraft,
+		PublishMode:   PublishModeSaveAsPlatformDraft,
+	}
+	failedTask := baseTask
+	failedTask.ID = uuid.New()
+	failedTask.Status = TaskFailed
+	failedTask.Retryable = true
+	failedTask.ErrorMessage = "retry me"
+	runningTask := baseTask
+	runningTask.ID = uuid.New()
+	runningTask.Status = TaskRunning
+	require.NoError(t, db.Create(&failedTask).Error)
+	require.NoError(t, db.Create(&runningTask).Error)
+
+	result, err := svc.RetryFailedBatchTasks(testGinContext(), batchID, &adminID)
+	require.NoError(t, err)
+	require.Equal(t, BatchRunning, result.Status)
+	require.Equal(t, 1, result.SuccessCount)
+
+	var storedBatch ProductPublishBatch
+	require.NoError(t, db.First(&storedBatch, "id = ?", batchID).Error)
+	require.Equal(t, BatchRunning, storedBatch.Status)
+	require.Nil(t, storedBatch.FinishedAt)
+}
+
+func TestRetryFailedKeepsOriginalFailureWhenReplacementCreateFails(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	pid, sid := seedBatchProduct(t, db)
+	adminID := uuid.New()
+	batchID := uuid.New()
+	inRaw, _ := json.Marshal(batchCreateReq(pid, sid, nil))
+	batch := ProductPublishBatch{
+		HardDeleteBase: model.HardDeleteBase{ID: batchID},
+		BatchType:      BatchTypeMultiProduct,
+		Status:         BatchFailed,
+		ProductCount:   1,
+		TargetCount:    1,
+		TaskCount:      1,
+		FailedCount:    1,
+		Input:          datatypes.JSON(inRaw),
+		CreatedBy:      &adminID,
+	}
+	require.NoError(t, db.Create(&batch).Error)
+	failedTask := ProductPublishTask{
+		HardDeleteBase: model.HardDeleteBase{ID: uuid.New()},
+		ProductID:      pid,
+		ShopID:         sid,
+		TargetStoreID:  sid,
+		BatchID:        &batchID,
+		TargetKey:      publishTargetKey("shopee", &sid),
+		Platform:       "shopee",
+		TaskType:       TaskTypeLocalDraftCreate,
+		Status:         TaskFailed,
+		Mode:           PublishModeSaveAsPlatformDraft,
+		PublishMode:    PublishModeSaveAsPlatformDraft,
+		ErrorCode:      "UPSTREAM_FAILED",
+		ErrorMessage:   "original failure",
+		Retryable:      true,
+	}
+	require.NoError(t, db.Create(&failedTask).Error)
+	require.NoError(t, db.Migrator().DropTable(&ProductPublication{}))
+
+	result, err := svc.RetryFailedBatchTasks(testGinContext(), batchID, &adminID)
+	require.NoError(t, err)
+	require.Equal(t, 1, result.FailedCount)
+	require.Len(t, result.Items, 1)
+	require.Equal(t, TaskFailed, result.Items[0].Status)
+
+	var stored ProductPublishTask
+	require.NoError(t, db.First(&stored, "id = ?", failedTask.ID).Error)
+	require.Equal(t, TaskFailed, stored.Status)
+	require.Equal(t, "UPSTREAM_FAILED", stored.ErrorCode)
+	require.Equal(t, "original failure", stored.ErrorMessage)
+	require.True(t, stored.Retryable)
+	var cancelled int64
+	require.NoError(t, db.Model(&ProductPublishTask{}).Where("batch_id = ? AND status = ?", batchID, TaskCancelled).Count(&cancelled).Error)
+	require.Zero(t, cancelled)
+}
+
 func TestRetryConcurrentSingleClaim(t *testing.T) {
 	db := newBatchIntegrationDB(t)
 	svc := newBatchTestService(db)
@@ -360,6 +557,12 @@ func TestCancelPendingPreservesSuccessAndRunning(t *testing.T) {
 	if out == nil {
 		t.Fatal("nil detail")
 	}
+	if out.Status != BatchRunning {
+		t.Fatalf("expected batch to remain running, got %s", out.Status)
+	}
+	if out.FinishedAt != nil {
+		t.Fatalf("running batch must not have finishedAt, got %s", out.FinishedAt.Format(time.RFC3339Nano))
+	}
 }
 
 func TestDouyinSuccessDedupSkipsCreate(t *testing.T) {
@@ -384,7 +587,7 @@ func TestDouyinSuccessDedupSkipsCreate(t *testing.T) {
 	if err := db.Create(&existing).Error; err != nil {
 		t.Fatal(err)
 	}
-	dup, ok := svc.findExistingSuccessfulTask(context.Background(), pid, "douyin_shop", &sid, eff)
+	dup, ok := svc.findExistingSuccessfulTask(testLegacyTenantContext(), pid, "douyin_shop", &sid, eff)
 	if !ok || dup == nil {
 		t.Fatal("expected douyin dedup")
 	}
@@ -412,6 +615,82 @@ func TestLocalDraftDedupSkipsPublication(t *testing.T) {
 	db.Model(&ProductPublication{}).Count(&pubCount2)
 	if pubCount2 != 1 {
 		t.Fatalf("expected still 1 publication after idempotent batch, got %d", pubCount2)
+	}
+}
+
+func TestLocalDraftCreateRollsBackPublicationWhenTaskInsertFails(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	pid, sid := seedBatchProduct(t, db)
+	if err := db.Callback().Create().Before("gorm:create").Register("test:fail_publish_task", func(tx *gorm.DB) {
+		if tx.Statement.Schema != nil && tx.Statement.Schema.Name == "ProductPublishTask" {
+			tx.AddError(fmt.Errorf("forced publish task insert failure"))
+		}
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	result := svc.createLocalDraftForTarget(
+		testLegacyTenantContext(),
+		pid,
+		"shopee",
+		&sid,
+		uuid.New(),
+		nil,
+		PublishTargetCheckResult{Capability: CapLocalDraftOnly, Status: statusReady, CanCreate: true},
+	)
+	if result.Status != TaskFailed {
+		t.Fatalf("expected failed result, got %s", result.Status)
+	}
+	var publications, tasks int64
+	require.NoError(t, db.Model(&ProductPublication{}).Where("product_id = ?", pid).Count(&publications).Error)
+	require.NoError(t, db.Model(&ProductPublishTask{}).Where("product_id = ?", pid).Count(&tasks).Error)
+	require.Zero(t, publications)
+	require.Zero(t, tasks)
+}
+
+func TestLocalDraftBatchRollsBackWhenFinalizeFails(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		run  func(*Service, *gin.Context, uuid.UUID, uuid.UUID, uuid.UUID) error
+	}{
+		{
+			name: "single product",
+			run: func(svc *Service, c *gin.Context, productID, shopID, adminID uuid.UUID) error {
+				shopIDRaw := shopID.String()
+				_, err := svc.CreateDraftsForTargets(c, productID, PublishTargetsCreateDraftsRequest{
+					Targets: []PublishTargetRef{{Platform: "shopee", ShopID: &shopIDRaw}},
+				}, &adminID)
+				return err
+			},
+		},
+		{
+			name: "multiple products",
+			run: func(svc *Service, c *gin.Context, productID, shopID, adminID uuid.UUID) error {
+				_, err := svc.CreateBatchTargetDrafts(c, batchCreateReq(productID, shopID, nil), &adminID)
+				return err
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db := newBatchIntegrationDB(t)
+			svc := newBatchTestService(db)
+			productID, shopID := seedBatchProduct(t, db)
+			adminID := uuid.New()
+			callbackName := "test:fail_publish_batch_finalize"
+			require.NoError(t, db.Callback().Update().Before("gorm:update").Register(callbackName, func(tx *gorm.DB) {
+				if tx.Statement.Schema != nil && tx.Statement.Schema.Name == "ProductPublishBatch" {
+					tx.AddError(fmt.Errorf("forced publish batch finalize failure"))
+				}
+			}))
+
+			require.Error(t, tc.run(svc, testGinContext(), productID, shopID, adminID))
+			for _, modelValue := range []any{&ProductPublishBatch{}, &ProductPublishTask{}, &ProductPublication{}} {
+				var count int64
+				require.NoError(t, db.Model(modelValue).Count(&count).Error)
+				require.Zero(t, count)
+			}
+		})
 	}
 }
 
@@ -456,9 +735,181 @@ func TestBatchAccessDeniedForOtherAdmin(t *testing.T) {
 	if err := db.Create(&batch).Error; err != nil {
 		t.Fatal(err)
 	}
-	_, err := svc.GetPublishBatchDetail(context.Background(), batchID, &other)
+	_, err := svc.GetPublishBatchDetail(testLegacyTenantContext(), batchID, &other)
 	if err != ErrBatchAccessDenied {
 		t.Fatalf("expected ErrBatchAccessDenied, got %v", err)
+	}
+}
+
+func TestPublicationLookupAndListAreTenantAndStoreScoped(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	productID := uuid.New()
+	shopA, shopB := uuid.New(), uuid.New()
+	pubA := ProductPublication{TenantID: 11, ProductID: productID, ShopID: shopA, Platform: "douyin_shop"}
+	pubB := ProductPublication{TenantID: 11, ProductID: productID, ShopID: shopB, Platform: "douyin_shop"}
+	pubOtherTenant := ProductPublication{TenantID: 12, ProductID: productID, ShopID: shopA, Platform: "douyin_shop"}
+	require.NoError(t, db.Create(&pubA).Error)
+	require.NoError(t, db.Create(&pubB).Error)
+	require.NoError(t, db.Create(&pubOtherTenant).Error)
+
+	loaded, err := svc.loadDouyinPublication(testTenantContext(11), pubA.ID)
+	require.NoError(t, err)
+	require.Equal(t, pubA.ID, loaded.ID)
+	_, err = svc.loadDouyinPublication(testTenantContext(12), pubA.ID)
+	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
+
+	principal := &adminperm.Principal{
+		Role: adminperm.RoleOperator,
+		StoreGrants: []adminperm.StoreGrant{{
+			StoreID: shopA,
+		}},
+	}
+	rows, err := svc.ListPublicationsByProduct(testTenantGinContext(11, principal), productID)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	require.Equal(t, pubA.ID, rows[0].ID)
+}
+
+func TestBatchStoreAuthorizationFailsAfterGrantRevocation(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	batchID, shopID := uuid.New(), uuid.New()
+	require.NoError(t, db.Create(&ProductPublishBatch{
+		HardDeleteBase: model.HardDeleteBase{ID: batchID},
+		TenantID:       21,
+		BatchType:      BatchTypeMultiProduct,
+		Status:         BatchFailed,
+	}).Error)
+	require.NoError(t, db.Create(&ProductPublishTask{
+		HardDeleteBase: model.HardDeleteBase{ID: uuid.New()},
+		TenantID:       21,
+		BatchID:        &batchID,
+		ProductID:      uuid.New(),
+		ShopID:         shopID,
+		TargetStoreID:  shopID,
+		Platform:       "shopee",
+		Status:         TaskFailed,
+	}).Error)
+
+	revoked := &adminperm.Principal{Role: adminperm.RoleOperator}
+	require.ErrorIs(t, svc.authorizeBatchStores(testTenantGinContext(21, revoked), batchID, true), gorm.ErrRecordNotFound)
+	granted := &adminperm.Principal{
+		Role:        adminperm.RoleOperator,
+		StoreGrants: []adminperm.StoreGrant{{StoreID: shopID, PermissionScope: "operate"}},
+	}
+	require.NoError(t, svc.authorizeBatchStores(testTenantGinContext(21, granted), batchID, true))
+}
+
+func TestNonAdminBatchListRequiresAccessToEveryChildStore(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	shopA, shopB := uuid.New(), uuid.New()
+	visibleBatchID, mixedBatchID, emptyBatchID := uuid.New(), uuid.New(), uuid.New()
+	for _, batchID := range []uuid.UUID{visibleBatchID, mixedBatchID, emptyBatchID} {
+		require.NoError(t, db.Create(&ProductPublishBatch{
+			HardDeleteBase: model.HardDeleteBase{ID: batchID}, TenantID: 21,
+			BatchType: BatchTypeMultiProduct, Status: BatchSuccess,
+		}).Error)
+	}
+	for _, task := range []ProductPublishTask{
+		{
+			HardDeleteBase: model.HardDeleteBase{ID: uuid.New()}, TenantID: 21, BatchID: &visibleBatchID,
+			ProductID: uuid.New(), ShopID: shopA, TargetStoreID: shopA, Platform: "shopee", Status: TaskSuccess,
+		},
+		{
+			HardDeleteBase: model.HardDeleteBase{ID: uuid.New()}, TenantID: 21, BatchID: &mixedBatchID,
+			ProductID: uuid.New(), ShopID: shopA, TargetStoreID: shopA, Platform: "shopee", Status: TaskSuccess,
+		},
+		{
+			HardDeleteBase: model.HardDeleteBase{ID: uuid.New()}, TenantID: 21, BatchID: &mixedBatchID,
+			ProductID: uuid.New(), ShopID: shopB, TargetStoreID: shopB, Platform: "lazada", Status: TaskSuccess,
+		},
+	} {
+		require.NoError(t, db.Create(&task).Error)
+	}
+	principal := &adminperm.Principal{
+		Role: adminperm.RoleOperator,
+		StoreGrants: []adminperm.StoreGrant{{
+			StoreID: shopA, PermissionScope: "operate",
+		}},
+	}
+	c := testTenantGinContext(21, principal)
+
+	rows, total, err := svc.ListPublishBatches(c, 1, 20)
+	require.NoError(t, err)
+	require.EqualValues(t, 1, total)
+	require.Len(t, rows, 1)
+	require.Equal(t, visibleBatchID.String(), rows[0].ID)
+	require.ErrorIs(t, svc.authorizeBatchStores(c, emptyBatchID, false), gorm.ErrRecordNotFound)
+}
+
+func TestGetPublishBatchPropagatesChildTaskQueryError(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	batchID := uuid.New()
+	require.NoError(t, db.Create(&ProductPublishBatch{
+		HardDeleteBase: model.HardDeleteBase{ID: batchID}, TenantID: 21,
+		BatchType: BatchTypeMultiProduct, Status: BatchSuccess,
+	}).Error)
+	require.NoError(t, db.Migrator().DropTable(&ProductPublishTask{}))
+
+	_, _, err := svc.GetPublishBatch(testTenantContext(21), batchID)
+	require.Error(t, err)
+}
+
+func TestPublishTargetStoreMustBelongToTenantEvenForAdmin(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	productID := uuid.New()
+	shopID := uuid.New()
+	require.NoError(t, db.Create(&product.Product{
+		Base: model.Base{ID: productID}, TenantID: 21, Source: "manual", Title: "Tenant Product", Status: product.StatusDraft,
+	}).Error)
+	require.NoError(t, db.Create(&shop.Shop{
+		Base: model.Base{ID: shopID}, TenantID: 22, Platform: "shopee", ShopName: "Other Tenant Shop",
+		Status: shop.StatusActive, AuthStatus: shop.AuthAuthorized,
+	}).Error)
+	shopIDRaw := shopID.String()
+	c := testTenantGinContext(21, &adminperm.Principal{Role: adminperm.RoleAdmin})
+
+	_, err := svc.CreateDraftsForTargets(c, productID, PublishTargetsCreateDraftsRequest{
+		Targets: []PublishTargetRef{{Platform: "shopee", ShopID: &shopIDRaw}},
+	}, nil)
+	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
+
+	for _, modelValue := range []any{&ProductPublishBatch{}, &ProductPublishTask{}, &ProductPublication{}} {
+		var count int64
+		require.NoError(t, db.Model(modelValue).Count(&count).Error)
+		require.Zero(t, count)
+	}
+}
+
+func TestPublishTargetStorePlatformMustMatchBeforeWrites(t *testing.T) {
+	db := newBatchIntegrationDB(t)
+	svc := newBatchTestService(db)
+	productID := uuid.New()
+	shopID := uuid.New()
+	require.NoError(t, db.Create(&product.Product{
+		Base: model.Base{ID: productID}, TenantID: 21, Source: "manual", Title: "Tenant Product", Status: product.StatusDraft,
+	}).Error)
+	require.NoError(t, db.Create(&shop.Shop{
+		Base: model.Base{ID: shopID}, TenantID: 21, Platform: "lazada", ShopName: "Lazada Shop",
+		Status: shop.StatusActive, AuthStatus: shop.AuthAuthorized,
+	}).Error)
+	shopIDRaw := shopID.String()
+	c := testTenantGinContext(21, &adminperm.Principal{Role: adminperm.RoleAdmin})
+
+	_, err := svc.CreateBatchTargetDrafts(c, BatchTargetsCreateDraftsRequest{
+		ProductIDs: []string{productID.String()},
+		Targets:    []PublishTargetRef{{Platform: "shopee", ShopID: &shopIDRaw}},
+	}, nil)
+	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
+
+	for _, modelValue := range []any{&ProductPublishBatch{}, &ProductPublishTask{}, &ProductPublication{}} {
+		var count int64
+		require.NoError(t, db.Model(modelValue).Count(&count).Error)
+		require.Zero(t, count)
 	}
 }
 
@@ -485,12 +936,12 @@ func TestSameConfigHashSkipsTaskCreate(t *testing.T) {
 	if err := db.Create(&row).Error; err != nil {
 		t.Fatal(err)
 	}
-	dup, ok := svc.findExistingSuccessfulTask(context.Background(), pid, "shopee", &sid, eff)
+	dup, ok := svc.findExistingSuccessfulTask(testLegacyTenantContext(), pid, "shopee", &sid, eff)
 	if !ok || dup.ID != row.ID {
 		t.Fatal("expected same-config dedup")
 	}
 	otherEff := mergeEffectiveConfig(map[string]any{"remark": "y"}, PublishConfigOverrides{}, pid.String(), "shopee", sid.String())
-	if _, ok := svc.findExistingSuccessfulTask(context.Background(), pid, "shopee", &sid, otherEff); ok {
+	if _, ok := svc.findExistingSuccessfulTask(testLegacyTenantContext(), pid, "shopee", &sid, otherEff); ok {
 		t.Fatal("different config should not dedup")
 	}
 }

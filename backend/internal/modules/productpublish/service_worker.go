@@ -31,7 +31,7 @@ func (s *Service) ProcessQueuedTask(ctx context.Context, taskID uuid.UUID, worke
 	}
 	var peek ProductPublishTask
 	if err := s.DB.WithContext(ctx).Select("id", "platform", "task_type", "publish_mode").First(&peek, "id = ?", taskID).Error; err == nil {
-		if peek.Platform == "douyin_shop" && (peek.TaskType == TaskTypeDouyinDraftCreate || peek.PublishMode == PublishModeSaveAsPlatformDraft) {
+		if strings.EqualFold(strings.TrimSpace(peek.Platform), "douyin_shop") || strings.EqualFold(strings.TrimSpace(peek.Platform), "douyin") {
 			return s.ProcessDouyinDraftTask(ctx, taskID, workerID)
 		}
 	}
@@ -70,12 +70,11 @@ func (s *Service) processGenericPublishTask(ctx context.Context, taskID uuid.UUI
 			Message:     fmt.Sprintf("taskId=%s shopId=%s platform=%s", taskID.String(), taskRow.ShopID.String(), taskRow.Platform),
 		})
 	}
-	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, taskRow.TenantID).
 		Updates(map[string]any{"publish_status": StatusPublishing}).Error
 
-	fail := func(msg string) error {
+	failWithCode := func(code, msg string, cause error) error {
 		fin := time.Now().UTC()
-		code := inferPublishErrorCode(msg)
 		_ = s.finishProductPublishTask(ctx, taskID, workerID, claim, map[string]any{
 			"status":         TaskFailed,
 			"publish_status": StatusPubFailed,
@@ -84,7 +83,8 @@ func (s *Service) processGenericPublishTask(ctx context.Context, taskID uuid.UUI
 			"finished_at":    &fin,
 		})
 		if rid, ok := snapshotPublicationFromTask(taskRow); ok {
-			_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).Where("id = ?", rid).
+			_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).
+				Where("id = ? AND tenant_id = ? AND product_id = ? AND shop_id = ?", rid, taskRow.TenantID, taskRow.ProductID, taskRow.ShopID).
 				Updates(map[string]any{
 					"status":         StatusPubFailed,
 					"publish_status": StatusPubFailed,
@@ -101,7 +101,21 @@ func (s *Service) processGenericPublishTask(ctx context.Context, taskID uuid.UUI
 				Message:     fmt.Sprintf("taskId=%s err=%s", taskID.String(), truncateMsg(msg)),
 			})
 		}
+		if cause != nil {
+			return cause
+		}
 		return fmt.Errorf("%s", msg)
+	}
+	fail := func(msg string) error {
+		return failWithCode(inferPublishErrorCode(msg), msg, nil)
+	}
+
+	if !s.traditionalPublishAllowed() {
+		return failWithCode(
+			ErrorTraditionalPublishProductionDisabled,
+			ErrTraditionalPublishProductionDisabled.Error(),
+			ErrTraditionalPublishProductionDisabled,
+		)
 	}
 
 	snap, err := parsePublishSnapshot(taskRow.Input)
@@ -113,7 +127,7 @@ func (s *Service) processGenericPublishTask(ctx context.Context, taskID uuid.UUI
 	if err := s.DB.WithContext(ctx).
 		Preload("Images", func(db *gorm.DB) *gorm.DB { return db.Order("sort_order ASC, created_at ASC") }).
 		Preload("SKUs", func(db *gorm.DB) *gorm.DB { return db.Order("created_at ASC") }).
-		First(&prod, "id = ?", taskRow.ProductID).Error; err != nil {
+		First(&prod, "id = ? AND tenant_id = ?", taskRow.ProductID, taskRow.TenantID).Error; err != nil {
 		return fail(fmt.Sprintf("load product: %v", err))
 	}
 	draft, err := BuildPlatformDraftFromProduct(prod)
@@ -194,7 +208,8 @@ func (s *Service) processGenericPublishTask(ctx context.Context, taskID uuid.UUI
 		publishedAt = &fin
 	}
 
-	_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).Where("id = ?", snap.PublicationID).
+	_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).
+		Where("id = ? AND tenant_id = ? AND product_id = ? AND shop_id = ?", snap.PublicationID, taskRow.TenantID, taskRow.ProductID, taskRow.ShopID).
 		Updates(map[string]any{
 			"publish_status":      pubStatus,
 			"status":              pubStatus,
@@ -294,7 +309,7 @@ func (s *Service) handlePublishPanic(parent context.Context, taskID uuid.UUID, w
 	}
 	msg := fmt.Sprintf("publish worker panic: %v", panicVal)
 	fin := time.Now().UTC()
-	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ?", taskID).
+	_ = s.DB.WithContext(ctx).Model(&ProductPublishTask{}).Where("id = ? AND tenant_id = ?", taskID, cur.TenantID).
 		Updates(map[string]any{
 			"status":         TaskFailed,
 			"publish_status": StatusPubFailed,
@@ -306,7 +321,8 @@ func (s *Service) handlePublishPanic(parent context.Context, taskID uuid.UUID, w
 			"updated_at":     fin,
 		}).Error
 	if rid, ok := snapshotPublicationFromTask(&cur); ok {
-		_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).Where("id = ?", rid).
+		_ = s.DB.WithContext(ctx).Model(&ProductPublication{}).
+			Where("id = ? AND tenant_id = ? AND product_id = ? AND shop_id = ?", rid, cur.TenantID, cur.ProductID, cur.ShopID).
 			Updates(map[string]any{
 				"status":         StatusPubFailed,
 				"publish_status": StatusPubFailed,

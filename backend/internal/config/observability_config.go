@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -16,7 +17,7 @@ const (
 	ObsModeHybrid     = "hybrid"
 )
 
-// ObservabilityConfig holds P5 observability settings.
+// ObservabilityConfig holds observability settings.
 type ObservabilityConfig struct {
 	Enabled                  bool
 	Mode                     string
@@ -28,6 +29,8 @@ type ObservabilityConfig struct {
 	MetricsEnabled           bool
 	MetricsPath              string
 	MetricsInternalOnly      bool
+	HTTPTrustedProxyCIDRs    []string
+	MetricsAllowlistCIDRs    []string
 	TracingEnabled           bool
 	OTELServiceName          string
 	OTELServiceVersion       string
@@ -50,15 +53,17 @@ type ObservabilityConfig struct {
 // ValidProductionObservability returns production-safe observability defaults for tests.
 func ValidProductionObservability() ObservabilityConfig {
 	return ObservabilityConfig{
-		Enabled:              true,
-		Mode:                 ObsModeHybrid,
-		LogFormat:            "json",
-		LogLevel:             "info",
-		MetricsEnabled:       true,
-		MetricsInternalOnly:  true,
-		TracingEnabled:       false,
-		OTELTraceSampleRatio: 0.1,
-		AlertingEnabled:      true,
+		Enabled:               true,
+		Mode:                  ObsModeHybrid,
+		LogFormat:             "json",
+		LogLevel:              "info",
+		MetricsEnabled:        true,
+		MetricsInternalOnly:   true,
+		HTTPTrustedProxyCIDRs: []string{"127.0.0.1/32", "::1/128"},
+		MetricsAllowlistCIDRs: []string{"127.0.0.1/32", "::1/128"},
+		TracingEnabled:        false,
+		OTELTraceSampleRatio:  0.1,
+		AlertingEnabled:       true,
 	}
 }
 
@@ -84,6 +89,8 @@ func LoadObservabilityConfig(appEnv string, appName, appVersion string) Observab
 		MetricsEnabled:           metricsEnabled,
 		MetricsPath:              firstNonEmpty(os.Getenv("METRICS_PATH"), "/internal/metrics"),
 		MetricsInternalOnly:      envBool(os.Getenv("METRICS_INTERNAL_ONLY"), appEnv == EnvProduction || appEnv == EnvStaging),
+		HTTPTrustedProxyCIDRs:    splitCSVOrDefault(os.Getenv("HTTP_TRUSTED_PROXY_CIDRS"), []string{"127.0.0.1/32", "::1/128"}),
+		MetricsAllowlistCIDRs:    splitCSVOrDefault(os.Getenv("METRICS_ALLOWLIST_CIDRS"), []string{"127.0.0.1/32", "::1/128"}),
 		TracingEnabled:           tracingEnabled,
 		OTELServiceName:          firstNonEmpty(os.Getenv("OTEL_SERVICE_NAME"), firstNonEmpty(appName, "trademind-api")),
 		OTELServiceVersion:       firstNonEmpty(os.Getenv("OTEL_SERVICE_VERSION"), appVersion),
@@ -153,6 +160,14 @@ func (c *Config) ValidateObservability() error {
 		return nil
 	}
 	obs := c.Observability
+	if obs.Enabled || obs.MetricsEnabled || IsStagingOrProduction(c.AppEnv) {
+		if err := validateCIDRs("HTTP_TRUSTED_PROXY_CIDRS", obs.HTTPTrustedProxyCIDRs, IsStagingOrProduction(c.AppEnv)); err != nil {
+			return err
+		}
+		if err := validateCIDRs("METRICS_ALLOWLIST_CIDRS", obs.MetricsAllowlistCIDRs, IsStagingOrProduction(c.AppEnv)); err != nil {
+			return err
+		}
+	}
 	if !IsProduction(c.AppEnv) {
 		return nil
 	}
@@ -171,6 +186,9 @@ func (c *Config) ValidateObservability() error {
 	if !obs.MetricsInternalOnly {
 		return fmt.Errorf("METRICS_INTERNAL_ONLY=false is forbidden in production")
 	}
+	if !obs.AlertingEnabled {
+		return fmt.Errorf("ALERTING_ENABLED must be true in production")
+	}
 	if obs.OTELTraceSampleRatio > 0.5 {
 		return fmt.Errorf("OTEL_TRACE_SAMPLE_RATIO exceeds production safe upper bound")
 	}
@@ -184,6 +202,32 @@ func (c *Config) ValidateObservability() error {
 		return fmt.Errorf("OTEL_EXPORT_BATCH_SIZE must not exceed OTEL_EXPORT_QUEUE_SIZE")
 	}
 	return nil
+}
+
+func validateCIDRs(name string, values []string, rejectUnrestricted bool) error {
+	if len(values) == 0 {
+		return fmt.Errorf("%s must contain at least one CIDR", name)
+	}
+	for _, raw := range values {
+		value := strings.TrimSpace(raw)
+		_, network, err := net.ParseCIDR(value)
+		if err != nil {
+			return fmt.Errorf("%s contains invalid CIDR %q", name, value)
+		}
+		ones, bits := network.Mask.Size()
+		if rejectUnrestricted && ones == 0 && (bits == 32 || bits == 128) {
+			return fmt.Errorf("%s must not trust or allow the entire internet in staging/production", name)
+		}
+	}
+	return nil
+}
+
+func splitCSVOrDefault(raw string, defaults []string) []string {
+	values := splitCSV(raw)
+	if len(values) > 0 {
+		return values
+	}
+	return append([]string(nil), defaults...)
 }
 
 // ObservabilityExportTimeout returns OTLP export timeout.

@@ -16,7 +16,7 @@ import {
   type ManualBindingDetail,
   type ManualBindingRequest,
   type InventorySyncAPIError,
-} from '@/services/inventorySyncP9';
+} from '@/services/inventorySync';
 import { searchProductSkus, type ProductSkuSearchHit } from '@/services/products';
 import { formatDateTime } from '@/utils/formatTime';
 import {
@@ -236,7 +236,7 @@ export default function InventorySyncManualBindingsPage() {
   return (
     <TmPageContainer
       title="人工绑定工作台"
-      subTitle="处理 P9 fixture 生成的 SKU 绑定人工确认请求"
+      subTitle="处理库存同步生成的 SKU 绑定人工确认请求"
       extra={<Button icon={<ReloadOutlined />} onClick={() => void Promise.all([loadList(), loadDetail()])} loading={loading || detailLoading}>刷新</Button>}
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>

@@ -34,12 +34,12 @@ type CenterListQuery struct {
 	TenantID      int64
 	Keyword       string
 	ProductID     *uuid.UUID
-	ProductSkuID  *uuid.UUID
+	ProductSKUID  *uuid.UUID
 	Platform      string
 	ShopID        *uuid.UUID
 	StockStatus   string
 	AlertStatus   string
-	SkuBindStatus string
+	SKUBindStatus string
 	SyncStatus    string
 	HasException  bool
 	Page          int
@@ -53,7 +53,7 @@ type CenterListQuery struct {
 type InventoryCenterEntry struct {
 	InventoryAlertEntry
 	AvailableStock     int        `json:"availableStock"`
-	SkuBindStatus      string     `json:"skuBindStatus"`
+	SKUBindStatus      string     `json:"skuBindStatus"`
 	PlatformSyncStatus string     `json:"platformSyncStatus"`
 	LastDeductAt       *time.Time `json:"lastDeductAt,omitempty"`
 	ExceptionCount     int        `json:"exceptionCount"`
@@ -82,11 +82,11 @@ func inventoryCenterCursorScope(q CenterListQuery) (string, string) {
 		"shopId":        shopScope,
 		"keyword":       q.Keyword,
 		"productId":     q.ProductID,
-		"productSkuId":  q.ProductSkuID,
+		"productSkuId":  q.ProductSKUID,
 		"platform":      q.Platform,
 		"stockStatus":   q.StockStatus,
 		"alertStatus":   q.AlertStatus,
-		"skuBindStatus": q.SkuBindStatus,
+		"skuBindStatus": q.SKUBindStatus,
 		"syncStatus":    q.SyncStatus,
 		"hasException":  q.HasException,
 		"sort":          "updated_at_desc_id_desc",
@@ -102,7 +102,7 @@ func aggregateBindStatus(pubs []pubJoinScan) string {
 	hasUnbound := false
 	for _, p := range pubs {
 		bs := strings.TrimSpace(strings.ToLower(p.BindStatus))
-		ext := strings.TrimSpace(p.ExternalSkuID)
+		ext := strings.TrimSpace(p.ExternalSKUID)
 		switch bs {
 		case productpublish.BindStatusAmbiguous:
 			hasAmbiguous = true
@@ -142,7 +142,7 @@ func aggregateSyncStatus(pubs []pubJoinScan, taskByPub map[uuid.UUID]latestTaskS
 	hasRunning := false
 	hasSuccess := false
 	for _, p := range pubs {
-		t, ok := taskByPub[p.PublicationSkuID]
+		t, ok := taskByPub[p.PublicationSKUID]
 		if !ok {
 			continue
 		}
@@ -175,7 +175,7 @@ func aggregateSyncStatus(pubs []pubJoinScan, taskByPub map[uuid.UUID]latestTaskS
 	return CenterSyncNone
 }
 
-func (s *Service) loadLastDeductBySku(ctx context.Context, skuIDs []uuid.UUID) map[uuid.UUID]time.Time {
+func (s *Service) loadLastDeductBySKU(ctx context.Context, skuIDs []uuid.UUID) map[uuid.UUID]time.Time {
 	out := map[uuid.UUID]time.Time{}
 	if len(skuIDs) == 0 || s == nil || s.DB == nil {
 		return out
@@ -199,7 +199,7 @@ func (s *Service) loadLastDeductBySku(ctx context.Context, skuIDs []uuid.UUID) m
 	return out
 }
 
-func (s *Service) loadExceptionCountsBySku(ctx context.Context, skuIDs []uuid.UUID) map[uuid.UUID]int {
+func (s *Service) loadExceptionCountsBySKU(ctx context.Context, skuIDs []uuid.UUID) map[uuid.UUID]int {
 	out := map[uuid.UUID]int{}
 	if len(skuIDs) == 0 || s == nil || s.DB == nil {
 		return out
@@ -234,7 +234,7 @@ func (s *Service) loadExceptionCountsBySku(ctx context.Context, skuIDs []uuid.UU
 	return out
 }
 
-func (s *Service) loadAffectedOrderCountsBySku(ctx context.Context, skuIDs []uuid.UUID) map[uuid.UUID]int {
+func (s *Service) loadAffectedOrderCountsBySKU(ctx context.Context, skuIDs []uuid.UUID) map[uuid.UUID]int {
 	out := map[uuid.UUID]int{}
 	if len(skuIDs) == 0 || !s.DB.Migrator().HasTable(&OrderInventoryEffect{}) {
 		return out
@@ -371,7 +371,7 @@ func (s *Service) ListInventoryCenter(ctx context.Context, q CenterListQuery) (*
 	base := s.buildSKUAlertBaseTX(ctx, skuAlertBaseQuery{
 		Keyword:       q.Keyword,
 		ProductID:     q.ProductID,
-		ProductSkuID:  q.ProductSkuID,
+		ProductSKUID:  q.ProductSKUID,
 		Platform:      q.Platform,
 		ShopID:        q.ShopID,
 		StockStatus:   q.StockStatus,
@@ -381,8 +381,8 @@ func (s *Service) ListInventoryCenter(ctx context.Context, q CenterListQuery) (*
 	if strings.TrimSpace(q.AlertStatus) != "" {
 		base = s.applyAlertsSQLAlertType(base, q.AlertStatus, th)
 	}
-	if strings.TrimSpace(q.SkuBindStatus) != "" {
-		base = s.applyCenterBindFilter(base, q.SkuBindStatus)
+	if strings.TrimSpace(q.SKUBindStatus) != "" {
+		base = s.applyCenterBindFilter(base, q.SKUBindStatus)
 	}
 	if strings.TrimSpace(q.SyncStatus) != "" {
 		base = s.applyCenterSyncFilter(base, q.SyncStatus)
@@ -430,7 +430,7 @@ func (s *Service) ListInventoryCenter(ctx context.Context, q CenterListQuery) (*
 		skuIDs = append(skuIDs, r.ID)
 	}
 
-	pubBySku := map[uuid.UUID][]pubJoinScan{}
+	pubBySKU := map[uuid.UUID][]pubJoinScan{}
 	if len(skuIDs) > 0 {
 		var pubs []pubJoinScan
 		_ = s.DB.WithContext(ctx).Table("product_publication_skus AS ps").
@@ -441,24 +441,24 @@ func (s *Service) ListInventoryCenter(ctx context.Context, q CenterListQuery) (*
 			Where("ps.product_sku_id IN ?", skuIDs).
 			Scan(&pubs).Error
 		for _, p := range pubs {
-			if p.ProductSkuID == nil {
+			if p.ProductSKUID == nil {
 				continue
 			}
-			pubBySku[*p.ProductSkuID] = append(pubBySku[*p.ProductSkuID], p)
+			pubBySKU[*p.ProductSKUID] = append(pubBySKU[*p.ProductSKUID], p)
 		}
 	}
 
 	pubIDs := make([]uuid.UUID, 0, 32)
 	for _, r := range scans {
-		for _, p := range pubBySku[r.ID] {
-			pubIDs = append(pubIDs, p.PublicationSkuID)
+		for _, p := range pubBySKU[r.ID] {
+			pubIDs = append(pubIDs, p.PublicationSKUID)
 		}
 	}
-	taskByPub := s.loadLatestTasksByPubSku(ctx, pubIDs)
-	lastLog := s.loadMaxLogTimeBySku(ctx, skuIDs)
-	lastDeduct := s.loadLastDeductBySku(ctx, skuIDs)
-	exCounts := s.loadExceptionCountsBySku(ctx, skuIDs)
-	orderCounts := s.loadAffectedOrderCountsBySku(ctx, skuIDs)
+	taskByPub := s.loadLatestTasksByPubSKU(ctx, pubIDs)
+	lastLog := s.loadMaxLogTimeBySKU(ctx, skuIDs)
+	lastDeduct := s.loadLastDeductBySKU(ctx, skuIDs)
+	exCounts := s.loadExceptionCountsBySKU(ctx, skuIDs)
+	orderCounts := s.loadAffectedOrderCountsBySKU(ctx, skuIDs)
 
 	items := make([]InventoryCenterEntry, 0, len(scans))
 	for _, row := range scans {
@@ -477,7 +477,7 @@ func (s *Service) ListInventoryCenter(ctx context.Context, q CenterListQuery) (*
 			}
 		}
 
-		pubs := pubBySku[row.ID]
+		pubs := pubBySKU[row.ID]
 		bindSt := aggregateBindStatus(pubs)
 		stocks := make([]PlatformStockAlertEntry, 0, len(pubs))
 		var worstFail *latestTaskScan
@@ -493,17 +493,17 @@ func (s *Service) ListInventoryCenter(ctx context.Context, q CenterListQuery) (*
 				}
 			}
 			ent := PlatformStockAlertEntry{
-				PublicationSkuID:    p.PublicationSkuID,
+				PublicationSKUID:    p.PublicationSKUID,
 				ShopID:              p.ShopID,
 				ShopName:            p.ShopName,
 				Platform:            pl,
 				ExternalProductID:   p.ExternalProductID,
-				ExternalSkuID:       p.ExternalSkuID,
+				ExternalSKUID:       p.ExternalSKUID,
 				PlatformStock:       p.PlatformStock,
 				PlatformStockStatus: pst,
 				LastSyncedAt:        p.LastSyncedAt,
 			}
-			if t, ok := taskByPub[p.PublicationSkuID]; ok {
+			if t, ok := taskByPub[p.PublicationSKUID]; ok {
 				tidVal := t.TaskID
 				ent.LastSyncTaskID = &tidVal
 				ent.LastSyncStatus = t.Status
@@ -525,7 +525,7 @@ func (s *Service) ListInventoryCenter(ctx context.Context, q CenterListQuery) (*
 		alertEntry := InventoryAlertEntry{
 			ProductID:             row.ProductID,
 			ProductTitle:          row.ProductTitle,
-			ProductSkuID:          row.ID,
+			ProductSKUID:          row.ID,
 			SKUCode:               row.SKUCode,
 			SKUName:               row.SKUName,
 			Stock:                 localStock,
@@ -549,7 +549,7 @@ func (s *Service) ListInventoryCenter(ctx context.Context, q CenterListQuery) (*
 		items = append(items, InventoryCenterEntry{
 			InventoryAlertEntry: alertEntry,
 			AvailableStock:      localStock,
-			SkuBindStatus:       bindSt,
+			SKUBindStatus:       bindSt,
 			PlatformSyncStatus:  aggregateSyncStatus(pubs, taskByPub, bindSt),
 			LastDeductAt:        ptrTime(lastDeduct[row.ID]),
 			ExceptionCount:      exCounts[row.ID],

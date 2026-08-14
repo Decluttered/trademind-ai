@@ -53,7 +53,37 @@ func TestValidate_developmentAllowsDefaults(t *testing.T) {
 	}
 }
 
-func productionP4Auth() AuthConfig {
+func TestValidateObservabilityRejectsInvalidAndUnrestrictedProductionCIDRs(t *testing.T) {
+	tests := []struct {
+		name    string
+		proxies []string
+		metrics []string
+	}{
+		{name: "invalid proxy", proxies: []string{"not-a-cidr"}, metrics: []string{"127.0.0.1/32"}},
+		{name: "unrestricted ipv4 proxy", proxies: []string{"0.0.0.0/0"}, metrics: []string{"127.0.0.1/32"}},
+		{name: "unrestricted ipv6 metrics", proxies: []string{"127.0.0.1/32"}, metrics: []string{"::/0"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{AppEnv: EnvProduction, Observability: ValidProductionObservability()}
+			cfg.Observability.HTTPTrustedProxyCIDRs = tt.proxies
+			cfg.Observability.MetricsAllowlistCIDRs = tt.metrics
+			if err := cfg.ValidateObservability(); err == nil {
+				t.Fatal("expected CIDR validation failure")
+			}
+		})
+	}
+}
+
+func TestValidateObservabilityRejectsDisabledProductionAlerting(t *testing.T) {
+	cfg := &Config{AppEnv: EnvProduction, Observability: ValidProductionObservability()}
+	cfg.Observability.AlertingEnabled = false
+	if err := cfg.ValidateObservability(); err == nil || !strings.Contains(err.Error(), "ALERTING_ENABLED") {
+		t.Fatalf("expected production alerting validation failure, got %v", err)
+	}
+}
+
+func productionAuthConfig() AuthConfig {
 	return AuthConfig{
 		SessionMode:           AuthSessionModeSecure,
 		SecureCookie:          true,
@@ -62,26 +92,8 @@ func productionP4Auth() AuthConfig {
 	}
 }
 
-func productionP6BackupRelease() (BackupConfig, ReleaseConfig) {
-	return BackupConfig{
-			Enabled:               true,
-			Mode:                  "object_storage",
-			StorageProvider:       "s3",
-			EncryptionEnabled:     true,
-			RetentionDaily:        14,
-			RetentionWeekly:       8,
-			RetentionMonthly:      12,
-			CommandTimeoutSeconds: 900,
-		}, ReleaseConfig{
-			Strategy:             "blue_green",
-			RequirePreBackup:     true,
-			HealthTimeoutSeconds: 120,
-			KeepCount:            5,
-		}
-}
-
-func productionP7() P7Config {
-	return P7Config{
+func productionRuntimeLimits() RuntimeLimitsConfig {
+	return RuntimeLimitsConfig{
 		PaginationDefaultLimit:     50,
 		PaginationMaxLimit:         200,
 		PaginationMaxOffset:        10000,
@@ -117,21 +129,19 @@ func productionP7() P7Config {
 
 func TestValidate_productionRequiresStrongJWT(t *testing.T) {
 	t.Parallel()
-	backupCfg, releaseCfg := productionP6BackupRelease()
 	cfg := &Config{
 		AppEnv:                 EnvProduction,
 		JWTSecret:              strings.Repeat("a", 48),
 		MasterKey:              strings.Repeat("b", 64),
+		CollectorServiceToken:  strings.Repeat("c", 48),
 		APIPublicURL:           "https://api.example.com",
 		AdminPublicURL:         "https://admin.example.com",
 		BootstrapAdminPassword: "StrongPass!2026",
 		StorageProvider:        "cos",
 		CORSAllowedOrigins:     []string{"https://admin.example.com"},
-		Auth:                   productionP4Auth(),
+		Auth:                   productionAuthConfig(),
 		Observability:          ValidProductionObservability(),
-		Backup:                 backupCfg,
-		Release:                releaseCfg,
-		P7:                     productionP7(),
+		RuntimeLimits:          productionRuntimeLimits(),
 		DB: DBConfig{
 			Driver: "postgres",
 			User:   "u",
@@ -140,6 +150,35 @@ func TestValidate_productionRequiresStrongJWT(t *testing.T) {
 	}
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("valid production config rejected: %v", err)
+	}
+}
+
+func TestValidate_productionRequiresStrongCollectorServiceToken(t *testing.T) {
+	t.Parallel()
+	for _, token := range []string{"", "short-token", defaultJWTSecret} {
+		cfg := &Config{
+			AppEnv:                 EnvProduction,
+			JWTSecret:              strings.Repeat("a", 48),
+			MasterKey:              strings.Repeat("b", 64),
+			CollectorServiceToken:  token,
+			APIPublicURL:           "https://api.example.com",
+			AdminPublicURL:         "https://admin.example.com",
+			BootstrapAdminPassword: "StrongPass!2026",
+			StorageProvider:        "cos",
+			CORSAllowedOrigins:     []string{"https://admin.example.com"},
+			Auth:                   productionAuthConfig(),
+			Observability:          ValidProductionObservability(),
+			RuntimeLimits:          productionRuntimeLimits(),
+			DB: DBConfig{
+				Driver: "postgres",
+				User:   "u",
+				Name:   "db",
+			},
+		}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "COLLECTOR_SERVICE_TOKEN") {
+			t.Fatalf("expected collector service token rejection for %q, got %v", token, err)
+		}
 	}
 }
 
@@ -187,7 +226,7 @@ func TestValidate_stagingRejectsDouyinWebhookDemoFallback(t *testing.T) {
 	}
 }
 
-func TestValidateP9InventorySyncSafetyRejectsDangerousEnv(t *testing.T) {
+func TestValidateInventorySyncSafetyRejectsDangerousEnv(t *testing.T) {
 	cases := []struct {
 		key   string
 		value string
@@ -204,8 +243,8 @@ func TestValidateP9InventorySyncSafetyRejectsDangerousEnv(t *testing.T) {
 			cfg := &Config{AppEnv: EnvDevelopment, DB: DBConfig{Driver: "postgres", User: "u", Name: "db"}}
 			t.Setenv(tc.key, tc.value)
 			err := cfg.Validate()
-			if err == nil || !strings.Contains(err.Error(), ErrCodeP9ProductionCapabilityForbidden) {
-				t.Fatalf("expected P9 safety rejection, got %v", err)
+			if err == nil || !strings.Contains(err.Error(), ErrCodeInventorySyncProductionCapabilityForbidden) {
+				t.Fatalf("expected inventory sync safety rejection, got %v", err)
 			}
 		})
 	}
@@ -240,6 +279,7 @@ func TestLoad_productionFromEnv(t *testing.T) {
 	t.Setenv("APP_ENV", "production")
 	t.Setenv("JWT_SECRET", strings.Repeat("x", 48))
 	t.Setenv("APP_MASTER_KEY", strings.Repeat("y", 64))
+	t.Setenv("COLLECTOR_SERVICE_TOKEN", strings.Repeat("z", 48))
 	t.Setenv("API_PUBLIC_URL", "https://api.example.com")
 	t.Setenv("ADMIN_PUBLIC_URL", "https://admin.example.com")
 	t.Setenv("ADMIN_BOOTSTRAP_PASSWORD", "StrongPass!2026")
@@ -251,14 +291,6 @@ func TestLoad_productionFromEnv(t *testing.T) {
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://admin.example.com")
 	t.Setenv("AUTH_SESSION_MODE", "secure_session")
 	t.Setenv("AUTH_SECURE_COOKIE", "true")
-	t.Setenv("BACKUP_ENABLED", "true")
-	t.Setenv("BACKUP_MODE", "object_storage")
-	t.Setenv("BACKUP_STORAGE_PROVIDER", "s3")
-	t.Setenv("BACKUP_ENCRYPTION_ENABLED", "true")
-	t.Setenv("BACKUP_RETENTION_DAILY", "14")
-	t.Setenv("BACKUP_RETENTION_WEEKLY", "8")
-	t.Setenv("BACKUP_RETENTION_MONTHLY", "12")
-	t.Setenv("RELEASE_REQUIRE_PRE_BACKUP", "true")
 	t.Setenv("PAGINATION_CURSOR_SIGNING_KEY", strings.Repeat("c", 48))
 
 	cfg, err := Load()

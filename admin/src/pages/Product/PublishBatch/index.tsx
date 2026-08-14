@@ -35,7 +35,9 @@ import {
 } from '@/services/productPublish';
 import { confirmBatchPublishDraft } from '@/constants/sensitiveActions';
 import { detectConfigReminders } from '@/utils/publishConfigMerge';
-import { Link, history, useLocation, useModel } from '@umijs/max';
+import { usePermission } from '@/hooks/usePermission';
+import { PERMISSIONS } from '@/utils/permission';
+import { Link, history, useLocation } from '@umijs/max';
 import {
   Alert,
   Button,
@@ -64,6 +66,11 @@ function targetKey(platform: string, shopId?: string | null) {
   const p = (platform || '').trim().toLowerCase();
   const s = (shopId || '').trim();
   return s ? `${p}:${s}` : p;
+}
+
+function isDouyinPlatform(platform?: string) {
+  const value = (platform || '').trim().toLowerCase();
+  return value === 'douyin_shop' || value === 'douyin';
 }
 
 function statusColor(status: string) {
@@ -99,10 +106,9 @@ function parseConfigError(e: unknown): { title?: string; message: string; techni
 
 export default function PublishBatchWizardPage() {
   const location = useLocation();
-  const { initialState } = useModel('@@initialState') as {
-    initialState?: { currentUser?: API.CurrentUser };
-  };
-  const userId = initialState?.currentUser?.id?.toString() || initialState?.currentUser?.username || 'anon';
+  const { user, can } = usePermission();
+  const canCreatePublishDraft = can(PERMISSIONS.PUBLISH_CREATE_DRAFT);
+  const userId = user?.id?.toString() || user?.username || 'anon';
   const initialIds = useMemo(() => parseProductIdsFromSearch(location.search), [location.search]);
 
   const [step, setStep] = useState(0);
@@ -256,6 +262,7 @@ export default function PublishBatchWizardPage() {
   };
 
   const toggleShop = (platform: PublishTargetPlatform, shopId: string, shopName: string, checked: boolean) => {
+    if (isDouyinPlatform(platform.platform)) return;
     const key = targetKey(platform.platform, shopId);
     setSelectedTargets((prev) => {
       const next = { ...prev };
@@ -276,9 +283,17 @@ export default function PublishBatchWizardPage() {
   };
 
   const runCheck = async () => {
+    if (!canCreatePublishDraft) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     const clientErr = validatePublishConfigClient(commonConfig);
     if (clientErr) {
       message.error(clientErr);
+      return;
+    }
+    if (selectedTargetList.some((target) => isDouyinPlatform(target.platform))) {
+      message.error('抖店平台草稿需逐商品进入运营任务中心并人工审核');
       return;
     }
     if (!productIds.length || !selectedTargetList.length) {
@@ -314,6 +329,10 @@ export default function PublishBatchWizardPage() {
       message.error(matrixLimitError);
       return;
     }
+    if (selectedTargetList.some((target) => isDouyinPlatform(target.platform))) {
+      message.error('抖店平台草稿需逐商品进入运营任务中心并人工审核');
+      return;
+    }
     setCreating(true);
     try {
       const res = await createBatchPublishDrafts({
@@ -337,6 +356,10 @@ export default function PublishBatchWizardPage() {
   };
 
   const invokeCreate = (onlyReady: boolean) => {
+    if (!canCreatePublishDraft) {
+      message.error('当前账号无刊登草稿写权限');
+      return;
+    }
     if (matrixLimitError) {
       message.error(matrixLimitError);
       return;
@@ -456,6 +479,19 @@ export default function PublishBatchWizardPage() {
     { title: '检查并创建' },
   ];
 
+  if (!canCreatePublishDraft) {
+    return (
+      <TmPageContainer title="批量刊登" subTitle="批量创建本地刊登草稿。">
+        <Alert
+          type="info"
+          showIcon
+          message="当前账号无刊登草稿写权限"
+          description="可以从商品草稿或刊登任务页面查看已有记录；批量检查和草稿创建已禁用。"
+        />
+      </TmPageContainer>
+    );
+  }
+
   return (
     <TmPageContainer
       title="批量创建刊登草稿"
@@ -569,11 +605,20 @@ export default function PublishBatchWizardPage() {
                     <Typography.Text strong>{plat.platformLabel}</Typography.Text>
                     <Tag>{publishCapabilityLabel(plat.capability)}</Tag>
                   </Space>
+                  {isDouyinPlatform(plat.platform) ? (
+                    <Alert
+                      type="info"
+                      showIcon
+                      message="抖店需逐商品进入运营任务人工审核"
+                      action={<Link to="/ops/task-center/operation-tasks?create=production">进入运营任务中心</Link>}
+                      style={{ marginBottom: 8 }}
+                    />
+                  ) : null}
                   <Space direction="vertical" style={{ width: '100%' }}>
                     {plat.shops?.length ? (
                       plat.shops.map((shop) => {
                         const key = targetKey(plat.platform, shop.shopId);
-                        const disabled = !shop.enabled || shop.authStatus !== 'authorized';
+                        const disabled = isDouyinPlatform(plat.platform) || !shop.enabled || shop.authStatus !== 'authorized';
                         return (
                           <Checkbox
                             key={key}

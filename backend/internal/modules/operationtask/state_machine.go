@@ -37,6 +37,11 @@ func canonicalTaskTransitions() map[string]map[string]bool {
 		OperationTaskStatusExecuting: {
 			OperationTaskStatusDraftWritten:    true,
 			OperationTaskStatusExecutionFailed: true,
+			OperationTaskStatusResultUnknown:   true,
+		},
+		OperationTaskStatusResultUnknown: {
+			OperationTaskStatusDraftWritten:    true,
+			OperationTaskStatusExecutionFailed: true,
 		},
 		OperationTaskStatusExecutionFailed: {
 			OperationTaskStatusExecutionQueued: true,

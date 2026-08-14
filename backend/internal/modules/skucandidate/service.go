@@ -102,7 +102,7 @@ func (s *Service) SuggestForOrderItem(ctx context.Context, orderItemID uuid.UUID
 	}
 
 	if codeOrSeller != "" {
-		if err := s.addLocalSkuCodeCandidates(ctx, pool, codeOrSeller); err != nil {
+		if err := s.addLocalSKUCodeCandidates(ctx, pool, codeOrSeller); err != nil {
 			return nil, err
 		}
 	}
@@ -267,7 +267,7 @@ func (s *Service) addPublicationCandidates(ctx context.Context, pool map[uuid.UU
 	return nil
 }
 
-func (s *Service) addLocalSkuCodeCandidates(ctx context.Context, pool map[uuid.UUID]*candidateAcc, codeOrSeller string) error {
+func (s *Service) addLocalSKUCodeCandidates(ctx context.Context, pool map[uuid.UUID]*candidateAcc, codeOrSeller string) error {
 	norm := normalizeSKUCode(codeOrSeller)
 	var skus []product.ProductSKU
 	if err := s.DB.WithContext(ctx).Where("deleted_at IS NULL AND LOWER(TRIM(sku_code)) = LOWER(?)", codeOrSeller).

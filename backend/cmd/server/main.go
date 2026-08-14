@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/trademind-ai/trademind/backend/internal/api"
 	"github.com/trademind-ai/trademind/backend/internal/config"
 	"github.com/trademind-ai/trademind/backend/internal/database"
@@ -42,26 +41,19 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/worker"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/logging"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/observability"
-	"github.com/trademind-ai/trademind/backend/internal/pkg/p7diag"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/runtimediag"
 	securitypkg "github.com/trademind-ai/trademind/backend/internal/pkg/security"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/tracing"
 	"github.com/trademind-ai/trademind/backend/internal/rdb"
 )
 
-func loadDotEnv() {
-	if config.NormalizeEnv(os.Getenv("APP_ENV")) == config.EnvPerformance && strings.EqualFold(strings.TrimSpace(os.Getenv("PERFORMANCE_TEST_MODE")), "true") {
-		return
-	}
-	for _, p := range []string{".env", "../.env", "../../.env"} {
-		if err := godotenv.Load(p); err == nil {
-			return
-		}
-	}
-}
-
 func main() {
-	loadDotEnv()
+	if err := loadDotEnv(); err != nil {
+		slog.Error("env_load_failed", "error", err)
+		os.Exit(1)
+	}
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -128,22 +120,22 @@ func main() {
 	}
 	defer func() { _ = database.Close(db) }()
 	if sqlDB, sqlErr := db.DB(); sqlErr == nil {
-		p7diag.BindSamplingDB(sqlDB)
+		runtimediag.BindSamplingDB(sqlDB)
 	}
 	defer func() {
 		shCtx, shCancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer shCancel()
-		p7diag.Shutdown(shCtx)
+		runtimediag.Shutdown(shCtx)
 	}()
 
 	migrateCtx, migrateCancel := context.WithTimeout(context.Background(), time.Duration(cfg.MigrationLockTimeoutSeconds)*time.Second)
 	defer migrateCancel()
 	if cfg.MigrationRunOnStartup {
-		if err := database.RunMigrateWithLock(migrateCtx, db, time.Duration(cfg.MigrationLockTimeoutSeconds)*time.Second, database.AutoMigrateWithP10); err != nil {
+		if err := database.RunMigrateWithLock(migrateCtx, db, time.Duration(cfg.MigrationLockTimeoutSeconds)*time.Second, database.AutoMigrateProductionSchema); err != nil {
 			log.Error("database_migrate_failed", "error", err)
 			os.Exit(1)
 		}
-	} else if err := database.AutoMigrateWithP10(db); err != nil {
+	} else if err := database.AutoMigrateProductionSchema(db); err != nil {
 		log.Error("database_migrate_failed", "error", err)
 		os.Exit(1)
 	}
@@ -261,7 +253,7 @@ func main() {
 		log.Error("performance_bootstrap_failed", "error", err)
 		os.Exit(1)
 	}
-	if cfg.AppEnv == config.EnvPerformance && cfg.P7.PerformanceTestMode {
+	if cfg.AppEnv == config.EnvPerformance && cfg.RuntimeLimits.PerformanceTestMode {
 		if ids, err := admin.PerformanceBootstrapUserIDs(bootCtx, db); err == nil {
 			for _, id := range ids {
 				adminperm.InvalidateUserPermissionCache(id)
@@ -279,6 +271,10 @@ func main() {
 	}
 
 	engine := gin.New()
+	if err := engine.SetTrustedProxies(cfg.Observability.HTTPTrustedProxyCIDRs); err != nil {
+		log.Error("trusted_proxy_config_invalid", "error", err)
+		os.Exit(1)
+	}
 	engine.MaxMultipartMemory = cfg.MaxUploadBytes()
 	engine.Use(
 		middleware.CORS(cfg),
@@ -302,7 +298,7 @@ func main() {
 		MigrationsReady: true,
 		Obs:             obs,
 	})
-	api.RegisterP10(engine, &api.Deps{Config: cfg, DB: db, Obs: obs})
+	api.RegisterProductionRoutes(engine, &api.Deps{Config: cfg, DB: db, Obs: obs})
 
 	workerReg := worker.NewRegistryFromConfig(db, opLogSvc, cfg, log)
 
@@ -353,11 +349,11 @@ func main() {
 
 	taskcenter.StartAlertScanWorker(workerCtx, &workerWG, log, tcSvc, workerReg, cfg)
 	douyinruntime.StartDouyinAlertScanWorker(workerCtx, &workerWG, log, douyinRuntimeSvc, workerReg, cfg)
-	metricSamples := func() map[string]float64 {
+	metricSamples := func() metrics.Snapshot {
 		if obs == nil || obs.Metrics == nil {
-			return map[string]float64{}
+			return metrics.Snapshot{TakenAt: time.Now().UTC(), Families: map[string]metrics.FamilySnapshot{}}
 		}
-		return obs.Metrics.SnapshotValues()
+		return obs.Metrics.SnapshotNow()
 	}
 	if cfg.Observability.AlertingEnabled {
 		alertSvc := alerting.NewService(db, time.Duration(cfg.Observability.AlertDefaultCooldownSecs)*time.Second, cfg.Observability.AlertRecoveryEnabled)
@@ -434,6 +430,10 @@ func main() {
 		}
 		productpublish.StartWorker(workerCtx, &workerWG, log, productPublishSvc, ppQn, ppWorkerConc, workerReg)
 		log.Info("product_publish_worker_started", "concurrency", ppWorkerConc, "queue", ppQn)
+		if cfg.ProductionCapabilities.BackgroundWorkerEnabled {
+			productpublish.StartProductionOutboxDispatcher(workerCtx, &workerWG, log, productPublishSvc, 2*time.Second)
+			log.Info("operation_task_outbox_dispatcher_started", "interval_sec", 2)
+		}
 	} else if cfg.ProductPublishQueueEnabled && redisClient == nil {
 		log.Warn("product_publish_worker_skipped", "reason", "redis unavailable while PRODUCT_PUBLISH_QUEUE_ENABLED=true")
 	}

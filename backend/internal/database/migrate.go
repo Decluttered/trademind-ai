@@ -9,17 +9,15 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/aiproducttext"
 	"github.com/trademind-ai/trademind/backend/internal/modules/aiprompt"
 	"github.com/trademind-ai/trademind/backend/internal/modules/aitask"
-	"github.com/trademind-ai/trademind/backend/internal/modules/backup"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collect"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectbrowserprofile"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectrule"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customerchat"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customersync"
-	"github.com/trademind-ai/trademind/backend/internal/modules/disasterrecovery"
 	"github.com/trademind-ai/trademind/backend/internal/modules/files"
 	"github.com/trademind-ai/trademind/backend/internal/modules/imagetask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventory"
-	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysyncp9"
+	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysync"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationtask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/order"
@@ -28,8 +26,6 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/performance"
 	"github.com/trademind-ai/trademind/backend/internal/modules/product"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
-	"github.com/trademind-ai/trademind/backend/internal/modules/release"
-	"github.com/trademind-ai/trademind/backend/internal/modules/restore"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
 	"github.com/trademind-ai/trademind/backend/internal/modules/taskcenter"
@@ -57,7 +53,7 @@ func migrateLegacyPublicationSKUColumns(db *gorm.DB) error {
 	return nil
 }
 
-// migrateLegacyInventorySKUColumns renames early GORM typo columns (product_sk_uid / external_sk_uid)
+// migrateLegacyInventorySKUColumns renames early GORM typo columns (*_sk_uid)
 // and ensures inventory / order SKU linkage columns exist before raw SQL aggregations run.
 func migrateLegacyInventorySKUColumns(db *gorm.DB) error {
 	if db == nil {
@@ -70,6 +66,7 @@ func migrateLegacyInventorySKUColumns(db *gorm.DB) error {
 	}
 	renames := []spec{
 		{&inventory.InventorySyncTask{}, "product_sk_uid", "product_sku_id"},
+		{&inventory.InventorySyncTask{}, "publication_sk_uid", "publication_sku_id"},
 		{&inventory.InventoryChangeLog{}, "product_sk_uid", "product_sku_id"},
 		{&inventory.OrderInventoryEffect{}, "product_sk_uid", "product_sku_id"},
 		{&order.OrderItem{}, "product_sk_uid", "product_sku_id"},
@@ -107,7 +104,13 @@ func AutoMigrate(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("auto migrate: db is nil")
 	}
-	if err := migrateLegacyPhaseTableNames(db, inventoryPhaseTableRenames); err != nil {
+	if err := migrateLegacyTableNames(db, inventoryLegacyTableRenames); err != nil {
+		return err
+	}
+	if err := migrateLegacyTableNames(db, imageTaskTableRenames); err != nil {
+		return err
+	}
+	if err := migrateLegacyDatabaseObjectNames(db); err != nil {
 		return err
 	}
 	if err := migrateLegacyPublicationSKUColumns(db); err != nil {
@@ -174,18 +177,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&taskcenter.TaskFailureMark{},
 		&taskcenter.TaskAlert{},
 		&taskcenter.TaskAlertNotification{},
-		&backup.Job{},
-		&backup.Artifact{},
-		&backup.Verification{},
-		&backup.RetentionHold{},
-		&backup.ObjectInventory{},
-		&restore.Job{},
-		&restore.Validation{},
-		&release.Run{},
-		&release.Artifact{},
-		&release.Step{},
-		&release.Rollback{},
-		&disasterrecovery.Drill{},
 		&performance.TestRun{},
 		&performance.Regression{},
 		&performance.CapacitySnapshot{},
@@ -197,46 +188,49 @@ func AutoMigrate(db *gorm.DB) error {
 	if err := operationtask.Migrate(db); err != nil {
 		return err
 	}
-	if err := inventorysyncp9.Migrate(db); err != nil {
+	if err := migrateProductPublishTenant(db); err != nil {
 		return err
 	}
-	if err := migrateDouyinPhase102Indexes(db); err != nil {
+	if err := inventorysync.Migrate(db); err != nil {
 		return err
 	}
-	if err := migratePublishBatchA21(db); err != nil {
+	if err := migrateDouyinOrderIdempotencyIndexes(db); err != nil {
 		return err
 	}
-	if err := migrateP2Reliability(db); err != nil {
+	if err := migratePublishBatchIndexes(db); err != nil {
 		return err
 	}
-	if err := migrateP21Reliability(db); err != nil {
+	if err := migrateReliabilitySchema(db); err != nil {
 		return err
 	}
-	if err := migrateP22Reliability(db); err != nil {
+	if err := migrateTaskExecutionTracking(db); err != nil {
 		return err
 	}
-	if err := migrateP3Douyin(db); err != nil {
+	if err := migrateWorkerRecoveryIndexes(db); err != nil {
 		return err
 	}
-	if err := migrateP31Douyin(db); err != nil {
+	if err := migrateDouyinPlatform(db); err != nil {
 		return err
 	}
-	if err := migrateP32Webhook(db); err != nil {
+	if err := migrateDouyinOrderRevision(db); err != nil {
 		return err
 	}
-	if err := migrateP4Security(db); err != nil {
+	if err := migrateWebhookRouting(db); err != nil {
 		return err
 	}
-	if err := migrateP41Security(db); err != nil {
+	if err := migrateAuthAuditSecurity(db); err != nil {
 		return err
 	}
-	if err := migrateP42Security(db); err != nil {
+	if err := migrateKeyRotationSecurity(db); err != nil {
 		return err
 	}
-	if err := migrateP5Observability(db); err != nil {
+	if err := migrateTenantSecurity(db); err != nil {
 		return err
 	}
-	if err := migrateP7Performance(db); err != nil {
+	if err := migrateObservability(db); err != nil {
+		return err
+	}
+	if err := migratePerformance(db); err != nil {
 		return err
 	}
 	return migrateCustomerAutoReplyReliability(db)

@@ -51,7 +51,7 @@ type DefaultContractGate struct {
 	Overrides map[string]string
 }
 
-// NewDefaultContractGate builds the P3.1 default gate.
+// NewDefaultContractGate builds the default provider contract gate.
 func NewDefaultContractGate(appEnv string) *DefaultContractGate {
 	return &DefaultContractGate{
 		AppEnv:    strings.TrimSpace(appEnv),
@@ -167,7 +167,7 @@ func contractRequiredError(cap, msg string) error {
 		fmt.Sprintf("%s: %s", cap, msg), "", "contract_verification_required", "")
 }
 
-// AllContractCapabilities returns the P3.1 capability catalog for config status.
+// AllContractCapabilities returns the provider capability catalog for config status.
 func AllContractCapabilities() []string {
 	return []string{
 		CapDouyinIMConversationList,

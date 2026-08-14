@@ -13,7 +13,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/admin"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/authutil"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/metrics"
-	"github.com/trademind-ai/trademind/backend/internal/pkg/p7diag"
+	"github.com/trademind-ai/trademind/backend/internal/pkg/runtimediag"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -44,38 +44,38 @@ func (s *SessionService) CreateSession(ctx context.Context, account, password, i
 	guard := &LoginGuard{Cfg: s.Cfg, DB: s.DB}
 	stageStart := time.Now()
 	if err := guard.CheckAllowed(ctx, account, ip); err != nil {
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "rate_limit_check", authOutcome(err), stageStart)
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "lockout_evaluate", authOutcome(err), stageStart)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "rate_limit_check", authOutcome(err), stageStart)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "lockout_evaluate", authOutcome(err), stageStart)
 		if err.Error() == ErrAccountTemporarilyLocked {
-			p7diag.Path(p7diag.RouteAuthInvalidLogin, "locked_account")
-			p7diag.Path(p7diag.RouteAuthInvalidLogin, p7diag.PathLockedAccount)
-			p7diag.Count(p7diag.RouteAuthInvalidLogin, "lockedAccountQueryCount", 1)
+			runtimediag.Path(runtimediag.RouteAuthInvalidLogin, "locked_account")
+			runtimediag.Path(runtimediag.RouteAuthInvalidLogin, runtimediag.PathLockedAccount)
+			runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "lockedAccountQueryCount", 1)
 		} else if err.Error() == ErrTooManyAttempts {
-			p7diag.Path(p7diag.RouteAuthInvalidLogin, "rate_limited")
+			runtimediag.Path(runtimediag.RouteAuthInvalidLogin, "rate_limited")
 		}
 		return nil, err
 	}
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "rate_limit_check", p7diag.OutcomeSuccess, stageStart)
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "lockout_evaluate", p7diag.OutcomeSuccess, stageStart)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "rate_limit_check", runtimediag.OutcomeSuccess, stageStart)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "lockout_evaluate", runtimediag.OutcomeSuccess, stageStart)
 
 	stageStart = time.Now()
 	var u *admin.AdminUser
-	timing, err := p7diag.TimedGorm(s.DB, func() error {
+	timing, err := runtimediag.TimedGorm(s.DB, func() error {
 		var lookupErr error
 		u, lookupErr = s.Admins.ByLoginAccount(ctx, account)
 		return lookupErr
 	})
 	outcome := authOutcome(err)
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "account_lookup", outcome, stageStart)
-	p7diag.ObserveDBOperation(p7diag.RouteAuthInvalidLogin, "account_lookup", outcome, stageStart)
-	p7diag.ObserveSQL(p7diag.RouteAuthInvalidLogin, "auth", "auth.account_lookup", "select", "admin_users", outcome, false, timing)
-	p7diag.Count(p7diag.RouteAuthInvalidLogin, "accountLookupCount", 1)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "account_lookup", outcome, stageStart)
+	runtimediag.ObserveDBOperation(runtimediag.RouteAuthInvalidLogin, "account_lookup", outcome, stageStart)
+	runtimediag.ObserveSQL(runtimediag.RouteAuthInvalidLogin, "auth", "auth.account_lookup", "select", "admin_users", outcome, false, timing)
+	runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "accountLookupCount", 1)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			p7diag.Path(p7diag.RouteAuthInvalidLogin, "account_missing")
-			p7diag.Path(p7diag.RouteAuthInvalidLogin, p7diag.PathUnknownAccount)
-			p7diag.Count(p7diag.RouteAuthInvalidLogin, "unknownAccountQueryCount", 1)
-			p7diag.ObservePasswordVerify(p7diag.PathUnknownAccount, p7diag.PasswordAlgoBcrypt, bcrypt.DefaultCost, 0, time.Now())
+			runtimediag.Path(runtimediag.RouteAuthInvalidLogin, "account_missing")
+			runtimediag.Path(runtimediag.RouteAuthInvalidLogin, runtimediag.PathUnknownAccount)
+			runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "unknownAccountQueryCount", 1)
+			runtimediag.ObservePasswordVerify(runtimediag.PathUnknownAccount, runtimediag.PasswordAlgoBcrypt, bcrypt.DefaultCost, 0, time.Now())
 			_ = guard.RecordFailure(ctx, account, ip)
 			return nil, errors.New(ErrInvalidCredentials)
 		}
@@ -87,18 +87,18 @@ func (s *SessionService) CreateSession(ctx context.Context, account, password, i
 		cost = c
 	}
 	if err := admin.CheckPassword(u.PasswordHash, password); err != nil {
-		p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "password_verify", p7diag.OutcomeExpectedRejection, stageStart)
-		p7diag.ObservePasswordVerify(p7diag.PathKnownWrongPassword, p7diag.PasswordAlgoBcrypt, cost, 1, stageStart)
-		p7diag.Count(p7diag.RouteAuthInvalidLogin, "passwordVerifyCount", 1)
-		p7diag.Count(p7diag.RouteAuthInvalidLogin, "wrongPasswordQueryCount", 1)
-		p7diag.Path(p7diag.RouteAuthInvalidLogin, "wrong_password")
-		p7diag.Path(p7diag.RouteAuthInvalidLogin, p7diag.PathKnownWrongPassword)
+		runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "password_verify", runtimediag.OutcomeExpectedRejection, stageStart)
+		runtimediag.ObservePasswordVerify(runtimediag.PathKnownWrongPassword, runtimediag.PasswordAlgoBcrypt, cost, 1, stageStart)
+		runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "passwordVerifyCount", 1)
+		runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "wrongPasswordQueryCount", 1)
+		runtimediag.Path(runtimediag.RouteAuthInvalidLogin, "wrong_password")
+		runtimediag.Path(runtimediag.RouteAuthInvalidLogin, runtimediag.PathKnownWrongPassword)
 		_ = guard.RecordFailure(ctx, account, ip)
 		return nil, errors.New(ErrInvalidCredentials)
 	}
-	p7diag.ObserveStage(p7diag.RouteAuthInvalidLogin, "password_verify", p7diag.OutcomeSuccess, stageStart)
-	p7diag.ObservePasswordVerify(p7diag.PathSuccessVerify, p7diag.PasswordAlgoBcrypt, cost, 1, stageStart)
-	p7diag.Count(p7diag.RouteAuthInvalidLogin, "passwordVerifyCount", 1)
+	runtimediag.ObserveStage(runtimediag.RouteAuthInvalidLogin, "password_verify", runtimediag.OutcomeSuccess, stageStart)
+	runtimediag.ObservePasswordVerify(runtimediag.PathSuccessVerify, runtimediag.PasswordAlgoBcrypt, cost, 1, stageStart)
+	runtimediag.Count(runtimediag.RouteAuthInvalidLogin, "passwordVerifyCount", 1)
 	if st := strings.TrimSpace(strings.ToLower(u.Status)); st == "disabled" || st == "inactive" {
 		return nil, errors.New(ErrUserDisabled)
 	}

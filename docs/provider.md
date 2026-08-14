@@ -87,7 +87,7 @@ Douyin Shop Phase 8 adds order sync MVP via existing order sync orchestration (`
 
 ### P10 read-only inventory adapter
 
-`backend/internal/modules/inventoryreadp10` adds `DouyinReadOnlyInventoryProvider`, which implements the exported P9 `InventoryProvider` contract without changing or registering through the frozen P9 fixture registry. The adapter has no write method. It obtains backend-only credentials from `credentialp10`, evaluates feature flags plus Provider/Tenant/Shop/Read/Write kill-switch priority through `productioncontrolp10`, and calls only the existing official-contract `product.detail` method.
+`backend/internal/modules/inventoryread` adds `DouyinReadOnlyInventoryProvider`, which implements the exported P9 `InventoryProvider` contract without changing or registering through the frozen P9 fixture registry. The adapter has no write method. It obtains backend-only credentials from `platformcredential`, evaluates feature flags plus Provider/Tenant/Shop/Read/Write kill-switch priority through `productioncontrol`, and calls only the existing official-contract `product.detail` method.
 
 There is no confirmed all-shop inventory endpoint in the repository contract. P10 therefore paginates tenant/shop-scoped local `product_publications`, fetches `product.detail` for each bound external product, normalizes SKU stock into P9 snapshots, and reuses P9 calibration/manual-binding/audit services. Page count, SKU count (<=100), response bytes, connection pool and timeouts are bounded. HTTP 401/403/429/5xx, expiry, timeout, invalid request and protocol failures map to safe internal errors with request correlation; no automatic business retry occurs.
 

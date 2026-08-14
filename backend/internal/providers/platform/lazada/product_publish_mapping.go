@@ -291,7 +291,7 @@ func extractLazadaOptionsAttributes(options map[string]any) map[string]string {
 	return out
 }
 
-func sellerSkuCode(sku platformp.PlatformProductSKU) string {
+func sellerSKUCode(sku platformp.PlatformProductSKU) string {
 	if s := strings.TrimSpace(sku.SKUCode); s != "" {
 		return s
 	}
@@ -322,7 +322,7 @@ func buildLazadaSKUEntries(draft platformp.PlatformProductDraft, merged lazadaPu
 	out := make([]map[string]any, 0, len(draft.SKUs))
 	for i, sku := range draft.SKUs {
 		skuMap := map[string]any{
-			"SellerSku":       sellerSkuCode(sku),
+			"SellerSku":       sellerSKUCode(sku),
 			"price":           formatLazadaDecimal(sku.Price, 2),
 			"quantity":        strconv.Itoa(intMax(sku.Stock, 0)),
 			"package_weight":  weightStr,

@@ -309,6 +309,45 @@ func TestPlatformDraftRepositoryVersionsValidationTenantAndForeignKey(t *testing
 	require.Error(t, del.Error)
 }
 
+func TestRepositoriesListLatestByTasks(t *testing.T) {
+	db := openOperationTaskTestDB(t)
+	ctx := context.Background()
+	task, firstDraft, firstApproval := createTaskDraftApproval(t, db)
+	draftRepo := operationtask.NewPlatformDraftRepository(db)
+	attemptRepo := operationtask.NewExecutionAttemptRepository(db)
+	approvalRepo := operationtask.NewApprovalRecordRepository(db)
+
+	firstAttempt := sampleAttempt(task, firstDraft, firstApproval, 1, "latest-first")
+	require.NoError(t, attemptRepo.CreateAttempt(ctx, &firstAttempt))
+	secondDraft := sampleDraft(task, 2, hash2)
+	require.NoError(t, draftRepo.CreateVersion(ctx, &secondDraft))
+	secondApproval := sampleApproval(task, secondDraft, "latest-second-approval")
+	require.NoError(t, approvalRepo.CreateDecision(ctx, &secondApproval))
+	secondAttempt := sampleAttempt(task, secondDraft, secondApproval, 2, "latest-second")
+	require.NoError(t, attemptRepo.CreateAttempt(ctx, &secondAttempt))
+
+	otherTask := sampleTask(101, "latest-other-task")
+	require.NoError(t, operationtask.NewOperationTaskRepository(db).Create(ctx, &otherTask))
+	otherDraft := sampleDraft(otherTask, 1, hash3)
+	require.NoError(t, draftRepo.CreateVersion(ctx, &otherDraft))
+
+	drafts, err := draftRepo.ListLatestByTasks(ctx, 101, []uuid.UUID{task.ID, otherTask.ID})
+	require.NoError(t, err)
+	require.Equal(t, secondDraft.ID, drafts[task.ID].ID)
+	require.Equal(t, otherDraft.ID, drafts[otherTask.ID].ID)
+	attempts, err := attemptRepo.ListLatestByTasks(ctx, 101, []uuid.UUID{task.ID, otherTask.ID})
+	require.NoError(t, err)
+	require.Equal(t, secondAttempt.ID, attempts[task.ID].ID)
+	require.NotContains(t, attempts, otherTask.ID)
+
+	emptyDrafts, err := draftRepo.ListLatestByTasks(ctx, 101, nil)
+	require.NoError(t, err)
+	require.Empty(t, emptyDrafts)
+	emptyAttempts, err := attemptRepo.ListLatestByTasks(ctx, 101, nil)
+	require.NoError(t, err)
+	require.Empty(t, emptyAttempts)
+}
+
 func TestConcurrentIdempotencyAndDraftVersionUseDatabaseConstraints(t *testing.T) {
 	db := openOperationTaskTestDB(t)
 	ctx := context.Background()
@@ -659,7 +698,7 @@ func TestOperationTaskEventRepositoryAppendPaginationValidationAndImmutable(t *t
 	require.ErrorIs(t, db.Delete(&operationtask.OperationTaskEvent{}, "id = ?", first.ID).Error, operationtask.ErrImmutableRecord)
 }
 
-func TestBatch2ConcurrentConstraints(t *testing.T) {
+func TestRepositoryConcurrentConstraints(t *testing.T) {
 	db := openOperationTaskTestDB(t)
 	ctx := context.Background()
 	task, draft, approval := createTaskDraftApproval(t, db)

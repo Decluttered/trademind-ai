@@ -37,10 +37,24 @@ PostgreSQL 和 Redis 集成测试由 GitHub Actions service container 提供。C
 
 ## 发布流程
 
-从 `dev` 创建 `release/*`，完成 changelog、版本号、部署文档、CI 和人工验收后 PR 到 `main`。发布修正应回合 `dev`，避免分支漂移。
+从 `dev` 创建 `release/*`，更新 changelog、版本号与部署文档并 PR 到 `main`。容器版本由 `deploy/IMAGE_VERSION` 管理，格式必须为不含 `+build` 元数据、最长 48 字符的 Docker tag 安全 SemVer。`main` CI 与人工验收完成后，维护者从该提交创建 annotated `v<version>` Tag 并推送；发布修正应回合 `dev`，避免分支漂移。
+
+## 容器镜像发布
+
+`Container Images` 工作流在应用源码或镜像配置变更后自动发布 backend、admin、collector 三个 GHCR 镜像：
+
+- `main`、`dev`、`feat/*`、`fix/*`、`release/*` 生成规范化分支、分支版本与 `sha-<full-commit>` 标签，用于持续验证；分支构建不更新 `latest`。
+- 每次构建都更新 `<branch>-v<version>` 标签；修改 `deploy/IMAGE_VERSION` 会切换到新的版本标签。
+- 推送 `v<version>` Git Tag 时，工作流要求 Tag 与 `deploy/IMAGE_VERSION` 完全一致，并要求 Tag 所指提交已包含在远程 `main` 中。
+- 通过校验的正式 Tag 发布 `v<version>`、`<version>`、`sha-<full-commit>` 和 `latest`；受控部署仍固定工作流输出的 manifest digest。
+- 每个镜像包含 `linux/amd64` 与 `linux/arm64`，并发布 OCI 元数据、SBOM 和 provenance。
+- 镜像推送只创建部署输入，不会自动部署、切流、修改数据库、启用真实平台能力、创建/移动 Git Tag 或发布 GitHub Release。
+
+版本变更 PR 应同时检查 `deploy/IMAGE_VERSION`、`CHANGELOG.md`、`docs/docker-deployment.md` 和回滚引用。Tag 只能在 PR 合并、`main` CI 和人工验收完成后创建；完整命令见 [Docker 部署说明](docker-deployment.md#正式发布)。
 
 ## 分支保护建议
 
 - `main` 和 `dev` 禁止直接 push并要求 PR 与 CI。
+- 为 `v*` 配置 Tag 保护，禁止发布后强制移动或删除。
 - 按维护者偏好使用线性历史或 squash merge。
 - 合并后删除无用远程分支。

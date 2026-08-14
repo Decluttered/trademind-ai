@@ -12,6 +12,7 @@ func TestValidate_storageProductionLocalFails(t *testing.T) {
 		StorageProvider:        "local",
 		JWTSecret:              strings.Repeat("a", 48),
 		MasterKey:              strings.Repeat("b", 64),
+		CollectorServiceToken:  strings.Repeat("c", 48),
 		APIPublicURL:           "https://api.example.com",
 		AdminPublicURL:         "https://admin.example.com",
 		BootstrapAdminPassword: "StrongPass!2026",
@@ -70,21 +71,19 @@ func TestValidate_storageDevelopmentLocalPasses(t *testing.T) {
 
 func TestValidate_storageProductionCOSPassesBase(t *testing.T) {
 	t.Parallel()
-	backupCfg, releaseCfg := productionP6BackupRelease()
 	cfg := &Config{
 		AppEnv:                 EnvProduction,
 		StorageProvider:        "cos",
 		JWTSecret:              strings.Repeat("a", 48),
 		MasterKey:              strings.Repeat("b", 64),
+		CollectorServiceToken:  strings.Repeat("c", 48),
 		APIPublicURL:           "https://api.example.com",
 		AdminPublicURL:         "https://admin.example.com",
 		BootstrapAdminPassword: "StrongPass!2026",
 		CORSAllowedOrigins:     []string{"https://admin.example.com"},
-		Auth:                   productionP4Auth(),
+		Auth:                   productionAuthConfig(),
 		Observability:          ValidProductionObservability(),
-		Backup:                 backupCfg,
-		Release:                releaseCfg,
-		P7:                     productionP7(),
+		RuntimeLimits:          productionRuntimeLimits(),
 		DB:                     DBConfig{Driver: "postgres", User: "u", Name: "db"},
 	}
 	if err := cfg.Validate(); err != nil {

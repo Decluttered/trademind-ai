@@ -17,10 +17,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// Repository-level IDOR tests verify tenant_id isolation for P4.2 task tables.
+// Repository-level IDOR tests verify tenant_id isolation for tenant-scoped task tables.
 
 func TestIDOR_InventoryTaskFindByIDCrossTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	shopB := seedShopForTenant(t, db, tenantB, "shop-b")
 	pidB := seedProductForTenant(t, db, tenantB, secretTenantB)
 	tid := seedInventoryTask(t, db, tenantB, shopB, pidB)
@@ -30,7 +30,7 @@ func TestIDOR_InventoryTaskFindByIDCrossTenant(t *testing.T) {
 }
 
 func TestIDOR_OrderSyncTaskFindByIDCrossTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	shopB := seedShopForTenant(t, db, tenantB, "shop-b")
 	tid := seedOrderSyncTask(t, db, tenantB, shopB)
 	var row ordersync.OrderSyncTask
@@ -39,7 +39,7 @@ func TestIDOR_OrderSyncTaskFindByIDCrossTenant(t *testing.T) {
 }
 
 func TestIDOR_ProductPublishTaskFindByIDCrossTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	shopB := seedShopForTenant(t, db, tenantB, "shop-b")
 	pidB := seedProductForTenant(t, db, tenantB, secretTenantB)
 	tid := seedProductPublishTask(t, db, tenantB, shopB, pidB)
@@ -49,21 +49,21 @@ func TestIDOR_ProductPublishTaskFindByIDCrossTenant(t *testing.T) {
 }
 
 func TestIDOR_AITextBatchFindByIDCrossTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	bid := seedAITextBatch(t, db, tenantB)
 	var row aiproducttext.AIProductTextBatch
 	assertFindByIDDenied(t, db, tenantA, bid, &row)
 }
 
 func TestIDOR_AIImageBatchFindByIDCrossTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	bid := seedAIImageBatch(t, db, tenantB)
 	var row aiproductimage.AIProductImageBatch
 	assertFindByIDDenied(t, db, tenantA, bid, &row)
 }
 
 func TestIDOR_CustomerConversationFindByIDCrossTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	shopB := seedShopForTenant(t, db, tenantB, "shop-b")
 	cid := seedCustomerConversation(t, db, tenantB, shopB, secretTenantB)
 	var row customerchat.CustomerConversation
@@ -72,7 +72,7 @@ func TestIDOR_CustomerConversationFindByIDCrossTenant(t *testing.T) {
 }
 
 func TestIDOR_WebhookEventFindByIDCrossTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	eid := seedWebhookEvent(t, db, tenantB)
 	var row webhook.Event
 	assertFindByIDDenied(t, db, tenantA, eid, &row)
@@ -80,7 +80,7 @@ func TestIDOR_WebhookEventFindByIDCrossTenant(t *testing.T) {
 }
 
 func TestIDOR_ExportJobFindByIDCrossTenant(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	jid := seedExportJob(t, db, tenantB, exportmod.ExportTypeInventory)
 	var row exportmod.ExportJob
 	assertFindByIDDenied(t, db, tenantA, jid, &row)
@@ -88,7 +88,7 @@ func TestIDOR_ExportJobFindByIDCrossTenant(t *testing.T) {
 }
 
 func TestIDOR_SameTenantCanLoadOwnRow(t *testing.T) {
-	db := openP42DB(t)
+	db := openIDORTestDB(t)
 	shopA := seedShopForTenant(t, db, tenantA, "shop-a")
 	pidA := seedProductForTenant(t, db, tenantA, "own")
 	tid := seedInventoryTask(t, db, tenantA, shopA, pidA)

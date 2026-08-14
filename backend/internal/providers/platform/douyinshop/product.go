@@ -39,18 +39,18 @@ type PlatformProductSKU struct {
 // product.addV2 creates product + specs + SKUs in one call.
 // commit=false saves to platform draft box only; start_sale_type=1 keeps off shelf.
 type CreateProductDraftRequest struct {
-	OuterProductID  string
-	Name            string
-	CategoryLeafID  string
-	Pic             string
-	Description     string
-	ProductFormat   map[string]any
-	SpecInfo        map[string]any
-	SpecPricesV2    []map[string]any
-	FreightID       int64
-	Mobile          string
-	StandardBrandID int64
-	PublishConfig   map[string]string
+	OuterProductID  string            `json:"outerProductId,omitempty"`
+	Name            string            `json:"name"`
+	CategoryLeafID  string            `json:"categoryLeafId"`
+	Pic             string            `json:"pic"`
+	Description     string            `json:"description"`
+	ProductFormat   map[string]any    `json:"productFormat,omitempty"`
+	SpecInfo        map[string]any    `json:"specInfo,omitempty"`
+	SpecPricesV2    []map[string]any  `json:"specPricesV2"`
+	FreightID       int64             `json:"freightId"`
+	Mobile          string            `json:"mobile,omitempty"`
+	StandardBrandID int64             `json:"standardBrandId,omitempty"`
+	PublishConfig   map[string]string `json:"publishConfig,omitempty"`
 }
 
 // PlatformProductResult is returned after a successful product.addV2 call.

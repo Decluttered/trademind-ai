@@ -142,10 +142,10 @@ func (s *Service) GetProductOperationDashboard(ctx context.Context, q Query, sc 
 				Page: 1, PageSize: 1, IncludeNormal: false, OnlyPublished: false,
 			}
 			if r, err := s.invCount(ctx, invQ, inventory.AlertTypeLowStock); err == nil {
-				sum.LowStockSkus += r
+				sum.LowStockSKUs += r
 			}
 			if r, err := s.invCount(ctx, invQ, inventory.AlertTypeOutOfStock); err == nil {
-				sum.OutOfStockSkus += r
+				sum.OutOfStockSKUs += r
 			}
 			if r, err := s.invCount(ctx, invQ, inventory.AlertTypePlatformStockMismatch); err == nil {
 				sum.PlatformStockMismatchCount += r
@@ -164,10 +164,10 @@ func (s *Service) GetProductOperationDashboard(ctx context.Context, q Query, sc 
 			OnlyPublished: false,
 		}
 		if r, err := s.invCount(ctx, invQBase, inventory.AlertTypeLowStock); err == nil {
-			sum.LowStockSkus = r
+			sum.LowStockSKUs = r
 		}
 		if r, err := s.invCount(ctx, invQBase, inventory.AlertTypeOutOfStock); err == nil {
-			sum.OutOfStockSkus = r
+			sum.OutOfStockSKUs = r
 		}
 		if r, err := s.invCount(ctx, invQBase, inventory.AlertTypePlatformStockMismatch); err == nil {
 			sum.PlatformStockMismatchCount = r
@@ -304,7 +304,7 @@ func (s *Service) GetProductOperationDashboard(ctx context.Context, q Query, sc 
 	sum.MissingAiDescription = sum.MissingAiDescriptionCount
 	sum.ReadinessBlockedKPI = sum.ReadinessBlocked
 	sum.Published = sum.PublishedProducts
-	sum.InventoryAlerts = sum.LowStockSkus + sum.OutOfStockSkus
+	sum.InventoryAlerts = sum.LowStockSKUs + sum.OutOfStockSKUs
 	sum.OrderExceptions = sum.OrderExceptionTotal
 
 	out.Todos = buildTodoCards(sum, publishableCount)
@@ -509,7 +509,7 @@ func buildTodoCards(sum *Summary, publishable int64) []TodoCard {
 			"这些商品还没有 AI 描述", "/product/drafts?missingAiDescription=1"),
 		todoCard("readiness_blocked", "发布检查未通过", sum.ReadinessBlocked, failureclassifier.SeverityHigh,
 			"缺标题、主图、规格或价格等，需先补齐", "/product/drafts?readiness=blocked"),
-		todoCard("inventory_alerts", "库存预警", sum.LowStockSkus+sum.OutOfStockSkus, failureclassifier.SeverityHigh,
+		todoCard("inventory_alerts", "库存预警", sum.LowStockSKUs+sum.OutOfStockSKUs, failureclassifier.SeverityHigh,
 			"低库存或缺货，建议尽快补货或调整", "/inventory/alerts"),
 		todoCard("ai_image_failed", "AI 图片任务失败", sum.ImageTaskFailed, failureclassifier.SeverityHigh,
 			"图片处理失败，可在任务页重试", "/ai/image-tasks?status=failed"),

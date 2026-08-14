@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -14,7 +16,19 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/admin"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationtask"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/ctxkey"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
+
+type operationTaskQueryCounter struct {
+	logger.Interface
+	queries atomic.Int64
+}
+
+func (l *operationTaskQueryCounter) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
+	l.queries.Add(1)
+	l.Interface.Trace(ctx, begin, fc, err)
+}
 
 func TestAPIServiceCreateTaskIdempotencyAndTenantActorBoundary(t *testing.T) {
 	db := openOperationTaskTestDB(t)
@@ -72,6 +86,57 @@ func TestAPIServicePermissionDenialDoesNotCreateTask(t *testing.T) {
 	out, err := operationtask.NewOperationTaskRepository(db).List(context.Background(), operationtask.OperationTaskListParams{TenantID: tenantID, Limit: 10})
 	require.NoError(t, err)
 	require.Empty(t, out.Items)
+}
+
+func TestAPIServiceGetTaskPropagatesRelatedRecordQueryFailure(t *testing.T) {
+	db := openOperationTaskTestDB(t)
+	tenantID := int64(101)
+	actorID := createAdminUser(t, db, tenantID, admin.RoleAdmin, admin.StatusActive)
+	svc := operationtask.NewAPIService(db)
+	actor := operationtask.APIActor{TenantID: tenantID, ActorID: actorID, Role: admin.RoleAdmin}
+	created, err := svc.CreateTask(context.Background(), actor, operationtask.CreateTaskRequest{
+		SourceType: operationtask.OperationTaskSourceManual,
+		TaskType:   operationtask.OperationTaskTypeProductContent,
+		Platform:   operationtask.PlatformLocal,
+		Title:      "Related query failure",
+		Payload:    json.RawMessage(`{"title":"safe"}`),
+		Priority:   operationtask.OperationTaskPriorityNormal,
+	}, "req-related-query", "idem-related-query")
+	require.NoError(t, err)
+	require.NoError(t, db.Exec("DROP TABLE platform_drafts").Error)
+
+	_, err = svc.GetTask(context.Background(), actor, created.ID)
+	require.ErrorIs(t, err, operationtask.ErrConflict)
+}
+
+func TestAPIServiceListTasksUsesFixedQueryBudget(t *testing.T) {
+	db := openOperationTaskTestDB(t)
+	ctx := context.Background()
+	tenantID := int64(101)
+	actorID := createAdminUser(t, db, tenantID, admin.RoleAdmin, admin.StatusActive)
+	for i := 0; i < 5; i++ {
+		task := sampleTask(tenantID, uuid.NewString())
+		task.SourceReference = uuid.NewString()
+		require.NoError(t, operationtask.NewOperationTaskRepository(db).Create(ctx, &task))
+		draft := sampleDraft(task, 1, hash1)
+		require.NoError(t, operationtask.NewPlatformDraftRepository(db).CreateVersion(ctx, &draft))
+		approval := sampleApproval(task, draft, uuid.NewString())
+		require.NoError(t, operationtask.NewApprovalRecordRepository(db).CreateDecision(ctx, &approval))
+		attempt := sampleAttempt(task, draft, approval, 1, uuid.NewString())
+		require.NoError(t, operationtask.NewExecutionAttemptRepository(db).CreateAttempt(ctx, &attempt))
+	}
+	counter := &operationTaskQueryCounter{Interface: logger.Default.LogMode(logger.Silent)}
+	countedDB := db.Session(&gorm.Session{Logger: counter})
+	svc := operationtask.NewAPIService(countedDB)
+
+	result, err := svc.ListTasks(ctx, operationtask.APIActor{TenantID: tenantID, ActorID: actorID, Role: admin.RoleAdmin}, operationtask.OperationTaskListParams{Limit: 50})
+	require.NoError(t, err)
+	require.Len(t, result.Items, 5)
+	for _, item := range result.Items {
+		require.Equal(t, 1, item.LatestDraftVersion)
+		require.Equal(t, operationtask.ExecutionAttemptStatusQueued, item.LatestExecutionStatus)
+	}
+	require.LessOrEqual(t, counter.queries.Load(), int64(4))
 }
 
 func TestOperationTaskHandlerRejectsUnknownDangerousFields(t *testing.T) {
