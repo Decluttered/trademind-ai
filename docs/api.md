@@ -279,7 +279,8 @@
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/v1/shops` | 店铺列表（现行路径；legacy `/stores` 已废弃）。 |
-| `GET` | `/api/v1/shops/:id` | 店铺详情。 |
+| `GET` | `/api/v1/shops/:id` | 店铺详情。eBay `auth.reauthorizationRequired` 表示需要重新 OAuth 以授予 `sell.account.readonly`。 |
+| `POST` | `/api/v1/shops/:id/test-connection` | 店铺连接测试。eBay 使用用户 token 调用 Account API getPrivileges；缺少 `sell.account.readonly` 时返回 `EBAY_REAUTHORIZATION_REQUIRED`。 |
 | `POST` | `/api/v1/shops/:id/sync-orders` | 手动触发订单同步。 |
 | `POST` | `/api/v1/shops/:id/oauth/douyin/refresh` | 刷新抖店授权 Token（示例；各平台 OAuth 见下表）。 |
 
@@ -289,8 +290,8 @@
 | --- | --- | --- |
 | `GET` | `/api/v1/platform/providers` | 返回已注册平台 Provider、能力、状态、`appConfigSchema` 与设置分组。`douyin_shop` 已注册为抖店 / Douyin Shop Provider。 |
 | `GET` | `/api/v1/platform/settings/:platform` | 读取平台开放应用配置 schema 与脱敏后的当前值。敏感字段只返回 `****`。 |
-| `PUT` | `/api/v1/platform/settings/:platform` | 保存平台开放应用配置。敏感字段加密存储，传入 `****` 表示保留原值。`douyin_shop` 会校验 App Key、App Secret、回调地址、环境与超时时间；发起 OAuth 还需要 `service_id`。 |
-| `POST` | `/api/v1/platform/settings/:platform/test-connection` | 测试已保存的平台开放应用配置。`douyin_shop` 应用配置测试校验配置完整性与授权可用性，不做商品 / 订单 / 库存调用。 |
+| `PUT` | `/api/v1/platform/settings/:platform` | 保存平台开放应用配置。敏感字段加密存储，传入 `****` 表示保留原值。`douyin_shop` 会校验 App Key、App Secret、回调地址、环境与超时时间；发起 OAuth 还需要 `service_id`。`ebay` 会校验 Client ID/Secret、RuName（非 https URL）、`marketplace_id` 与 environment。 |
+| `POST` | `/api/v1/platform/settings/:platform/test-connection` | 测试已保存的平台开放应用配置。`douyin_shop` 应用配置测试校验配置完整性与授权可用性，不做商品 / 订单 / 库存调用。`ebay` 使用 client credentials 换应用 token（scope `https://api.ebay.com/oauth/api_scope`），不调用 Account getPrivileges。 |
 | `GET` | `/api/v1/shops/oauth/douyin/start` | 发起抖店 OAuth；生成 Redis state（10 分钟，绑定管理员、`platform=douyin_shop`、可选 `shopId`），返回 `redirectUrl`。 |
 | `GET` | `/api/v1/shops/oauth/douyin/callback` | 抖店授权公开回调；校验 state，处理 `code` / `error`，换取 token，创建或更新 `shops` / `shop_auth_tokens`，成功跳转 `/settings/platforms?platform=douyin_shop&auth=success`。 |
 | `GET` | `/api/v1/shops/:id/oauth/douyin/authorize-url` | 已有抖店店铺重新授权，返回 `redirectUrl`。 |
@@ -567,8 +568,8 @@ Phase 2 keeps eBay access behind the Go provider. Admin and Extension call only 
 | `POST` | `/v1/calendar/preview` | Pure READY-listing preview; no database mutation |
 | `POST` | `/v1/calendar/apply` | Idempotently reserve slots/jobs and start stable Temporal workflow IDs; requires `Idempotency-Key` |
 | `POST` | `/v1/publications/:id/approve` | Explicit operator execution path; requires `Idempotency-Key` and all publish gates |
-| `GET` | `/api/v1/shops/:id/oauth/ebay/authorize-url` | Create state-bound eBay OAuth URL; Redis-backed state and shop operate permission |
-| `POST` | `/api/v1/shops/:id/oauth/ebay/callback` | Exchange code, encrypt and persist user token; tenant/store scoped |
+| `GET` | `/api/v1/shops/:id/oauth/ebay/authorize-url` | Create state-bound eBay OAuth URL; Redis-backed state and shop operate permission. `redirect_uri` is the RuName. Consent includes `sell.account.readonly`. |
+| `POST` | `/api/v1/shops/:id/oauth/ebay/callback` | Exchange code, encrypt and persist user token and granted scopes; tenant/store scoped |
 | `GET` | `/api/v1/platform/ebay/categories/:categoryId/aspects` | Read cached eBay category aspects |
 | `POST` | `/api/v1/platform/ebay/categories/:categoryId/aspects/sync` | Refresh Taxonomy aspects using an application token |
 | `POST` | `/internal/v1/mindbay/publications/:id/revalidate` | Temporal service command; bearer service token only |

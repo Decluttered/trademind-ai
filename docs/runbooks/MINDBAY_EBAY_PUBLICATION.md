@@ -10,8 +10,8 @@
 
 1. Set a random `TEMPORAL_SERVICE_TOKEN` in the ignored `.env`.
 2. Start `docker compose -f docker-compose.full.yml --profile mindbay up --build`.
-3. Configure `platform_ebay` and the eBay publish policy IDs in Admin.
-4. Complete eBay Sandbox OAuth for an eBay shop.
+3. Configure `platform_ebay` in Admin: Client ID, Client Secret, **RuName** (not an https callback), environment, and `marketplace_id=EBAY_DE`. Then set eBay publish policy IDs.
+4. Complete eBay Sandbox OAuth for an eBay shop. After `sell.account.readonly` was added, existing shops must re-authorize.
 5. For categories that require product-safety labels, enter Metadata API statement IDs such as `EBPSS102`; free-form GPSR safety text is never guessed into an eBay code.
 6. Create a Planner preview. Confirm that preview created no `calendar_slot` or `publication_job` rows.
 7. Apply the preview with a stable Idempotency-Key. A repeat must return the same slots/jobs.

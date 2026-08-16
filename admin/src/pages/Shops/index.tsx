@@ -890,6 +890,23 @@ export default function ShopsPage() {
                 description="支持店铺授权、连接测试与订单同步。请先在「平台接入设置 → Amazon」填写完整平台应用信息；服务器需按文档配置亚马逊访问凭证。"
               />
             )}
+            {detail.platform === 'ebay' && (
+              <Alert
+                type={detail.auth?.reauthorizationRequired ? 'warning' : 'info'}
+                showIcon
+                style={{ marginBottom: 12 }}
+                message={
+                  detail.auth?.reauthorizationRequired
+                    ? '需要重新授权 eBay'
+                    : 'eBay Sell API（测试中）'
+                }
+                description={
+                  detail.auth?.reauthorizationRequired
+                    ? '新增 sell.account.readonly 后，现有 refresh token 无法扩大权限。请使用下方授权链接重新完成 eBay OAuth。'
+                    : '请先在「平台接入设置 → eBay」填写 Client ID、Client Secret 和 RuName（不是 https 回调）。连接测试会读取 Account API getPrivileges。'
+                }
+              />
+            )}
             <Descriptions bordered size="small" column={2}>
               <Descriptions.Item label="平台">{providerLabel(providers, detail.platform)}</Descriptions.Item>
               <Descriptions.Item label="平台标识">{detail.platform}</Descriptions.Item>
@@ -1626,7 +1643,7 @@ export default function ShopsPage() {
                   <>
                     <Divider>eBay OAuth (Sandbox)</Divider>
                     <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-                      Der Link verwendet die eBay-App aus den Plattform-Einstellungen. Nach der Freigabe werden nur verschlüsselte Shop-Tokens gespeichert.
+                      授权链接使用平台设置中的 eBay 应用与 RuName。新增 sell.account.readonly 后必须重新授权；完成后只保存加密后的店铺 Token。
                     </Typography.Paragraph>
                     <Space wrap>
                       <Button

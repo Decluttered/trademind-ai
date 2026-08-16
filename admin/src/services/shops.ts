@@ -51,6 +51,8 @@ export type ShopAuthPublic = {
   marketplaceId?: string;
   expiresAt?: string;
   refreshExpiresAt?: string;
+  reauthorizationRequired?: boolean;
+  lastRefreshErrorCode?: string;
   scopes?: unknown;
   authConfig?: Record<string, unknown>;
 };

@@ -67,6 +67,25 @@ Collector Provider
 
 OAuth2 authorization-code、加密 Token、自动 refresh、连接测试和 marketplace 选择属于该 Provider。每个 eBay API 方法必须对照官方文档，并在方法上方注释官方名称、版本、HTTP method 与 path。无法核对官方契约时停止并询问。
 
+`settings.platform_ebay.redirect_uri` 保存的是 Developer Portal 的 **RuName**（OAuth `redirect_uri` 参数），不是 `https://` 回调 URL。沙箱与生产使用不同的 RuName。
+
+店铺连接测试调用 Account API **getPrivileges**（用户 token，需要 `sell.account.readonly`）。应用设置连接测试只换 **client credentials** 应用 token（scope `https://api.ebay.com/oauth/api_scope`），不调用 getPrivileges。Refresh 只使用该店铺已授予的 scopes；新增 scope 后必须重新 OAuth。
+
+| 方法 | 官方名称 | 版本 | HTTP | Path |
+| --- | --- | --- | --- | --- |
+| `BuildAuthorizeURL` | Authorization Code Grant | OAuth | GET | `{authHost}/oauth2/authorize` |
+| `ExchangeAuthCode` | Authorization Code Grant — redeem | Identity | POST | `/identity/v1/oauth2/token` |
+| `RefreshAccessToken` | Authorization Code Grant — refresh | Identity | POST | `/identity/v1/oauth2/token` |
+| `ApplicationToken` | Client Credentials Grant | Identity | POST | `/identity/v1/oauth2/token` |
+| `GetPrivileges` | getPrivileges | Account API v1 | GET | `/sell/account/v1/privilege` |
+| `DefaultCategoryTreeID` | getDefaultCategoryTreeId | Taxonomy API v1 | GET | `/commerce/taxonomy/v1/get_default_category_tree_id` |
+| `CategoryAspects` | getItemAspectsForCategory | Taxonomy API v1 | GET | `/commerce/taxonomy/v1/category_tree/{id}/get_item_aspects_for_category` |
+| `Publish` | createOrReplaceInventoryItem / createOffer / getOffers / publishOffer | Inventory API v1 | PUT/POST/GET | `/sell/inventory/v1/...` |
+| `ReadOffer` | getOffer | Inventory API v1 | GET | `/sell/inventory/v1/offer/{offerId}` |
+| `UpdateOffer` | updateOffer + getOffer | Inventory API v1 | PUT/GET | `/sell/inventory/v1/offer/{offerId}` |
+
+E1 不调用 Identity `GET /commerce/identity/v1/user`（`apiz.ebay.com`，额外 scope 与 PII）。
+
 `providers/platform/amazon/` 是 Amazon **销售渠道** SP-API 适配器，不是货源 Collector（见 [ADR-0003](adr/0003-amazon-source-collector.md)）。后续 Amazon 零售结账是单独的 Fulfillment/Browser 适配器。
 
 TikTok / Shopee / Lazada / Shopify / 抖店 不在产品范围内。仓库里若仍有这些包，视为待移除遗留，不要继续扩展。

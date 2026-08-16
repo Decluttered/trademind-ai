@@ -433,18 +433,20 @@ func (s *Service) Delete(c *gin.Context, id uuid.UUID, adminID *uuid.UUID) error
 
 // AuthPublicDTO masks secrets for API responses.
 type AuthPublicDTO struct {
-	AuthType         string          `json:"authType"`
-	AppKey           string          `json:"appKey,omitempty"`
-	AppSecret        string          `json:"appSecret,omitempty"`
-	AccessToken      string          `json:"accessToken,omitempty"`
-	RefreshToken     string          `json:"refreshToken,omitempty"`
-	SellerID         string          `json:"sellerId,omitempty"`
-	MerchantID       string          `json:"merchantId,omitempty"`
-	MarketplaceID    string          `json:"marketplaceId,omitempty"`
-	ExpiresAt        *time.Time      `json:"expiresAt,omitempty"`
-	RefreshExpiresAt *time.Time      `json:"refreshExpiresAt,omitempty"`
-	Scopes           json.RawMessage `json:"scopes,omitempty"`
-	AuthConfig       json.RawMessage `json:"authConfig,omitempty"`
+	AuthType                string          `json:"authType"`
+	AppKey                  string          `json:"appKey,omitempty"`
+	AppSecret               string          `json:"appSecret,omitempty"`
+	AccessToken             string          `json:"accessToken,omitempty"`
+	RefreshToken            string          `json:"refreshToken,omitempty"`
+	SellerID                string          `json:"sellerId,omitempty"`
+	MerchantID              string          `json:"merchantId,omitempty"`
+	MarketplaceID           string          `json:"marketplaceId,omitempty"`
+	ExpiresAt               *time.Time      `json:"expiresAt,omitempty"`
+	RefreshExpiresAt        *time.Time      `json:"refreshExpiresAt,omitempty"`
+	Scopes                  json.RawMessage `json:"scopes,omitempty"`
+	AuthConfig              json.RawMessage `json:"authConfig,omitempty"`
+	ReauthorizationRequired bool            `json:"reauthorizationRequired,omitempty"`
+	LastRefreshErrorCode    string          `json:"lastRefreshErrorCode,omitempty"`
 }
 
 // ShopDetailDTO is GET /shops/:id payload.
@@ -472,16 +474,18 @@ func (s *Service) buildAuthPublic(row *ShopAuthToken) *AuthPublicDTO {
 		return nil
 	}
 	out := &AuthPublicDTO{
-		AuthType:         row.AuthType,
-		AppKey:           row.AppKey,
-		AppSecret:        maskEnc(s.Encrypter, row.AppSecretEnc),
-		AccessToken:      maskEnc(s.Encrypter, row.AccessTokenEnc),
-		RefreshToken:     maskEnc(s.Encrypter, row.RefreshTokenEnc),
-		SellerID:         row.SellerID,
-		MerchantID:       row.MerchantID,
-		MarketplaceID:    row.MarketplaceID,
-		ExpiresAt:        row.ExpiresAt,
-		RefreshExpiresAt: row.RefreshExpiresAt,
+		AuthType:                row.AuthType,
+		AppKey:                  row.AppKey,
+		AppSecret:               maskEnc(s.Encrypter, row.AppSecretEnc),
+		AccessToken:             maskEnc(s.Encrypter, row.AccessTokenEnc),
+		RefreshToken:            maskEnc(s.Encrypter, row.RefreshTokenEnc),
+		SellerID:                row.SellerID,
+		MerchantID:              row.MerchantID,
+		MarketplaceID:           row.MarketplaceID,
+		ExpiresAt:               row.ExpiresAt,
+		RefreshExpiresAt:        row.RefreshExpiresAt,
+		ReauthorizationRequired: row.ReauthorizationRequired,
+		LastRefreshErrorCode:    row.LastRefreshErrorCode,
 	}
 	if len(row.Scopes) > 0 {
 		out.Scopes = json.RawMessage(row.Scopes)
@@ -871,6 +875,11 @@ func (s *Service) TestConnection(c *gin.Context, shopID uuid.UUID, adminID *uuid
 	// Manual: no token row needed
 	if shopRow.Platform == "manual" {
 		res, err := p.TestConnection(ctx, platformp.TestConnectionRequest{})
+		tryLog(res, err)
+		return res, err
+	}
+	if shopRow.Platform == "ebay" {
+		res, err := s.testEbayConnection(ctx, shopID)
 		tryLog(res, err)
 		return res, err
 	}

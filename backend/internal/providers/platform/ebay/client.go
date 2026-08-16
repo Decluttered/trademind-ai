@@ -102,6 +102,66 @@ func (c Client) http() *http.Client {
 	return &http.Client{Timeout: c.Config.Timeout}
 }
 
+// PrivilegeSnapshot is the documented getPrivileges payload subset.
+// Official Account API v1 getPrivileges — do not persist the raw body to Admin.
+type PrivilegeSnapshot struct {
+	SellerRegistrationCompleted *bool  `json:"sellerRegistrationCompleted,omitempty"`
+	SellingLimitAmount          string `json:"sellingLimitAmount,omitempty"`
+	SellingLimitCurrency        string `json:"sellingLimitCurrency,omitempty"`
+	SellingLimitQuantity        *int   `json:"sellingLimitQuantity,omitempty"`
+}
+
+// GetPrivileges reads selling privileges for the authorized user.
+// Official: Account API v1 getPrivileges
+// GET /sell/account/v1/privilege
+// User token; OAuth scope sell.account.readonly or sell.account
+func (c Client) GetPrivileges(ctx context.Context, token string) (PrivilegeSnapshot, error) {
+	if strings.TrimSpace(token) == "" {
+		return PrivilegeSnapshot{}, &APIError{Class: ErrorAuth, Message: "user access token is required"}
+	}
+	raw, err := c.call(ctx, token, http.MethodGet, "/sell/account/v1/privilege", nil)
+	if err != nil {
+		return PrivilegeSnapshot{}, err
+	}
+	var body struct {
+		SellerRegistrationCompleted *bool `json:"sellerRegistrationCompleted"`
+		SellingLimit                *struct {
+			Amount *struct {
+				Currency string `json:"currency"`
+				Value    string `json:"value"`
+			} `json:"amount"`
+			Quantity *int `json:"quantity"`
+		} `json:"sellingLimit"`
+	}
+	if err := json.Unmarshal(raw, &body); err != nil {
+		return PrivilegeSnapshot{}, fmt.Errorf("decode eBay getPrivileges: %w", err)
+	}
+	out := PrivilegeSnapshot{SellerRegistrationCompleted: body.SellerRegistrationCompleted}
+	if body.SellingLimit != nil {
+		out.SellingLimitQuantity = body.SellingLimit.Quantity
+		if body.SellingLimit.Amount != nil {
+			out.SellingLimitAmount = strings.TrimSpace(body.SellingLimit.Amount.Value)
+			out.SellingLimitCurrency = strings.TrimSpace(body.SellingLimit.Amount.Currency)
+		}
+	}
+	return out, nil
+}
+
+func MarketplaceRegionCurrency(marketplace, limitCurrency string) (region, currency string) {
+	if strings.EqualFold(strings.TrimSpace(marketplace), "EBAY_DE") {
+		region = "DE"
+		currency = "EUR"
+	}
+	if trimmed := strings.TrimSpace(limitCurrency); trimmed != "" {
+		currency = trimmed
+	}
+	return region, currency
+}
+
+// Publish creates or replaces an inventory item, creates or reconciles an offer, then publishes it.
+// Official Inventory API v1: createOrReplaceInventoryItem PUT /sell/inventory/v1/inventory_item/{sku};
+// createOffer POST /sell/inventory/v1/offer; getOffers GET /sell/inventory/v1/offer?sku=;
+// publishOffer POST /sell/inventory/v1/offer/{offerId}/publish
 func (c Client) Publish(ctx context.Context, token, automationMode string, listing Listing) (PublishResult, error) {
 	if err := validateListing(listing); err != nil {
 		return PublishResult{}, err
@@ -165,6 +225,7 @@ func (c Client) Publish(ctx context.Context, token, automationMode string, listi
 	return PublishResult{OfferID: offer.OfferID, ListingID: published.ListingID, ListingURL: listingURL, RequestArtifact: artifact, ResponseArtifact: map[string]any{"offerId": offer.OfferID, "listingId": published.ListingID}}, nil
 }
 
+// ReadOffer is Inventory API v1 getOffer GET /sell/inventory/v1/offer/{offerId}.
 func (c Client) ReadOffer(ctx context.Context, token, offerID string) (OfferSnapshot, error) {
 	if strings.TrimSpace(token) == "" {
 		return OfferSnapshot{}, &APIError{Class: ErrorAuth, Message: "user access token is required"}
@@ -179,6 +240,7 @@ func (c Client) ReadOffer(ctx context.Context, token, offerID string) (OfferSnap
 	return parseOfferSnapshot(raw, offerID)
 }
 
+// UpdateOffer is Inventory API v1 updateOffer PUT /sell/inventory/v1/offer/{offerId}, then getOffer.
 func (c Client) UpdateOffer(ctx context.Context, token, automationMode, offerID, currency string, priceCents int64) (OfferSnapshot, map[string]any, bool, error) {
 	artifact := map[string]any{"offerId": offerID, "price": CentsDecimal(priceCents), "currency": currency}
 	if strings.EqualFold(strings.TrimSpace(automationMode), "DRY_RUN") {
@@ -306,6 +368,9 @@ func (c Client) call(ctx context.Context, token, method, path string, payload an
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Language", "de-DE")
+	if marketplace := strings.TrimSpace(c.Config.Marketplace); marketplace != "" {
+		req.Header.Set("X-EBAY-C-MARKETPLACE-ID", marketplace)
+	}
 	res, err := c.http().Do(req)
 	if err != nil {
 		return nil, &APIError{Class: ErrorUnknown, Message: "request outcome is unknown; reconcile before retry"}
@@ -340,6 +405,8 @@ type TaxonomyAspect struct {
 	Values   []string `json:"values"`
 }
 
+// DefaultCategoryTreeID is Taxonomy API v1 getDefaultCategoryTreeId
+// GET /commerce/taxonomy/v1/get_default_category_tree_id?marketplace_id=
 func (c Client) DefaultCategoryTreeID(ctx context.Context, token, marketplace string) (string, error) {
 	raw, err := c.call(ctx, token, http.MethodGet, "/commerce/taxonomy/v1/get_default_category_tree_id?marketplace_id="+url.QueryEscape(marketplace), nil)
 	if err != nil {
@@ -354,6 +421,8 @@ func (c Client) DefaultCategoryTreeID(ctx context.Context, token, marketplace st
 	return result.CategoryTreeID, nil
 }
 
+// CategoryAspects is Taxonomy API v1 getItemAspectsForCategory
+// GET /commerce/taxonomy/v1/category_tree/{category_tree_id}/get_item_aspects_for_category?category_id=
 func (c Client) CategoryAspects(ctx context.Context, token, treeID, categoryID string) ([]TaxonomyAspect, json.RawMessage, error) {
 	path := "/commerce/taxonomy/v1/category_tree/" + url.PathEscape(treeID) + "/get_item_aspects_for_category?category_id=" + url.QueryEscape(categoryID)
 	raw, err := c.call(ctx, token, http.MethodGet, path, nil)

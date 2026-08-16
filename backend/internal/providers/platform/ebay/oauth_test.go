@@ -18,4 +18,10 @@ func TestBuildAuthorizeURLIncludesPreparedSellScopes(t *testing.T) {
 	for _, expected := range AuthorizationScopes {
 		require.Contains(t, scopes, expected)
 	}
+	require.Contains(t, scopes, AccountReadonlyScope)
+}
+
+func TestBuildAuthorizeURLRejectsHTTPSRuName(t *testing.T) {
+	_, err := BuildAuthorizeURL(RuntimeConfig{ClientID: "client", RedirectURI: "https://example.com/cb", AuthBaseURL: "https://auth.sandbox.ebay.test"}, "state")
+	require.ErrorContains(t, err, "RuName")
 }

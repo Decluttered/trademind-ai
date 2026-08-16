@@ -43,6 +43,14 @@ export const PLATFORM_APP_FIELD_LABEL: Record<string, string> = {
   dev_id: '开发者 ID',
 };
 
+const EBAY_APP_FIELD_LABEL: Record<string, string> = {
+  redirect_uri: 'RuName（eBay Redirect URL name）',
+  marketplace_id: 'Marketplace ID',
+  environment: 'eBay 环境',
+  client_id: 'Client ID（App ID）',
+  client_secret: 'Client Secret',
+};
+
 export const PLATFORM_APP_FIELD_HELP: Record<string, string> = {
   app_key: '在抖店开放平台创建应用后获得。',
   app_secret: '保存后只显示星号，空着保存不会修改原有密钥。',
@@ -72,6 +80,15 @@ export const PLATFORM_APP_FIELD_HELP: Record<string, string> = {
   store_url: '须为 HTTPS 安全链接的店铺地址',
 };
 
+const EBAY_APP_FIELD_HELP: Record<string, string> = {
+  redirect_uri:
+    '粘贴 Developer Portal → OAuth 中的 RuName（例如 YourApp-YourApp-SB-…），不要粘贴 https:// 回调地址。沙箱与生产各有独立 RuName。',
+  marketplace_id: '必填。MindBay MVP 仅支持 eBay.de，填写 EBAY_DE。',
+  environment: '沙箱与生产使用不同的 App ID、RuName 和主机。新增 sell.account.readonly 后，已授权店铺需要重新完成 eBay OAuth。',
+  auth_base_url: '留空则使用所选环境的标准授权主机。',
+  api_base_url: '留空则使用所选环境的标准 API 主机。',
+};
+
 export const PLATFORM_APP_FIELD_PLACEHOLDER: Record<string, string> = {
   app_key: '在开放平台控制台获取',
   app_secret: '保存后只显示星号；留空则不修改',
@@ -81,6 +98,12 @@ export const PLATFORM_APP_FIELD_PLACEHOLDER: Record<string, string> = {
   api_version: '202309',
   environment: 'production',
   timeout_sec: '30',
+};
+
+const EBAY_APP_FIELD_PLACEHOLDER: Record<string, string> = {
+  redirect_uri: 'YourApp-YourApp-SB-…',
+  marketplace_id: 'EBAY_DE',
+  environment: 'sandbox',
 };
 
 export const PLATFORM_STATUS_META: Record<string, { label: string; color: string }> = {
@@ -97,11 +120,16 @@ export const PLATFORM_DEV_PORTALS: { name: string; url: string }[] = [
   { name: 'Shopee Open', url: 'https://open.shopee.com/' },
   { name: 'Lazada Open', url: 'https://open.lazada.com/' },
   { name: 'Amazon SP-API', url: 'https://developer-docs.amazon.com/sp-api/' },
+  { name: 'eBay Developers', url: 'https://developer.ebay.com/my/auth' },
   { name: 'Shopify Partners', url: 'https://partners.shopify.com/' },
 ];
 
-export function platformAppFieldLabel(field: AppConfigFieldDTO): string {
-  const mapped = PLATFORM_APP_FIELD_LABEL[field.name.trim().toLowerCase()];
+export function platformAppFieldLabel(field: AppConfigFieldDTO, platform?: string): string {
+  const key = field.name.trim().toLowerCase();
+  if (platform === 'ebay' && EBAY_APP_FIELD_LABEL[key]) {
+    return EBAY_APP_FIELD_LABEL[key];
+  }
+  const mapped = PLATFORM_APP_FIELD_LABEL[key];
   if (mapped) return mapped;
   return field.label
     .replace(/（路径段）/g, '')
@@ -111,16 +139,24 @@ export function platformAppFieldLabel(field: AppConfigFieldDTO): string {
     .trim();
 }
 
-export function platformAppFieldHelp(field: AppConfigFieldDTO): string | undefined {
-  return PLATFORM_APP_FIELD_HELP[field.name.trim().toLowerCase()] || field.help;
+export function platformAppFieldHelp(field: AppConfigFieldDTO, platform?: string): string | undefined {
+  const key = field.name.trim().toLowerCase();
+  if (platform === 'ebay' && EBAY_APP_FIELD_HELP[key]) {
+    return EBAY_APP_FIELD_HELP[key];
+  }
+  return PLATFORM_APP_FIELD_HELP[key] || field.help;
 }
 
-export function platformAppFieldPlaceholder(field: AppConfigFieldDTO): string {
+export function platformAppFieldPlaceholder(field: AppConfigFieldDTO, platform?: string): string {
   if (field.placeholder) return field.placeholder;
   if (field.sensitive || field.type === 'password') {
     return '保存后只显示星号；留空则不修改';
   }
-  return PLATFORM_APP_FIELD_PLACEHOLDER[field.name.trim().toLowerCase()] || '';
+  const key = field.name.trim().toLowerCase();
+  if (platform === 'ebay' && EBAY_APP_FIELD_PLACEHOLDER[key]) {
+    return EBAY_APP_FIELD_PLACEHOLDER[key];
+  }
+  return PLATFORM_APP_FIELD_PLACEHOLDER[key] || '';
 }
 
 /** 开关字段：独立行布局 */

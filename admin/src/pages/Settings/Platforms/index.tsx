@@ -102,8 +102,8 @@ function isFullWidthField(f: AppConfigFieldDTO): boolean {
   return f.type === 'textarea' || f.name === 'oauth_scopes' || f.name === 'scopes' || isPlatformSwitchField(f);
 }
 
-function renderFieldControl(f: AppConfigFieldDTO) {
-  const ph = platformAppFieldPlaceholder(f);
+function renderFieldControl(f: AppConfigFieldDTO, platform?: string) {
+  const ph = platformAppFieldPlaceholder(f, platform);
   switch (f.type) {
     case 'password':
       return <Input.Password placeholder={ph} autoComplete={f.sensitive ? 'new-password' : 'off'} />;
@@ -155,9 +155,9 @@ function SwitchField({
   );
 }
 
-function renderFormField(f: AppConfigFieldDTO) {
-  const label = platformAppFieldLabel(f);
-  const help = platformAppFieldHelp(f);
+function renderFormField(f: AppConfigFieldDTO, platform?: string) {
+  const label = platformAppFieldLabel(f, platform);
+  const help = platformAppFieldHelp(f, platform);
 
   if (isPlatformSwitchField(f)) {
     return (
@@ -181,7 +181,7 @@ function renderFormField(f: AppConfigFieldDTO) {
       rules={[{ required: f.required, message: `请填写${label}` }]}
       extra={help}
     >
-      {renderFieldControl(f)}
+      {renderFieldControl(f, platform)}
     </Form.Item>
   );
 }
@@ -541,6 +541,15 @@ function PlatformPanel({ meta }: { meta: PlatformProviderMeta }) {
           />
         )}
 
+        {meta.platform === 'ebay' && (
+          <Alert
+            showIcon
+            type="info"
+            message="eBay OAuth 使用 RuName，不是 https 回调地址"
+            description="在 Developer Portal 复制 Redirect URL name（RuName）填入。应用连接测试只校验 client credentials。店铺连接测试调用 Account API getPrivileges，需要 sell.account.readonly；已有 refresh token 不会自动获得新 scope，请在店铺管理中重新授权。"
+          />
+        )}
+
         <SectionCard title={panelTitle} description={schema?.description || undefined}>
           <div style={{ marginBottom: 12 }}>
             <Text type="secondary">接入状态 </Text>
@@ -569,9 +578,9 @@ function PlatformPanel({ meta }: { meta: PlatformProviderMeta }) {
             <FormGrid>
               {fields.map((f) =>
                 isFullWidthField(f) ? (
-                  <FormGridFull key={f.name}>{renderFormField(f)}</FormGridFull>
+                  <FormGridFull key={f.name}>{renderFormField(f, meta.platform)}</FormGridFull>
                 ) : (
-                  <FormGridItem key={f.name}>{renderFormField(f)}</FormGridItem>
+                  <FormGridItem key={f.name}>{renderFormField(f, meta.platform)}</FormGridItem>
                 ),
               )}
             </FormGrid>

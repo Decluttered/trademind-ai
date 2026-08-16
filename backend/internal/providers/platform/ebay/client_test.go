@@ -144,3 +144,33 @@ func TestAuditedGPSROverrideMayOmitRegulatoryBlock(t *testing.T) {
 	listing.GPSROverridden = true
 	require.NoError(t, validateListing(listing))
 }
+
+func TestGetPrivilegesParsesDocumentedFields(t *testing.T) {
+	transport := roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		require.Equal(t, http.MethodGet, request.Method)
+		require.Equal(t, "/sell/account/v1/privilege", request.URL.Path)
+		require.Equal(t, "EBAY_DE", request.Header.Get("X-EBAY-C-MARKETPLACE-ID"))
+		body := `{"sellerRegistrationCompleted":true,"sellingLimit":{"amount":{"currency":"EUR","value":"150.00"},"quantity":10}}`
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header), Request: request}, nil
+	})
+	client := Client{Config: RuntimeConfig{APIBaseURL: "https://api.sandbox.ebay.test", Marketplace: "EBAY_DE", Timeout: time.Second}, HTTPClient: &http.Client{Transport: transport}}
+	out, err := client.GetPrivileges(context.Background(), "user-token")
+	require.NoError(t, err)
+	require.NotNil(t, out.SellerRegistrationCompleted)
+	require.True(t, *out.SellerRegistrationCompleted)
+	require.Equal(t, "150.00", out.SellingLimitAmount)
+	require.Equal(t, "EUR", out.SellingLimitCurrency)
+	require.NotNil(t, out.SellingLimitQuantity)
+	require.Equal(t, 10, *out.SellingLimitQuantity)
+}
+
+func TestGetPrivilegesMapsAuthFailure(t *testing.T) {
+	transport := roundTripFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: 403, Body: io.NopCloser(strings.NewReader(`{"errors":[{"message":"Insufficient permissions"}]}`)), Header: make(http.Header)}, nil
+	})
+	client := Client{Config: RuntimeConfig{APIBaseURL: "https://api.sandbox.ebay.test", Timeout: time.Second}, HTTPClient: &http.Client{Transport: transport}}
+	_, err := client.GetPrivileges(context.Background(), "user-token")
+	var apiErr *APIError
+	require.ErrorAs(t, err, &apiErr)
+	require.Equal(t, ErrorAuth, apiErr.Class)
+}

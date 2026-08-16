@@ -80,7 +80,9 @@ An offer cannot be published unless all of these hold. The readiness check valid
 
 ## Environment separation
 
-Sandbox and production have separate credentials and hosts. Environment is an explicit setting (`EBAY_ENV`). A publish action in sandbox must be visually distinguishable in the admin UI from production.
+Sandbox and production have separate credentials and hosts. Environment is an explicit setting (`EBAY_ENV` / `platform_ebay.environment`). A publish action in sandbox must be visually distinguishable in the admin UI from production.
+
+OAuth `redirect_uri` is the Developer Portal **RuName**, not the registered https callback. Consent requests `sell.account.readonly` for Account API getPrivileges. Existing refresh tokens do not gain new scopes; shops must re-authorize after this change. Shop connection tests call getPrivileges; app-settings tests use a client-credentials application token only.
 
 ## Out of scope
 

@@ -4,6 +4,11 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### eBay E1 OAuth and connection probe (2026-08-17)
+
+- eBay `redirect_uri` is validated as a Developer Portal RuName. Marketplace ID is required. New consent includes `sell.account.readonly`.
+- Shop connection tests call Account API getPrivileges; app-settings tests use a client-credentials application token. Refresh uses stored scopes and a per-shop Redis lock so existing tokens are not silently invalidated.
+
 ### Amazon.de → eBay.de product scope (2026-08-16)
 
 - Canonical Cursor rules and public docs now describe a single product path: Amazon.de source, eBay.de target, Temporal-owned publish. Shared infrastructure stays; other marketplaces are out of scope.
