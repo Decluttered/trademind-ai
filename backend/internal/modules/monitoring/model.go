@@ -38,9 +38,10 @@ func (MonitorRun) TableName() string { return "monitor_run" }
 
 type PriceRule struct {
 	model.HardDeleteBase
-	WorkspaceID             int64  `gorm:"not null;index;uniqueIndex:ux_price_rule_version,priority:1" json:"workspaceId"`
+	WorkspaceID             int64  `gorm:"not null;index;uniqueIndex:ux_price_rule_version,priority:1;uniqueIndex:ux_price_rule_idem,priority:1" json:"workspaceId"`
 	Name                    string `gorm:"size:160;not null;uniqueIndex:ux_price_rule_version,priority:2" json:"name"`
 	Version                 int    `gorm:"not null;uniqueIndex:ux_price_rule_version,priority:3" json:"version"`
+	IdempotencyKey          string `gorm:"size:160;not null;uniqueIndex:ux_price_rule_idem,priority:2" json:"-"`
 	MinMarginBasisPoints    int64  `gorm:"not null" json:"minMarginBasisPoints"`
 	TargetMarginBasisPoints int64  `gorm:"not null" json:"targetMarginBasisPoints"`
 	MaxPriceCents           *int64 `json:"maxPriceCents,omitempty"`
@@ -79,6 +80,7 @@ type PriceDecision struct {
 	Reason               string          `gorm:"type:text;not null" json:"reason"`
 	InputHash            string          `gorm:"size:64;not null;index" json:"inputHash"`
 	ApplyArtifact        datatypes.JSON  `gorm:"type:json" json:"applyArtifact,omitempty"`
+	ApplyError           string          `gorm:"type:text" json:"applyError,omitempty"`
 	AppliedAt            *time.Time      `json:"appliedAt,omitempty"`
 }
 

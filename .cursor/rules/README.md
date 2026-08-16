@@ -2,6 +2,8 @@
 
 本目录用于给 Cursor / AI Agent 提供项目级长期规则。规则按“全局规则”和“领域规则”拆分，避免一个大规则文件带来过多噪声。
 
+作为 MindBay 工作区打开时，**父仓库** `MindBay/.cursor/rules/` 是产品规范；本目录规则在冲突时让路。Amazon.de → eBay.de 自动刊登、eBay/Amazon API 和 LIVE Amazon Checkout 在范围内，不是禁区。
+
 ## 维护原则
 
 - 不把所有规则合并成一个大文件。
@@ -35,6 +37,8 @@
 | `05-ai-provider.mdc` | AI / Image 相关后端与前端设置页面 | AI Provider、Prompt、AI 任务、图片 AI、客服 AI |
 | `06-storage-provider.mdc` | Storage 后端与存储设置页面 | Storage Provider、本地存储、云存储扩展 |
 | `07-collector-node-playwright.mdc` | `collector/**/*.{ts,tsx,js,json}` | Node / Playwright 采集服务规则 |
+| `16-ebay-platform.mdc` | eBay provider / shop / publication / Temporal | eBay Sell API、OAuth、刊登所有者 |
+| `17-amazon-collector.mdc` | `sourceAmazon` / catalog / collect | Amazon.de 货源、ADR-0003 |
 | `14-ui-copywriting.mdc` | `admin/src/**`、后端用户可见 message/label | 用户可见文案中文化；见 `docs/ui-copywriting.md` |
 | `admin-e2e-testing.mdc` | `admin/**/*.{ts,tsx,less,css,scss}` | Admin Playwright CI、五档响应式、写请求安全与人工签收 |
 

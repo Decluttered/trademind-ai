@@ -164,6 +164,8 @@ export default [
       { path: '/mindbay/collections', name: 'Collections', component: './MindBay/Collections' },
       { path: '/mindbay/listing-studio', name: 'Listing Studio', component: './MindBay/ListingStudio' },
       { path: '/mindbay/planner', name: 'Planner', component: './MindBay/Planner' },
+      { path: '/mindbay/monitoring', name: 'Monitoring', component: './MindBay/Monitoring' },
+      { path: '/mindbay/profit', name: 'Profit', component: './MindBay/Profit' },
     ],
   },
   {

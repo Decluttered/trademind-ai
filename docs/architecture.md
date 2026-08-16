@@ -9,9 +9,9 @@ React + Ant Design Pro Admin
         ↓
 Go Gin API
         ↓
-PostgreSQL + Redis
+PostgreSQL + Redis（短任务）+ Temporal（eBay 刊登）
         ↓
-Node Playwright Collector
+Node Playwright Collector（Amazon.de）
 ```
 
 ## 目录职责
@@ -30,7 +30,7 @@ scripts/    本地开发编排脚本
 - `service`：编排业务流程与事务。
 - `providers`：封装 AI、存储、图片、平台、采集等外部能力。
 - `modules`：按业务域组织认证、设置、商品、采集、AI、图片、店铺、订单、客服等模块。
-- `queue` / worker：处理采集、图片、订单同步、客服同步、刊登、库存同步等异步任务。
+- `queue` / worker：处理采集、图片、短异步任务。eBay 刊登由 Temporal + `modules/publication` 编排，不走 Redis `productpublish`。
 
 ## 管理端分层
 
@@ -45,10 +45,10 @@ scripts/    本地开发编排脚本
 
 Collector 是独立 Node.js 服务：
 
-- 使用 Playwright 打开页面并解析商品数据。
+- 当前货源是 Amazon.de（`sourceAmazon`）。
 - 不直接操作主业务数据库。
 - 通过 HTTP 与 Go backend 通信。
-- 每个采集源以 Collector Provider 形式接入。
+- 每个采集源以 Collector Provider 形式接入；不要再注册 1688 / 淘宝 / 拼多多 / AliExpress。
 
 ## 数据与队列
 
@@ -73,12 +73,13 @@ Collector 是独立 Node.js 服务：
 
 ## 扩展方向
 
-TradeMind 的主要扩展点包括：
+TradeMind 的产品路径是 Amazon.de → eBay.de。扩展点包括：
 
 - AI Provider
 - Storage Provider
 - Image Provider
-- Platform Provider
-- Collector Provider
+- Platform Provider（`ebay`）
+- Collector Provider（`amazon.de`）
 - Prompt 模板
-- 异步任务 Worker
+- Temporal workflow（刊登）
+- Redis Worker（短任务）

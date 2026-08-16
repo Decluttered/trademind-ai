@@ -72,6 +72,13 @@ describe('TradeMind API contract registry', () => {
         'POST /internal/v1/mindbay/publications/:id/revalidate',
         'POST /internal/v1/mindbay/publications/:id/publish',
         'POST /internal/v1/mindbay/publications/:id/reconcile',
+        'GET /v1/monitorable-listings',
+        'POST /v1/monitor-runs',
+        'GET /v1/price-rules',
+        'POST /v1/price-rules',
+        'GET /v1/price-decisions',
+        'POST /v1/price-decisions/:id/apply',
+        'GET /v1/profit/report',
       ]),
     );
   });
@@ -182,7 +189,7 @@ describe('TradeMind API contract registry', () => {
   });
 
   it('marks every protected Admin endpoint as authenticated', () => {
-    expect(contracts.endpoints).toHaveLength(57);
+    expect(contracts.endpoints).toHaveLength(64);
     expect(contracts.endpoints.every((endpoint) => endpoint.auth === true || endpoint.auth === 'mindbay-extension:capture' || endpoint.auth === 'temporal-service')).toBe(true);
   });
 
@@ -198,5 +205,15 @@ describe('TradeMind API contract registry', () => {
     expect(preview?.idempotencyKey).toBeUndefined();
     expect(apply?.idempotencyKey).toBe(true);
     expect(apply?.requestBody).toEqual(['shopId','marketplace','slots','publishConfig']);
+  });
+
+  it('keeps MindBay repricing decisions versioned and apply idempotent',()=>{
+    const run=contracts.endpoints.find((endpoint)=>routeKey(endpoint)==='POST /v1/monitor-runs');
+    const apply=contracts.endpoints.find((endpoint)=>routeKey(endpoint)==='POST /v1/price-decisions/:id/apply');
+    const profit=contracts.endpoints.find((endpoint)=>routeKey(endpoint)==='GET /v1/profit/report');
+    expect(run?.requestBody).toEqual(['marketplaceListingId','priceRuleId','trigger']);
+    expect(run?.idempotencyKey).toBe(true);
+    expect(apply?.idempotencyKey).toBe(true);
+    expect(profit?.query).toEqual(['from','to']);
   });
 });

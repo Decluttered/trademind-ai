@@ -82,6 +82,35 @@ func TestProductionPublishRequiresLiveMode(t *testing.T) {
 	require.ErrorContains(t, err, "AUTOMATION_MODE=LIVE")
 }
 
+func TestDryRunOfferUpdateMakesNoRequest(t *testing.T) {
+	calls := 0
+	client := Client{Config: RuntimeConfig{Environment: "sandbox", APIBaseURL: "https://api.invalid", Timeout: time.Second}, HTTPClient: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) { calls++; return nil, errors.New("must not be called") })}}
+	row, artifact, dryRun, err := client.UpdateOffer(context.Background(), "", "DRY_RUN", "offer-1", "EUR", 3199)
+	require.NoError(t, err)
+	require.True(t, dryRun)
+	require.Zero(t, calls)
+	require.Equal(t, int64(3199), row.PriceCents)
+	require.Equal(t, "31.99", artifact["price"])
+}
+
+func TestOfferUpdateVerifiesTargetPrice(t *testing.T) {
+	methods := []string{}
+	transport := roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		methods = append(methods, request.Method)
+		body := `{}`
+		if request.Method == http.MethodGet {
+			body = `{"offerId":"offer-1","availableQuantity":2,"status":"PUBLISHED","pricingSummary":{"price":{"currency":"EUR","value":"31.99"}}}`
+		}
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header), Request: request}, nil
+	})
+	client := Client{Config: RuntimeConfig{Environment: "sandbox", APIBaseURL: "https://api.sandbox.ebay.test", Timeout: time.Second}, HTTPClient: &http.Client{Transport: transport}}
+	row, _, dryRun, err := client.UpdateOffer(context.Background(), "token", "SIMULATED_CHECKOUT", "offer-1", "EUR", 3199)
+	require.NoError(t, err)
+	require.False(t, dryRun)
+	require.Equal(t, int64(3199), row.PriceCents)
+	require.Equal(t, []string{http.MethodPut, http.MethodGet}, methods)
+}
+
 func TestOfferUsesMetadataSafetyIDsInsteadOfFreeTextStatements(t *testing.T) {
 	var offer map[string]any
 	transport := roundTripFunc(func(request *http.Request) (*http.Response, error) {

@@ -23,14 +23,8 @@ func (e *CustomCollectProviderConflict) Error() string {
 func customCollectConflictMessage(platform collectdomain.PlatformID, providerName string) string {
 	name := strings.TrimSpace(providerName)
 	switch platform {
-	case collectdomain.Platform1688:
-		return "该链接属于 1688 平台，请使用「1688 采集器」。1688 采集器已针对商品标题、主图、详情图、属性、SKU 做专门适配，采集结果更稳定。"
-	case collectdomain.PlatformAliExpress:
-		return "该链接属于 AliExpress 平台，请使用「速卖通采集器」。专用采集器字段识别更稳定。"
-	case collectdomain.PlatformPdd:
-		return "该链接属于拼多多平台，请使用「拼多多采集器」。专用采集器字段识别更稳定。"
-	case collectdomain.PlatformTaobaoTmall:
-		return "该链接属于淘宝/天猫平台，请使用「淘宝/天猫采集器」。专用采集器字段识别更稳定，请勿使用自定义采集器。"
+	case collectdomain.PlatformAmazonDE:
+		return "该链接属于 Amazon.de，请使用「Amazon.de 采集器」。专用采集器会保留 ASIN、币种和 raw 快照。"
 	default:
 		if name != "" {
 			return "该链接属于已配置专用采集器的平台，请使用「" + name + "」。"

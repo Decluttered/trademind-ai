@@ -10,19 +10,7 @@ alwaysApply: false
 
 采集服务独立于 Go 主服务，用于处理商品页面采集、浏览器自动化和结构化解析。
 
-MVP 优先实现：
-
-```text
-1688 单链接商品采集
-```
-
-后期预留：
-
-- taobao
-- pdd
-- shein
-- amazon
-- custom url
+当前唯一货源是 **Amazon.de**（`collector/src/providers/sourceAmazon/`）。采集策略见 ADR-0003：有凭证时用官方读接口；Playwright 是对等回退；CSV/ASIN 始终可用。不要再接入 1688 / 淘宝 / 拼多多 / AliExpress / SHEIN。
 
 ## 技术栈
 
@@ -46,9 +34,9 @@ MVP 优先实现：
 ```text
 collector/src/
 ├── providers/
-│   ├── source1688/
-│   ├── taobao/
-│   └── custom/
+│   ├── sourceAmazon/
+│   ├── collector-provider.ts
+│   └── registry.ts
 ├── browser/
 ├── queue/
 ├── normalizer/
@@ -61,10 +49,10 @@ collector/src/
 
 ```json
 {
-  "source": "1688",
+  "source": "amazon.de",
   "sourceUrl": "",
   "title": "",
-  "currency": "CNY",
+  "currency": "EUR",
   "mainImages": [],
   "descriptionImages": [],
   "attributes": {},
@@ -72,6 +60,8 @@ collector/src/
   "raw": {}
 }
 ```
+
+Marketplace（`.de` / `.com` / `.co.uk`）是必填字段，禁止从 URL 以外静默推断。
 
 ## raw 原始数据规则
 
@@ -113,17 +103,17 @@ retrying
 - 图片懒加载需要滚动触发。
 - 采集完成必须关闭 page/context，避免资源泄漏。
 
-### `page.evaluate` 注入（1688 必读）
+### `page.evaluate` 注入
 
 - **禁止** `fn.toString()` + `eval` 注入页面脚本（tsx/esbuild 会生成 `__name`，浏览器无此 helper → **`ReferenceError: __name is not defined`**）。
 - **必须**使用 Playwright 原生 `page.evaluate(fn, arg)`；函数内 helper 自包含，不引用 Node 模块或外部 closure。
-- 复杂解析：**Browser 只读 DOM/script 文本**，**Node 侧做 JSON 解析**（见 `browser-extract-1688.ts`）。
-- 完整已知坑清单：**[`docs/collector-1688-pitfalls.md`](../../docs/collector-1688-pitfalls.md)**。
+- 复杂解析：**Browser 只读 DOM/script 文本**，**Node 侧做 JSON 解析**。
 
 ## 禁止事项
 
-- 不要把 1688 逻辑写到核心框架中。
-- 不要直接把采集结果写数据库。
+- 不要把 Amazon 站点细节写进 Collector 核心框架；只放在 `sourceAmazon/`。
+- 不要让 Collector 写领域数据库。
 - 不要在失败时只返回 unknown error。
 - 不要忽略 SKU、属性、图片的结构化输出。
 - 不要移除 raw 字段。
+- 不要持久化 Amazon 买家或评价人 PII。

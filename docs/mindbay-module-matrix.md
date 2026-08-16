@@ -102,6 +102,7 @@ Jedes derzeit vorhandene Paket unter `backend/internal/modules/*` ist erfasst.
 | `providers/platform/tiktok/` | TikTok-Shop-Integration | Legacy unverändert lassen | **Leave** |
 | Registry `manual` / `mock` | Eingebaute manuelle bzw. Test-Provider | Für isolierte Tests und sichere lokale Flows | **Reuse** |
 | Registry `ebay` | Nativer Go-Client für OAuth, Taxonomy, Inventory Item, Offer, Publish und SKU-Reconcile; Providerstatus beta | Nur über Kalender/Temporal verwenden, nicht über generischen Redis-Batch-Publish | **Extend** |
+| `modules/monitoring/` | Versionierte Preisregeln, immutable Listing-Snapshots, PriceDecision Plan/Apply und Profit-Ledger | Eigener MindBay-Domain-Service; nutzt eBay nur über den Provider und bestehende Marketplace-Listing-Identität | **Extend** |
 | Registry `aliexpress`, `shopify`, `woocommerce`, `temu`, `shein`, `custom` | Geplante Platzhalter | Nicht für MindBay ausbauen | **Leave** |
 
 ### AI, Storage und Image
@@ -140,6 +141,7 @@ Der Vertrag bleibt `collector/src/providers/collector-provider.ts`. Collector-Re
 | `admin/src/pages/Shops/` | eBay OAuth und verschlüsselte Shop-Verknüpfung | **Extend** |
 | `admin/src/pages/Settings/` | Automation Mode, Limits und Provider-Konfiguration | **Extend** |
 | `admin/src/pages/Dashboard/` | MindBay Operations-, Profit- und Review-Sicht | **Extend** |
+| `admin/src/pages/MindBay/{Monitoring,Profit}` | Repricing-Inbox, Regelversionen und getrennte Expected-/Actual-Ledger-Sicht | **Extend** |
 | Übrige `admin/src/pages/*` | Bestehende TradeMind-Funktionen | Unverändert wiederverwenden oder als Legacy belassen; kein zweites Designsystem | **Reuse** |
 
 ## Scope-, API- und Datenkonventionen
@@ -169,7 +171,6 @@ Die Commit-Spalte fixiert den in Phase 0 lokal geprüften Referenzstand. Eine sp
 | Pfad | Regel | Code |
 | --- | --- | --- |
 | `../MindBay/` | Nicht verwandtes Aktienanalyseprojekt; keine Importe oder Übernahmen | **Do-not-touch** |
-| `../tools/trademind-ai/` | Zweiter Upstream-Clone; nur Vergleich/Recovery | **Do-not-touch** |
 | `../tools/openoms/` Anwendung | ELv2-Referenz; kein Fork und kein Anwendungscode im Hauptrepo | **Do-not-touch** |
 | `../temporal-worker/` | Lern-Scaffold; produktive Workflows entstehen später im Hauptrepo | **Do-not-touch** |
 

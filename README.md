@@ -33,7 +33,7 @@
   <img src="docs/assets/img/readme-hero-zh.png" alt="TradeMind 产品预览" width="100%" />
 </p>
 
-TradeMind 是面向跨境卖家、品牌团队与开发者的开源 AI 运营平台。它把商品采集、信息整理、内容生成、图片处理、草稿协同、平台刊登、订单与库存协同串成一条可观测的工作流，让团队从“重复搬运商品”升级为“持续经营商品资产”。
+TradeMind 在本仓库中运行 **Amazon.de → eBay.de** 自动运营：采集与评估、AI 内容、eBay 刊登、监控改价、售出后 Amazon 零售履约与利润台账。数据留在自托管环境，能力按 Provider 扩展。
 
 无论是快速搭建自己的跨境运营工作台，还是为现有业务接入 AI 与平台能力，TradeMind 都提供一套可私有化部署、可审计、可二次开发的开放底座：数据掌握在自己手中，能力可以按团队流程自由组合。
 
@@ -41,9 +41,9 @@ TradeMind 是面向跨境卖家、品牌团队与开发者的开源 AI 运营平
 
 | 方向 | TradeMind 的做法 |
 | --- | --- |
-| AI 商品增长 | 将商品采集、草稿管理、AI 标题与描述、图片处理和发布前检查汇聚到同一个运营空间。 |
-| 多平台协同 | 店铺授权、订单同步、SKU 匹配、库存镜像与商品刊登围绕统一商品资产协同运转。 |
-| 开放与可控 | Provider 架构覆盖 AI、存储、图片、平台和采集器；权限、审计与人工确认守住关键动作。 |
+| Amazon → eBay | Amazon.de 采集与快照、Listing Studio、eBay Sell API 刊登、监控改价与利润台账。 |
+| AI 商品运营 | 标题、描述、图片处理与发布前检查（含 GPSR）在同一工作台完成。 |
+| 开放与可控 | Provider 架构覆盖 AI、存储、图片、eBay 与 Amazon 采集；权限、审计与幂等守住写路径。 |
 
 ## 界面预览
 
@@ -78,20 +78,14 @@ TradeMind 是面向跨境卖家、品牌团队与开发者的开源 AI 运营平
 
 ## 核心能力
 
-### AI 商品运营
+### Amazon.de → eBay.de
 
-- 商品采集：支持 1688、拼多多、淘宝/天猫与自定义规则采集。
-- 商品草稿：统一管理商品、SKU、图片、库存阈值、采集告警与发布前检查。
-- AI 内容：支持标题优化、描述生成、Prompt 模板、结果对比、人工应用与撤销。
-- AI 图片：支持 remove.bg、OpenAI Image、ComfyUI 等 Provider，并通过异步任务队列执行。
-
-### 多平台业务协同
-
-- 店铺授权：支持 Douyin Shop OAuth、敏感配置加密与连接测试。
-- 订单协同：支持订单同步、SKU 匹配、异常工作台等基础能力。
-- 库存协同：支持库存镜像、预警与平台同步任务。
-- 商品刊登：支持多平台刊登中心、单商品与批量草稿创建、批量发布流程、AI 标题/描述复核、AI 图片处理、草稿映射、发布任务、失败恢复与人工校正。
-- AI 客服：支持建议回复与人工确认外发；可按店铺显式开启低风险自动回复，默认关闭并保留频率、订单上下文、敏感承诺、审计与人工接管保护。
+- 采集：Amazon.de 商品页 / ASIN 快照（Playwright；官方读接口在有凭证时使用）。
+- Listing Studio：EUR cents、GPSR、AI 内容版本与刊登就绪检查。
+- 刊登：eBay OAuth、类目特征缓存、Temporal 编排的 Inventory/Offer 发布（默认沙箱，生产写入需显式环境）。
+- 监控：改价决策、Offer 校验、利润台账。
+- AI：标题优化、描述生成、Prompt 模板、图片任务。
+- 店铺：eBay 授权、敏感配置加密与连接测试。
 
 ### 工程化与扩展
 
@@ -173,7 +167,7 @@ docker compose -f docker-compose.full.yml up -d --no-build
 | Admin | <http://127.0.0.1:8000> |
 | Backend Health | <http://127.0.0.1:8080/health> |
 
-完整 Compose 中 Collector 仅供 backend 通过内部网络访问，不发布宿主机端口；PostgreSQL 与 Redis 仅绑定宿主机回环地址。平台连接默认采用安全的审核式草稿流程：非抖店链路先生成本地刊登草稿，抖店动作经过权限与运营任务审核后写入平台草稿。
+完整 Compose 中 Collector 仅供 backend 通过内部网络访问，不发布宿主机端口；PostgreSQL 与 Redis 仅绑定宿主机回环地址。eBay 写入走 Temporal `publication` 路径；沙箱与生产凭据分离，默认 `EBAY_ENV=sandbox`。
 
 Admin 根路径展示公开产品首页，访客可从首页进入登录页或注册页；登录后再进入运营工作台。
 

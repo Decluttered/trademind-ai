@@ -36,8 +36,12 @@ README.md
 ├── 10-progress-sync.mdc
 ├── 11-local-dev-postgres.mdc
 ├── 12-ai-coding-doc-sync.mdc
-└── 13-ai-workflow.mdc
+├── 13-ai-workflow.mdc
+├── 16-ebay-platform.mdc
+└── 17-amazon-collector.mdc
 ```
+
+`.cursorrules` 只做入口，完整规则在 `.cursor/rules/*.mdc`。产品路径是 Amazon.de → eBay.de。
 
 ## 建议
 

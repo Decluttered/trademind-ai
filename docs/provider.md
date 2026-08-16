@@ -63,68 +63,23 @@ Collector Provider
 
 ## Platform Provider
 
-用于接入跨境电商平台能力。
+刊登目标只有 **eBay**（内部标识 `ebay`）。实现：`backend/internal/providers/platform/ebay/`。领域写所有者是 `modules/publication/`，由 Temporal 启动。不要把 eBay 写路径接到 Redis `productpublish`。
 
-Douyin Shop (`douyin_shop`) Phase 3 adds a reusable OpenAPI client under `backend/internal/providers/platform/douyinshop`. Signing, common request construction, `param_json` body handling, response parsing, error mapping, safe request logging, token auto-refresh, and shop-info calibration are centralized in the provider package. Business services should call this client instead of hand-writing signatures or raw OpenAPI requests. Store connection testing and manual shop-info sync now use a real platform-side token refresh response to update `shops` / `shop_auth_tokens`; App Secret, access token, refresh token, and full sensitive raw responses must never be returned to the frontend or written to logs.
+OAuth2 authorization-code、加密 Token、自动 refresh、连接测试和 marketplace 选择属于该 Provider。每个 eBay API 方法必须对照官方文档，并在方法上方注释官方名称、版本、HTTP method 与 path。无法核对官方契约时停止并询问。
 
-Douyin Shop Phase 4 adds category and category-attribute sync using official-doc-checked OpenAPI methods `shop.getShopCategory` (`/shop/getShopCategory`, recursive from `cid=0`) and `product.getCatePropertyV2` (`/product/getCatePropertyV2`, `category_leaf_id`). Category data is cached in `platform_categories` and attributes in `platform_category_attributes`; raw responses are stored for backend diagnostics but omitted from normal frontend views. Product Detail → Listing saves Douyin listing preparation to `product_platform_publish_configs` (`platform=douyin_shop`, `shopId`, `categoryId`, `categoryPath`, `platformAttributes`) instead of mutating collected raw data. Readiness checks validate store authorization, selected leaf category, required attributes, and stale cache warnings. Phase 4 deliberately does not implement Douyin product publishing, image upload, order sync, or inventory sync.
+`providers/platform/amazon/` 是 Amazon **销售渠道** SP-API 适配器，不是货源 Collector（见 [ADR-0003](adr/0003-amazon-source-collector.md)）。后续 Amazon 零售结账是单独的 Fulfillment/Browser 适配器。
 
-Douyin Shop Phase 5 adds internal product draft → Douyin listing draft mapping. Mapping is implemented in the product service layer and stored on `product_platform_publish_configs` as preview fields (`mappedTitle`, `mappedDescription`, `mappedImages`, `mappedSkus`, `mappedPrice`, `mappedStock`, `mappingWarnings`, `mappingErrors`, `lastMappedAt`). It supports AI title / AI description priority, main/detail image preview with `need_sync` status for external images, category attributes, SKU specs, price/profit checks, stock confirmation, manual adjustment, save, and readiness validation. Phase 5 still does not call Douyin product creation or image upload APIs; Phase 6 should handle Douyin image upload / image service sync through Provider abstractions.
+TikTok / Shopee / Lazada / Shopify / 抖店 不在产品范围内。仓库里若仍有这些包，视为待移除遗留，不要继续扩展。
 
-Douyin Shop Phase 6 adds image upload to the Douyin material center before product draft creation. Product listing drafts now keep extended `mapped_images` entries for `mainImages` / `detailImages`: local image id, source URL, Storage URL/key, Douyin `platformImageId` / `platformImageUrl`, upload status, failed error code/message, upload time, processed flag, and sanitized raw response. External images are downloaded with timeout, size cap, format/dimension validation, and SSRF private-network blocking, then written to the current Storage Provider before calling Douyin. Storage-backed images are read server-side from the configured Storage Provider; frontend URLs, tokens, and secrets are not used for platform calls. The provider method is `UploadImage(ctx, shopID, req)` and uses the Phase 3 `douyinshop.Client` with official-doc-checked method `supplyCenter.material.batchUploadImageSync` (`/supplyCenter/material/batchUploadImageSync`), preserving token auto-refresh and safe logs. Phase 6 does not create Douyin products, sync orders, or sync inventory.
+平台 App Secret、Access Token、Refresh Token 必须加密存储；前端脱敏；日志禁止明文。
 
-Douyin Shop Phase 7 adds platform product draft creation from saved mapping + uploaded images. The provider method is `CreateProductDraft(ctx, shopID, req)` in `douyinshop/product.go`, calling official-doc-checked `product.addV2` with `commit=false` and `start_sale_type=1` so items stay in the Douyin draft box and are not directly listed online. Payload assembly lives in `productpublish/douyin_payload.go` and reads `product_platform_publish_configs` mapped fields only (never collect raw). Publish tasks reuse `product_publish_tasks` with `publishMode=save_as_platform_draft`; success writes `product_publications` / `product_publication_skus`. Failures classify into the failure task center with codes such as `DOUYIN_CREATE_PRODUCT_FAILED`. Phase 7 does not sync orders or inventory.
-
-Douyin Shop Phase 9.1 adds SKU binding calibration after platform draft creation. Provider method `GetProductDetail(ctx, shopID, platformProductID)` in `douyinshop/product.go` calls official-doc-checked **`product.detail`** with `show_draft=true` to read draft-box SKU lines (`spec_prices` / `sell_properties`). Service layer `productpublish/douyin_sku_binding.go` matches local `product_publication_skus` by attrs → spec name+price → similar (ambiguous); never guesses low-confidence binds. APIs: `GET/POST /api/v1/product-publications/:id/douyin/sku-bindings*`.
-
-Douyin Shop Phase 9.2 adds manual SKU binding fallback for `ambiguous` / `unmatched` rows. APIs: `POST /api/v1/product-publication-skus/:id/douyin/bind-sku`, `POST .../unbind-sku`. Manual bind validates platform ownership, product ID, non-empty platform SKU ID, and conflict with other local specs; sets `bindStatus=bound`, `bindConfidence=100`, `bindMessage=手动绑定`. Unbind clears `external_sku_id` and marks `unmatched`. `GET .../sku-bindings` returns cached `platformSkus` candidates and `inventorySyncReady`. Inventory sync blocks until all SKUs are bind-ready (`DOUYIN_SKU_BINDING_REQUIRED`, `DOUYIN_SKU_BINDING_CONFLICT`, etc.). Operation logs: `douyin.sku.binding.manual_bind/unbind/recheck/conflict`. Next: full Douyin end-to-end acceptance.
-
-Douyin Shop Phase 9 adds inventory sync MVP via existing inventory orchestration (`inventory` module). The provider implements `InventorySyncProvider.SyncInventory` in `douyinshop/inventory.go`, calling official-doc-checked `sku.syncStock` with `product_id`, `sku_id`, `stock_num`, and `incremental=false` (full stock snapshot). Sync is gated by `inventory_sync_enabled` in platform open config (default off). Reuses `POST /api/v1/product-publication-skus/:id/sync-inventory`, `POST /api/v1/products/:id/sync-inventory`, `GET /api/v1/inventory-sync/tasks*`, `POST /api/v1/inventory-sync/tasks/:id/retry`, and inventory sync batch APIs. Missing `product_publication_skus.external_sku_id` (platform SKU ID) is not guessed — returns `DOUYIN_SKU_NOT_BOUND`. Failures classify into failure task center (`DOUYIN_INVENTORY_SYNC_FAILED`, `DOUYIN_INVENTORY_PERMISSION_DENIED`, `DOUYIN_INVENTORY_RATE_LIMITED`, etc.). Operation logs: `douyin.inventory.sync.start/success/failed/retry`, `douyin.inventory.sku.failed`. Phase 9 does not implement multi-warehouse stock, auto-replenish, or scheduled auto sync by default.
-
-Douyin Shop Phase 8 adds order sync MVP via existing order sync orchestration (`ordersync` module). The provider implements `OrderSyncProvider.SyncOrders` in `douyinshop/order.go`, calling official-doc-checked `order.searchList` with `page`, `size`, `create_time_start`, and `create_time_end` (unix seconds). **Phase 8.1** auto-paginates per task (default max **5 pages** or **500 orders**); configure `order_sync_max_pages` in platform open settings or pass `maxPages` on `POST /api/v1/shops/:id/sync-orders`. Per-page failures are recorded in task `output.pageErrors`; mixed success yields `partial_success`. Task output includes `totalFetched`, `totalPages`, `successPages`, `failedPages`, `nextCursor`/`nextPage`, `createdOrders`, `updatedOrders`, `matchedItems`, `unmatchedItems`, and `deductedStockItems`. List response `shop_order_list` / nested `sku_order_list` are mapped to neutral `PlatformOrder` snapshots (amounts converted from fen to yuan; buyer nickname masked; encrypted address fields omitted from raw). Sync is gated by `order_sync_enabled` in platform open config (default off). Reuses `order.UpsertSyncedOrders`, `MatchOrderItemsForOrder`, optional `DeductInventoryForOrder`, order exception workbench for unmatched SKU, and failure task center for sync failures. Phase 8 does not call Douyin inventory APIs, after-sale/refund APIs, or scheduled polling by default.
-
-**Phase 10.4 (Release Candidate observability)** does **not** add Prometheus. Production monitoring reuses `GET /health` queue blocks, task center failures/alerts (`sub:douyin_*`), operation logs, product operations dashboard, and Douyin runtime APIs: `GET /api/v1/platform/douyin/health`, `GET .../metrics-summary` (in-process 24h counters), `GET .../release-gate`, `POST .../run-health-check`, plus `production-preflight` / `runtime-status`. Automated regression runs through GitHub Actions, including the `backend-race` job in `.github/workflows/go.yml`; real-platform verification follows [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md) and is recorded in a PR or release work order instead of repository test artifacts.
-
-### P10 read-only inventory adapter
-
-`backend/internal/modules/inventoryread` adds `DouyinReadOnlyInventoryProvider`, which implements the exported P9 `InventoryProvider` contract without changing or registering through the frozen P9 fixture registry. The adapter has no write method. It obtains backend-only credentials from `platformcredential`, evaluates feature flags plus Provider/Tenant/Shop/Read/Write kill-switch priority through `productioncontrol`, and calls only the existing official-contract `product.detail` method.
-
-There is no confirmed all-shop inventory endpoint in the repository contract. P10 therefore paginates tenant/shop-scoped local `product_publications`, fetches `product.detail` for each bound external product, normalizes SKU stock into P9 snapshots, and reuses P9 calibration/manual-binding/audit services. Page count, SKU count (<=100), response bytes, connection pool and timeouts are bounded. HTTP 401/403/429/5xx, expiry, timeout, invalid request and protocol failures map to safe internal errors with request correlation; no automatic business retry occurs.
-
-This repository-side implementation is not activated. `currentAllowedLevel=L0`, every real capability flag is false, and configuration rejects attempts to enable them. The existing historical `sku.syncStock` code remains untouched and is not exposed by any P10 route or Admin control. Real OAuth, Provider read and Gray activation remain blocked by external infrastructure, credentials and later acceptance.
-
-当前重点平台：
-
-- Douyin Shop（抖店，真实平台闭环优先）
-- TikTok Shop
-- Shopee
-- Lazada
-- Amazon
-
-当前真实平台接入顺序优先跑通抖店，不要把抖店与 TikTok Shop 混用：抖店统一内部标识为 `douyin_shop`，TikTok Shop 仍代表跨境平台。当前 Release Candidate 已包含平台配置、OAuth、Client/签名、类目属性、字段映射、图片上传、平台商品草稿创建、订单同步 MVP、库存同步 MVP、SKU 绑定校准与手动兜底、生产预检、运行状态和可观测性。自动化回归由 GitHub Actions 执行；真实平台全链路验收与灰度观察由维护者在授权环境人工完成。
-
-主要能力：
-
-- 店铺授权
-- 店铺信息
-- 订单同步
-- 商品刊登
-- 库存同步
-- 客服消息同步与人工发送
-
-平台 App Secret、Access Token、Refresh Token 等必须加密存储。
+产品路径、映射与 VeRO 约束见 [amazon-to-ebay.md](amazon-to-ebay.md) 与 [mindbay-module-matrix.md](mindbay-module-matrix.md)。
 
 ## Collector Provider
 
-用于接入商品采集来源。
+当前唯一货源是 **Amazon.de**（`collector/src/providers/sourceAmazon/`，registry `amazon.de`）。采集策略见 [ADR-0003](adr/0003-amazon-source-collector.md)。
 
-当前重点：
-
-- 1688
-- AliExpress beta
-- 自定义规则采集 beta
-
-采集服务必须输出统一商品结构，包括标题、图片、属性、SKU、描述图与 raw 原始数据。
+采集服务必须输出统一商品结构，包括标题、图片、属性、SKU、描述图、marketplace 与 raw 原始数据。Collector 不得写领域数据库。
 
 ## 扩展建议
 

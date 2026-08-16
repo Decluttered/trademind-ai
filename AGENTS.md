@@ -4,12 +4,12 @@
 
 ## 项目定位
 
-贸灵 TradeMind 是开源 AI 跨境电商运营平台，聚焦：
+贸灵 TradeMind 在本仓库中是 **Amazon.de → eBay.de** 自动运营产品（MindBay）。聚焦：
 
-1. AI 商品运营工具
-2. 多平台跨境 ERP MVP
+1. Amazon.de 采集、评分、Listing Studio
+2. eBay.de 刊登、监控改价、售出履约与利润台账
 
-项目已进入生产维护阶段，不主动扩展成重型完整 ERP。
+不要再扩展 1688 / 抖店 / TikTok / Shopee / Lazada / Shopify。共享基础设施保留并用于这条链路。
 
 ## 必读入口
 
@@ -53,7 +53,7 @@
 - Bug 修复优先把回归覆盖加入现有 CI 测试层，不创建一次性门禁。
 - 不得以架构优化为名修改 API、payload、权限、readonly、状态机或业务语义。
 - Admin UI 变更必须保持五档视口、状态覆盖、根节点无横向溢出和写请求安全；由相关 E2E 工作流与人工验收共同签收。
-- 未拦截时不得对真实平台、真实店铺或生产后端执行非 GET 请求。
+- 未拦截时，E2E/本地测试不得对真实平台或生产后端发非 GET；实现 eBay Sell API、Amazon SP-API/PA-API 和 LIVE Checkout 客户端是产品工作，不要因此拒绝写代码。
 - 后端遵循 handler → service → provider / repository / queue 分层；第三方能力通过 Provider 扩展。
 - 耗时任务使用任务状态和队列，不在 HTTP 请求中长时间同步阻塞。
 - 敏感配置加密存储、脱敏展示；日志不得输出完整密钥或 Token。
@@ -101,7 +101,7 @@ pnpm test:redis
 - 不让前端直接调用第三方 AI、平台或存储 API。
 - 不默认引入 Kubernetes、Kafka 或复杂微服务治理。
 - 不在 MVP 范围默认实现 AI 客服自动外发，必须人工确认。
-- 不因“进入生产维护阶段”自动启用真实凭据、真实网络、写入、Worker、重试或灰度开关。
+- 不要因为“生产维护阶段”而拒绝实现 Amazon/eBay API、自动购买、Worker 或重试。
 
 ## AI Agent 工作方式
 

@@ -31,7 +31,7 @@ const FEATURE_TAGS = [
   { icon: <DashboardOutlined />, label: '运营看板', className: 'tag-amber' },
 ] as const;
 
-const PLATFORM_ITEMS = ['1688', 'Shopee', 'Lazada', 'Temu'];
+const PLATFORM_ITEMS = ['Amazon.de', 'eBay.de'];
 
 type AuthTabKey = 'login' | 'register';
 

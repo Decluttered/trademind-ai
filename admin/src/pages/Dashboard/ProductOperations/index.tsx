@@ -68,7 +68,7 @@ import { appendSourceToUrl, resolveProductSourceFromQuery } from '@/utils/urlSta
 const { RangePicker } = DatePicker;
 
 const SOURCE_OPTIONS = [
-  { label: '1688', value: '1688' },
+  { label: 'Amazon.de', value: 'amazon.de' },
   { label: '拼多多', value: 'pinduoduo' },
   { label: '自定义链接', value: 'custom' },
   { label: '速卖通', value: 'aliexpress' },

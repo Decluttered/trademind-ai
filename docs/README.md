@@ -12,6 +12,7 @@ The project has entered the production maintenance phase. The workspace retains 
 - [Customer Service Center Design](CUSTOMER_SERVICE_CENTER_DESIGN.md)
 - [Provider Extensions](provider.md)
 - [System Architecture](architecture.md)
+- [Amazon → eBay workflow](amazon-to-ebay.md)
 - [MindBay Modul- und Reuse-Matrix](mindbay-module-matrix.md)
 - [MindBay Architekturentscheidungen](adr/)
 

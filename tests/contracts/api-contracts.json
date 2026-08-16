@@ -184,6 +184,13 @@
     { "method": "POST", "path": "/v1/publications/:id/approve", "auth": true, "idempotencyKey": true, "requestBody": [], "responseData": "MindBayPublicationApproval" },
     { "method": "POST", "path": "/internal/v1/mindbay/publications/:id/revalidate", "auth": "temporal-service", "requestBody": ["workspaceId"], "responseData": "MindBayPublicationValidation" },
     { "method": "POST", "path": "/internal/v1/mindbay/publications/:id/publish", "auth": "temporal-service", "requestBody": ["workspaceId"], "responseData": "MindBayMarketplaceListing" },
-    { "method": "POST", "path": "/internal/v1/mindbay/publications/:id/reconcile", "auth": "temporal-service", "requestBody": ["workspaceId"], "responseData": "MindBayMarketplaceListing" }
+    { "method": "POST", "path": "/internal/v1/mindbay/publications/:id/reconcile", "auth": "temporal-service", "requestBody": ["workspaceId"], "responseData": "MindBayMarketplaceListing" },
+    { "method": "GET", "path": "/v1/monitorable-listings", "auth": true, "responseData": "MindBayMarketplaceListingList" },
+    { "method": "POST", "path": "/v1/monitor-runs", "auth": true, "idempotencyKey": true, "requestBody": ["marketplaceListingId", "priceRuleId", "trigger"], "responseData": "MindBayMonitorRunResult" },
+    { "method": "GET", "path": "/v1/price-rules", "auth": true, "responseData": "MindBayPriceRuleList" },
+    { "method": "POST", "path": "/v1/price-rules", "auth": true, "idempotencyKey": true, "requestBody": ["name", "minMarginBasisPoints", "targetMarginBasisPoints", "maxPriceCents", "maxDeltaCents", "maxDeltaBasisPoints", "cooldownSeconds", "platformFeeBasisPoints", "shippingCents", "reserveCents", "autoApply"], "responseData": "MindBayPriceRule" },
+    { "method": "GET", "path": "/v1/price-decisions", "auth": true, "query": ["outcome"], "responseData": "MindBayPriceDecisionList" },
+    { "method": "POST", "path": "/v1/price-decisions/:id/apply", "auth": true, "idempotencyKey": true, "requestBody": [], "responseData": "MindBayPriceDecision" },
+    { "method": "GET", "path": "/v1/profit/report", "auth": true, "query": ["from", "to"], "responseData": "MindBayProfitReport" }
   ]
 }

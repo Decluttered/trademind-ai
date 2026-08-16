@@ -86,21 +86,31 @@ func validateRule(in CreateRuleInput) error {
 	return nil
 }
 
-func (s *Service) CreateRule(ctx context.Context, workspaceID int64, in CreateRuleInput) (*PriceRule, error) {
+func (s *Service) CreateRule(ctx context.Context, workspaceID int64, idempotencyKey string, in CreateRuleInput) (*PriceRule, error) {
 	if s == nil || s.DB == nil {
 		return nil, fmt.Errorf("monitoring service unavailable")
 	}
 	if err := validateRule(in); err != nil {
 		return nil, err
 	}
+	idempotencyKey = strings.TrimSpace(idempotencyKey)
+	if idempotencyKey == "" {
+		return nil, fmt.Errorf("idempotency key is required")
+	}
+	var existing PriceRule
+	if err := s.DB.WithContext(ctx).Where("workspace_id=? AND idempotency_key=?", workspaceID, idempotencyKey).First(&existing).Error; err == nil {
+		return &existing, nil
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
 	name := strings.TrimSpace(in.Name)
 	var out PriceRule
 	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var latest struct{ Version int }
-		if err := tx.Model(&PriceRule{}).Select("COALESCE(MAX(version),0) AS version").Where("workspace_id=? AND name=?", workspaceID, name).Scan(&latest).Error; err != nil {
+		if err := tx.Model(&PriceRule{}).Select("COALESCE(MAX(version),0) AS version").Where("workspace_id=?", workspaceID).Scan(&latest).Error; err != nil {
 			return err
 		}
-		out = PriceRule{WorkspaceID: workspaceID, Name: name, Version: latest.Version + 1, MinMarginBasisPoints: in.MinMarginBasisPoints, TargetMarginBasisPoints: in.TargetMarginBasisPoints, MaxPriceCents: in.MaxPriceCents, MaxDeltaCents: in.MaxDeltaCents, MaxDeltaBasisPoints: in.MaxDeltaBasisPoints, CooldownSeconds: in.CooldownSeconds, PlatformFeeBasisPoints: in.PlatformFeeBasisPoints, ShippingCents: in.ShippingCents, ReserveCents: in.ReserveCents, AutoApply: in.AutoApply}
+		out = PriceRule{WorkspaceID: workspaceID, Name: name, Version: latest.Version + 1, IdempotencyKey: idempotencyKey, MinMarginBasisPoints: in.MinMarginBasisPoints, TargetMarginBasisPoints: in.TargetMarginBasisPoints, MaxPriceCents: in.MaxPriceCents, MaxDeltaCents: in.MaxDeltaCents, MaxDeltaBasisPoints: in.MaxDeltaBasisPoints, CooldownSeconds: in.CooldownSeconds, PlatformFeeBasisPoints: in.PlatformFeeBasisPoints, ShippingCents: in.ShippingCents, ReserveCents: in.ReserveCents, AutoApply: in.AutoApply}
 		return tx.Create(&out).Error
 	})
 	return &out, err
@@ -114,7 +124,7 @@ func (s *Service) ListRules(ctx context.Context, workspaceID int64) ([]PriceRule
 
 func (s *Service) ListMonitorable(ctx context.Context, workspaceID int64) ([]publication.MarketplaceListing, error) {
 	var rows []publication.MarketplaceListing
-	err := s.DB.WithContext(ctx).Where("workspace_id=? AND marketplace=?", workspaceID, "EBAY_DE").Order("updated_at DESC").Limit(200).Find(&rows).Error
+	err := s.DB.WithContext(ctx).Where("workspace_id=? AND marketplace=? AND status=? AND external_offer_id<>''", workspaceID, "ebay", "ACTIVE").Order("updated_at DESC").Limit(200).Find(&rows).Error
 	return rows, err
 }
 
@@ -135,6 +145,9 @@ func (s *Service) Run(ctx context.Context, workspaceID int64, idempotencyKey, co
 	var listing publication.MarketplaceListing
 	if err := s.DB.WithContext(ctx).Where("id=? AND workspace_id=?", in.MarketplaceListingID, workspaceID).First(&listing).Error; err != nil {
 		return nil, err
+	}
+	if listing.Marketplace != "ebay" || listing.Status != "ACTIVE" || strings.TrimSpace(listing.ExternalOfferID) == "" {
+		return nil, fmt.Errorf("only active eBay listings with an offer id can be monitored")
 	}
 	var job publication.PublicationJob
 	if err := s.DB.WithContext(ctx).Where("id=? AND workspace_id=?", listing.PublicationJobID, workspaceID).First(&job).Error; err != nil {
@@ -165,6 +178,9 @@ func (s *Service) Run(ctx context.Context, workspaceID int64, idempotencyKey, co
 	trigger := strings.ToLower(strings.TrimSpace(in.Trigger))
 	if trigger == "" {
 		trigger = "manual"
+	}
+	if trigger != "manual" && trigger != "schedule" {
+		return nil, fmt.Errorf("trigger must be manual or schedule")
 	}
 	inputJSON, _ := json.Marshal(in)
 	run := MonitorRun{WorkspaceID: workspaceID, MarketplaceListingID: listing.ID, Trigger: trigger, Status: "RUNNING", IdempotencyKey: idempotencyKey, CorrelationID: strings.TrimSpace(correlationID), Input: datatypes.JSON(inputJSON)}
@@ -228,7 +244,7 @@ func (s *Service) Run(ctx context.Context, workspaceID int64, idempotencyKey, co
 		return nil, err
 	}
 	run.Status, run.CompletedAt = "SUCCEEDED", &completed
-	if decision.AutoEligible && !strings.EqualFold(strings.TrimSpace(s.AutomationMode), "DRY_RUN") {
+	if decision.AutoEligible && strings.EqualFold(strings.TrimSpace(s.AutomationMode), "LIVE") {
 		if _, applyErr := s.Apply(ctx, workspaceID, decision.ID); applyErr != nil {
 			return nil, applyErr
 		}
@@ -281,12 +297,16 @@ func (s *Service) Apply(ctx context.Context, workspaceID int64, id uuid.UUID) (*
 	if err := s.DB.WithContext(ctx).Where("id=? AND workspace_id=?", decision.MarketplaceListingID, workspaceID).First(&listing).Error; err != nil {
 		return nil, err
 	}
+	if listing.Marketplace != "ebay" || listing.Status != "ACTIVE" || strings.TrimSpace(listing.ExternalOfferID) == "" {
+		return nil, fmt.Errorf("only active eBay listings with an offer id can be repriced")
+	}
 	var job publication.PublicationJob
 	if err := s.DB.WithContext(ctx).Where("id=? AND workspace_id=?", listing.PublicationJobID, workspaceID).First(&job).Error; err != nil {
 		return nil, err
 	}
 	verified, artifact, dryRun, err := s.Offers.UpdateOffer(ctx, workspaceID, job, listing, decision.TargetPriceCents)
 	if err != nil {
+		_ = s.DB.WithContext(ctx).Model(&PriceDecision{}).Where("id=? AND workspace_id=?", decision.ID, workspaceID).Update("apply_error", err.Error()).Error
 		return nil, err
 	}
 	artifactJSON, _ := json.Marshal(artifact)
@@ -322,7 +342,7 @@ func (s *Service) Apply(ctx context.Context, workspaceID int64, id uuid.UUID) (*
 		if err := tx.Model(&publication.MarketplaceListing{}).Where("id=? AND workspace_id=?", listing.ID, workspaceID).Update("price_cents", verified.PriceCents).Error; err != nil {
 			return err
 		}
-		if err := tx.Model(&PriceDecision{}).Where("id=? AND workspace_id=?", decision.ID, workspaceID).Updates(map[string]any{"outcome": OutcomeAutoApplied, "applied_at": now, "apply_artifact": datatypes.JSON(artifactJSON)}).Error; err != nil {
+		if err := tx.Model(&PriceDecision{}).Where("id=? AND workspace_id=?", decision.ID, workspaceID).Updates(map[string]any{"outcome": OutcomeAutoApplied, "applied_at": now, "apply_artifact": datatypes.JSON(artifactJSON), "apply_error": ""}).Error; err != nil {
 			return err
 		}
 		decision.Outcome, decision.AppliedAt, decision.ApplyArtifact = OutcomeAutoApplied, &now, datatypes.JSON(artifactJSON)

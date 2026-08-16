@@ -22,12 +22,12 @@ alwaysApply: false
 后台页面包括：
 
 - Dashboard
-- 商品中心
-- 商品采集
+- MindBay（Discovery / Products / Listing Studio / Planner / Monitoring / Profit）
+- 商品采集（Amazon.de）
 - AI 工具
 - AI Prompt 配置
 - 图片管理
-- 店铺管理
+- 店铺管理（eBay OAuth）
 - 系统设置
 - 任务中心
 - 日志查看
@@ -42,8 +42,9 @@ alwaysApply: false
 - 类型定义统一管理，不要到处复制接口类型。
 - 枚举、任务状态、商品状态、Provider 类型必须统一维护。
 - 前端不保存明文 API Key。
-- 前端不直接调用第三方 AI API。
-- 敏感配置展示必须脱敏。
+- 前端不直接调用第三方 AI、eBay 或 Amazon API。连接测试由后端执行。
+- 敏感配置展示必须脱敏；密钥字段只写不读。
+- 页面仍放在 `pages/`，API 仍放在 `services/`，不要改成 feature-first 目录。
 - Admin UI 设计、布局、共享组件、响应式和验收流程必须先读 `.agents/skills/frontend-design/SKILL.md`；该 skill 是唯一完整来源，`.cursor/rules/04-ui-style.mdc` 只做入口摘要。
 - 用户可见文案遵循 `docs/ui-copywriting.md`、`.cursor/rules/14-ui-copywriting.mdc` 与 `.agents/skills/frontend-design/SKILL.md`；术语优先引用 `copywriting.ts` / `userFriendly.ts`。
 
@@ -53,6 +54,7 @@ alwaysApply: false
 admin/src/
 ├── pages/
 │   ├── Dashboard/
+│   ├── MindBay/
 │   ├── Products/
 │   ├── Collect/
 │   ├── AI/

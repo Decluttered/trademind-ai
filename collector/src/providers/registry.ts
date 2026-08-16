@@ -1,30 +1,13 @@
 import type { CollectorProvider } from './collector-provider.js';
-import { aliExpressCollectorProvider } from './sourceAliExpress/index.js';
-import { alibaba1688Provider } from './source1688/alibaba-1688.js';
-import { sourceSheinTemuProvider } from './stub/placeholders.js';
 import type { CollectProviderPublic } from '../types/provider-meta.js';
-import { sourceCustomCollectorProvider } from './sourceCustom/index.js';
-import { pinduoduoCollectorProvider } from './sourcePinduoduo/index.js';
-import { taobaoTmallCollectorProvider } from './sourceTaobaoTmall/index.js';
 import { amazonDECollectorProvider } from './sourceAmazon/index.js';
 
-const providers: CollectorProvider[] = [
-  amazonDECollectorProvider,
-  alibaba1688Provider,
-  pinduoduoCollectorProvider,
-  taobaoTmallCollectorProvider,
-  aliExpressCollectorProvider,
-  sourceSheinTemuProvider,
-  sourceCustomCollectorProvider,
-];
+const providers: CollectorProvider[] = [amazonDECollectorProvider];
 
 const bySource = new Map<string, CollectorProvider>(
   providers.map((p) => [p.sourceId.toLowerCase(), p]),
 );
-/** Legacy alias: historical tasks / settings used `pdd`. */
-bySource.set('pdd', pinduoduoCollectorProvider);
-/** Legacy alias: early registry used `taobao`. */
-bySource.set('taobao', taobaoTmallCollectorProvider);
+bySource.set('amazon', amazonDECollectorProvider);
 
 export function getProviderBySource(source: string): CollectorProvider | undefined {
   return bySource.get(source.trim().toLowerCase());

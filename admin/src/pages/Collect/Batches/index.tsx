@@ -132,7 +132,7 @@ export default function CollectBatchesPage() {
     const picked =
       qs && batchProviders.some((p) => p.source === qs)
         ? qs
-        : batchProviders.find((p) => p.source === '1688')?.source ?? batchProviders[0]?.source;
+        : batchProviders.find((p) => p.source === 'amazon.de')?.source ?? batchProviders[0]?.source;
     if (!picked) return;
     form.setFieldsValue({
       source: picked,
@@ -153,7 +153,7 @@ export default function CollectBatchesPage() {
     providers.forEach((p) => {
       rec[p.source] = { text: `${p.name}` };
     });
-    return Object.keys(rec).length ? rec : { '1688': { text: '1688采集器' } };
+    return Object.keys(rec).length ? rec : { 'amazon.de': { text: 'Amazon.de 采集器' } };
   }, [providers]);
 
   const batchSelectOpts = useMemo(
@@ -477,7 +477,7 @@ export default function CollectBatchesPage() {
         <Form
           form={form}
           layout="vertical"
-          initialValues={{ source: '1688', urls: '' }}
+          initialValues={{ source: 'amazon.de', urls: '' }}
           onFinish={async (vals) => {
             const src = vals.source?.trim() || '';
             const allowed = batchProviders.some((p) => p.source === src);

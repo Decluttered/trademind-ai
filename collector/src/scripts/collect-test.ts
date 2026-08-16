@@ -2,11 +2,10 @@
  * Local one-click debug collection:
  *
  * ```
- * pnpm collect:test -- --url "https://detail.1688.com/offer/xxx.html"
- * pnpm collect:test -- --source aliexpress --url "https://www.aliexpress.com/item/100500xxxx.html"
+ * pnpm collect:test -- --url "https://www.amazon.de/dp/B00TEST123"
  * ```
  *
- * Or via the `COLLECT_TEST_URL` environment variable; `COLLECT_TEST_SOURCE` is optional (defaults to 1688).
+ * Or via the `COLLECT_TEST_URL` environment variable; `COLLECT_TEST_SOURCE` is optional (defaults to amazon.de).
  */
 
 import { BrowserManager } from '../browser/manager.js';
@@ -30,10 +29,10 @@ function argvFlag(flag: string): string | undefined {
 
 async function main(): Promise<void> {
   const url = argvFlag('--url') ?? trimArg(process.env.COLLECT_TEST_URL ?? '');
-  /** If `--source` / `COLLECT_TEST_SOURCE` is not passed → still defaults to 1688 (legacy script behavior) */
+  /** If `--source` / `COLLECT_TEST_SOURCE` is not passed → defaults to amazon.de */
   const explicitRaw =
     argvFlag('--source') ?? argvFlag('-s') ?? trimArg(process.env.COLLECT_TEST_SOURCE ?? '');
-  const source = explicitRaw.trim() ? explicitRaw.trim().toLowerCase() : '1688';
+  const source = explicitRaw.trim() ? explicitRaw.trim().toLowerCase() : 'amazon.de';
 
   if (!url) {
     console.error(

@@ -2,6 +2,7 @@ package monitoring
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -48,8 +49,9 @@ func (h *Handler) CreateRule(c *gin.Context) {
 		response.Fail(c, 400, response.CodeBadRequest, "invalid price rule")
 		return
 	}
+	key := strings.TrimSpace(c.GetHeader("Idempotency-Key"))
 	idempotency.ExecuteHTTPCommand(c, h.Idempotency, w, "mindbay.price-rules.create", in, func(ctx context.Context) (any, string, error) {
-		row, err := h.Svc.CreateRule(ctx, w, in)
+		row, err := h.Svc.CreateRule(ctx, w, key, in)
 		if err != nil {
 			return nil, "", err
 		}
@@ -95,7 +97,7 @@ func (h *Handler) Run(c *gin.Context) {
 	key := strings.TrimSpace(c.GetHeader("Idempotency-Key"))
 	correlation := key
 	if value, exists := c.Get(ctxkey.TraceID); exists {
-		correlation = strings.TrimSpace(value.(string))
+		correlation = strings.TrimSpace(fmt.Sprint(value))
 	}
 	idempotency.ExecuteHTTPCommand(c, h.Idempotency, w, "mindbay.monitor-runs.create", in, func(ctx context.Context) (any, string, error) {
 		out, err := h.Svc.Run(ctx, w, key, correlation, in)

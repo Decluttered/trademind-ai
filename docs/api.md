@@ -577,6 +577,22 @@ Phase 2 keeps eBay access behind the Go provider. Admin and Extension call only 
 
 `AUTOMATION_MODE=DRY_RUN` performs no mutating eBay request. Production eBay additionally requires `EBAY_ENV=production` and explicit `AUTOMATION_MODE=LIVE`; the repository defaults remain Sandbox plus DRY_RUN.
 
+## MindBay Phase 3 API
+
+Phase 3 adds versioned monitoring, repricing decisions and an append-only cent ledger. A monitor run reads the current Amazon snapshot and eBay offer, persists an immutable listing snapshot and binds the result to one immutable price-rule version. `DRY_RUN` may create decisions and request artifacts but never sends an eBay offer update.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `GET` | `/v1/monitorable-listings` | Workspace-scoped eBay listings available for monitoring |
+| `POST` | `/v1/monitor-runs` | Create an idempotent manual run for `marketplaceListingId` + `priceRuleId` |
+| `GET` | `/v1/price-rules` | List immutable rule versions |
+| `POST` | `/v1/price-rules` | Create the next immutable version; requires `Idempotency-Key` |
+| `GET` | `/v1/price-decisions?outcome=` | List decisions and block reasons |
+| `POST` | `/v1/price-decisions/:id/apply` | Idempotently apply a proposed target price; `DRY_RUN` records only an artifact |
+| `GET` | `/v1/profit/report?from=&to=` | Expected and actual ledger totals plus source-linked entries |
+
+Decision outcomes are `NO_CHANGE`, `PROPOSED`, `AUTO_APPLIED`, `BLOCKED_MARGIN`, `BLOCKED_POLICY`, and `BLOCKED_COOLDOWN`. Money remains integer cents. The report never folds expected amounts into realized profit; Phase 4 adds sale-backed actual entries.
+
 ## 修改 API 时的同步要求
 
 - 后端：handler、service、DTO、权限和错误处理一起检查。

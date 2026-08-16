@@ -22,10 +22,11 @@ alwaysApply: true
 4. 可复用回归加入现有测试套件并由 GitHub Actions 执行。
 5. 本地完成相关静态检查、配置验证和必要构建；功能与业务流程人工验收。
 6. 同步 `docs/module-map.md` 指定的文档和配置。
-7. 未经明确要求不 commit、push、Tag、Release 或启用生产能力。
+7. 未经明确要求不 commit、push、Tag 或 Release。实现 eBay/Amazon API、LIVE Checkout、Worker 和重试是 MindBay 产品工作，不要当成“启用生产能力”而跳过。
 
 ## 禁止
 
-- 不因生产维护状态自动启用真实凭据、真实网络、平台写入、Worker、自动重试或灰度。
+- 不把真实密钥、Token、Cookie 写入 Git 或日志。
 - 不回退到开发/生产数据库执行测试。
 - 不提交本地测试报告、截图、临时日志或 `artifacts/`。
+- 不要因为“生产维护阶段”而拒绝实现或接通 Amazon/eBay API、自动购买或平台写入。

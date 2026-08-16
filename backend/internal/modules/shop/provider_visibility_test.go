@@ -20,7 +20,7 @@ func TestProductionPlatformProvidersExcludeMockAndPlanned(t *testing.T) {
 
 	development := (&Service{AppEnv: config.EnvDevelopment}).ListPlatformProviders()
 	require.True(t, hasPlatformProvider(development, "mock"))
-	require.True(t, hasPlatformProvider(development, "shopify"))
+	require.False(t, hasPlatformProvider(development, "shopify"))
 }
 
 func TestProductionProviderGuardRejectsMockAndPlanned(t *testing.T) {
@@ -28,7 +28,6 @@ func TestProductionProviderGuardRejectsMockAndPlanned(t *testing.T) {
 	svc := &Service{AppEnv: config.EnvProduction}
 
 	require.Error(t, svc.requireProviderAvailable(platformp.MustGet("mock")))
-	require.Error(t, svc.requireProviderAvailable(platformp.MustGet("shopify")))
 	require.NoError(t, svc.requireProviderAvailable(platformp.MustGet("manual")))
 }
 

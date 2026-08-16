@@ -58,17 +58,11 @@ const DEDICATED_FEATURE_LABEL: Record<string, string> = {
   stock: '库存（尽力识别）',
 };
 
-const SOURCE_ORDER = ['1688', 'pinduoduo', 'pdd', 'taobao_tmall', 'taobao', 'aliexpress', 'shein_temu', 'custom'];
+const SOURCE_ORDER = ['amazon.de', 'amazon'];
 
 const DEDICATED_HUB_DESCRIPTION: Record<string, string> = {
-  '1688': '采集 1688 商品详情，支持标题、主图、详情图、属性与 SKU。',
-  pinduoduo: '采集拼多多批发商品详情，支持标题、价格、主图、规格等；发布前请核对。',
-  pdd: '采集拼多多批发商品详情，支持标题、价格、主图、规格等；发布前请核对。',
-  taobao_tmall:
-    '采集淘宝、天猫商品详情，支持标题、价格、主图、详情图、商品参数和商品规格。部分商品可能需要登录或人工确认。',
-  taobao:
-    '采集淘宝、天猫商品详情，支持标题、价格、主图、详情图、商品参数和商品规格。部分商品可能需要登录或人工确认。',
-  aliexpress: '采集速卖通商品详情，支持标题、图片、属性与 SKU（测试中）。',
+  'amazon.de': '采集 Amazon.de 商品详情，保留 ASIN、价格、主图、参数与 raw 快照。',
+  amazon: '采集 Amazon.de 商品详情，保留 ASIN、价格、主图、参数与 raw 快照。',
 };
 
 type LoadState<T> = {

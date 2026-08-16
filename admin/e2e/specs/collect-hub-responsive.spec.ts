@@ -12,7 +12,7 @@ const viewports = [
 ];
 
 const longToken = 'long-unbroken-value-'.repeat(32);
-const longSourceUrl = `https://detail.1688.com/offer/${longToken}.html?trace=${longToken}`;
+const longSourceUrl = `https://www.amazon.de/dp/${longToken}?trace=${longToken}`;
 const longProviderName = `超长采集来源-${longToken}`;
 const longProfileDomain = `${longToken}.example.test`;
 const collectTaskId = 'e2e-collect-task-long-url';
@@ -29,9 +29,9 @@ async function routeLongCollectContent(page: Page) {
         body: JSON.stringify(
           ok([
             {
-              source: 'custom',
+              source: 'amazon.de',
               name: longProviderName,
-              description: '自定义采集来源',
+              description: 'Amazon.de 采集来源',
               status: 'available',
               batchSupported: false,
               urlPatterns: [longSourceUrl],
@@ -82,7 +82,7 @@ async function routeLongCollectContent(page: Page) {
               : [
                   {
                     id: collectTaskId,
-                    source: '1688',
+                    source: 'amazon.de',
                     sourceUrl: longSourceUrl,
                     status: 'pending',
                     createdAt: '2026-08-11T08:00:00Z',
@@ -129,7 +129,7 @@ async function routeLongCollectContent(page: Page) {
         body: JSON.stringify(
           ok({
             id: collectTaskId,
-            source: '1688',
+            source: 'amazon.de',
             sourceUrl: longSourceUrl,
             status: 'pending',
             retryCount: 0,
