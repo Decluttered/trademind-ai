@@ -153,6 +153,20 @@ export default [
     component: './Files',
   },
   {
+    path: '/mindbay',
+    name: 'MindBay',
+    icon: 'ExperimentOutlined',
+    component: '@/layouts/MindBayGroupLayout',
+    routes: [
+      { path: '/mindbay', redirect: '/mindbay/discovery' },
+      { path: '/mindbay/discovery', name: 'Discovery', component: './MindBay/Discovery' },
+      { path: '/mindbay/products', name: 'Produkte', component: './MindBay/Products' },
+      { path: '/mindbay/collections', name: 'Collections', component: './MindBay/Collections' },
+      { path: '/mindbay/listing-studio', name: 'Listing Studio', component: './MindBay/ListingStudio' },
+      { path: '/mindbay/planner', name: 'Planner', component: './MindBay/Planner' },
+    ],
+  },
+  {
     path: '/ai',
     name: 'AI 工具',
     icon: 'RobotOutlined',

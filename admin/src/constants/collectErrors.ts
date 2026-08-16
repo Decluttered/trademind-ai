@@ -1,4 +1,4 @@
-/** 采集字段英文名 → 用户可见中文 */
+/** Collect field English name -> user-visible label */
 export const COLLECT_FIELD_LABELS: Record<string, string> = {
   title: '商品标题',
   price: '商品价格',
@@ -17,7 +17,7 @@ export function mapCollectFieldLabel(field: string): string {
   return COLLECT_FIELD_LABELS[key] ?? key;
 }
 
-/** 采集/规则测试错误码 → 用户可见短标题（不展示英文码） */
+/** Collect/rule test error code -> user-visible short title (does not show the English code) */
 export function mapCollectorErrorCodeLabel(code?: string | null): string {
   const c = (code ?? '').trim().toUpperCase();
   switch (c) {
@@ -88,7 +88,7 @@ export function mapCollectorErrorCodeLabel(code?: string | null): string {
   }
 }
 
-/** 错误码 → 操作建议（主流程展示） */
+/** Error code -> suggested action (shown in the main flow) */
 export function mapCollectorErrorCodeDetail(code?: string | null, source?: string | null): string {
   const c = (code ?? '').trim().toUpperCase();
   const src = (source ?? '').trim().toLowerCase();
@@ -182,7 +182,7 @@ export function mapCollectorErrorCodeDetail(code?: string | null, source?: strin
   }
 }
 
-/** 将后端 / 采集服务错误转为用户可读说明（不含英文错误码） */
+/** Converts backend / collector service errors into a human-readable explanation (without the English error code) */
 export function mapCollectErrorMessage(err: unknown, source?: string | null): string {
   const raw = err instanceof Error ? err.message : String(err ?? '');
   const upper = raw.toUpperCase();

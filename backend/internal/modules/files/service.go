@@ -160,6 +160,7 @@ func (s *Service) Upload(c *gin.Context, originalName string, r io.Reader) (*Upl
 
 // SaveProcessedOpts writes arbitrary bytes via the configured Storage Provider (e.g. AI pipeline output).
 type SaveProcessedOpts struct {
+	TenantID     int64
 	OriginalName string
 	ObjectKey    string
 	Data         []byte
@@ -211,6 +212,7 @@ func (s *Service) SaveProcessed(ctx context.Context, opts SaveProcessedOpts) (*F
 	}
 
 	row := &FileRecord{
+		TenantID:     opts.TenantID,
 		OriginalName: strings.TrimSpace(opts.OriginalName),
 		ObjectKey:    objKey,
 		PublicURL:    pubURL,

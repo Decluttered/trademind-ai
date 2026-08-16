@@ -1,94 +1,95 @@
-# 统一幂等设计（P2 / P2.1）
+# Unified Idempotency Design (P2 / P2.1)
 
-> Phase P2 引入跨模块幂等基础设施，避免重复执行产生副作用。实现位于 `backend/internal/modules/idempotency`。
-> 关键生产写路径通过共享 `idempotency.Service` 接入（订单同步/导入、库存扣减/推送、刊登、客服外发、AI 批次、Webhook）；当前范围以代码、CI 回归和 [`DOMAIN_IDEMPOTENCY_INTEGRATION.md`](DOMAIN_IDEMPOTENCY_INTEGRATION.md) 为准。
-> **Phase P2.2**：AI 文案/图片 **apply + undo** 与 Webhook **HTTP 接收 / process** 键已接入；见 [`AI_RESULT_APPLY_IDEMPOTENCY.md`](AI_RESULT_APPLY_IDEMPOTENCY.md)、[`AI_RESULT_UNDO_DESIGN.md`](AI_RESULT_UNDO_DESIGN.md)、[`WEBHOOK_HTTP_RECEIVER_DESIGN.md`](WEBHOOK_HTTP_RECEIVER_DESIGN.md)。
+> Phase P2 introduces cross-module idempotency infrastructure to avoid side effects from duplicate execution. Implemented in `backend/internal/modules/idempotency`.
+> Key production write paths are integrated through the shared `idempotency.Service` (order sync/import, inventory deduction/push, publishing, customer-service outbound messages, AI batches, webhooks); current coverage is authoritative in the code, CI regression tests, and [`DOMAIN_IDEMPOTENCY_INTEGRATION.md`](DOMAIN_IDEMPOTENCY_INTEGRATION.md).
+> **Phase P2.2**: AI copy/image **apply + undo** keys and webhook **HTTP receive / process** keys are now integrated; see [`AI_RESULT_APPLY_IDEMPOTENCY.md`](AI_RESULT_APPLY_IDEMPOTENCY.md), [`AI_RESULT_UNDO_DESIGN.md`](AI_RESULT_UNDO_DESIGN.md), [`WEBHOOK_HTTP_RECEIVER_DESIGN.md`](WEBHOOK_HTTP_RECEIVER_DESIGN.md).
 
-## 数据模型：`idempotency_records`
+## Data Model: `idempotency_records`
 
-| 字段 | 说明 |
+| Field | Description |
 | --- | --- |
-| `scope` + `idempotency_key` | 业务域 + 稳定键，**联合唯一**（`ux_idempotency_scope_key`） |
-| `request_hash` | 请求体 SHA-256，同键不同 payload 视为冲突 |
-| `status` | 见下表 |
-| `owner` | 当前持锁执行者（worker ID 或服务名） |
-| `locked_until` | 处理中租约截止时间 |
-| `expires_at` | 成功记录保留期（默认 7 天，供重放查询） |
-| `resource_type` / `resource_id` | 成功后关联资源 |
-| `response_code` / `response_summary` | 成功摘要，供 API 重放 |
-| `error_code` / `retryable` | 失败分类 |
+| `scope` + `idempotency_key` | Business domain + stable key, **jointly unique** (`ux_idempotency_scope_key`) |
+| `request_hash` | SHA-256 of the request body; the same key with a different payload is treated as a conflict |
+| `status` | See the state machine below |
+| `owner` | Current lock holder (worker ID or service name) |
+| `locked_until` | Lease expiration while processing |
+| `expires_at` | Retention period for succeeded records (default 7 days, for replay lookups) |
+| `resource_type` / `resource_id` | Associated resource after success |
+| `response_code` / `response_summary` | Success summary, used for API replay |
+| `error_code` / `retryable` | Failure classification |
 
-### 状态机
+### State Machine
 
 ```text
 pending → processing → succeeded
-                    ↘ failed_retryable → processing（重试）
+                    ↘ failed_retryable → processing (retry)
                     ↘ failed_permanent
-processing（租约过期）→ expired（ReleaseExpired 清扫）
+processing (lease expired) → expired (swept by ReleaseExpired)
 ```
 
-默认租约 **2 分钟**（`DefaultLease`）；完成记录 TTL **7 天**（`DefaultTTL`）。
+Default lease is **2 minutes** (`DefaultLease`); completed-record TTL is **7 days** (`DefaultTTL`).
 
 ## Service API
 
-| 方法 | 用途 |
+| Method | Purpose |
 | --- | --- |
-| `Acquire(ctx, scope, key, requestHash, owner, lease)` | 获取执行权；已成功返回 `Replay` + `OpError(IDEMPOTENCY_ALREADY_SUCCEEDED)` |
-| `Heartbeat(ctx, recordID, owner, lease)` | 延长 processing 租约 |
-| `Complete(ctx, recordID, owner, CompleteResult)` | 标记成功并释放租约 |
-| `Fail(ctx, recordID, owner, errorCode, retryable)` | 标记可重试或永久失败 |
-| `Get(ctx, scope, key)` | 查询最新记录 |
-| `ReleaseExpired(ctx, limit)` | 将过期 processing / 超 TTL 记录标为 `expired` |
+| `Acquire(ctx, scope, key, requestHash, owner, lease)` | Acquire execution rights; if already succeeded, returns `Replay` + `OpError(IDEMPOTENCY_ALREADY_SUCCEEDED)` |
+| `Heartbeat(ctx, recordID, owner, lease)` | Extend the processing lease |
+| `Complete(ctx, recordID, owner, CompleteResult)` | Mark as succeeded and release the lease |
+| `Fail(ctx, recordID, owner, errorCode, retryable)` | Mark as retryable or permanently failed |
+| `Get(ctx, scope, key)` | Look up the latest record |
+| `ReleaseExpired(ctx, limit)` | Mark expired processing / TTL-exceeded records as `expired` |
 
-## P2.1 接入状态
+## P2.1 Integration Status
 
-| 状态 | 说明 |
+| Status | Description |
 | --- | --- |
-| **已接入** | 订单同步任务、订单导入、库存扣减/推送、刊登批次/入队、客服外发、AI 文案/图片批次创建、AI 文案/图片 **apply/undo**、Webhook 入站 ACK + `webhook-process` 异步处理 |
-| **预留** | 库存补偿（`inventory-compensate`） |
-| **验证** | 现有 Go 单元/集成测试、API 契约测试与 GitHub Actions；最终业务流程由人工验收 |
+| **Integrated** | Order sync tasks, order import, inventory deduction/push, publish batch/enqueue, customer-service outbound messages, AI copy/image batch creation, AI copy/image **apply/undo**, webhook inbound ACK + `webhook-process` async handling |
+| **Reserved** | Inventory compensation (`inventory-compensate`) |
+| **Verification** | Existing Go unit/integration tests, API contract tests, and GitHub Actions; final business-flow verification is manual acceptance |
 
-`router.go` 将同一 `idempotencySvc` 注入 `ordersync`、`order`、`inventory`、`productpublish`、`customerchat`、`aiproducttext`、`aiproductimage`。
+`router.go` injects the same `idempotencySvc` into `ordersync`, `order`, `inventory`, `productpublish`, `customerchat`, `aiproducttext`, and `aiproductimage`.
 
-## Scope 与 Key 模式
+## Scope and Key Patterns
 
-Key 构造见 `scope.go` + `keys.go`，**不得嵌入密钥或 PII**：
+Key construction is defined in `scope.go` + `keys.go`; **must not embed secrets or PII**:
 
-| Scope | Key 模式 | 场景 | P2.1 |
+| Scope | Key Pattern | Scenario | P2.1 |
 | --- | --- | --- | --- |
-| `order_sync` | `order-sync-job:{platform}:{shopId}:{mode}:{window}` | 同步任务创建 | ✓ |
-| `order_import` | `order-import:{platform}:{shopId}:{platformOrderId}` | 单订单导入 | ✓ |
-| `inventory` | `inventory-deduct:{orderId}:{orderItemId}:{skuId}` | 库存扣减 | ✓ |
-| `inventory_push` | `inventory-push:{platform}:{shopId}:{skuId}:{stockVersion}` | 库存推送 | ✓ |
-| `publish` | `publish-batch:…` / `publish-enqueue:…` | 刊登批次/入队 | ✓ |
-| `customer_send` | `customer-send:{conversationId}:{clientMessageId}` | 客服外发 | ✓ |
-| `ai_text` | `ai-text-batch:…` / `ai-text-apply:…` / `ai-text-undo:…` | AI 文案批次 / 应用 / 撤销 | ✓（P2.2 apply/undo） |
-| `ai_image` | `ai-image-batch:…` / `ai-image-apply:…` / `ai-image-undo:…` | AI 图片批次 / 应用 / 撤销 | ✓（P2.2 apply/undo） |
-| `webhook` | `webhook:{platform}:{eventId}` / `webhook-process:…` | Webhook 入站 / 异步处理 | ✓（P2.2 HTTP） |
+| `order_sync` | `order-sync-job:{platform}:{shopId}:{mode}:{window}` | Sync task creation | ✓ |
+| `order_import` | `order-import:{platform}:{shopId}:{platformOrderId}` | Single order import | ✓ |
+| `inventory` | `inventory-deduct:{orderId}:{orderItemId}:{skuId}` | Inventory deduction | ✓ |
+| `inventory_push` | `inventory-push:{platform}:{shopId}:{skuId}:{stockVersion}` | Inventory push | ✓ |
+| `publish` | `publish-batch:…` / `publish-enqueue:…` | Publish batch/enqueue | ✓ |
+| `customer_send` | `customer-send:{conversationId}:{clientMessageId}` | Customer-service outbound messages | ✓ |
+| `ai_text` | `ai-text-batch:…` / `ai-text-apply:…` / `ai-text-undo:…` | AI copy batch / apply / undo | ✓ (P2.2 apply/undo) |
+| `ai_image` | `ai-image-batch:…` / `ai-image-apply:…` / `ai-image-undo:…` | AI image batch / apply / undo | ✓ (P2.2 apply/undo) |
+| `webhook` | `webhook:{platform}:{eventId}` / `webhook-process:…` | Webhook inbound / async processing | ✓ (P2.2 HTTP) |
 
-`HashRequest(payload []byte)` 对规范化请求体做 SHA-256。
+`HashRequest(payload []byte)` computes SHA-256 over the canonicalized request body.
 
-## 错误码
+## Error Codes
 
-| 代码 | 含义 | 建议处理 |
+| Code | Meaning | Suggested Handling |
 | --- | --- | --- |
-| `IDEMPOTENCY_IN_PROGRESS` | 其他 worker 持锁处理中 | 轮询或返回 409 |
-| `IDEMPOTENCY_KEY_CONFLICT` | 同键不同 payload，或永久失败 | 人工介入 |
-| `IDEMPOTENCY_ALREADY_SUCCEEDED` | 已成功，可重放 `response_summary` | 返回缓存结果 |
-| `IDEMPOTENCY_LEASE_LOST` | 租约丢失（Complete/Fail/Heartbeat） | 放弃本次写入 |
-| `IDEMPOTENCY_RECORD_EXPIRED` | 记录已过期 | 使用新键或清理后重试 |
+| `IDEMPOTENCY_IN_PROGRESS` | Another worker holds the lock and is processing | Poll or return 409 |
+| `IDEMPOTENCY_KEY_CONFLICT` | Same key with a different payload, or a permanent failure | Requires manual intervention |
+| `IDEMPOTENCY_ALREADY_SUCCEEDED` | Already succeeded; `response_summary` can be replayed | Return the cached result |
+| `IDEMPOTENCY_LEASE_LOST` | Lease lost (Complete/Fail/Heartbeat) | Abandon this write attempt |
+| `IDEMPOTENCY_RECORD_EXPIRED` | Record has expired | Use a new key or retry after cleanup |
 
-## 索引与迁移
+## Indexes and Migrations
 
-可靠性迁移（`migrate_reliability.go`）创建表及索引：`ix_idempotency_status`、`ix_idempotency_locked_until`。
+The reliability migration (`migrate_reliability.go`) creates the table and indexes: `ix_idempotency_status`, `ix_idempotency_locked_until`.
 
-## 使用约定
+## Usage Conventions
 
-1. 写操作前先 `Acquire`；长任务周期 `Heartbeat`。
-2. 业务成功必须 `Complete`；失败按 `taskretry.Classify` 决定 `retryable`。
-3. 客户端可选传幂等键；服务端必须用稳定业务语义生成 key，而非随机 UUID。
-4. Webhook 与订单同步共享同一套 `idempotency_records` + 领域表双写防重。
-5. 异步 Worker 须配合 `tasklease`（`execution_id` / `heartbeat_at` / `lock_version`），见 [`TASK_LEASE_AND_HEARTBEAT_DESIGN.md`](TASK_LEASE_AND_HEARTBEAT_DESIGN.md)。
+1. Call `Acquire` before any write operation; call `Heartbeat` periodically for long-running tasks.
+2. Business success must call `Complete`; failures determine `retryable` via `taskretry.Classify`.
+3. Clients may optionally pass an idempotency key; the server must generate the key from stable business semantics, never a random UUID.
+4. Webhooks and order sync share the same `idempotency_records` plus dual-write duplicate protection with the domain tables.
+5. Async workers must work together with `tasklease` (`execution_id` / `heartbeat_at` / `lock_version`); see [`TASK_LEASE_AND_HEARTBEAT_DESIGN.md`](TASK_LEASE_AND_HEARTBEAT_DESIGN.md).
+
 ## P3.2 Douyin Webhook Scoped Keys
 
 P3.2 Douyin webhook uses scoped keys instead of the historical P2.2 shape:

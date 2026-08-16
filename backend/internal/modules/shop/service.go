@@ -41,6 +41,7 @@ type Service struct {
 	Redis     *rdb.Client
 	Settings  *settings.Service
 	AppEnv    string
+	EbayEnv   string
 }
 
 // --- platform providers (public metadata) ---

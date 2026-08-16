@@ -195,7 +195,7 @@ func EbayAppConfigSchema() PlatformAppConfigSchema {
 	return PlatformAppConfigSchema{
 		GroupKey:    "platform_ebay",
 		Title:       "eBay",
-		Description: "eBay Developers Program 应用（对接仍 planned）。",
+		Description: "eBay Developers Program OAuth-Anwendung. Sandbox ist der sichere Standard.",
 		Fields: []AppConfigField{
 			{Name: "client_id", Label: "Client ID (App ID)", Type: "text", Required: true, Sensitive: false},
 			{Name: "client_secret", Label: "Client Secret", Type: "password", Required: true, Sensitive: true},

@@ -1,6 +1,6 @@
 /**
- * 1688 浏览器端 DOM / script 抽取（仅通过 Playwright page.evaluate 注入）。
- * 禁止 toString/eval；所有 helper 必须定义在本函数内部。
+ * 1688 browser-side DOM / script extraction (injected only via Playwright page.evaluate).
+ * toString/eval are forbidden; all helpers must be defined inside this function.
  */
 import type { Page } from 'playwright';
 import {
@@ -29,7 +29,7 @@ export type Extract1688DomArg = {
 
 export type Extract1688DomResult = BrowserExtractPayload & { __blocked__?: number };
 
-/** Playwright 会序列化此函数到浏览器；勿引用 Node 模块/外部 helper。 */
+/** Playwright serializes this function to the browser; do not reference Node modules or external helpers. */
 export function extract1688DomInPage(arg: Extract1688DomArg): Extract1688DomResult {
   const {
     titleSelectors,

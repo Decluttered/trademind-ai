@@ -1,23 +1,23 @@
-# 抖店契约能力门控 (ContractCapabilityGate)
+# Douyin Contract Capability Gate (ContractCapabilityGate)
 
-实现：`backend/internal/providers/platform/douyinshop/contract_gate.go`
+Implementation: `backend/internal/providers/platform/douyinshop/contract_gate.go`
 
-## 状态模型
+## State Model
 
-| 状态 | 含义 |
+| State | Meaning |
 |------|------|
-| verified | 真实环境或明确契约确认 |
-| fixture_verified | 仅 Fixture/Transport 测试 |
-| blocked_by_contract_verification | 路径/Scope/字段未确认 |
-| unsupported | 当前版本不支持 |
-| disabled | 功能开关关闭 |
+| verified | Confirmed in a real environment or via explicit contract confirmation |
+| fixture_verified | Verified only against fixtures/transport tests |
+| blocked_by_contract_verification | Path/scope/fields not yet confirmed |
+| unsupported | Not supported in the current version |
+| disabled | Feature flag disabled |
 
-## 能力键
+## Capability Keys
 
 - `douyin_im_conversation_list` / `douyin_im_message_list` / `douyin_im_send` → blocked
 - `douyin_brand_list` → blocked
-- `douyin_webhook_signature_v1` → fixture_verified（production 拒绝未 verified）
+- `douyin_webhook_signature_v1` → fixture_verified (production rejects anything not verified)
 - `douyin_order_webhook_events` → fixture_verified
 - `douyin_inventory_query` / `douyin_product_draft_create` → fixture_verified
 
-阻塞错误：`DOUYIN_CONTRACT_VERIFICATION_REQUIRED`
+Blocking error: `DOUYIN_CONTRACT_VERIFICATION_REQUIRED`

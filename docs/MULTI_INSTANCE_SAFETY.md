@@ -1,78 +1,78 @@
-# 多实例安全设计（P2）
+# Multi-Instance Safety Design (P2)
 
-> TradeMind API 支持水平扩展：通过 **迁移锁、任务 DB 租约、Worker 注册心跳** 避免双写与重复消费。
+> TradeMind API supports horizontal scaling: **migration locks, DB-based task leases, and worker registration heartbeats** prevent double writes and duplicate consumption.
 
-## 架构假设
+## Architectural Assumptions
 
 ```text
         ┌─────────┐   ┌─────────┐
         │ API #1  │   │ API #2  │
         └────┬────┘   └────┬────┘
-             │    Redis 队列   │
+             │  Redis queue   │
              └────────┬────────┘
                       │
                  PostgreSQL
 ```
 
-- 无状态 HTTP：JWT 会话，不依赖单机内存会话。
-- 有状态异步：任务状态在 DB + Redis LIST，Worker 可运行于任一 API 进程。
+- Stateless HTTP: JWT sessions, not dependent on single-machine in-memory sessions.
+- Stateful async: task state lives in DB + Redis LIST; workers can run in any API process.
 
-## 迁移锁（PostgreSQL Advisory Lock）
+## Migration Lock (PostgreSQL Advisory Lock)
 
-多实例同时 `AutoMigrate` 时仅一实例执行 DDL：
+When multiple instances run `AutoMigrate` simultaneously, only one instance executes the DDL:
 
-- `RunMigrateWithLock` → `pg_try_advisory_lock(8837291, 20260710)`。
-- 未获锁每 500ms 重试，直至 `MIGRATION_LOCK_TIMEOUT_SECONDS`（默认 120s）。
-- MySQL 等驱动 **跳过** advisory lock（约定单实例迁移）。
+- `RunMigrateWithLock` → `pg_try_advisory_lock(8837291, 20260710)`.
+- If the lock isn't acquired, retry every 500ms until `MIGRATION_LOCK_TIMEOUT_SECONDS` (default 120s).
+- Drivers such as MySQL **skip** the advisory lock (single-instance migration by convention).
 
-详见 `MIGRATION_LOCK_DESIGN.md`。
+See `MIGRATION_LOCK_DESIGN.md` for details.
 
-启动：`MIGRATION_RUN_ON_STARTUP=true`（默认）时在 `main.go` 带锁迁移。
+Startup: when `MIGRATION_RUN_ON_STARTUP=true` (default), migration runs with the lock held in `main.go`.
 
-## Worker 租约（任务级 Leader）
+## Worker Leases (Per-Task Leader)
 
-**不是**全局选主；而是 **每条任务最多一个持有者**：
+**Not** a global leader election; instead, **at most one holder per task**:
 
-| 机制 | 说明 |
+| Mechanism | Description |
 | --- | --- |
-| `locked_by` + `locked_until` | BRPOP 后原子 claim |
-| 心跳续期 | TTL/3 刷新 `locked_until` |
-| Reaper | 过期租约回收，`lease_expired` 事件 |
-| `lock_version` | 乐观并发控制 |
+| `locked_by` + `locked_until` | Atomic claim after BRPOP |
+| Heartbeat renewal | Refresh `locked_until` at TTL/3 |
+| Reaper | Reclaims expired leases, emits `lease_expired` event |
+| `lock_version` | Optimistic concurrency control |
 
-适用：collect、image、order_sync、customer_message_sync、product_publish、inventory_sync。
+Applies to: collect, image, order_sync, customer_message_sync, product_publish, inventory_sync.
 
-同一任务不会被两个 Worker 同时执行；不同任务并行无锁争用。
+The same task is never executed by two workers simultaneously; different tasks run in parallel without lock contention.
 
-## Worker 实例注册（`worker.Registry`）
+## Worker Instance Registration (`worker.Registry`)
 
-`WORKER_HEARTBEAT_ENABLED=true` 时：
+When `WORKER_HEARTBEAT_ENABLED=true`:
 
-- 每实例写 `worker_instances`（type、hostname、metadata）。
-- `last_heartbeat_at` 周期更新；`MarkStaleWorkers` 标 stale。
-- `/health` 汇总 `workers running` 与队列深度。
+- Each instance writes to `worker_instances` (type, hostname, metadata).
+- `last_heartbeat_at` is updated periodically; `MarkStaleWorkers` flags stale entries.
+- `/health` aggregates `workers running` and queue depth.
 
-`WORKER_HEARTBEAT_ENABLED=false` 仍生成 `workerId` 并写任务租约，但不落实例表。
+When `WORKER_HEARTBEAT_ENABLED=false`, a `workerId` is still generated and used for task leases, but the instance table is not populated.
 
-## 进程内 Leader 模式（轻量）
+## In-Process Leader Mode (Lightweight)
 
-**任务告警扫描** `TASK_ALERT_SCAN_ENABLED`：
+**Task alert scanning**, `TASK_ALERT_SCAN_ENABLED`:
 
-- 每进程可注册 `worker.TypeTaskAlertScan`。
-- 实际是否执行由 settings `taskcenter.enable_alert_scan_worker` 门闸。
-- 扫描使用 context 超时 `TASK_ALERT_SCAN_LOCK_TTL_SECONDS`（默认 120s），非 PG advisory；多实例可能重复扫描但 `upsert` 告警行幂等。
+- Each process can register `worker.TypeTaskAlertScan`.
+- Whether it actually runs is gated by the `taskcenter.enable_alert_scan_worker` setting.
+- Scanning uses a context timeout, `TASK_ALERT_SCAN_LOCK_TTL_SECONDS` (default 120s), not a PG advisory lock; multiple instances may scan redundantly, but the alert-row `upsert` is idempotent.
 
-未来可复用 advisory lock 或 Redis SETNX 实现严格单 leader 告警扫描。
+Strict single-leader alert scanning could be implemented in the future by reusing the advisory lock or via Redis SETNX.
 
-## Redis 与幂等
+## Redis and Idempotency
 
-- 消费者 `BRPOP` 仅一实例获消息；DB claim 防崩溃后双执行。
-- 第二层：`idempotency_records` 与领域唯一索引。
+- Only one instance's consumer receives a message via `BRPOP`; the DB claim prevents double execution after a crash.
+- A second layer: `idempotency_records` and domain-level unique indexes.
 
-## 部署与反模式
+## Deployment and Anti-Patterns
 
-- 必备：Redis 队列、`WORKER_REAPER_ENABLED=true`、`MIGRATION_RUN_ON_STARTUP=true`。
-- 勿在多实例下关闭队列改 API 内同步；勿关闭 Reaper 后强杀进程（任务卡 `running`）。
-- MySQL 无 advisory，多实例须外部协调单次迁移。
+- Required: Redis queue, `WORKER_REAPER_ENABLED=true`, `MIGRATION_RUN_ON_STARTUP=true`.
+- Do not disable the queue in favor of synchronous in-API processing under multi-instance deployment; do not disable the Reaper and then force-kill processes (tasks get stuck in `running`).
+- MySQL has no advisory locks; multi-instance deployments must coordinate a single migration externally.
 
-相关：`MIGRATION_LOCK_DESIGN.md`、`TASK_RELIABILITY_DESIGN.md`。
+Related: `MIGRATION_LOCK_DESIGN.md`, `TASK_RELIABILITY_DESIGN.md`.

@@ -213,12 +213,16 @@ func wooPublishSchema() PlatformAppConfigSchema {
 func ebayPublishSchema() PlatformAppConfigSchema {
 	return PlatformAppConfigSchema{
 		GroupKey:    "platform_publish_ebay",
-		Title:       "eBay 刊登默认配置（预留）",
-		Description: "",
+		Title:       "eBay Listing-Standardwerte",
+		Description: "Inventory Item und Offer werden API-first veröffentlicht. DRY_RUN führt keine eBay-Schreiboperation aus.",
 		Fields: []AppConfigField{
-			{Name: "default_category_id", Label: "默认类目 ID", Type: "text", Required: false, Sensitive: false},
-			{Name: "default_business_policies_hint", Label: "政策包/策略说明（摘录）", Type: "textarea", Required: false, Sensitive: false},
-			{Name: "publish_as_draft", Label: "默认草稿/未刊登", Type: "switch", Required: false, Sensitive: false, DefaultValue: true},
+			{Name: "merchant_location_key", Label: "Merchant Location Key", Type: "text", Required: true, Sensitive: false},
+			{Name: "payment_policy_id", Label: "Payment Policy ID", Type: "text", Required: true, Sensitive: false},
+			{Name: "return_policy_id", Label: "Return Policy ID", Type: "text", Required: true, Sensitive: false},
+			{Name: "fulfillment_policy_id", Label: "Fulfillment Policy ID", Type: "text", Required: true, Sensitive: false},
+			{Name: "default_condition", Label: "Condition", Type: "text", Required: true, Sensitive: false, DefaultValue: "NEW"},
+			{Name: "default_quantity", Label: "Quantity", Type: "number", Required: true, Sensitive: false, DefaultValue: 1},
+			{Name: "product_safety_statement_ids", Label: "Product Safety Statement IDs", Type: "text", Required: false, Sensitive: false, Help: "Komma-separierte eBay Metadata IDs, z. B. EBPSS102"},
 		},
 	}
 }

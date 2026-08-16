@@ -1,29 +1,37 @@
 /**
- * 与 Go / 主业务约定的统一商品结构（任何采集源最终归一为此格式）。
+ * Unified product structure agreed with Go / the main business logic (any collection source is ultimately normalized to this format).
  */
 export type NormalizedProduct = {
   source: string;
   sourceUrl: string;
   title: string;
   currency: string;
-  /** 页面真实文本描述（非 AI 生成） */
+  /** Source-native stable identifier, e.g. Amazon ASIN. */
+  sourceProductId?: string;
+  /** Integer minor units. Float prices are intentionally not part of the Phase-1 contract. */
+  priceCents?: number;
+  availability?: string;
+  brand?: string;
+  gtin?: string;
+  variants?: Array<Record<string, string>>;
+  /** Real text description from the page (not AI-generated) */
   mainDescription?: string;
   mainImages: string[];
   descriptionImages: string[];
   attributes: Record<string, string | number | boolean>;
   skus: ProductSku[];
-  /** 平台页原始快照，必填以便复盘与二次解析 */
+  /** Raw snapshot of the platform page, required for later review and re-parsing */
   raw: Record<string, unknown>;
 };
 
 export type ProductSku = {
   id?: string;
-  /** 如颜色、尺码等键值 */
+  /** Key-value pairs such as color, size, etc. */
   properties?: Record<string, string>;
   price?: number;
   stock?: number;
   skuCode?: string;
   image?: string;
-  /** SKU 粒度原始快照（Go 入库时保留在 product_skus.raw_data） */
+  /** Raw snapshot at SKU granularity (preserved in product_skus.raw_data when Go writes it to the DB) */
   raw?: Record<string, unknown>;
 };

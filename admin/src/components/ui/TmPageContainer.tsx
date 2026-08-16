@@ -3,18 +3,18 @@ import { PageContainer, type PageContainerProps } from '@ant-design/pro-componen
 import { layoutTokens } from '@/constants/layoutTokens';
 
 export type TmPageContainerProps = PageContainerProps & {
-  /** 页面内容首选最大宽度；流式布局会在更宽视口继续扩展，避免两侧留白过大。 */
+  /** Preferred maximum width of the page content; the fluid layout keeps expanding on wider viewports to avoid excessive whitespace on the sides. */
   contentMaxWidth?: number;
-  /** 是否限制超宽视口的外层留白；窄表单等固定内容轨道可显式关闭。 */
+  /** Whether to constrain the outer whitespace on ultra-wide viewports; fixed-width content tracks like narrow forms can explicitly turn this off. */
   fluid?: boolean;
-  /** 关闭内容区左右 padding，仅用于嵌入式特殊场景。 */
+  /** Removes left/right padding on the content area, only for embedded special-case scenarios. */
   padded?: boolean;
-  /** 页面内容包裹层样式。 */
+  /** Style for the page content wrapper. */
   contentWrapperStyle?: CSSProperties;
 };
 
 /**
- * 统一页面容器：标题 + 说明分行，内边距与最大宽度一致。
+ * Unified page container: title + description on separate lines, consistent padding and max width.
  */
 export default function TmPageContainer({
   title,

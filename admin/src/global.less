@@ -5,7 +5,7 @@ body,
   margin: 0;
 }
 
-/* 登录后页面保留滚动能力，但隐藏页面与侧栏的浏览器滚动条。 */
+/* Keep scroll ability on pages after login, but hide the browser scrollbars for the page and sidebar. */
 html:has(.tm-app-layout),
 body:has(.tm-app-layout),
 .tm-app-layout .ant-pro-sider,
@@ -23,7 +23,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   height: 0;
 }
 
-/* 由 ConfigProvider 的 Drawer wrapper 样式读取，可覆盖组件默认与页面内联宽度。 */
+/* Read by ConfigProvider's Drawer wrapper style; can override the component default and the page's inline width. */
 :root {
   --tm-app-drawer-width: 50vw;
 }
@@ -223,7 +223,7 @@ body:has(.tm-app-layout)::-webkit-scrollbar,
   max-width: 100%;
 }
 
-/* ── TradeMind 统一页面布局 token ── */
+/* ── TradeMind unified page layout tokens ── */
 @tm-page-px: 24px;
 @tm-page-px-min: 16px;
 @tm-page-py: 20px;
@@ -635,7 +635,7 @@ html.tm-theme-switching body #root *::after {
   gap: @tm-section-gap;
 }
 
-/* PageContainer 标题与右侧操作：窄屏自动换行 */
+/* PageContainer title and right-side actions: wrap automatically on narrow screens */
 .ant-pro-page-container-warp-page-header .ant-page-header-heading {
   flex-wrap: wrap;
   row-gap: 8px;
@@ -654,7 +654,7 @@ html.tm-theme-switching body #root *::after {
   flex-wrap: wrap;
 }
 
-/* ProTable：表格区域内部横向滚动，不撑破页面 */
+/* ProTable: horizontal scroll inside the table area, without breaking the page layout */
 .ant-pro-table {
   min-width: 0;
   max-width: 100%;
@@ -665,19 +665,19 @@ html.tm-theme-switching body #root *::after {
     max-width: 100%;
   }
 
-  /* 仅允许横向滚动：overflow-x:auto 时 overflow-y 不能为 visible（会被算成 auto 并出现竖条） */
+  /* Allow horizontal scroll only: when overflow-x:auto, overflow-y must not be visible (it would compute to auto and show a vertical bar) */
   .ant-table-wrapper {
     overflow-x: auto;
     overflow-y: hidden;
   }
 
-  /* scroll.x 时 Ant Design 表体默认 overflow-y: scroll，分页表格不需要 */
+  /* With scroll.x, Ant Design's table body defaults to overflow-y: scroll, which paginated tables don't need */
   .ant-table-container .ant-table-body,
   .ant-table-container .ant-table-content {
     overflow-y: hidden !important;
   }
 
-  /* 工具栏密度/列设置：扩大可点击区域，避免图标点击落在容器上无响应 */
+  /* Toolbar density/column settings: enlarge the clickable area so icon clicks don't land on an unresponsive container */
   .ant-pro-table-list-toolbar {
     position: relative;
     z-index: 2;
@@ -714,7 +714,7 @@ html.tm-theme-switching body #root *::after {
   }
 }
 
-/* 采集任务提交区：窄屏表单项自动换行 */
+/* Collection task submission area: form items wrap automatically on narrow screens */
 .tm-collect-task-form {
   .ant-form-item {
     margin-bottom: 12px;
@@ -811,7 +811,7 @@ html.tm-theme-switching body #root *::after {
   letter-spacing: -0.02em;
 }
 
-/* 存储设置 — 存储方式卡片栅格 */
+/* Storage settings — storage type card grid */
 .tm-storage-kind-group.ant-radio-group {
   display: block;
   width: 100%;
@@ -889,7 +889,7 @@ html.tm-theme-switching body #root *::after {
   color: var(--ant-color-text-secondary);
 }
 
-/* 存储设置页 */
+/* Storage settings page */
 .tm-storage-settings {
   display: flex;
   flex-direction: column;
@@ -902,7 +902,7 @@ html.tm-theme-switching body #root *::after {
   }
 }
 
-/* AI 设置页 */
+/* AI settings page */
 .tm-ai-settings {
   display: flex;
   flex-direction: column;
@@ -1024,7 +1024,7 @@ html.tm-theme-switching body #root *::after {
   box-shadow: var(--tm-shadow-sticky);
 }
 
-/* 图片 AI 设置页 */
+/* Image AI settings page */
 .tm-image-settings {
   display: flex;
   flex-direction: column;
@@ -1240,7 +1240,7 @@ html.tm-theme-switching body #root *::after {
   box-shadow: var(--tm-shadow-sticky);
 }
 
-/* 系统设置页（及复用该样式的设置子页） */
+/* System settings page (and settings sub-pages that reuse this style) */
 .tm-system-settings {
   display: flex;
   flex-direction: column;
@@ -1451,7 +1451,7 @@ html.tm-theme-switching body #root *::after {
   color: var(--ant-color-text-secondary);
 }
 
-/* AI 生成采集规则弹窗 */
+/* AI-generated collection rule modal */
 .tm-ai-rule-modal__body {
   display: flex;
   flex-direction: column;
@@ -1762,7 +1762,7 @@ html.tm-theme-switching body #root *::after {
   color: var(--ant-color-text-secondary);
 }
 
-/* 模态框 / 抽屉 / ProForm 底栏：操作按钮间距略加大（默认约 8px → 12px） */
+/* Modal / Drawer / ProForm footer: slightly increase action button spacing (default ~8px → 12px) */
 @tm-action-btn-gap: 12px;
 
 .ant-modal-footer,
@@ -1796,12 +1796,12 @@ html.tm-theme-switching body #root *::after {
   }
 }
 
-/* 卡片 / 页面内横向按钮组（Space 默认 small 8px） */
+/* Card / in-page horizontal button group (Space default small 8px) */
 .tm-action-space.ant-space {
   gap: @tm-action-btn-gap !important;
 }
 
-/* 采集服务设置页 */
+/* Collection service settings page */
 .tm-collector-settings {
   .tm-collector-settings__selector {
     margin-bottom: 16px;

@@ -1,40 +1,40 @@
-# Demo 数据种子指南（Phase F7）
+# Demo Data Seeding Guide (Phase F7)
 
-> **用途**：在本地或预发环境导入全链路演示数据，支撑 16 步 MVP 主链路走查。  
-> **状态**：Post-F9 Enhancement · MVP Demo Ready · Tag deferred · 非 Production Ready · 抖店 Release Candidate
+> **Purpose**: Import end-to-end demo data into a local or staging environment to support the 16-step MVP main-path walkthrough.
+> **Status**: Post-F9 Enhancement · MVP Demo Ready · Tag deferred · Not Production Ready · Douyin Release Candidate
 
-## 前置条件
+## Prerequisites
 
-1. PostgreSQL + Redis 已启动（`docker compose up -d` 或等价）
-2. 后端 API 可访问（默认 `http://127.0.0.1:8080`）
-3. 根目录 `.env` 含 `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD`
-4. （可选）AI Provider 已配置 — 客服 AI 建议样本为 best-effort
+1. PostgreSQL + Redis are running (`docker compose up -d` or equivalent)
+2. The backend API is reachable (default `http://127.0.0.1:8080`)
+3. The root `.env` contains `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD`
+4. (Optional) An AI provider is configured — customer service AI suggestion samples are best-effort
 
-## 一键种子
+## One-Command Seeding
 
 ```powershell
-# 仓库根目录
+# Repository root
 .\scripts\seed-demo-data.ps1 -ApiBase http://127.0.0.1:8080 -OutFile docs/demo-dataset.json
 .\scripts\seed-demo-permissions.ps1 -ApiBase http://127.0.0.1:8080
 ```
 
-Linux / macOS：
+Linux / macOS:
 
 ```bash
 ./scripts/seed-demo-data.sh
-./scripts/seed-demo-permissions.ps1   # 需 PowerShell
+./scripts/seed-demo-permissions.ps1   # requires PowerShell
 ```
 
-## 脚本行为
+## Script Behavior
 
 ### seed-demo-data
 
-1. 登录 bootstrap 管理员
-2. 调用 `a1-prepare-samples.ps1` 补齐 20 商品 slot
-3. 创建 **F2 订单**、**F3 库存**、**F4 客服** 样本
-4. 探测 **F6/F7 Dashboard** KPI API
-5. 汇总 AI / 刊登 / 失败任务 / 工作台待办
-6. 在本地写入以下临时输出（不纳入版本控制）：
+1. Log in as the bootstrap admin
+2. Call `a1-prepare-samples.ps1` to fill out the 20 product slots
+3. Create **F2 order**, **F3 inventory**, and **F4 customer service** samples
+4. Probe the **F6/F7 dashboard** KPI API
+5. Aggregate AI / listing / failed task / workbench to-dos
+6. Write the following temporary output locally (not under version control):
    - `docs/demo-dataset.json`
    - `docs/demo-dataset.orders.json`
    - `docs/demo-dataset.inventory.json`
@@ -43,54 +43,54 @@ Linux / macOS：
 
 ### seed-demo-permissions
 
-创建 Demo 账号并写入 `docs/demo-dataset.permissions.json`：
+Creates demo accounts and writes `docs/demo-dataset.permissions.json`:
 
-| 账号 | 角色 | 用途 |
+| Account | Role | Purpose |
 | --- | --- | --- |
-| `demo_admin@trademind.local` | admin | 全权限演示 |
-| `demo_operator@trademind.local` | operator | 店铺隔离演示 |
-| `demo_readonly@trademind.local` | readonly | 只读阻断演示 |
+| `demo_admin@trademind.local` | admin | Full-permission demo |
+| `demo_operator@trademind.local` | operator | Shop isolation demo |
+| `demo_readonly@trademind.local` | readonly | Read-only blocking demo |
 
-默认密码见脚本输出或本地生成的 `demo-dataset.permissions.json`（仅限开发环境）。
+Default passwords are in the script output or the locally generated `demo-dataset.permissions.json` (development environments only).
 
-## 验证
+## Verification
 
 ```powershell
-# 读 validation 段
+# Read the validation section
 Get-Content docs/demo-dataset.json | ConvertFrom-Json | Select-Object -ExpandProperty validation
 ```
 
-期望 `passed: true`（至少 20 slot、7 task samples、订单/库存/客服各 ≥3）。
+Expect `passed: true` (at least 20 slots, 7 task samples, and at least 3 each for orders/inventory/customer service).
 
-自动化回归由 GitHub Actions 执行；产品页面和业务流程按人工验收清单检查。
+Automated regression is executed by GitHub Actions; product pages and business flows are checked against the manual acceptance checklist.
 
-## F8 dev-only edge-case 样本
+## F8 Dev-Only Edge-Case Samples
 
-在 **非 production** 环境，管理员可调用：
+In **non-production** environments, an admin can call:
 
 ```http
 POST /api/v1/dev/demo-seed/full-project-edge-cases
 Authorization: Bearer <admin token>
 ```
 
-写入（**不调用真实外部平台**）：
+This writes (**without calling any real external platform**):
 
-- 订单同步 `partial_success` + 页级错误
-- 库存同步 `failed`（SKU 未绑定）
-- 客服发送失败 + 失败任务中心记录
-- 平台未授权店铺样本
+- Order sync `partial_success` + page-level error
+- Inventory sync `failed` (SKU unbound)
+- Customer service send failure + failed task center record
+- Sample shop with platform not authorized
 
-操作写入 **operationlog**（`dev.demo_seed.full_project_edge_cases`）。
+The operation is written to **operationlog** (`dev.demo_seed.full_project_edge_cases`).
 
-`seed-demo-data.ps1` 在 API 在线时会自动探测此接口。
+`seed-demo-data.ps1` automatically probes this endpoint when the API is online.
 
-## 注意事项
+## Notes
 
-- **不写入真实平台数据**；抖店步骤预期 `blocked_by_real_credentials` 或 `local_draft_only`
-- 重复运行会追加/更新样本，演示前可清空 dev 库或接受增量
-- 商品标题含 `R1 demo` / `F3 demo` 等前缀便于检索
+- **Does not write real platform data**; the Douyin step is expected to return `blocked_by_real_credentials` or `local_draft_only`
+- Repeated runs append/update samples; you can clear the dev database or accept incremental data before a demo
+- Product titles include prefixes like `R1 demo` / `F3 demo` for easy searching
 
-## 相关文档
+## Related Documents
 
-- [`DEMO_DATASET.md`](DEMO_DATASET.md) — slot 与样本明细
-- [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md) — 人工验收清单
+- [`DEMO_DATASET.md`](DEMO_DATASET.md) — slot and sample details
+- [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md) — manual acceptance checklist

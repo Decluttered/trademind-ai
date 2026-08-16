@@ -11,6 +11,16 @@
       "type": "node-app",
       "notes": "Node.js + TypeScript + Playwright 采集服务"
     },
+    "extension": {
+      "root": "extension",
+      "type": "browser-extension",
+      "notes": "MindBay Companion Extension with its own authenticated capture API boundary"
+    },
+    "temporal": {
+      "root": "temporal/src",
+      "type": "workflow-worker",
+      "notes": "Deterministic TypeScript workflows and HTTP-only Go activities"
+    },
     "backend": {
       "root": "backend/internal",
       "type": "go-backend",
@@ -179,11 +189,21 @@
       "notes": "环境变量和配置解析。"
     },
     {
+      "id": "extension-scaffold",
+      "root": "extension",
+      "layer": "application-scaffold",
+      "type": "browser-extension-scaffold",
+      "allowedDependencies": [],
+      "forbiddenDependencies": ["admin-pages", "admin-services", "collector-runtime", "backend-internal", "scripts-runtime", "tests", "mocks"],
+      "publicEntrypoints": [],
+      "notes": "Phase 0 无运行时代码；Phase 1 引入 WXT 前必须收紧到 extension/src 并定义 API 边界。"
+    },
+    {
       "id": "backend-api",
       "root": "backend/internal/api",
       "layer": "api-composition",
       "type": "go-backend",
-      "allowedDependencies": ["backend-modules", "backend-providers", "backend-rdb", "backend-queue", "backend-pkg"],
+      "allowedDependencies": ["backend-modules", "backend-providers", "backend-workflow", "backend-rdb", "backend-queue", "backend-pkg"],
       "forbiddenDependencies": ["admin-pages", "collector-runtime", "tests"],
       "publicEntrypoints": [],
       "notes": "路由组装和依赖注入，可依赖模块和 provider 注册。"
@@ -207,6 +227,26 @@
       "forbiddenDependencies": ["backend-api", "admin-pages", "collector-runtime", "tests"],
       "publicEntrypoints": [],
       "notes": "第三方能力 adapter/client。"
+    },
+    {
+      "id": "backend-workflow",
+      "root": "backend/internal/workflow",
+      "layer": "orchestration-adapter",
+      "type": "go-backend",
+      "allowedDependencies": ["backend-modules", "backend-pkg"],
+      "forbiddenDependencies": ["backend-api", "admin-pages", "collector-runtime", "tests"],
+      "publicEntrypoints": [],
+      "notes": "Temporal client adapters may depend on publication contracts but never on API handlers."
+    },
+    {
+      "id": "temporal-worker",
+      "root": "temporal/src",
+      "layer": "workflow-orchestration",
+      "type": "node-runtime",
+      "allowedDependencies": [],
+      "forbiddenDependencies": ["admin-pages", "admin-services", "collector-runtime", "backend-internal", "tests", "mocks"],
+      "publicEntrypoints": ["temporal/src/worker.ts", "temporal/src/workflows.ts"],
+      "notes": "Temporal workflows are deterministic; activities use versioned internal HTTP commands only."
     },
     {
       "id": "backend-rdb",

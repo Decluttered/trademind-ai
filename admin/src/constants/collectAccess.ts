@@ -1,4 +1,4 @@
-/** 自定义采集器页面访问状态（用户可见文案） */
+/** Custom collector page access status (user-visible copy) */
 export const ACCESS_STATUS_LABELS: Record<string, { text: string; color: string }> = {
   public: { text: '可正常访问', color: 'success' },
   login_required: { text: '页面需要登录', color: 'warning' },

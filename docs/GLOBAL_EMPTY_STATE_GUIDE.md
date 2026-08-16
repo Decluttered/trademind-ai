@@ -1,29 +1,29 @@
-# 全局空状态引导（Phase F6）
+# Global Empty State Guidance (Phase F6)
 
-## 组件
+## Component
 
 `admin/src/components/ui/EmptyState.tsx`
 
-- `title` — 为什么为空
-- `description` — 下一步说明
-- `actionLabel` + `actionPath` — 推荐入口
+- `title` — why it's empty
+- `description` — what to do next
+- `actionLabel` + `actionPath` — recommended entry point
 
-## 适用页面
+## Applicable Pages
 
-| 页面 | 空态要点 |
+| Page | Empty-state Notes |
 | --- | --- |
-| Dashboard | 无数据时卡片仍展示 0 + emptyHint；最近动态区引导采集/配置 |
-| 采集中心 | 输入链接或配置采集服务 |
-| 商品草稿 | 采集或手动创建 |
-| AI 运营工作台 | 先有待处理商品或批次 |
-| 订单列表 | 配置店铺授权并同步；Demo 可跑种子脚本 |
-| 订单异常 | 同步订单后自动产生 |
-| 库存中心 | 刊登 SKU 绑定后才有库存 |
-| 客服中心 | 授权店铺并同步消息 |
-| 失败任务中心 | 无失败为正常；有失败显示重试入口 |
-| 配置状态中心 | 逐项完成 settings |
-| 用户与权限 | admin 创建用户并分配店铺 |
+| Dashboard | Cards still show 0 + emptyHint when there's no data; the recent activity section guides the user toward collection/configuration |
+| Collection Center | Enter a link or configure a collection service |
+| Product Drafts | Collect or create manually |
+| AI Operations Workbench | Requires pending products or batches first |
+| Order List | Configure shop authorization and sync; a seed script is available for the demo |
+| Order Exceptions | Generated automatically after order sync |
+| Inventory Center | Inventory only exists after listed SKUs are bound |
+| Customer Service Center | Authorize the shop and sync messages |
+| Failed Task Center | No failures is the normal state; failures display a retry entry point |
+| Configuration Status Center | Complete settings one item at a time |
+| Users & Permissions | Admin creates users and assigns shops |
 
-## 文案来源
+## Copy Source
 
-优先 `admin/src/constants/copywriting.ts` 的 `PAGE_COPY` 与 `EMPTY_GUIDE`。
+Prefer `PAGE_COPY` and `EMPTY_GUIDE` from `admin/src/constants/copywriting.ts`.

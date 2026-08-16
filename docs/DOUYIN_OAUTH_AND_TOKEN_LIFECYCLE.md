@@ -1,70 +1,70 @@
-# 抖店 OAuth 与 Token 生命周期
+# Douyin Shop OAuth and Token Lifecycle
 
-## OAuth 授权流程
+## OAuth Authorization Flow
 
 ```
-1. 管理员发起授权
+1. Admin initiates authorization
    POST /api/v1/shops/douyin/oauth/start
-   → 生成 state（随机）
+   → generate a (random) state
    → Redis SET oauth:douyin_shop:state:{state} = payload (10min TTL)
    → DB INSERT douyin_oauth_states (StateHash, ExpiresAt)
-   → 返回授权 URL（含 service_id + state）
+   → return the authorization URL (includes service_id + state)
 
-2. 用户在浏览器完成授权
-   → 抖店回调 GET /api/v1/shops/douyin/oauth/callback?code=xxx&state=yyy
+2. User completes authorization in the browser
+   → Douyin Shop calls back GET /api/v1/shops/douyin/oauth/callback?code=xxx&state=yyy
 
-3. 回调处理
-   → Redis GET state（快速路径）
-   → DB ConsumedAt 一次性消费保护
+3. Callback handling
+   → Redis GET state (fast path)
+   → DB ConsumedAt one-time consumption guard
    → ExchangeCode → AccessToken + RefreshToken
-   → 持久化到 shop_auth_tokens（加密存储）
-   → 更新 shops.auth_status = authorized
+   → persist to shop_auth_tokens (stored encrypted)
+   → update shops.auth_status = authorized
 ```
 
-## State 保护
+## State Protection
 
-| 保护机制 | 实现 |
+| Mechanism | Implementation |
 |---------|------|
-| Redis TTL | 10 分钟过期 |
-| DB ExpiresAt | 冗余过期检查 |
-| ConsumedAt | 一次性使用，防止 replay |
-| redirect_uri 白名单 | 与配置精确匹配 |
+| Redis TTL | Expires after 10 minutes |
+| DB ExpiresAt | Redundant expiry check |
+| ConsumedAt | Single-use, prevents replay |
+| redirect_uri allowlist | Must exactly match configuration |
 
-## Token 刷新
+## Token Refresh
 
 ```
 EnsureFreshAccess()
-  → freshAccessToken() — 有效则直接返回
+  → freshAccessToken() — returns directly if still valid
   → EnsureFreshAccessSingleflight() — dedup
     → ensureFreshAccessDirect()
-      → refreshUsable() — refresh token 是否可用
+      → refreshUsable() — whether the refresh token is usable
       → RefreshToken API (token.refresh)
       → PersistRefreshedToken callback
-      → 更新 Client 内存 token
+      → update the Client's in-memory token
 ```
 
-## TokenVersion（P3 新增）
+## TokenVersion (Added in P3)
 
-每次成功 refresh 后 token_version++。写入 shop_auth_tokens 前校验版本，防止多实例并发 refresh 导致旧版本覆盖新版本（DOUYIN_TOKEN_VERSION_CONFLICT）。
+`token_version` increments after every successful refresh. The version is validated before writing to `shop_auth_tokens`, preventing concurrent refreshes across multiple instances from overwriting a newer version with an older one (DOUYIN_TOKEN_VERSION_CONFLICT).
 
-## ShopAuthToken 新增字段（P3）
+## New ShopAuthToken Fields (P3)
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |-----|------|------|
-| token_version | bigint | 单调递增版本号 |
-| reauthorization_required | bool | 需要重新授权时置 true |
-| last_refresh_error_code | varchar(128) | 最近一次刷新失败的错误码 |
+| token_version | bigint | Monotonically increasing version number |
+| reauthorization_required | bool | Set to true when re-authorization is required |
+| last_refresh_error_code | varchar(128) | Error code from the most recent refresh failure |
 
-## 错误码
+## Error Codes
 
-| 错误码 | 含义 |
+| Error Code | Meaning |
 |-------|------|
-| DOUYIN_AUTH_EXPIRED | token 已过期，需重新授权 |
-| DOUYIN_TOKEN_REFRESH_FAILED | 刷新失败 |
-| DOUYIN_TOKEN_VERSION_CONFLICT | 版本冲突，拒绝旧版本写入 |
-| DOUYIN_TOKEN_REFRESH_IN_PROGRESS | 刷新进行中 |
-| DOUYIN_REAUTHORIZATION_REQUIRED | 需要用户重新完成 OAuth |
-| DOUYIN_OAUTH_STATE_MISSING | state 找不到 |
-| DOUYIN_OAUTH_STATE_EXPIRED | state 已过期 |
-| DOUYIN_OAUTH_STATE_ALREADY_USED | state 已被使用 |
-| DOUYIN_OAUTH_REDIRECT_NOT_ALLOWED | redirect_uri 不在白名单 |
+| DOUYIN_AUTH_EXPIRED | Token has expired, re-authorization required |
+| DOUYIN_TOKEN_REFRESH_FAILED | Refresh failed |
+| DOUYIN_TOKEN_VERSION_CONFLICT | Version conflict, rejects writing an older version |
+| DOUYIN_TOKEN_REFRESH_IN_PROGRESS | Refresh in progress |
+| DOUYIN_REAUTHORIZATION_REQUIRED | User must complete OAuth again |
+| DOUYIN_OAUTH_STATE_MISSING | State not found |
+| DOUYIN_OAUTH_STATE_EXPIRED | State has expired |
+| DOUYIN_OAUTH_STATE_ALREADY_USED | State has already been used |
+| DOUYIN_OAUTH_REDIRECT_NOT_ALLOWED | redirect_uri not in the allowlist |

@@ -1,158 +1,158 @@
 ---
 name: admin-e2e-testing
-description: TradeMind 生产维护阶段的 Admin Playwright CI 回归、写请求安全、响应式覆盖与人工验收规范
+description: Admin Playwright CI regression, write-request safety, responsive coverage, and manual acceptance rules for TradeMind's production maintenance phase
 ---
 
-# TradeMind Admin 自动化测试与 E2E 测试规范
+# TradeMind Admin Automated Testing and E2E Testing Standard
 
-本 Skill 是 Admin 自动化测试、E2E 测试、Playwright MCP 动态验收、Playwright Test 持久化回归、CI 触发和后续页面测试补充规则的唯一完整来源。其他入口只引用本文件，不复制完整规范。
+This Skill is the single, complete source of truth for Admin automated testing, E2E testing, Playwright MCP dynamic acceptance, Playwright Test persistent regression, CI triggers, and the rules for adding new page tests. Other entry points only reference this file; they do not duplicate the full standard.
 
-## 生产维护策略（优先级最高）
+## Production Maintenance Strategy (highest priority)
 
-- Playwright Test 继续作为 `admin/e2e/**` 与 `.github/workflows/admin-e2e.yml` 中的持久 CI 回归；这些测试及其 Mock/fixture 必须保留。
-- 功能、视觉、文案、响应式和业务流程最终由人工验收；完整 E2E 默认交由 GitHub Actions。
-- Playwright MCP 只在用户明确要求本地浏览器验收或任务确需交互诊断时使用，不生成长期保留的证据。
-- 本 Skill 后续“必须运行”的要求，在未明确要求本地执行时表示相应用例必须由 CI 覆盖。未本地运行不得声称 passed。
-- 非 GET 请求拦截、五档视口、状态覆盖、根节点 overflow 和真实平台隔离要求继续强制执行。
-- 不创建阶段/批次 gate 或一次性验收包装器；Playwright 报告、截图和临时结果完成诊断后清理，不提交 Git。
+- Playwright Test continues to serve as the persistent CI regression suite under `admin/e2e/**` and `.github/workflows/admin-e2e.yml`; these tests and their mocks/fixtures must be preserved.
+- Final acceptance of functionality, visuals, copy, responsiveness, and business flows is done by humans; full E2E defaults to being handled by GitHub Actions.
+- Playwright MCP is used only when the user explicitly requests local browser acceptance testing or the task genuinely requires interactive diagnosis; it does not produce long-retained evidence.
+- Wherever this Skill states a test "must be run" further below, that means the corresponding case must be covered by CI unless local execution is explicitly requested. Do not claim a test passed without running it locally.
+- Non-GET request interception, the five-tier viewport matrix, state coverage, root-node overflow checks, and real-platform isolation requirements continue to be strictly enforced.
+- Do not create phase/batch gates or one-off acceptance wrappers; Playwright reports, screenshots, and temporary results are cleaned up after diagnosis and are not committed to Git.
 
-## 1. 自动适用范围
+## 1. Automatic Scope
 
-任何涉及 Admin 页面的新增、修改、UI 修复、组件、页面布局、响应式、表格、表单、Modal、Drawer、Popconfirm、Tabs、路由、URL 参数、深链、loading、empty、error、readonly、disabled、写操作、请求 payload、防重复提交、Console warning、可访问性、共享 UI 组件、`global.less`、`TmPageContainer` 或 `layoutTokens` 的任务，均自动适用本 Skill。
+This Skill automatically applies to any task involving the Admin app: new pages, modifications, UI fixes, components, page layout, responsiveness, tables, forms, Modals, Drawers, Popconfirms, Tabs, routing, URL params, deep links, loading/empty/error states, readonly/disabled states, write operations, request payloads, duplicate-submission prevention, console warnings, accessibility, shared UI components, `global.less`, `TmPageContainer`, or `layoutTokens`.
 
-用户无需明确说“运行 E2E”“使用 Playwright”或“使用测试 Skill”。AI 必须自动识别并执行相关测试。纯 service、类型或工具函数修改只有在确认 DOM、className、页面状态、用户交互、路由、请求触发时机、loading/error/empty、响应式和写请求 payload 全部不受影响时，才允许跳过浏览器测试。
+The user does not need to explicitly say "run E2E," "use Playwright," or "use the testing Skill." The AI must automatically recognize and execute the relevant tests. Pure service, type, or utility function changes may skip browser testing only after confirming that DOM, className, page state, user interaction, routing, request trigger timing, loading/error/empty states, responsiveness, and write-request payloads are all unaffected.
 
-## 2. 测试分层
+## 2. Test Layers
 
-- 探索验收：Playwright MCP，用于开发过程动态确认真实 UI、Console、网络和交互。
-- 持久回归：Playwright Test，用于仓库内可重复运行、CI 和定时回归。
-- 静态检查：`pnpm check:dev`、`pnpm check:ui-copy --strict`、`pnpm build:admin` 和必要的类型/构建检查。
+- Exploratory acceptance: Playwright MCP, used during development to dynamically confirm real UI, console, network, and interaction behavior.
+- Persistent regression: Playwright Test, for repeatable runs within the repo, CI, and scheduled regressions.
+- Static checks: `pnpm check:dev`, `pnpm check:ui-copy --strict`, `pnpm build:admin`, and any necessary type/build checks.
 
-## 3. Playwright MCP 模式
+## 3. Playwright MCP Mode
 
-开发时可用 Playwright MCP 访问 `http://localhost:8001`。若用户已经启动 Admin dev server，复用现有服务，不启动、不停止、不杀进程。所有非 GET API 必须先用 `browser_route` 拦截，不得执行真实平台写操作。
+During development, Playwright MCP can access `http://localhost:8001`. If the user has already started the Admin dev server, reuse the existing service — do not start, stop, or kill processes. All non-GET APIs must be intercepted with `browser_route` first; real platform write operations must never be executed.
 
-## 4. Playwright Test 模式
+## 4. Playwright Test Mode
 
-持久 E2E 使用 Playwright Test，首期浏览器为 Chromium。默认 `baseURL` 为 `http://127.0.0.1:8001`，本地复用已有 server，CI 由 `webServer` 启动 `pnpm dev:admin`，端口 8001。测试不得依赖后端服务，所有 `/api/v1/**` 业务接口由 Mock 提供。
+Persistent E2E uses Playwright Test, with Chromium as the first-phase browser. The default `baseURL` is `http://127.0.0.1:8001`; locally it reuses an existing server, while in CI the `webServer` config starts `pnpm dev:admin` on port 8001. Tests must not depend on the backend service — all `/api/v1/**` business endpoints are provided via mocks.
 
-## 5. 测试目录规范
+## 5. Test Directory Layout
 
-Admin E2E 位于 `admin/e2e/`：
+Admin E2E lives under `admin/e2e/`:
 
-- `fixtures/`：测试 fixture。
-- `mocks/`：API envelope 与业务 Mock。
-- `pages/`：稳定 Page Object。
-- `specs/`：按功能拆分测试。
-- `utils/`：network guard、console guard、断言和路由工具。
+- `fixtures/`: test fixtures.
+- `mocks/`: API envelope and business mocks.
+- `pages/`: stable Page Objects.
+- `specs/`: tests split by feature.
+- `utils/`: network guard, console guard, assertion, and routing utilities.
 
-不得把全部测试塞进一个文件，不得把业务 Mock 写进 Playwright config，不创建巨大万能 helper。
+Do not cram all tests into a single file, do not put business mocks in the Playwright config, and do not create a giant catch-all helper.
 
-## 6. 测试数据规范
+## 6. Test Data Rules
 
-测试数据使用明确 `e2e` 或 `mock` 前缀，例如 `e2e-user`、`e2e-product-draft`、`e2e-shop-douyin`、`e2e-publication-old`、`e2e-publication-new`。不得引用生产 ID、真实店铺、真实用户、真实 token。每个测试独立建立 Mock，不依赖执行顺序。
+Test data must use an explicit `e2e` or `mock` prefix, e.g. `e2e-user`, `e2e-product-draft`, `e2e-shop-douyin`, `e2e-publication-old`, `e2e-publication-new`. Do not reference production IDs, real stores, real users, or real tokens. Each test sets up its own mocks independently and must not depend on execution order.
 
-## 7. API Mock 规范
+## 7. API Mock Rules
 
-Mock 必须基于真实前端 request helper 和 service 类型。统一 envelope 为：
+Mocks must be based on the real frontend request helper and service types. The unified envelope is:
 
 ```ts
 { code: number; message: string; data: T; traceId?: string }
 ```
 
-`code !== 0` 为业务错误。`GET /api/v1/image/providers` 的 `data` 必须是 `ImageProviderCapability[]`，不得返回 `{ data: { list: [] } }`。
+`code !== 0` indicates a business error. The `data` field for `GET /api/v1/image/providers` must be `ImageProviderCapability[]`, not `{ data: { list: [] } }`.
 
-## 8. 写请求安全边界
+## 8. Write-Request Safety Boundary
 
-所有 API 非 GET 请求默认禁止，除非当前测试显式允许。至少识别 `POST`、`PUT`、`PATCH`、`DELETE`。Write Guard 必须捕获 method、URL、path、query、payload、次数和顺序；未声明写请求必须阻断并导致测试失败。
+All non-GET API requests are blocked by default unless explicitly allowed by the current test. At minimum, recognize `POST`, `PUT`, `PATCH`, and `DELETE`. The Write Guard must capture method, URL, path, query, payload, count, and order; any undeclared write request must be blocked and must fail the test.
 
-允许的写接口必须逐测试声明，并返回 Mock success/failure。必须支持断言取消 0 请求、确认 1 请求、快速重复点击仍 1 请求、没有额外写请求。
+Allowed write endpoints must be declared per test and must return mocked success/failure responses. The guard must support asserting zero requests on cancel, exactly one request on confirm, exactly one request even after rapid repeated clicks, and no extra write requests.
 
-## 9. 选择器规范
+## 9. Selector Rules
 
-优先使用 `getByRole`、`getByLabel`、`getByPlaceholder`、明确 `getByText` 和稳定业务标识。禁止优先依赖 Ant Design 内部 class、深层 CSS selector、`nth-child`、坐标点击、随机 ID 或偶然 DOM 层级。只有无可靠语义选择器时才最小添加 `data-testid`，且最终报告列出生产代码修改。
+Prefer `getByRole`, `getByLabel`, `getByPlaceholder`, explicit `getByText`, and stable business identifiers. Do not primarily rely on Ant Design's internal classes, deep CSS selectors, `nth-child`, coordinate-based clicks, random IDs, or incidental DOM hierarchy. Add `data-testid` minimally, and only when no reliable semantic selector exists; the final report must list any production code changes made for this purpose.
 
-## 10. Console 和运行时错误规范
+## 10. Console and Runtime Error Rules
 
-Console Guard 必须捕获 `pageerror`、`console.error`、unhandled rejection、React fatal error、Ant Design fatal warning 和 HMR overlay。默认 pageerror、console.error、新增 React warning、新增 AntD warning 失败。白名单必须精确且说明原因，不允许 `/warning/`、忽略所有 React warning 或忽略所有 AntD warning。
+The Console Guard must capture `pageerror`, `console.error`, unhandled rejections, React fatal errors, Ant Design fatal warnings, and the HMR overlay. By default, `pageerror`, `console.error`, new React warnings, and new AntD warnings all fail the test. Any allowlist must be precise and justified — do not use `/warning/`, and do not blanket-ignore all React warnings or all AntD warnings.
 
-当前候选 warning（如仍稳定存在才可精确白名单）：`useForm is not connected to any Form element`、`Each child in a list should have a unique "key" prop`。
+Current candidate warnings (only allowlist precisely if they remain consistently present): `useForm is not connected to any Form element`, `Each child in a list should have a unique "key" prop`.
 
-## 11. 响应式规范
+## 11. Responsive Rules
 
-强制视口：1440×900、1280×800、1024×768、768×900、375×812。页面根节点无横向 overflow，Header 与 Content 左右边缘误差不超过 4px，Tabs 可用，主要操作区不超出视口，表格只在自身容器内部滚动。
+Required viewports: 1440x900, 1280x800, 1024x768, 768x900, 375x812. The page root must have no horizontal overflow, the left/right edge deviation between Header and Content must not exceed 4px, Tabs must remain usable, the main action area must not overflow the viewport, and tables must scroll only within their own container.
 
-## 12. 页面根节点 overflow
+## 12. Page Root Overflow
 
-标准断言：
+Standard assertion:
 
 ```js
 document.documentElement.scrollWidth <= document.documentElement.clientWidth;
 document.body.scrollWidth <= document.body.clientWidth;
 ```
 
-断言失败必须输出实际值和预期值。
+On failure, the assertion must output both the actual and expected values.
 
-## 13. 路由、深链、刷新和 history
+## 13. Routing, Deep Links, Refresh, and History
 
-路由、URL 状态、Tab、section、深链和刷新恢复必须测试。商品详情普通 Tab 当前使用 `replaceState`，测试不得错误要求 `pushState`。非法 tab 必须安全 fallback。
+Routing, URL state, tabs, sections, deep links, and refresh recovery must be tested. The normal product-detail tabs currently use `replaceState`; tests must not incorrectly require `pushState`. Invalid tabs must fall back safely.
 
 ## 14. Modal / Drawer / Popconfirm
 
-必须验证标题、上下文、默认值、loading、confirmLoading、取消、关闭、移动端宽度、单次确认只发一次请求。取消不得发请求；危险操作保留确认。
+Must verify title, context, default values, loading, confirmLoading, cancel, close, mobile width, and that a single confirm sends only one request. Cancel must not send a request; confirmation must be preserved for dangerous operations.
 
-## 15. loading / empty / error / readonly
+## 15. Loading / Empty / Error / Readonly
 
-新增或修改页面必须覆盖 normal、loading、empty、error、readonly、disabled、submitting。错误不能伪装为空数据，空数据不能伪装为错误，readonly 不得扩大或改变原业务语义。
+New or modified pages must cover normal, loading, empty, error, readonly, disabled, and submitting states. Errors must not be disguised as empty data, empty data must not be disguised as an error, and readonly must not expand or change the original business semantics.
 
-## 16. 测试优先级 P0 / P1 / P2
+## 16. Test Priority: P0 / P1 / P2
 
-P0：每个 Admin PR 必跑，覆盖 Admin smoke、核心路由、商品详情七个 Tab、精简响应式/overflow、发布请求安全、核心 API contract、Console fatal error。
+P0: run on every Admin PR. Covers Admin smoke tests, core routes, the seven product-detail tabs, a reduced responsive/overflow check, publish request safety, core API contracts, and console fatal errors.
 
-P1：合并前或每日运行，覆盖完整五档响应式、Basic 保存、AI 任务、图片任务、SKU 编辑、库存调整、预警线、库存同步、readiness、抖店配置、映射、上传、绑定/解绑、readonly、Modal/Drawer。
+P1: run before merge or daily. Covers the full five-tier responsive matrix, Basic save, AI tasks, image tasks, SKU editing, inventory adjustment, alert thresholds, inventory sync, readiness checks, Douyin Shop configuration, mapping, uploads, bind/unbind, readonly, and Modal/Drawer.
 
-P2：夜间或人工触发完整回归，覆盖全部 Admin 路由、长文本、全部状态、history、权限组合、Console warning 审计、可访问性基础扫描和性能基础检查。
+P2: run nightly or manually triggered as a full regression. Covers all Admin routes, long text, all states, history, permission combinations, console warning audits, baseline accessibility scans, and baseline performance checks.
 
-## 17. 变更类型与测试选择
+## 17. Change Type and Test Selection
 
-- 页面局部 TSX/LESS：P0 smoke、目标页面 spec、相关响应式。
-- `TmPageContainer`、`layoutTokens`、`global.less`：P0 smoke、全页面基础路由、Header/Content 对齐、五档 overflow。
-- DraftDetail：product-draft、publish-safety、responsive，涉及 envelope 时加 contract。
-- MultiPlatformPublishCenter：publish-safety、DraftDetail publish smoke、Console guard。
-- 路由、tab、section、history：navigation、deep-link、refresh restore、history。
-- 表单、Modal、Drawer：对应交互 spec、取消 0 请求、确认 1 请求、375px。
-- service 或 response envelope：contract tests、受影响页面 smoke。
-- 纯文案：`check:ui-copy --strict` 和目标页面 smoke。
-- 纯后端且不影响 Admin：不强制完整 Admin E2E，但运行对应后端测试。
+- Local page TSX/LESS changes: P0 smoke, the target page's spec, and related responsive checks.
+- `TmPageContainer`, `layoutTokens`, `global.less`: P0 smoke, base routing across all pages, Header/Content alignment, and the five-tier overflow check.
+- DraftDetail: product-draft, publish-safety, responsive; add contract tests if the envelope is affected.
+- MultiPlatformPublishCenter: publish-safety, DraftDetail publish smoke, Console guard.
+- Routing, tabs, sections, history: navigation, deep-link, refresh restore, history.
+- Forms, Modals, Drawers: the corresponding interaction spec, zero requests on cancel, one request on confirm, 375px.
+- Service or response envelope changes: contract tests and smoke tests for affected pages.
+- Copy-only changes: `check:ui-copy --strict` and smoke tests for the target page.
+- Backend-only changes with no Admin impact: full Admin E2E is not required, but run the corresponding backend tests.
 
-## 18. 自动触发规则
+## 18. Automatic Trigger Rules
 
-AI 不得因测试较慢而跳过相关测试。未运行必要测试不得声明完成；测试阻塞时必须说明原因、阻塞命令和首个根因。
+The AI must not skip relevant tests because they are slow. Work must not be declared complete without running the necessary tests; if tests are blocked, the reason, the blocking command, and the first root cause must be stated.
 
-## 19. CI 规则
+## 19. CI Rules
 
-PR、dev push、workflow_dispatch 和定时回归应触发 Admin E2E。CI 使用真实 Node/pnpm 版本，执行 `pnpm install --frozen-lockfile`、`pnpm exec playwright install --with-deps chromium`、静态检查和 P0 E2E。CI 不连接生产数据库、真实 Redis、真实平台、真实店铺或真实 API。
+PRs, dev pushes, workflow_dispatch, and scheduled regressions should trigger Admin E2E. CI uses real Node/pnpm versions and runs `pnpm install --frozen-lockfile`, `pnpm exec playwright install --with-deps chromium`, static checks, and P0 E2E. CI does not connect to a production database, real Redis, real platforms, real stores, or real APIs.
 
-## 20. 新增页面测试要求
+## 20. Requirements for New Pages
 
-新增 Admin 页面必须同时完成路由 smoke、auth Mock、normal/loading/empty/error/readonly、桌面和 375px、根节点 overflow、Console guard、所有写请求 Mock、取消 0 请求、单次提交、关键 payload、URL 状态刷新恢复。不得新增页面但完全不补自动化测试。
+New Admin pages must simultaneously ship with routing smoke tests, auth mocks, normal/loading/empty/error/readonly coverage, desktop and 375px viewports, root-node overflow checks, console guard, mocks for all write requests, zero requests on cancel, single submission, key payload assertions, and URL state refresh recovery. Do not add a new page without adding its automated tests.
 
-## 21. 修改页面测试要求
+## 21. Requirements for Modified Pages
 
-修改已有页面必须识别受影响 spec，优先更新已有测试，不重复新建同类文件；补充回归场景，验证旧行为、新行为、写请求无变化、响应式、Console 和无额外写请求。Bug 修复优先补一个修复前失败、修复后通过的稳定回归测试。
+Modifying an existing page requires identifying the affected specs and prioritizing updates to existing tests rather than creating new duplicate files. Add regression scenarios that verify old behavior, new behavior, unchanged write requests, responsiveness, console state, and no extra write requests. For bug fixes, prioritize adding a stable regression test that fails before the fix and passes after.
 
-## 22. 请求 payload 契约测试
+## 22. Request Payload Contract Tests
 
-写请求必须断言 method、URL、path params、query、payload、请求次数和顺序。关键场景包括创建多平台草稿、创建抖店商品草稿、传统 publishProduct、库存同步、SKU 绑定、表单保存。不得修改 API/payload 来迁就错误测试。
+Write requests must assert method, URL, path params, query, payload, request count, and order. Key scenarios include creating a multi-platform draft, creating a Douyin Shop product draft, the legacy `publishProduct`, inventory sync, SKU binding, and form save. Do not modify the API/payload to accommodate an incorrect test.
 
-## 23. 测试失败处理
+## 23. Handling Test Failures
 
-失败时先定位首个真实根因。Mock 结构错误则修 Mock；真实生产缺陷则记录，只有属于基础设施阻塞且影响测试稳定性时才允许最小修复。不得删除、skip 或弱化失败测试来掩盖问题。
+On failure, first locate the actual root cause. Fix the mock if the mock structure is wrong; if it is a genuine production defect, record it, and only apply a minimal fix if it's an infrastructure blocker affecting test stability. Do not delete, skip, or weaken a failing test to mask a problem.
 
-## 24. 禁止项
+## 24. Prohibited
 
-禁止 Cypress、Selenium、Puppeteer 测试框架、第二套浏览器测试框架、生产账号、真实店铺、真实 API Token、真实平台写接口、CI 连接生产后端、未声明写请求放行、忽略全部 console.error、忽略全部 React/AntD warning、大范围 `waitForTimeout`、坐标点击、`nth-child`、随机测试数据、测试依赖顺序、为测试大范围修改生产代码、批量添加 `data-testid`、自动更新快照掩盖回归、失败测试直接 skip、未执行测试声明完成、未经用户要求 commit/push。
+Prohibited: Cypress, Selenium, Puppeteer, or any second browser testing framework; production accounts; real stores; real API tokens; real platform write endpoints; CI connecting to the production backend; allowing undeclared write requests through; ignoring all `console.error`; ignoring all React/AntD warnings; broad `waitForTimeout` usage; coordinate-based clicks; `nth-child`; random test data; order-dependent tests; large-scale production code changes made just to satisfy tests; bulk-adding `data-testid`; auto-updating snapshots to mask regressions; skipping failing tests outright; declaring completion without running tests; committing/pushing without the user's request.
 
-## 25. 完成报告格式
+## 25. Completion Report Format
 
-最终报告至少列出：当前分支、开始工作区、审计结果、是否已有 Playwright、依赖、config 路径、E2E 目录、Skill 路径、入口更新、Cursor rule、frontend-design 引用、CLAUDE.md 状态、package scripts、Network Write Guard、Console Guard、API envelope helper、Page Object、assertions、P0 测试、覆盖页面/Tab/视口/publish/API contract、GitHub Actions、触发条件、是否访问真实后端、是否执行真实写操作、运行命令、通过/失败数量、warning 白名单、是否修改生产代码、修改原因、修改文件、diff check、check:dev、check:ui-copy、build:admin、E2E smoke/contracts、diff stat、当前未提交文件、剩余风险、后续 UI 新增/修改是否自动触发、是否适合签收。
+The final report must list at least: current branch, starting workspace state, audit results, whether Playwright already existed, dependencies, config path, E2E directory, Skill path, entry-point updates, Cursor rule, frontend-design references, CLAUDE.md status, package scripts, Network Write Guard, Console Guard, API envelope helper, Page Objects, assertions, P0 tests, pages/tabs/viewports/publish/API-contract coverage, GitHub Actions, trigger conditions, whether the real backend was accessed, whether real write operations were executed, run commands, pass/fail counts, warning allowlist, whether production code was modified and why, modified files, diff check, check:dev, check:ui-copy, build:admin, E2E smoke/contracts, diff stat, currently uncommitted files, remaining risks, whether future UI additions/changes will auto-trigger, and whether the work is ready for sign-off.

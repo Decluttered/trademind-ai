@@ -532,6 +532,51 @@ Planned ops routes remain design-only until implemented with RBAC, re-authentica
 
 Current code-level P7 endpoints affected: product and order list APIs reject excessive deep offset via P7 pagination guard; HTTP requests can be locally rate-limited when `RATE_LIMIT_ENABLED=true`.
 
+## MindBay Phase 1 API
+
+Phase 1 adds a separate `/v1` contract while retaining every existing `/api/v1` route. Admin calls use the normal access token. Extension captures use a 15-minute token with audience `mindbay-extension` and scope `capture`; this token is not an Admin JWT. Every command below marked as such requires `Idempotency-Key`.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `POST` | `/v1/discovery-runs` | Capture Amazon.de URL through Collector, deduplicate ASIN, append immutable snapshot; idempotent command |
+| `GET` | `/v1/products?q=&collectionId=&minScore=&cursor=&limit=` | Workspace-scoped cursor page with current snapshot and explainable assessment |
+| `GET` | `/v1/collections?cursor=&limit=` | Workspace-scoped cursor page |
+| `POST` | `/v1/collections` | Create manual/search/seller/rule/import collection; idempotent command |
+| `POST` | `/v1/collections/:id/products` | Add canonical source product with an optional reason; workspace-scoped idempotent command |
+| `POST` | `/v1/image-assets` | HTTPS image ingest with SSRF/type/size checks, metadata stripping and content hash; idempotent command |
+| `POST` | `/v1/listing-drafts` | Create local EUR-cent draft; idempotent command |
+| `GET` | `/v1/listing-drafts?state=&cursor=&limit=` | Review inbox cursor page |
+| `GET` | `/v1/listing-drafts/:id` | Draft plus append-only content versions |
+| `POST` | `/v1/listing-drafts/:id/generate` | Generate factual content through prompt `mindbay_listing_studio_v1`; idempotent command |
+| `POST` | `/v1/listing-drafts/:id/validate` | Validate category, cents price, image set, specifics, content and GPSR; idempotent command |
+| `GET` | `/v1/gpsr-profiles` | List workspace GPSR profiles used by Listing Studio |
+| `POST` | `/v1/gpsr-profiles` | Create complete manufacturer/responsible-person/safety/document profile; idempotent command |
+| `POST` | `/v1/extension-tokens` | Mint short-lived capture grant (Admin auth) |
+| `DELETE` | `/v1/extension-tokens/:id` | Revoke capture grant immediately (Admin auth) |
+| `POST` | `/v1/extension/captures` | Same discovery/snapshot path with extension audience; idempotent command |
+
+There is deliberately no eBay publish endpoint in Phase 1. A GPSR override is disabled by default (`mindbay_listing.gpsr_override_enabled=false`), requires a reason, and writes an operation-log audit event.
+
+## MindBay Phase 2 API
+
+Phase 2 keeps eBay access behind the Go provider. Admin and Extension call only TradeMind APIs; the TypeScript Temporal worker calls only service-token-protected internal commands.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `GET` | `/v1/calendar/slots?from=&to=` | Workspace-scoped calendar slots |
+| `POST` | `/v1/calendar/preview` | Pure READY-listing preview; no database mutation |
+| `POST` | `/v1/calendar/apply` | Idempotently reserve slots/jobs and start stable Temporal workflow IDs; requires `Idempotency-Key` |
+| `POST` | `/v1/publications/:id/approve` | Explicit operator execution path; requires `Idempotency-Key` and all publish gates |
+| `GET` | `/api/v1/shops/:id/oauth/ebay/authorize-url` | Create state-bound eBay OAuth URL; Redis-backed state and shop operate permission |
+| `POST` | `/api/v1/shops/:id/oauth/ebay/callback` | Exchange code, encrypt and persist user token; tenant/store scoped |
+| `GET` | `/api/v1/platform/ebay/categories/:categoryId/aspects` | Read cached eBay category aspects |
+| `POST` | `/api/v1/platform/ebay/categories/:categoryId/aspects/sync` | Refresh Taxonomy aspects using an application token |
+| `POST` | `/internal/v1/mindbay/publications/:id/revalidate` | Temporal service command; bearer service token only |
+| `POST` | `/internal/v1/mindbay/publications/:id/publish` | Temporal service command; sole eBay mutation path |
+| `POST` | `/internal/v1/mindbay/publications/:id/reconcile` | Reconcile persisted marketplace listing |
+
+`AUTOMATION_MODE=DRY_RUN` performs no mutating eBay request. Production eBay additionally requires `EBAY_ENV=production` and explicit `AUTOMATION_MODE=LIVE`; the repository defaults remain Sandbox plus DRY_RUN.
+
 ## 修改 API 时的同步要求
 
 - 后端：handler、service、DTO、权限和错误处理一起检查。

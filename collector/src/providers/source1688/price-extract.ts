@@ -24,7 +24,7 @@ const PRICE_JSON_KEYS = new Set([
   'originPrice',
 ]);
 
-/** 非价格数值字段 — 避免 unitWeight(39) 等被误识别为单价 */
+/** Non-price numeric fields — avoids fields like unitWeight(39) being misidentified as unit price */
 const NON_PRICE_KEYS = new Set([
   'unitWeight',
   'weight',
@@ -156,7 +156,7 @@ export function extractPriceFromJsonRoots(roots: unknown[]): number | undefined 
   return undefined;
 }
 
-/** DOM 文本区域提取价格（¥ / 批发价 / 起批） */
+/** Extract price from DOM text regions (¥ / wholesale price / minimum order) */
 export function extractPriceFromDomText(domPriceTexts: string[]): number | undefined {
   const candidates: number[] = [];
   for (const blob of domPriceTexts) {

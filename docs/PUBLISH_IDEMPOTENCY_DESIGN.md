@@ -1,34 +1,34 @@
-# 刊登幂等设计（P2）
+# Publishing Idempotency Design (P2)
 
-> 多商品批量刊登、单任务 create-draft 均需防止重复创建子任务与重复调用平台 API。
+> Both multi-product batch publishing and single-task create-draft flows must prevent duplicate subtask creation and duplicate platform API calls.
 
-## 两层幂等
+## Two Idempotency Layers
 
-| 层级 | 存储 | 粒度 |
+| Layer | Storage | Granularity |
 | --- | --- | --- |
-| 批次 | `product_publish_batches.idempotency_key` | 一次向导提交 |
-| 子任务 | `product_publish_tasks.input.idempotencyKey` | 商品 × 平台 × 店铺 × 生效配置 |
+| Batch | `product_publish_batches.idempotency_key` | One wizard submission |
+| Subtask | `product_publish_tasks.input.idempotencyKey` | Product × Platform × Shop × Effective Config |
 
-统一幂等键（可选接入 `idempotency_records`）：
+Unified idempotency key (optionally integrated with `idempotency_records`):
 
 ```text
 idempotency.PublishDraft(shopId, productDraftId, publishVersion)
 → publish-draft:{shopId}:{productDraftId}:{publishVersion}
 ```
 
-## 批次 Key 生成
+## Batch Key Generation
 
-`batchIdempotencyKey(adminId, productIds, targets, commonConfig, overrides)`：
+`batchIdempotencyKey(adminId, productIds, targets, commonConfig, overrides)`:
 
 ```text
 publish-batch:{adminId}:{configHash}
 ```
 
-- `productIds`、targets（`platform:shopId`）**排序后**哈希，顺序无关。
-- `configHash` 纳入 `commonConfig` 与四层 `overrides`。
-- 集成测试验证乱序 productIds 产生相同 key。
+- `productIds` and targets (`platform:shopId`) are **sorted before hashing**, so order does not matter.
+- `configHash` incorporates `commonConfig` and the four layers of `overrides`.
+- Integration tests verify that out-of-order productIds produce the same key.
 
-### 活跃批次唯一索引
+### Active Batch Unique Index
 
 ```sql
 CREATE UNIQUE INDEX ux_publish_batches_idempotency_active
@@ -36,39 +36,39 @@ CREATE UNIQUE INDEX ux_publish_batches_idempotency_active
  WHERE idempotency_key <> '' AND status NOT IN ('failed','cancelled');
 ```
 
-迁移前检查重复 `idempotency_key`；有则阻塞并需人工清理。
+Duplicate `idempotency_key` values are checked before migration; if found, the migration is blocked and requires manual cleanup.
 
-### 重复提交行为
+### Duplicate Submission Behavior
 
-1. 创建前查询 `idempotency_key` 且 status ∉ `{failed, cancelled}`。
-2. 命中 → 返回已有批次响应（`batchCreateResponseFromExisting`）。
-3. `Create` 遇唯一冲突 → 再次查询返回已有批次（竞态兜底）。
+1. Before creation, query for `idempotency_key` with status ∉ `{failed, cancelled}`.
+2. Hit → return the existing batch's response (`batchCreateResponseFromExisting`).
+3. `Create` hits a unique conflict → query again and return the existing batch (race-condition fallback).
 
-## 子任务 Key 生成
+## Subtask Key Generation
 
-`taskIdempotencyKey(productId, platform, shopId, effectiveConfig)`：
+`taskIdempotencyKey(productId, platform, shopId, effectiveConfig)`:
 
 ```text
 publish-task:{productId}:{platform}:{shopId}:{configHash(effectiveConfig)}
 ```
 
-`effectiveConfig` 为统一配置与覆盖深度合并结果；配置变化产生新 key，允许合法二次刊登。
+`effectiveConfig` is the deep-merge result of the common config and overrides; a config change produces a new key, allowing a legitimate second publish.
 
-## 成功任务去重
+## Successful Task Deduplication
 
-`findExistingSuccessfulTask`：同 product + platform + shop + effectiveConfig 且已成功 → 批量创建时 **引用已有任务**，不新建、不调平台 API。
+`findExistingSuccessfulTask`: for the same product + platform + shop + effectiveConfig that already succeeded → during batch creation, **reference the existing task** instead of creating a new one or calling the platform API.
 
-`retry-failed` 仅针对失败/取消项；并发 claim 防止双 Worker 重试同一子任务。
+`retry-failed` only targets failed/cancelled items; concurrent claims prevent two workers from retrying the same subtask.
 
-## 单商品 create-draft
+## Single-Product create-draft
 
-商品详情「创建抖店草稿」走 `product_publish_tasks` 队列：
+The "Create Douyin Draft" action on the product detail page goes through the `product_publish_tasks` queue:
 
-- Worker DB 租约 + `PRODUCT_PUBLISH_TASK_TIMEOUT_SECONDS`。
-- 抖店 Phase 10.2：`product.detail` 按 `out_product_id` 回查，避免超时后重复 `product.addV2`。
+- Worker DB lease + `PRODUCT_PUBLISH_TASK_TIMEOUT_SECONDS`.
+- Douyin Phase 10.2: `product.detail` looks back up via `out_product_id` to avoid a duplicate `product.addV2` call after a timeout.
 
-## 验收与上限
+## Validation and Limits
 
-- 批次上限 env：`PUBLISH_BATCH_MAX_PRODUCTS=100`、`MAX_TARGETS=20`、`MAX_TASKS=300`。
-- 连点同参数 → 同一 `batchId`；改 overrides → 新 key；`failed` 批次不阻塞新提交。
-- 详见 `MULTI_PLATFORM_PUBLISHING_DESIGN.md`、`PUBLISH_BATCH_MIGRATION.md`。
+- Batch limit env vars: `PUBLISH_BATCH_MAX_PRODUCTS=100`, `MAX_TARGETS=20`, `MAX_TASKS=300`.
+- Repeated clicks with the same parameters → same `batchId`; changing overrides → new key; a `failed` batch does not block a new submission.
+- See `MULTI_PLATFORM_PUBLISHING_DESIGN.md`, `PUBLISH_BATCH_MIGRATION.md` for details.

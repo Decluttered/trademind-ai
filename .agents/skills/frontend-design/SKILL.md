@@ -1,31 +1,31 @@
 ---
 name: frontend-design
-description: TradeMind Admin UI 设计规范、共享组件规范、布局规范、响应式验收和 AI 实施流程的唯一完整来源
+description: The single, complete source of truth for TradeMind Admin UI design standards, shared component conventions, layout rules, responsive acceptance criteria, and the AI implementation workflow
 license: Complete terms in LICENSE.txt
 ---
 
-# TradeMind Admin UI 设计与 AI 实施规范
+# TradeMind Admin UI Design and AI Implementation Standard
 
-本文件是 TradeMind Admin UI 设计与实施规范的唯一完整来源。任何 AI 工具（Cursor、Claude Code、Codex、Copilot、Continue、Windsurf、Trae 或其他 Agent）处理 Admin 前端任务时，必须以本规范为准；其他入口只应引用本文件，不应复制另一套完整 UI 规范。Admin UI 实施除 UI 和 E2E 验收外，还必须遵循 `.agents/skills/code-quality/SKILL.md`。
+This file is the single, complete source of truth for the TradeMind Admin UI design and implementation standard. Any AI tool (Cursor, Claude Code, Codex, Copilot, Continue, Windsurf, Trae, or any other agent) working on Admin frontend tasks must follow this standard; other entry points should only reference this file and must not duplicate a second complete UI standard. Besides UI and E2E acceptance, Admin UI implementation must also follow `.agents/skills/code-quality/SKILL.md`.
 
-大型页面拆分、共享 UI 边界、跨页面模块设计、公共 type/service 和 DraftDetail 演进遵循 `.agents/skills/modular-architecture/SKILL.md`；本规范只定义 UI 视觉、布局、响应式和交互验收。
+Large page decomposition, shared UI boundaries, cross-page module design, shared types/services, and the evolution of DraftDetail follow `.agents/skills/modular-architecture/SKILL.md`; this standard only defines UI visuals, layout, responsiveness, and interaction acceptance.
 
-## 1. 自动适用规则
+## 1. Automatic Application Rules
 
-本规范不仅适用于用户明确要求“UI 设计”“UI 优化”“响应式验收”或“使用 frontend-design skill”的任务。任何涉及 Admin 前端的页面、组件、样式、布局、响应式、交互、状态展示、文案、可访问性或视觉 Bug，均自动适用本规范，任务发起者无需重复指定。
+This standard applies not only when the user explicitly asks for "UI design," "UI optimization," "responsive acceptance," or "use the frontend-design skill." It automatically applies to any task involving Admin frontend pages, components, styles, layout, responsiveness, interactions, state display, copy, accessibility, or visual bugs — the task requester does not need to specify this separately.
 
-出现以下任一语义时，必须自动判定为 UI 相关任务并读取本规范。典型用户描述包括但不限于：“修复这个页面显示问题”“新增一个 Admin 页面”“表格在手机上溢出”“按钮点击两次”“改个按钮”“改个表格”“优化页面”。
+Whenever any of the following semantics appear, the task must automatically be judged as UI-related and this standard must be read. Typical user descriptions include, but are not limited to: "fix this page display issue," "add a new Admin page," "the table overflows on mobile," "the button gets clicked twice," "tweak this button," "tweak this table," "optimize the page."
 
-- 页面视觉：页面不好看、页面需要优化、页面样式调整、内容没有对齐、间距不一致、字号不合理、颜色不统一、卡片层级不清楚、页面太拥挤、页面太空、内容区域过窄、页面宽度异常、按钮层级不合理、状态展示不清楚。
-- 页面布局：Header 与 Content 不对齐、Breadcrumb 与正文不对齐、padding / margin 问题、栅格布局问题、Flex / Grid 问题、页面根节点横向滚动、表格撑破页面、Tabs 溢出、Card 宽度问题、侧边栏展开或收起后布局异常、固定栏 / 工具栏 / 分页错位。
-- 响应式和移动端：手机端适配、平板适配、小屏幕显示异常、Modal 超出屏幕、Drawer 宽度异常、按钮在移动端被截断、表格移动端不可用、长文本撑破布局、视口切换后错位。
-- 组件与交互：Button、Form、Table / ProTable、Card、Tabs、Modal、Drawer、Popconfirm、Tooltip、Select、Upload、Pagination、EmptyState、Alert、Tag、Toolbar、PageContainer、Dashboard 卡片、状态面板的新增或修改。
-- 页面状态：loading、empty、error、readonly、disabled、submitting、refreshing、success、failure、partial data、无权限、无数据、请求失败。
-- 用户交互问题：点击无反应、点击两次、重复提交、Modal 无法关闭、Drawer 再次打开状态异常、表单默认值错误、表单校验展示问题、按钮 disabled 不清楚、Tab 切换状态错误、深链定位错误、浏览器刷新后页面状态错误、键盘操作问题、focus 状态问题。
-- UI 文案：按钮文案、页面标题、页面描述、状态文案、空状态文案、错误提示、风险提示、创建草稿与正式发布语义、任务创建与任务完成语义、用户可执行建议。
-- 可访问性：aria-selected、aria-label、role、键盘导航、focus、表单错误关联、图标按钮无名称、Tab 可访问性、Modal / Drawer 可访问性。
+- Page visuals: the page doesn't look good, the page needs optimizing, style adjustments are needed, content isn't aligned, inconsistent spacing, unreasonable font size, inconsistent colors, unclear card hierarchy, the page is too cramped, the page is too sparse, the content area is too narrow, abnormal page width, unreasonable button hierarchy, unclear status display.
+- Page layout: Header and Content misaligned, Breadcrumb misaligned with body content, padding/margin issues, grid layout issues, Flex/Grid issues, horizontal scroll on the page root, a table breaking out of the page, Tabs overflowing, Card width issues, layout glitches after the sidebar expands/collapses, misaligned fixed bars/toolbars/pagination.
+- Responsiveness and mobile: mobile adaptation, tablet adaptation, small-screen display issues, a Modal overflowing the screen, abnormal Drawer width, buttons truncated on mobile, a table unusable on mobile, long text breaking the layout, misalignment after a viewport change.
+- Components and interaction: adding or modifying Button, Form, Table/ProTable, Card, Tabs, Modal, Drawer, Popconfirm, Tooltip, Select, Upload, Pagination, EmptyState, Alert, Tag, Toolbar, PageContainer, Dashboard cards, or status panels.
+- Page states: loading, empty, error, readonly, disabled, submitting, refreshing, success, failure, partial data, no permission, no data, request failure.
+- User interaction issues: click has no effect, double-click, duplicate submission, Modal won't close, Drawer state is wrong on reopen, wrong form default values, form validation display issues, unclear button disabled state, wrong Tab switch state, wrong deep-link targeting, wrong page state after browser refresh, keyboard interaction issues, focus state issues.
+- UI copy: button copy, page titles, page descriptions, status copy, empty-state copy, error messages, risk warnings, the semantics of "create draft" vs. "publish," the semantics of "task created" vs. "task completed," actionable suggestions for the user.
+- Accessibility: aria-selected, aria-label, role, keyboard navigation, focus, form error association, unnamed icon buttons, Tab accessibility, Modal/Drawer accessibility.
 
-涉及以下目录或文件时，应主动判断是否包含 UI；只要包含页面渲染、组件结构、`className`、样式、交互或状态展示，就必须自动应用本规范：
+When working in the following directories or files, you should proactively assess whether UI is involved; as long as page rendering, component structure, `className`, styles, interaction, or state display is involved, this standard must be automatically applied:
 
 - `admin/src/pages/**`
 - `admin/src/components/**`
@@ -38,60 +38,60 @@ license: Complete terms in LICENSE.txt
 - `**/*.css`
 - `**/*.scss`
 
-不能仅因为用户把任务描述为“修复 Bug”“小问题”“调整一下”“改个按钮”“改个表格”“修复显示”或“优化页面”就跳过本规范。不得询问用户是否需要使用规范，不得把规范作为可选项。
+You must not skip this standard just because the user describes the task as "fixing a bug," "a small issue," "a tweak," "changing a button," "changing a table," "fixing a display issue," or "optimizing a page." Do not ask the user whether they want this standard applied — it is not optional.
 
-纯前端任务只有在确认完全不影响 DOM、`className`、样式、用户交互、页面状态、loading / error / empty 和响应式后，才可以不执行完整 UI 工作流。可排除完整 UI 工作流的场景包括：纯 TypeScript 类型修复、纯 service 封装、纯 API 参数修复、纯数据转换、纯工具函数、纯构建配置、纯测试配置、纯依赖升级、纯性能计算逻辑、不影响 DOM / 样式 / 交互的内部重构。只要其中任一项变化，仍应自动应用本规范。
+A purely frontend task may skip the full UI workflow only after confirming it has zero effect on the DOM, `className`, styles, user interaction, page state, loading/error/empty, and responsiveness. Scenarios that may exclude the full UI workflow include: pure TypeScript type fixes, pure service wrapping, pure API parameter fixes, pure data transformation, pure utility functions, pure build configuration, pure test configuration, pure dependency upgrades, pure performance calculation logic, and internal refactors that don't affect DOM/styles/interaction. If any one of these changes, this standard must still be automatically applied.
 
-混合任务必须拆分处理：UI 部分按本规范执行；API、后端、数据库和业务逻辑部分按现有 service、DTO、权限和业务规则执行。不得因为任务包含 API 就跳过 UI 规范，也不得以 UI 优化为名修改 API、payload、权限、readonly 或状态机。
+Mixed tasks must be split: the UI portion follows this standard; the API, backend, database, and business logic portions follow the existing service, DTO, permission, and business rules. Do not skip the UI standard just because a task includes an API, and do not change the API, payload, permissions, readonly state, or state machine in the name of UI optimization.
 
-只有以下情况需要先询问用户：需要改变业务流程、API、payload、权限、readonly、状态机；存在多个会明显影响产品方向的方案；规范与用户明确要求发生冲突。
+Only ask the user first in these cases: a change to business flow, API, payload, permissions, readonly state, or state machine is required; multiple options exist that would clearly affect product direction; the standard conflicts with the user's explicit request.
 
-## 2. 适用范围
+## 2. Scope
 
-必须默认使用本规范的目录和文件：
+Directories and files that must default to this standard:
 
 - `admin/src/pages/**`
 - `admin/src/components/**`
 - `admin/src/layouts/**`
 - `admin/src/app.tsx`
 - `admin/src/global.less`
-- Admin 相关 CSS / LESS / TSX / JSX
-- Admin 路由对应的新增和修改任务
+- Admin-related CSS/LESS/TSX/JSX
+- New and modified tasks corresponding to Admin routes
 
-必须使用本规范的任务：
+Tasks that must use this standard:
 
-- 新增 Admin 页面、修改已有 Admin 页面、页面重构
-- 页面视觉优化、布局调整、响应式修复、UI Bug 修复、可访问性修复
-- 新增或修改共享组件
-- 新增表格、筛选区、工具栏、表单、详情页
-- Modal、Drawer、Popconfirm 开发或调整
-- Dashboard、工作台、空状态、错误态、加载态、readonly / disabled 状态开发
-- 修改文案和交互状态
-- 移动端适配
+- Adding a new Admin page, modifying an existing Admin page, page refactors
+- Page visual optimization, layout adjustments, responsive fixes, UI bug fixes, accessibility fixes
+- Adding or modifying shared components
+- Adding tables, filter areas, toolbars, forms, detail pages
+- Developing or adjusting Modal, Drawer, Popconfirm
+- Developing Dashboards, workbenches, empty states, error states, loading states, readonly/disabled states
+- Modifying copy and interaction states
+- Mobile adaptation
 
-纯后端任务、数据库任务和非 Admin 前端任务不强制套用完整 UI 工作流。
+Purely backend tasks, database tasks, and non-Admin frontend tasks are not required to apply the full UI workflow.
 
-## 3. 总体设计原则
+## 3. General Design Principles
 
-必须：
+Must:
 
-- 优先保持项目现有设计语言，新增和修改必须视觉一致。
-- 信息层级优先于装饰，结构、状态、反馈先清楚，再考虑视觉表现。
-- 业务状态必须真实，不创建虚假指标、虚假进度或虚假结论。
-- 高风险操作必须清晰可辨，但不能大面积滥用红色。
-- 文案准确表达真实业务影响，不夸大系统已经完成的动作。
+- Preserve the project's existing design language first; additions and modifications must be visually consistent.
+- Prioritize information hierarchy over decoration — structure, state, and feedback should be clear before considering visual presentation.
+- Business state must be real; do not fabricate metrics, progress, or conclusions.
+- High-risk actions must be clearly distinguishable, but red must not be overused broadly.
+- Copy must accurately reflect the real business impact — do not exaggerate what the system has actually done.
 
-禁止：
+Prohibited:
 
-- 为单个页面建立独立设计体系。
-- 使用营销落地页式夸张设计。
-- 使用大面积渐变、玻璃拟态、无业务意义装饰。
-- 为了“看起来高级”增加视觉噪声。
-- 使用虚假数据、虚假指标、虚假进度或虚假结论。
+- Building an independent design system for a single page.
+- Using marketing-landing-page-style exaggerated design.
+- Using large-area gradients, glassmorphism, or decoration with no business meaning.
+- Adding visual noise just to "look premium."
+- Using fake data, fake metrics, fake progress, or fake conclusions.
 
-## 4. 必须优先复用的共享能力
+## 4. Shared Capabilities That Must Be Reused First
 
-实施前必须先检查并优先复用：
+Before implementation, always check and prefer reusing:
 
 - `TmPageContainer`
 - `SectionCard`
@@ -101,320 +101,320 @@ license: Complete terms in LICENSE.txt
 - `EmptyState`
 - `AppDrawer`
 - `layoutTokens`
-- Ant Design Token
+- Ant Design Tokens
 - Pro Components
 
-规则：
+Rules:
 
-- 已有共享组件能够满足时不得重复实现。
-- 不创建与 `TmPageContainer`、`SectionCard`、`TmProTable` 职责重复的组件。
-- 不为单页复制一套共享布局。
-- 只有三个以上真实同构场景才考虑抽象新共享组件。
-- 新组件必须职责单一。
-- 共享组件不得耦合页面业务 API、权限或状态机。
+- Do not reimplement something an existing shared component can already satisfy.
+- Do not create a component that duplicates the responsibility of `TmPageContainer`, `SectionCard`, or `TmProTable`.
+- Do not duplicate a shared layout for a single page.
+- Only consider abstracting a new shared component once three or more genuinely isomorphic scenarios exist.
+- New components must have a single responsibility.
+- Shared components must not couple to a page's business API, permissions, or state machine.
 
-## 5. 页面容器和横向基线
+## 5. Page Container and the Horizontal Baseline
 
-必须：
+Must:
 
-- `TmPageContainer` 是登录后标准页面容器。
-- Breadcrumb、Page Header、Title、Description、Header Extra 和正文必须使用同一内容轨道。
-- Header 和 Content 共用同一 `max-width`、`margin-inline` 和 `padding-inline`。
-- 使用 `layoutTokens.pageMaxWidth`。
-- 标准列表页和表格页默认充分使用可用宽度。
-- Card 外边缘应与 Page Header 内容轨道对齐。
-- Header 与主要内容外边缘误差原则上不超过 4px。
+- `TmPageContainer` is the standard post-login page container.
+- Breadcrumb, Page Header, Title, Description, Header Extra, and the body must use the same content track.
+- Header and Content share the same `max-width`, `margin-inline`, and `padding-inline`.
+- Use `layoutTokens.pageMaxWidth`.
+- Standard list and table pages default to fully using the available width.
+- A card's outer edge should align with the Page Header's content track.
+- In principle, the outer-edge deviation between Header and main content must not exceed 4px.
 
-允许：
+Allowed:
 
-- 明确的窄表单页可以使用 `max-width`，但必须有真实设计目的。
-- Card 内部文字不要求与页面标题文字完全同一 X 坐标。
+- A clearly narrow form page may use `max-width`, but only with a genuine design purpose.
+- Text inside a Card is not required to sit at exactly the same X coordinate as the page title text.
 
-禁止：
+Prohibited:
 
-- 在页面根节点重复添加整页左右 padding。
-- 使用无意义 `margin-left`。
-- 写死侧边栏宽度。
-- 使用 `width: calc(100vw - sidebarWidth)`。
-- 通过 `transform`、负 margin 或写死偏移修复对齐。
+- Adding a duplicate full-page left/right padding at the page root.
+- Using a meaningless `margin-left`.
+- Hardcoding the sidebar width.
+- Using `width: calc(100vw - sidebarWidth)`.
+- Fixing alignment via `transform`, negative margins, or hardcoded offsets.
 
-## 6. 页面信息架构
+## 6. Page Information Architecture
 
-标准页面建议顺序：
+Recommended order for a standard page:
 
 1. Breadcrumb
-2. 页面标题
-3. 页面描述
-4. Header Extra / 主操作
-5. 状态或上下文说明
-6. 筛选和工具栏
-7. 主要内容
-8. 分页、记录或技术信息
+2. Page title
+3. Page description
+4. Header Extra / primary action
+5. Status or context explanation
+6. Filters and toolbar
+7. Main content
+8. Pagination, record count, or technical info
 
-必须：
+Must:
 
-- 一个页面只有一个明确主操作。
-- 次级操作不得全部使用 `primary`。
-- 查看、配置、提交、危险操作必须分层。
-- 请求失败、空状态、未配置、readonly、权限错误必须表达真实状态。
+- A page has exactly one clear primary action.
+- Secondary actions must not all use `primary`.
+- View, configure, submit, and dangerous actions must be layered.
+- Request failure, empty state, unconfigured state, readonly, and permission errors must reflect real state.
 
-文案语义必须准确：
+Copy semantics must be precise:
 
-- “创建草稿”不得描述为“发布成功”。
-- “任务创建成功”不得描述为“任务执行完成”。
-- “检查通过”不得描述为“平台已通过”。
-- 请求失败不得展示成空状态。
-- 未配置不得展示成加载失败。
-- readonly 不得展示成权限错误，除非真实逻辑如此。
+- "Create draft" must not be described as "publish successful."
+- "Task created successfully" must not be described as "task execution complete."
+- "Check passed" must not be described as "approved by the platform."
+- A request failure must not be shown as an empty state.
+- An unconfigured state must not be shown as a load failure.
+- Readonly must not be shown as a permission error unless that's genuinely the logic.
 
-## 7. 列表和表格
+## 7. Lists and Tables
 
-必须：
+Must:
 
-- 优先使用 `TmProTable`。
-- 筛选区、工具栏和表格使用清晰层级。
-- 表格 Card 外边缘与页面内容轨道对齐。
-- 表格可在自身容器内部横向滚动。
-- 页面根节点不得横向滚动。
-- 使用稳定、唯一 `rowKey`。
-- 长 ID、URL、店铺名、平台名、错误信息必须省略、换行或 Tooltip。
-- 状态 Tag 必须映射真实状态。
-- 未知状态应安全回退，不得伪装成成功。
-- 空状态、加载失败和无权限必须区分。
+- Prefer `TmProTable`.
+- Filter area, toolbar, and table use a clear hierarchy.
+- The table card's outer edge aligns with the page content track.
+- The table can scroll horizontally within its own container.
+- The page root must not scroll horizontally.
+- Use a stable, unique `rowKey`.
+- Long IDs, URLs, store names, platform names, and error messages must be truncated, wrapped, or shown via Tooltip.
+- Status Tags must map to real states.
+- Unknown states should fall back safely and must not be disguised as success.
+- Empty state, load failure, and no permission must be distinguished.
 
-禁止：
+Prohibited:
 
-- 使用数组 `index` 作为持久列表 `rowKey`。
-- 使用随机值作为每次渲染变化的 `rowKey`。
-- 用无意义固定宽度挤压操作列。
+- Using the array `index` as a persistent list's `rowKey`.
+- Using a random value that changes on every render as `rowKey`.
+- Squeezing the actions column with a meaningless fixed width.
 
-临时客户端记录必须生成并保持稳定的临时 ID。
+Temporary client-side records must generate and keep a stable temporary ID.
 
-## 8. 表单
+## 8. Forms
 
-必须：
+Must:
 
-- 保留 Form 的真实数据结构。
-- loading / disabled / validation 状态明确。
-- 表单失败后不得无故清空用户输入。
-- readonly 行为遵循现有权限规则。
-- Modal Form 挂载问题必须定位具体 Form 实例和 Modal 生命周期。
+- Preserve the Form's real data structure.
+- Loading/disabled/validation states must be explicit.
+- Do not clear user input for no reason after a form failure.
+- Readonly behavior follows the existing permission rules.
+- When diagnosing a Modal Form mounting issue, pinpoint the specific Form instance and the Modal lifecycle.
 
-禁止：
+Prohibited:
 
-- 擅自修改 `Form.Item name`。
-- 擅自修改默认值。
-- 自动选择第一项，除非业务原逻辑明确支持。
-- 自动保存、自动提交。
-- 嵌套 Form。
-- Button 同时因 `htmlType="submit"` 和 `onClick` 造成双重提交。
-- 通过批量 `forceRender` 猜测修复 useForm warning。
+- Arbitrarily changing `Form.Item name`.
+- Arbitrarily changing default values.
+- Auto-selecting the first option unless the original business logic clearly supports it.
+- Auto-save, auto-submit.
+- Nested Forms.
+- A Button causing double submission via both `htmlType="submit"` and `onClick`.
+- Guessing a fix for a useForm warning via a blanket `forceRender`.
 
-## 9. Modal、Drawer、Popconfirm
+## 9. Modal, Drawer, Popconfirm
 
-Modal 必须检查：
+Modal must check:
 
-- title、当前业务上下文、默认值、校验
-- loading、confirmLoading、disabled
-- 取消、关闭后状态清理、footer
-- 长文本、移动端宽度
-- 单次确认只发一次请求
+- Title, current business context, default values, validation
+- Loading, confirmLoading, disabled
+- Cancel, state cleanup on close, footer
+- Long text, mobile width
+- A single confirm sends exactly one request
 
-Drawer 必须检查：
+Drawer must check:
 
-- loading、normal、empty、error
-- 长文本、内部滚动、关闭、再次打开状态
-- 375px 接近全宽
-- 根节点无横向溢出
+- Loading, normal, empty, error
+- Long text, internal scrolling, close, reopen state
+- Near-full width at 375px
+- No horizontal overflow at the root
 
-高风险操作必须：
+High-risk actions must:
 
-- 保留确认。
-- 取消不得发请求。
-- 危险操作使用 danger 层级。
-- 不得与普通查看按钮同级。
-- 不得跳过原确认逻辑。
+- Retain confirmation.
+- Not send a request on cancel.
+- Use the danger tier for the action.
+- Not sit at the same level as a plain view button.
+- Not skip the original confirmation logic.
 
-## 10. Loading、Empty、Error、Readonly
+## 10. Loading, Empty, Error, Readonly
 
-每个异步模块至少考虑：
+Every async module must consider at least:
 
-- initial loading
-- refreshing
-- success
-- empty
-- partial data
-- request error
-- business error
-- readonly
-- disabled
-- submitting
+- Initial loading
+- Refreshing
+- Success
+- Empty
+- Partial data
+- Request error
+- Business error
+- Readonly
+- Disabled
+- Submitting
 
-必须：
+Must:
 
-- 错误不能伪装为空数据。
-- 空数据不能伪装为错误。
-- loading 期间不闪现上一个对象的数据。
-- 失败后按原逻辑保留用户输入和已有数据。
-- readonly 只保持现有业务语义。
-- 权限覆盖不完整时记录问题，不擅自统一修改。
+- An error must not be disguised as empty data.
+- Empty data must not be disguised as an error.
+- Do not flash the previous object's data during loading.
+- On failure, preserve user input and existing data per the original logic.
+- Readonly must only preserve existing business semantics.
+- If permission coverage is incomplete, record the issue rather than unilaterally unifying it.
 
-禁止：
+Prohibited:
 
-- AI 主观扩展 readonly 和权限策略。
+- The AI subjectively expanding readonly and permission policy.
 
-## 11. 响应式规范
+## 11. Responsive Standard
 
-强制验收视口：
+Mandatory acceptance viewports:
 
-- 1440×900
-- 1280×800
-- 1024×768
-- 768×900
-- 375×812
+- 1440x900
+- 1280x800
+- 1024x768
+- 768x900
+- 375x812
 
-必须：
+Must:
 
-- 页面根节点无横向溢出。
-- Header、Content 使用同一 gutter。
-- 375px 下页面 gutter 一般保持 12px～16px。
-- Card 不超出视口。
-- 操作区允许换行。
-- Modal 接近全宽但不超出视口。
-- Drawer 接近全宽并可滚动。
-- 表格只在自身容器内部滚动。
-- Tabs 可以内部滚动，但不得造成页面根溢出。
-- 长文本必须可换行。
-- 侧边栏展开和收起均需正常。
+- No horizontal overflow at the page root.
+- Header and Content use the same gutter.
+- At 375px, the page gutter generally stays 12px-16px.
+- Cards do not exceed the viewport.
+- The action area may wrap.
+- Modal is near-full width but doesn't exceed the viewport.
+- Drawer is near-full width and scrollable.
+- Tables scroll only within their own container.
+- Tabs may scroll internally but must not cause page-root overflow.
+- Long text must be able to wrap.
+- Sidebar expand and collapse both work correctly.
 
-禁止：
+Prohibited:
 
-- 保留桌面端无意义大 padding。
-- 通过页面根节点横向滚动容纳内容。
+- Retaining meaningless large desktop padding.
+- Accommodating content via horizontal scroll on the page root.
 
-根节点横向溢出标准：
+Root-node horizontal overflow standard:
 
 ```js
 document.documentElement.scrollWidth <= document.documentElement.clientWidth;
 document.body.scrollWidth <= document.body.clientWidth;
 ```
 
-## 12. 样式规范
+## 12. Style Standard
 
-必须：
+Must:
 
-- 页面样式优先写入页面局部 LESS。
-- 共享容器样式放到对应共享组件或既有壳层样式。
-- 优先使用 Ant Design Token。
-- 优先使用 `layoutTokens`。
-- 全局选择器必须有限定作用域。
-- 修改 `global.less` 必须证明是页面壳层或全局共享根因。
-- 修改样式时不统一改变 LF / CRLF。
+- Page styles are preferentially written into a page-local LESS file.
+- Shared container styles go into the corresponding shared component or existing shell styles.
+- Prefer Ant Design Tokens.
+- Prefer `layoutTokens`.
+- Global selectors must have a scoped qualifier.
+- Modifying `global.less` requires demonstrating that the page shell or a genuinely global shared root cause requires it.
+- Do not uniformly change LF/CRLF when editing styles.
 
-禁止：
+Prohibited:
 
-- 散落重复 HEX。
-- 新增全局 `.ant-*` 覆盖。
-- 新增 `!important`。
-- 通过负 margin 修复布局。
-- 通过 `transform` 修复对齐。
-- 重写完整 LESS 文件。
-- 影响登录页、错误页、Modal、Drawer 和全屏页面。
+- Scattered, duplicated HEX values.
+- Adding new global `.ant-*` overrides.
+- Adding new `!important`.
+- Fixing layout via negative margins.
+- Fixing alignment via `transform`.
+- Rewriting an entire LESS file.
+- Affecting the login page, error pages, Modal, Drawer, or full-screen pages.
 
-## 13. 文案规范
+## 13. Copy Standard
 
-必须：
+Must:
 
-- 文案准确表达真实业务影响。
-- “保存”“创建草稿”“提交”“发布”“同步”“生成任务”明确区分。
-- 按钮使用明确动词。
-- 高风险按钮明确结果。
-- 技术错误和用户可执行建议分层展示。
-- 文案修改后执行 `pnpm.cmd check:ui-copy --strict`。
+- Copy accurately reflects the real business impact.
+- "Save," "create draft," "submit," "publish," "sync," and "generate task" are clearly distinguished.
+- Buttons use clear verbs.
+- High-risk buttons state the outcome clearly.
+- Technical errors and actionable user suggestions are shown in separate layers.
+- Run `pnpm.cmd check:ui-copy --strict` after copy changes.
 
-禁止：
+Prohibited:
 
-- 使用夸张营销文案。
-- 使用含糊的“确定”“立即完成”替代真实动作。
-- 未完成流程写成“已完成”。
+- Exaggerated marketing copy.
+- Using vague "OK" / "complete now" language in place of the real action.
+- Describing an incomplete process as "complete."
 
-## 14. 可访问性
+## 14. Accessibility
 
-必须：
+Must:
 
-- Tabs `activeKey`、`aria-selected` 和 active pane 一致。
-- Button、Link、Tab、Modal、Drawer 支持键盘操作。
-- focus 样式清晰。
-- disabled 状态可识别。
-- 图标按钮必须有可访问名称。
-- 表单错误与字段关联。
+- Tabs `activeKey`, `aria-selected`, and the active pane are consistent.
+- Button, Link, Tab, Modal, and Drawer support keyboard operation.
+- Focus styles are clear.
+- Disabled state is recognizable.
+- Icon buttons must have an accessible name.
+- Form errors are associated with their fields.
 
-禁止：
+Prohibited:
 
-- Tooltip 作为唯一信息来源。
-- 手写与组件状态冲突的 aria 属性。
-- 通过坐标点击代替 role / locator 验收。
+- Using Tooltip as the sole source of information.
+- Hand-writing aria attributes that conflict with component state.
+- Using coordinate-based clicks in place of role/locator-based acceptance testing.
 
-## 15. 业务保护规则
+## 15. Business Protection Rules
 
-UI 任务默认不得修改：
+By default, UI tasks must not modify:
 
 - API URL
 - HTTP method
-- service
+- Service
 - DTO
-- 请求 payload
-- handler
-- 路由
-- 权限
-- readonly
-- 状态机
-- reload 顺序
-- 分页参数
-- 排序
-- 业务判断
-- 自动刷新策略
-- 任务状态
-- 平台状态
-- 库存语义
-- 发布语义
+- Request payload
+- Handler
+- Routing
+- Permissions
+- Readonly state
+- State machine
+- Reload order
+- Pagination params
+- Sorting
+- Business logic decisions
+- Auto-refresh policy
+- Task state
+- Platform state
+- Inventory semantics
+- Publish semantics
 
-如确实必须修改业务行为，必须先明确说明、解释原因、列出影响并获得用户确认。不得以“UI 优化”为名偷偷改变行为。
+If a business behavior genuinely must change, it must first be clearly stated, explained, its impact listed, and the user's confirmation obtained. Do not quietly change behavior under the guise of "UI optimization."
 
-禁止新增以下自动行为，除非需求明确要求并得到确认：
+Do not add any of the following automatic behaviors unless the requirement explicitly requires it and it has been confirmed:
 
-- 自动保存
-- 自动提交
-- 自动选择
-- 自动重试
-- 自动轮询
-- 自动创建任务
-- 自动上传
-- 自动同步
-- 自动绑定
-- 自动发布
-- 一键修复全部
+- Auto-save
+- Auto-submit
+- Auto-select
+- Auto-retry
+- Auto-poll
+- Auto-create task
+- Auto-upload
+- Auto-sync
+- Auto-bind
+- Auto-publish
+- One-click "fix everything"
 
-## 16. AI 实施工作流
+## 16. AI Implementation Workflow
 
-### Step 1：读取规范
+### Step 1: Read the Standard
 
-任务开始必须读取：
+At the start of the task, must read:
 
 - `AGENTS.md`
 - `.agents/skills/frontend-design/SKILL.md`
-- 当前目录适用的 Cursor rules
-- 目标页面 TSX / JSX
-- 目标页面 LESS / CSS
-- 相关共享组件
+- The Cursor rules applicable to the current directory
+- The target page's TSX/JSX
+- The target page's LESS/CSS
+- Related shared components
 - `TmPageContainer`
 - `layoutTokens`
-- 与目标页面相关的现有 UI 封装
-- 目标页面现有实现
+- Existing UI wrappers related to the target page
+- The target page's existing implementation
 
-### Step 2：检查 Git
+### Step 2: Check Git
 
-执行：
+Run:
 
 ```bash
 git status --short --branch
@@ -422,72 +422,72 @@ git diff --stat
 git log -5 --oneline
 ```
 
-不得覆盖用户已有修改。除非用户明确要求，不得创建分支、commit、push、reset、restore、clean、stash。禁止使用 `git add .`。
+Do not overwrite the user's existing changes. Do not create branches, commit, push, reset, restore, clean, or stash unless explicitly requested by the user. `git add .` is prohibited.
 
-### Step 3：定位真实代码
+### Step 3: Locate the Real Code
 
-必须先定位：
+Must locate first:
 
-- 页面 JSX
-- 页面 LESS
-- shared UI
-- service
-- types
-- handler
-- loading
-- error
-- readonly
-- disabled
-- URL 状态
-- Modal / Drawer
-- 表格 `rowKey`
-- section id
+- Page JSX
+- Page LESS
+- Shared UI
+- Service
+- Types
+- Handler
+- Loading
+- Error
+- Readonly
+- Disabled
+- URL state
+- Modal/Drawer
+- Table `rowKey`
+- Section id
 
-不得根据界面截图猜测业务实现。
+Do not guess the business implementation from UI screenshots.
 
-### Step 4：先分析后修改
+### Step 4: Analyze Before Modifying
 
-修改前必须给出：
+Before modifying, must provide:
 
-- 当前信息架构
-- 真实业务流程
-- UI 问题
-- 拟修改范围
-- 保持不变的业务行为
-- 风险
-- 验证方案
+- Current information architecture
+- Real business flow
+- UI issues
+- Proposed scope of changes
+- Business behavior that stays unchanged
+- Risks
+- Verification plan
 
-对于明确、小范围任务，可以输出简短分析后继续，不必等待确认。
+For clear, small-scope tasks, a brief analysis may be given and work can proceed without waiting for confirmation.
 
-遇到以下情况必须停止并询问用户：
+Must stop and ask the user in these situations:
 
-- 需要改变 API
-- 需要改变 payload
-- 需要改变权限
-- 需要改变状态机
-- 需求与现有业务明显冲突
-- 存在两种不同且影响业务的实现选择
-- 无法确认写操作真实效果
+- Changing the API is required
+- Changing the payload is required
+- Changing permissions is required
+- Changing the state machine is required
+- The requirement clearly conflicts with existing business logic
+- Two different implementation choices exist that affect the business
+- The real effect of a write operation cannot be confirmed
 
-### Step 5：最小实施
+### Step 5: Minimal Implementation
 
-必须：
+Must:
 
-- 优先复用共享组件。
-- 只改目标范围。
-- 纯 UI 任务不得改变业务行为。
+- Prefer reusing shared components.
+- Change only the target scope.
+- A pure UI task must not change business behavior.
 
-禁止：
+Prohibited:
 
-- 顺手重构。
-- 格式化完整文件。
-- 修改无关 Tab。
-- 复制已有逻辑。
-- 创建重复组件。
+- Opportunistic refactoring.
+- Reformatting an entire file.
+- Modifying unrelated Tabs.
+- Duplicating existing logic.
+- Creating duplicate components.
 
-### Step 6：静态检查
+### Step 6: Static Checks
 
-至少执行：
+Must run at least:
 
 ```bash
 git diff --check
@@ -499,152 +499,152 @@ git diff --numstat
 git status --short --branch
 ```
 
-如果项目后续新增稳定的 lint / typecheck，也应执行现有命令，但不得临时新增依赖。
+If the project later adds a stable lint/typecheck tool, run that too, but do not add a new dependency ad hoc.
 
-### Step 7：浏览器验收
+### Step 7: Browser Acceptance
 
-Admin UI 实施后的自动化验收要求由 `.agents/skills/admin-e2e-testing/SKILL.md` 统一定义；本 Skill 只保留 UI 验收入口，不复制完整 E2E 规范。
+The automated acceptance requirements after Admin UI implementation are uniformly defined by `.agents/skills/admin-e2e-testing/SKILL.md`; this Skill only retains the UI acceptance entry point and does not duplicate the full E2E standard.
 
-Admin 页面修改原则上必须使用 Playwright MCP 验收。Admin 服务由用户启动时，不得自行启动、不得停止、不得杀进程；服务不可用时停止并报告。
+Admin page changes should, in principle, use Playwright MCP for acceptance. When the Admin service was started by the user, do not start it yourself, do not stop it, and do not kill its process; if the service is unavailable, stop and report.
 
-必须：
+Must:
 
-- 使用五档视口。
-- 检查根节点 overflow。
-- 检查 Header / Content 对齐。
-- 检查 loading / empty / error。
-- 检查 Modal / Drawer / Popconfirm。
-- 检查长文本。
-- 检查 readonly。
-- 检查 Console warning / error。
+- Use the five-tier viewport matrix.
+- Check root-node overflow.
+- Check Header/Content alignment.
+- Check loading/empty/error.
+- Check Modal/Drawer/Popconfirm.
+- Check long text.
+- Check readonly.
+- Check console warnings/errors.
 
-所有非 GET 请求必须使用 `browser_route` 拦截。不得执行真实平台写操作。
+All non-GET requests must be intercepted with `browser_route`. Real platform write operations must never be executed.
 
-### Step 8：网络副作用检查
+### Step 8: Network Side-Effect Check
 
-对于写操作必须捕获：
+For write operations, must capture:
 
-- method
+- Method
 - URL
-- path params
-- query
-- payload
-- 次数
-- reload
-- 额外请求
+- Path params
+- Query
+- Payload
+- Count
+- Reload
+- Extra requests
 
-必须验证：
+Must verify:
 
-- 取消不发请求。
-- 单次确认只发一次。
-- 快速重复确认不重复提交。
-- 失败不自动重试。
-- 不触发无关业务写请求。
+- Cancel sends no request.
+- A single confirm sends exactly one request.
+- Rapid repeated confirms don't cause duplicate submission.
+- Failure does not auto-retry.
+- No unrelated business write requests are triggered.
 
-### Step 9：输出结果
+### Step 9: Report Results
 
-必须输出：
+Must report:
 
-- 当前分支
-- 开始工作区
-- 修改文件
-- 修改内容
-- 保持不变的行为
-- 检查命令
-- 浏览器视口
-- overflow 数据
-- 写请求
-- Console 信息
-- 当前 diff
-- 未提交文件
-- 剩余风险
-- 是否可签收
-- 是否适合人工验收
+- Current branch
+- Starting workspace state
+- Modified files
+- What was changed
+- Behavior that remains unchanged
+- Check commands run
+- Browser viewports
+- Overflow data
+- Write requests
+- Console info
+- Current diff
+- Uncommitted files
+- Remaining risks
+- Whether it's ready for sign-off
+- Whether it's suitable for manual acceptance
 
-除非用户明确要求，不得 commit 或 push。
+Do not commit or push unless the user explicitly requests it.
 
-## 17. 新增 Admin 页面强制清单
+## 17. Mandatory Checklist for New Admin Pages
 
-新增页面必须：
+A new page must:
 
-- 使用标准登录后 Layout。
-- 优先使用 `TmPageContainer`。
-- Header 和 Content 共用内容轨道。
-- 根据真实需要提供 breadcrumb、title、description、extra。
-- 使用 `SectionCard` / `TmProTable` / `OperationToolbar` 等共享组件。
-- 提供 loading、empty、error。
-- 考虑 readonly、权限、长文本。
-- 提供稳定 `rowKey`。
-- 支持五档视口。
-- 根节点无 overflow。
-- 不复制已有页面布局代码。
-- 不新增第二套设计 Token。
-- 不修改全局样式解决单页问题。
-- 不自动执行写操作。
-- 补充浏览器 Mock 验收。
-- 通过全部检查命令。
+- Use the standard post-login Layout.
+- Prefer `TmPageContainer`.
+- Header and Content share a content track.
+- Provide breadcrumb, title, description, and extra based on real need.
+- Use shared components such as `SectionCard`/`TmProTable`/`OperationToolbar`.
+- Provide loading, empty, error.
+- Consider readonly, permissions, long text.
+- Provide a stable `rowKey`.
+- Support the five-tier viewport matrix.
+- Have no overflow at the root.
+- Not duplicate existing page layout code.
+- Not add a second design token system.
+- Not modify global styles to solve a single-page problem.
+- Not auto-execute write operations.
+- Add browser mock acceptance coverage.
+- Pass all check commands.
 
-新增页面不得在没有说明的情况下直接使用裸 `PageContainer`、`ProTable`、`Card` 或自定义 page wrapper；应先确认项目共享封装是否已经适用。
+A new page must not directly use a bare `PageContainer`, `ProTable`, `Card`, or a custom page wrapper without justification; first confirm whether an existing project shared wrapper already applies.
 
-## 18. 修改已有页面强制清单
+## 18. Mandatory Checklist for Modifying Existing Pages
 
-修改前必须确认：
+Before modifying, must confirm:
 
-- 原 API
-- 原 payload
-- 原 handler
-- 原状态机
-- 原权限
-- 原 readonly
-- 原 loading
-- 原 URL
-- 原 reload
-- 原写请求次数
+- Original API
+- Original payload
+- Original handler
+- Original state machine
+- Original permissions
+- Original readonly state
+- Original loading
+- Original URL
+- Original reload
+- Original write-request count
 
-修改后必须确认：
+After modifying, must confirm:
 
-- 没有业务回归。
-- 没有新增重复提交。
-- 没有破坏深链。
-- 没有新增根节点 overflow。
-- 没有新增 key warning。
-- 没有新增 useForm warning。
-- 没有把错误展示为空状态。
-- 没有把草稿描述为正式完成。
-- 没有破坏移动端。
-- 没有扩大无关 diff。
+- No business regression.
+- No new duplicate submissions.
+- No broken deep links.
+- No new root-node overflow.
+- No new key warnings.
+- No new useForm warnings.
+- No error displayed as an empty state.
+- No draft described as formally complete.
+- No broken mobile layout.
+- No unrelated diff expansion.
 
-## 19. 禁止项总表
+## 19. Master Prohibited List
 
-禁止：
+Prohibited:
 
 - Tailwind
 - shadcn
-- 新增 UI 框架
-- 新增与 Ant Design 重复的依赖
-- 大面积全局 CSS 覆盖
-- 全局 `.ant-*` 魔改
+- Adding a new UI framework
+- Adding a dependency that duplicates Ant Design
+- Large-scale global CSS overrides
+- Global `.ant-*` hacking
 - `!important`
-- 负 margin 对冲
-- `transform` 位移修布局
-- 写死侧边栏宽度
-- 重复页面 gutter
-- 卡片套卡片
-- 所有按钮都 `primary`
-- 所有状态都 `MetricCard`
-- 虚假数据和虚假指标
-- 修改 API 伪装成 UI 优化
-- 为消除 warning 批量猜测性添加 `forceRender`
-- 使用 `index` 作为持久表格 `rowKey`
-- UI 任务中顺手改业务逻辑
-- 未拦截时执行真实写操作
-- 未验收就声明完成
-- 未获授权时 commit 或 push
+- Negative-margin offsetting
+- Using `transform` to fix layout position
+- Hardcoding the sidebar width
+- Duplicating page gutters
+- Cards nested inside cards
+- Every button being `primary`
+- Every state being a `MetricCard`
+- Fake data and fake metrics
+- Disguising an API change as a UI optimization
+- Blanket, speculative `forceRender` additions to silence warnings
+- Using `index` as a persistent table `rowKey`
+- Opportunistically changing business logic during a UI task
+- Executing a real write operation without interception
+- Declaring completion without acceptance testing
+- Committing or pushing without authorization
 
-## 20. 发现性与入口维护
+## 20. Discoverability and Entry-Point Maintenance
 
-- `AGENTS.md` 是跨工具项目入口，只应强制要求读取本 skill 和列出门禁，不复制完整规范。
-- Cursor rule 只负责对 Admin TSX / JSX / LESS / CSS 文件自动生效，并指向本 skill。
-- Claude Code 如存在 `CLAUDE.md`，只应引用本 skill，不复制完整规范。
-- 其他 AI instruction 文件已存在时可以增加引用；没有时不盲目创建。
-- 不允许多个文件同时声明自己是 Admin UI 规范的唯一完整来源。
+- `AGENTS.md` is the cross-tool project entry point; it should only require reading this skill and list the gates, without duplicating the full standard.
+- The Cursor rule is only responsible for automatically applying to Admin TSX/JSX/LESS/CSS files and pointing to this skill.
+- If `CLAUDE.md` exists for Claude Code, it should only reference this skill, not duplicate the full standard.
+- Other AI instruction files may add a reference if they already exist; do not blindly create one if it doesn't.
+- No multiple files may simultaneously claim to be the single complete source of truth for the Admin UI standard.

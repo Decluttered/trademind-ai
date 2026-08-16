@@ -11,7 +11,7 @@ export type TechnicalDetailsProps = {
   style?: CSSProperties;
 };
 
-/** 技术详情折叠区（默认收起） */
+/** Technical details collapsible section (collapsed by default) */
 export default function TechnicalDetails({
   children,
   label = '技术详情',

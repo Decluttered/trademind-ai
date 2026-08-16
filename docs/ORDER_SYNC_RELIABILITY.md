@@ -1,10 +1,10 @@
-# 订单同步可靠性设计（P2）
+# Order Sync Reliability Design (P2)
 
-> 订单同步幂等依赖 **数据库唯一约束 + Upsert 语义 + Webhook 共享规则**，实现位于 `ordersync`、`order/sync_platform.go` 与 Phase 10.2 索引迁移。
+> Order sync idempotency relies on **database unique constraints + upsert semantics + shared webhook rules**, implemented in `ordersync`, `order/sync_platform.go`, and the Phase 10.2 index migration.
 
-## 唯一键与索引
+## Unique Keys and Indexes
 
-### 订单头（PostgreSQL 部分唯一索引）
+### Order Header (PostgreSQL Partial Unique Index)
 
 ```sql
 CREATE UNIQUE INDEX ux_orders_shop_platform_ext_order
@@ -12,9 +12,9 @@ CREATE UNIQUE INDEX ux_orders_shop_platform_ext_order
  WHERE external_order_id IS NOT NULL AND external_order_id <> '' AND deleted_at IS NULL;
 ```
 
-业务语义：**同一店铺 + 平台 + 平台订单号** 仅一条本地订单。
+Business semantics: **the same shop + platform + platform order number** maps to only one local order.
 
-### 订单行
+### Order Items
 
 ```sql
 CREATE UNIQUE INDEX ux_order_items_order_ext_item
@@ -22,61 +22,61 @@ CREATE UNIQUE INDEX ux_order_items_order_ext_item
  WHERE external_item_id IS NOT NULL AND external_item_id <> '';
 ```
 
-迁移前执行重复数据检查；若存在重复组则 **阻塞迁移** 并指向 `DOUYIN_DUPLICATE_DATA_REPAIR.md`。
+A duplicate-data check runs before migration; if duplicate groups exist, the migration is **blocked** and points to `DOUYIN_DUPLICATE_DATA_REPAIR.md`.
 
-## Upsert 流程
+## Upsert Flow
 
-`order.Service.UpsertSyncedOrders(shopID, platform, payloads)`：
+`order.Service.UpsertSyncedOrders(shopID, platform, payloads)`:
 
-1. 按 `(shop_id, platform, external_order_id)` 查找现有行。
-2. **不存在** → `Create` 订单 + `replaceSyncedChildren`（items/shipments）。
-3. **存在** → 更新头字段（状态、金额、时间戳、`raw_data`）；**保留运营备注** `remark`。
-4. 子行按 `external_item_id` 对齐替换，避免重复插入。
+1. Look up the existing row by `(shop_id, platform, external_order_id)`.
+2. **Not found** → `Create` the order + `replaceSyncedChildren` (items/shipments).
+3. **Found** → update header fields (status, amount, timestamps, `raw_data`); **preserve the operations note** `remark`.
+4. Child rows are reconciled by `external_item_id` to avoid duplicate inserts.
 
-返回指标：`created` / `updated` / `success` / `failed`；`ordersync` 任务 output 含 `upsertSuccess`、`upsertFailed`。
+Returned metrics: `created` / `updated` / `success` / `failed`; the `ordersync` task output includes `upsertSuccess`, `upsertFailed`.
 
-## 幂等 Key（统一幂等服务）
+## Idempotency Key (Unified Idempotency Service)
 
 ```text
 idempotency.OrderSync(platform, shopID, platformOrderID)
 → order-sync:{platform}:{shopId}:{platformOrderId}
 ```
 
-用于跨请求防重：重复同步同一平台订单不产生第二条 `orders` 行。
+Used for cross-request duplicate prevention: syncing the same platform order twice does not produce a second `orders` row.
 
-## 订单同步任务可靠性
+## Order Sync Task Reliability
 
-- 队列：`ORDER_SYNC_QUEUE_*`；Worker DB 租约见 `ordersync/lease.go`。
-- 分页：`partial_success` 时仅重试失败页（`RetryPages`）。
-- 同步后可选 `DeductInventoryForOrder`；扣减失败记日志，不阻塞订单 upsert 成功计数。
-- 平台 Provider 错误映射为 `DOUYIN_ORDER_*` 等码，进入失败任务中心。
+- Queue: `ORDER_SYNC_QUEUE_*`; worker DB lease documented in `ordersync/lease.go`.
+- Pagination: on `partial_success`, only failed pages are retried (`RetryPages`).
+- After sync, `DeductInventoryForOrder` is optionally called; deduction failures are logged but do not block the order upsert success count.
+- Platform provider errors are mapped to codes such as `DOUYIN_ORDER_*` and surfaced in the failed task center.
 
-## Webhook 共享规则
+## Shared Webhook Rules
 
-Webhook 入站（`webhook.Service.Ingest`）与订单同步共用防重思想：
+Inbound webhooks (`webhook.Service.Ingest`) share the same duplicate-prevention approach as order sync:
 
-| 层 | 机制 |
+| Layer | Mechanism |
 | --- | --- |
-| 领域表 | `webhook_events (platform, event_id)` 唯一；`ON CONFLICT DO NOTHING` |
-| 幂等表 | `scope=webhook`，`key=webhook:{platform}:{eventId}` |
-| ACK | 重复事件 `duplicate=true`，快速返回已存 `status` |
+| Domain table | `webhook_events (platform, event_id)` unique; `ON CONFLICT DO NOTHING` |
+| Idempotency table | `scope=webhook`, `key=webhook:{platform}:{eventId}` |
+| ACK | Duplicate events return `duplicate=true`, returning the existing `status` immediately |
 
-无 `eventId` 时用 payload SHA-256 派生。Payload 上限 **1 MB**。
+When there is no `eventId`, one is derived from the payload's SHA-256. Payload size is capped at **1 MB**.
 
-后续异步处理订单类 webhook 时，应使用与 `UpsertSyncedOrders` 相同的 `external_order_id` 键空间。
+When order-related webhooks are later processed asynchronously, they should use the same `external_order_id` key space as `UpsertSyncedOrders`.
 
-## 任务状态与断点
+## Task State and Resumption
 
-- `partial_success`：`pageErrors` 记录失败页；`hasMore` 且达 `maxPages` 亦为部分成功。
-- Checkpoint 字段：`totalFetched`、`createdOrders`、`updatedOrders`、`nextPage` 等。
-- 重试 API：`POST /api/v1/order-sync/tasks/:id/retry`（须 `SafeRetry`）。
+- `partial_success`: `pageErrors` records the failed pages; reaching `maxPages` while `hasMore` is still true also counts as partial success.
+- Checkpoint fields: `totalFetched`, `createdOrders`, `updatedOrders`, `nextPage`, etc.
+- Retry API: `POST /api/v1/order-sync/tasks/:id/retry` (requires `SafeRetry`).
 
-## 验收要点
+## Acceptance Criteria
 
-1. 同一 `external_order_id` 连续同步两次 → 仅一条订单，`updated` 计数增加。
-2. 并发双 Worker 同步同一订单 → 唯一索引 + 事务保证无重复行。
-3. Webhook 重复投递 → `duplicate=true`，不重复写 `webhook_events`。
-4. 迁移前故意留重复数据 → 启动 fail-fast 并给出 sample IDs。
+1. Syncing the same `external_order_id` twice in a row → only one order, with the `updated` count incrementing.
+2. Two workers syncing the same order concurrently → the unique index + transaction guarantee no duplicate rows.
+3. Duplicate webhook delivery → `duplicate=true`, `webhook_events` is not written twice.
+4. Deliberately leaving duplicate data before migration → startup fails fast and reports sample IDs.
 ## P3.2 Douyin Webhook Tenant Update
 
 Douyin order webhooks no longer infer a shop by "the only authorized shop". The webhook event must already contain resolver output: `tenant_id`, `internal_shop_id`, `platform_shop_id`, `app_id`, and optional `binding_id`. `DouyinOrderWebhookHandler` validates that scope before calling `UpsertPlatformOrder`, and order lookup/upsert now includes `TenantID` plus `shop_id`.

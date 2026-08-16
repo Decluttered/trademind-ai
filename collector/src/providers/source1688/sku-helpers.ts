@@ -21,8 +21,8 @@ export function inferTwoDimNames(dimHints: DimRow[], v1: string, v2: string): [s
 }
 
 /**
- * 解析 skuMap 键：支持「颜色:蓝;尺码:M」「蓝色>内长12」等。
- * 1688 常见键为「蓝色【F106】>内长12【鞋底标12.5】」（无维度名，仅两段的值）。
+ * Parse skuMap keys: supports formats like "颜色:蓝;尺码:M" (color:blue;size:M) or "蓝色>内长12" (blue>inner-length12).
+ * A common 1688 key is "蓝色【F106】>内长12【鞋底标12.5】" (blue【F106】>inner-length12【sole-mark12.5】) — no dimension name, just two segments of values.
  */
 export function parseComboKey(raw: string, dimHints: DimRow[] = []): Record<string, string> {
   const props: Record<string, string> = {};
@@ -54,7 +54,7 @@ export function parseComboKey(raw: string, dimHints: DimRow[] = []): Record<stri
   return props;
 }
 
-/** 修正误把颜色值当作属性名的结构 */
+/** Fix structures that mistakenly treat a color value as the property name */
 export function normalizeSkuPropertyKeys(
   props: Record<string, string>,
   dimNames: [string, string],
@@ -78,7 +78,7 @@ export function skuNameFromProps(props: Record<string, string>): string {
   return keys.map((k) => `${props[k]}`).join(' / ');
 }
 
-/** 过滤 DOM 维度值中的标签/价格/库存拼接噪声 */
+/** Filter out label/price/stock concatenation noise in DOM dimension values */
 export function isValidSkuDimensionValue(value: string, dimName: string): boolean {
   const v = trimStr(value);
   if (!v || v.length < 2 || v.length > 100) return false;
@@ -153,7 +153,7 @@ function extractFromSpecAttrs(raw: unknown): { price?: number; stock?: number } 
   };
 }
 
-/** 在 JSON 树中查找形如 skuMap 的对象（值为含 canBookCount/skuId 的桶） */
+/** Find skuMap-like objects in the JSON tree (values are buckets containing canBookCount/skuId) */
 export function findSkuMapLikeObjects(root: unknown, depth = 0, out: Record<string, unknown>[] = []): Record<string, unknown>[] {
   if (depth > 16 || !root || typeof root !== 'object') return out;
   if (Array.isArray(root)) {
@@ -179,7 +179,7 @@ export function findSkuMapLikeObjects(root: unknown, depth = 0, out: Record<stri
   return out;
 }
 
-/** 用 DOM 尺码表（价/库存）补全 JSON 中缺失或为 0 的字段 */
+/** Fill in fields missing or zero in JSON using the DOM size table (price/stock) */
 export function enrichSkusFromDomTable(skus: ProductSku[], rows: DomSkuTableRow[]): ProductSku[] {
   if (!rows.length || !skus.length) return skus;
   return skus.map((sku) => {

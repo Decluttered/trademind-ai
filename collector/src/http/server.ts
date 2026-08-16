@@ -94,7 +94,7 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
 }
 
 /**
- * HTTP 任务入口：POST /v1/collect
+ * HTTP task entry point: POST /v1/collect
  * body: { "source": "1688", "url": "https://..." }
  */
 export function createCollectorServer(browser: BrowserManager) {

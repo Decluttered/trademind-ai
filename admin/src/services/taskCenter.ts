@@ -51,7 +51,7 @@ export type UnifiedTaskDTO = {
   leaseVersion?: number;
   attempt?: number;
   maxAttempts?: number;
-  /** 详情接口附加字段；列表项通常无此字段 */
+  /** Extra field from the detail endpoint; list items usually don't have this field */
   extra?: Record<string, unknown>;
 };
 
@@ -266,7 +266,7 @@ export async function unmarkTaskAlertRecord(id: string) {
   );
 }
 
-/** POST /api/v1/product-publish/tasks/:id/recover-douyin-draft — product.detail 回查恢复 */
+/** POST /api/v1/product-publish/tasks/:id/recover-douyin-draft — recovery via product.detail lookback */
 export async function recoverDouyinDraftTask(id: string) {
   return postJSON<FailureDetailDTO | { recovered?: boolean }>(
     `/api/v1/product-publish/tasks/${encodeURIComponent(id)}/recover-douyin-draft`,

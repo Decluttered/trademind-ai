@@ -18,6 +18,7 @@ const checks = new Map([
   ['sensitive', { command: ['pnpm', ['quality:sensitive']], reason: '所有代码/配置变更都检查 changed diff 高置信敏感信息' }],
   ['admin', { command: ['pnpm', ['quality:admin']], reason: 'Admin TS/TSX、样式、UI、API service 或 package 变更' }],
   ['collector', { command: ['pnpm', ['quality:collector']], reason: 'Collector TypeScript、采集逻辑或 package 变更' }],
+  ['temporal', { command: ['pnpm', ['build:temporal']], reason: 'Temporal worker、workflow、activity 或 package 变更' }],
   ['backend', { command: ['pnpm', ['quality:backend']], reason: 'Go backend、数据库、Redis、队列、worker、adapter 或 Go 配置变更' }],
   ['naming', { command: ['pnpm', ['quality:naming']], reason: 'Go 标识符、数据库模型、迁移或原始 SQL 命名变更' }],
   ['contracts', { command: ['pnpm', ['quality:contracts']], reason: 'API route、DTO、service、contract、Admin mock 或 envelope 变更' }],
@@ -90,6 +91,11 @@ function classify(file, selected) {
     add(selected, 'collector');
     add(selected, 'affected-tests');
   }
+  if (file.startsWith('temporal/')) {
+    add(selected, 'temporal');
+    add(selected, 'affected-tests');
+    add(selected, 'architecture');
+  }
   if (file.startsWith('backend/') || file === 'go.work') {
     add(selected, 'backend');
     add(selected, 'affected-tests');
@@ -114,6 +120,7 @@ function classify(file, selected) {
   if (file === 'package.json' || file === 'pnpm-lock.yaml' || file === 'pnpm-workspace.yaml' || file.startsWith('.github/workflows/')) {
     add(selected, 'admin');
     add(selected, 'collector');
+    add(selected, 'temporal');
     add(selected, 'backend');
     add(selected, 'naming');
     add(selected, 'contracts');
@@ -168,7 +175,7 @@ for (const [name, reasons] of selected) {
   console.log(`- ${name}: ${[...reasons].join('; ')}`);
 }
 
-const order = ['sensitive', 'architecture', 'admin', 'collector', 'backend', 'naming', 'contracts', 'ui-copy', 'db', 'redis', 'e2e-smoke', 'affected-tests'];
+const order = ['sensitive', 'architecture', 'admin', 'collector', 'temporal', 'backend', 'naming', 'contracts', 'ui-copy', 'db', 'redis', 'e2e-smoke', 'affected-tests'];
 const failures = [];
 for (const name of order.filter((item) => selected.has(item))) {
   try {

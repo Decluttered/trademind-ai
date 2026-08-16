@@ -2,7 +2,7 @@ import { ALERT_SEVERITY_OPTIONS } from '@/constants/systemSettings';
 
 export { ALERT_SEVERITY_OPTIONS as NOTIFICATION_SEVERITY_OPTIONS };
 
-/** 通知通道（存库 JSON 数组元素） */
+/** Notification channels (elements of the JSON array stored in the DB) */
 export const NOTIFICATION_CHANNEL_META: Record<
   string,
   { label: string; desc: string }

@@ -1,9 +1,9 @@
-/** 管理端通用用户文案（避免直接展示英文技术词） */
+/** Common user-facing copy for the admin panel (avoids showing raw English technical terms) */
 
-/** 菜单、标题中完整写法 */
+/** Full form, used in menus and titles */
 export const SKU_LABEL = '商品规格';
 
-/** 正文、说明中的简称 */
+/** Short form, used in body text and descriptions */
 export const SKU_SHORT = '规格';
 
 export const STORAGE_LABEL = '存储';
@@ -46,7 +46,7 @@ export const SETTINGS_PLATFORM_PATH = '平台接入设置';
 
 export const SETTINGS_SHOPS_PATH = '店铺管理';
 
-/** 商品图片字段（避免直接展示 API 字段名） */
+/** Product image fields (avoids showing raw API field names) */
 export const PRODUCT_IMAGE_SORT_ORDER_LABEL = '排序';
 
 export const PRODUCT_IMAGE_PUBLIC_URL_LABEL = '公开链接';
@@ -61,10 +61,10 @@ export const INVENTORY_SYNC_TASKS_LABEL = '库存同步任务';
 
 export const INVENTORY_SYNC_BATCHES_LABEL = '库存同步批次';
 
-/** 设置项「单次批量最多创建任务数」（对应 inventory_sync_batch_max_size） */
+/** Setting item "max tasks created per batch" (corresponds to inventory_sync_batch_max_size) */
 export const INVENTORY_SYNC_BATCH_MAX_SIZE_LABEL = '单次批量最多创建任务数';
 
-/** 跨境平台显示名 */
+/** Cross-border platform display names */
 export const PLATFORM_LABEL: Record<string, string> = {
   douyin_shop: '抖店',
   tiktok: 'TikTok',
@@ -81,7 +81,7 @@ export function platformLabel(platform?: string): string {
   return PLATFORM_LABEL[k] || platform || '—';
 }
 
-/** 商品草稿来源（products.source）显示名 */
+/** Product draft source (products.source) display names */
 export const PRODUCT_SOURCE_LABEL: Record<string, string> = {
   '1688': '1688',
   pinduoduo: '拼多多',

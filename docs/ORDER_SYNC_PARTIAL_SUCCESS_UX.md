@@ -1,11 +1,11 @@
-# 订单同步 partial_success UX（Phase F2）
+# Order Sync partial_success UX (Phase F2)
 
-## 语义
+## Semantics
 
-- **partial_success**：部分页已成功写入本地订单，部分页拉取失败
-- 不得展示为「完全成功」或「完全失败」
+- **partial_success**: some pages were successfully written to local orders, some pages failed to fetch
+- Must not be displayed as "fully successful" or "fully failed"
 
-## 任务 output 字段
+## Task Output Fields
 
 ```json
 {
@@ -21,18 +21,18 @@
 }
 ```
 
-## 重试策略
+## Retry Strategy
 
-- `POST /api/v1/order-sync/tasks/:id/retry` 对 `partial_success` 自动设置 `input.retryPagesOnly`
-- 仅重拉 `pageErrors` 中的页码，不重复成功页
+- `POST /api/v1/order-sync/tasks/:id/retry` automatically sets `input.retryPagesOnly` for `partial_success`
+- Only re-fetches the pages listed in `pageErrors`; successful pages are not repeated
 
-## UI（`/orders/sync-tasks`）
+## UI (`/orders/sync-tasks`)
 
-- 详情 Drawer 展示分页统计与失败页表格
-- 「重试失败页」按钮
-- 链到失败任务中心与异常工作台
+- The detail drawer shows pagination stats and a table of failed pages
+- "Retry Failed Pages" button
+- Links to the failed task center and the exception workbench
 
-## 失败任务中心
+## Failed Task Center
 
-- `partial_success` 纳入失败列表（`normalizedStatus=partial_success`）
+- `partial_success` is included in the failed list (`normalizedStatus=partial_success`)
 - `Retryable=true`

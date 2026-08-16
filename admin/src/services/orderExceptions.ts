@@ -52,7 +52,7 @@ export type ListOrderExceptionsResponse = {
   summary: OrderExceptionSummary;
 };
 
-/** POST .../bind-sku 摘要（与后端 map 对齐） */
+/** POST .../bind-sku summary (aligned with backend map) */
 export type OrderExceptionBindSkuResult = {
   bind?: string;
   inventoryDeduction?: Record<string, unknown>;

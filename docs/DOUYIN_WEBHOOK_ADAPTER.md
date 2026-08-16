@@ -1,60 +1,60 @@
-# 抖店 Webhook 适配器设计
+# Douyin Shop Webhook Adapter Design
 
-## 签名验证算法
+## Signature Verification Algorithm
 
-来源：抖店开放平台 Webhook 文档
+Source: Douyin Shop Open Platform webhook documentation
 
 ```
 signature = SHA1( appSecret + rawBody )  →  hex lowercase
 ```
 
-验证头：优先 `X-Douyin-Signature`，备选 `X-Sign`
+Verification header: prefers `X-Douyin-Signature`, falls back to `X-Sign`
 
-实现：`douyinshop/webhook_sign.go` `DouyinSignatureVerifier`
+Implementation: `douyinshop/webhook_sign.go` `DouyinSignatureVerifier`
 
-## 事件格式
+## Event Formats
 
-### 标准 Douyin 格式
+### Standard Douyin Format
 ```json
 {"event": "order_created", "client_key": "xxx", "content": {...}}
 ```
 
-### jinritemai 数组格式
+### jinritemai Array Format
 ```json
 [{"tag": "100", "msg_id": "xxx", "data": {...}}]
 ```
 
-### Tag → EventType 映射
+### Tag → EventType Mapping
 
 | Tag | EventType |
 |-----|-----------|
-| 0 | health_check（安全 ACK，不处理） |
+| 0 | health_check (safe ACK, not processed) |
 | 100 | order_created |
 | 101 | order_paid |
 | 102 | order_shipped |
 | 103 | order_completed |
 | 104 | order_cancelled |
-| 200 | inventory_alert（P3 只记录日志） |
-| 300 | product_status_changed（P3 只记录日志） |
-| 未知 | unknown:{tag}（安全 ACK + 警告日志） |
+| 200 | inventory_alert (P3 logs only) |
+| 300 | product_status_changed (P3 logs only) |
+| Unknown | unknown:{tag} (safe ACK + warning log) |
 
-## 注册方式
+## Registration
 
-`api/router.go` 在 `webhook.NewRegistry` 后从 `platform_douyin_shop.app_secret` 加载 secret：
+After `webhook.NewRegistry` in `api/router.go`, the secret is loaded from `platform_douyin_shop.app_secret`:
 
 ```go
 webhookRegistry.Register("douyin_shop", webhook.NewDouyinVerifier(appSecret))
 webhookRegistry.Register("douyin", webhook.NewDouyinVerifier(appSecret))
 ```
 
-若 secret 为空，verifier 已注册但 Verify 返回 `CodeVerifierNotConfigured`。
+If the secret is empty, the verifier is still registered but `Verify` returns `CodeVerifierNotConfigured`.
 
-## 事件处理路径
+## Event Handling Path
 
 ```
 webhook.Handler.Receive
-  → webhook.Service.Ingest (持久化 + idempotency)
-  → webhook.Service.ProcessEvent (异步)
+  → webhook.Service.Ingest (persistence + idempotency)
+  → webhook.Service.ProcessEvent (async)
     → handlePlatformEvent
       → Service.HandleDouyinPlatformEvent
         → ParseDouyinWebhookEnvelope / ParseJinriteimaiPushEnvelope
@@ -62,9 +62,10 @@ webhook.Handler.Receive
             → OrderEventHandler.HandleDouyinOrderEvent (P3 placeholder)
 ```
 
-## 未知事件处理原则
+## Unknown Event Handling Principle
 
-未知 tag/event 必须安全 ACK（返回 200），不得静默丢弃——记录 slog.Warn 日志。
+Unknown tags/events must always be safely ACKed (return 200) — they must never be silently dropped. A `slog.Warn` log entry must be recorded.
+
 ## P3.2 Multi-Shop Routing
 
 Douyin webhook business handling is shop-scoped. After signature verification and JSON validation, the handler extracts `client_key` / app ID, platform shop ID, and optional binding ID, then resolves them through `shops` + `shop_auth_tokens`. The persisted event carries `tenant_id`, `internal_shop_id`, `platform_shop_id`, `app_id`, and `binding_id`.

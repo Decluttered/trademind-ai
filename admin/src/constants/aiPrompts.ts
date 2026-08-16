@@ -3,7 +3,7 @@ import {
   SUPPORTED_COMMERCE_PLATFORM_KEYS,
 } from '@/constants/platformLabels';
 
-/** AI 技能模板 · 使用场景中文映射（与后端 ai_prompts.scene 一致） */
+/** AI skill template - use-case label mapping (matches backend ai_prompts.scene) */
 export const AI_PROMPT_SCENE_LABEL: Record<string, string> = {
   product: '商品优化',
   customer_service: '智能客服',
@@ -21,7 +21,7 @@ export const AI_PROMPT_SCENE_OPTIONS = Object.entries(AI_PROMPT_SCENE_LABEL).map
   label,
 }));
 
-/** AI 文本服务商中文映射（与「设置 → AI」provider 一致） */
+/** AI text provider label mapping (matches the provider under "Settings -> AI") */
 export const AI_TEXT_PROVIDER_LABEL: Record<string, string> = {
   openai: 'OpenAI',
   openai_compatible: 'OpenAI Compatible',
@@ -46,7 +46,7 @@ export const AI_TEXT_PROVIDER_OPTIONS = Object.entries(AI_TEXT_PROVIDER_LABEL).m
 
 export const AI_PROMPT_USE_SYSTEM_DEFAULT = '跟随系统默认';
 
-/** AI 生成语言：中文展示，value 保持为 Prompt 使用的标准语言代码。 */
+/** AI generation language: label shown to the user, value stays as the standard language code used by the Prompt. */
 export const AI_LANGUAGE_OPTIONS = [
   { value: 'zh', label: '中文' },
   { value: 'en', label: '英语' },
@@ -62,7 +62,7 @@ export const AI_LANGUAGE_OPTIONS = [
   { value: 'pt', label: '葡萄牙语' },
 ];
 
-/** AI 文案语气：中文展示，value 保持与现有 Prompt 变量兼容。 */
+/** AI copy tone: label shown to the user, value stays compatible with existing Prompt variables. */
 export const AI_TONE_OPTIONS = [
   { value: 'professional', label: '专业稳健' },
   { value: 'friendly', label: '亲切自然' },
@@ -72,7 +72,7 @@ export const AI_TONE_OPTIONS = [
   { value: 'formal', label: '正式严谨' },
 ];
 
-/** AI 商品文案目标平台；显示名同时作为 Prompt 值，兼容既有请求 payload。 */
+/** AI product copy target platform; the display name doubles as the Prompt value, for compatibility with the existing request payload. */
 export const AI_TARGET_PLATFORM_OPTIONS = [
   { value: '跨境通用', label: '跨境通用' },
   ...SUPPORTED_COMMERCE_PLATFORM_KEYS.map((platform) => ({
@@ -81,7 +81,7 @@ export const AI_TARGET_PLATFORM_OPTIONS = [
   })),
 ];
 
-/** AI 会话上下文平台使用站内平台编码，并保留手动会话。 */
+/** AI conversation context platform uses the internal platform code, and keeps the manual conversation option. */
 export const AI_CONTEXT_PLATFORM_OPTIONS = [
   ...SUPPORTED_COMMERCE_PLATFORM_KEYS,
   'manual',
@@ -90,7 +90,7 @@ export const AI_CONTEXT_PLATFORM_OPTIONS = [
   label: PLATFORM_DISPLAY_LABEL[platform],
 }));
 
-/** AI 任务记录 · 任务类型中文映射（与 backend ai_tasks.task_type 一致） */
+/** AI task record - task type label mapping (matches backend ai_tasks.task_type) */
 export const AI_TASK_TYPE_LABEL: Record<string, string> = {
   title_optimize: '标题优化',
   product_description_generate: '商品描述生成',
@@ -98,7 +98,7 @@ export const AI_TASK_TYPE_LABEL: Record<string, string> = {
   collect_rule_generate: '采集规则生成',
 };
 
-/** AI 任务记录 · 技能模板编号中文映射（与 backend ai_prompts.code 一致） */
+/** AI task record - skill template code label mapping (matches backend ai_prompts.code) */
 export const AI_PROMPT_CODE_LABEL: Record<string, string> = {
   product_title_optimize: '商品标题优化',
   product_description_generate: '商品描述生成',

@@ -1,274 +1,274 @@
-# AI 工作流优化指南
+# AI Workflow Optimization Guide
 
-本文用于让 Codex、Cursor、Claude Code、Copilot、Continue、Windsurf、Trae 等 AI 编程工具在 TradeMind 中更智能、快速、准确、高效并节约 token。核心目标是：**少读无关内容，先形成最小上下文包，再小步实现、验证和沉淀经验**。
+This document helps AI coding tools such as Codex, Cursor, Claude Code, Copilot, Continue, Windsurf, and Trae work more intelligently, quickly, accurately, and token-efficiently within TradeMind. The core goal is: **read less irrelevant content, form a minimal context package first, then implement, verify, and capture experience in small steps**.
 
-## 适用范围
+## Scope
 
-- 日常 vibe coding、Bug 修复、功能开发、重构、文档改进和 PR 准备。
-- 适用于所有 AI Agent 和 AI 编辑器；工具特有规则只放在对应配置中，长期通用规则放在 `AGENTS.md` 与本文。
-- 不替代 [ai-coding-rules.md](ai-coding-rules.md)、[module-map.md](module-map.md) 和 [task-checklist.md](task-checklist.md)，而是说明如何更省上下文地使用它们。
+- Day-to-day vibe coding, bug fixes, feature development, refactoring, documentation improvements, and PR preparation.
+- Applies to all AI agents and AI editors; tool-specific rules live only in their own configuration, while long-term general rules live in `AGENTS.md` and this document.
+- Does not replace [ai-coding-rules.md](ai-coding-rules.md), [module-map.md](module-map.md), or [task-checklist.md](task-checklist.md), but explains how to use them more context-efficiently.
 
-## 工作原则
+## Working Principles
 
-1. **先定位任务类型，再读取文件**：不要一开始全量读取仓库。
-2. **先读入口，再读局部**：`AGENTS.md`、本文、`docs/module-map.md`、相关模块文档、相关代码。
-3. **先事实后方案**：用搜索和现有代码确认脚本、路由、字段、配置、队列名和 Provider 接口。
-4. **小步改动，小步验证**：优先完成一个可验证闭环，再扩展关联内容。
-5. **保留人类决策权**：涉及产品范围、外部平台、密钥、生产数据、破坏性操作或高费用 AI 调用时必须谨慎确认。
-6. **把经验写回仓库**：重复出现的问题、架构决策和工具约定必须沉淀到对应文档，而不是只留在某次对话里。
+1. **Identify the task type before reading files**: do not read the entire repository up front.
+2. **Read entry points first, then details**: `AGENTS.md`, this document, `docs/module-map.md`, related module documentation, related code.
+3. **Facts before solutions**: use search and existing code to confirm scripts, routes, fields, configuration, queue names, and Provider interfaces.
+4. **Small changes, small verifications**: prioritize completing one verifiable closed loop before expanding to related content.
+5. **Preserve human decision-making authority**: proceed carefully and confirm when product scope, external platforms, secrets, production data, destructive operations, or costly AI calls are involved.
+6. **Write experience back to the repository**: recurring issues, architectural decisions, and tooling conventions must be captured in the appropriate document, not left only in a single conversation.
 
-## 最小上下文包
+## Minimal Context Package
 
-AI 开始任务时优先整理一个不超过 10 条的上下文包：
+When starting a task, an AI should first assemble a context package of no more than 10 items:
 
-| 内容 | 说明 |
+| Item | Description |
 | --- | --- |
-| 任务目标 | 用户真正要的结果，而不是工具的第一反应 |
-| 当前分支与改动 | `git status --short --branch`，避免覆盖用户修改 |
-| 改动类型 | 后端、Admin、Collector、Provider、API、配置、Docker、CI、文档 |
-| 关联入口 | 从 `docs/module-map.md` 找到必须检查的文件 |
-| 已有实现 | 用 `rg` 找 handler/service/provider/page/type/test，而不是猜 |
-| 约束 | MVP 范围、Provider 抽象、安全、队列、人工确认等 |
-| 计划 | 2-5 个可执行步骤 |
-| 验证方式 | 对应 `docs/task-checklist.md` 的最小检查 |
-| 风险 | 未确认、未验证、需人工判断的点 |
-| 经验沉淀 | 本次是否需要更新规则、pitfalls、PROGRESS 或模块文档 |
+| Task goal | What the user actually wants, not the tool's first impression |
+| Current branch and changes | `git status --short --branch`, to avoid overwriting the user's changes |
+| Change type | Backend, Admin, Collector, Provider, API, configuration, Docker, CI, documentation |
+| Related entry points | Files that must be checked, found via `docs/module-map.md` |
+| Existing implementation | Use `rg` to find the handler/service/provider/page/type/test, rather than guessing |
+| Constraints | MVP scope, Provider abstraction, security, queues, need for human confirmation, etc. |
+| Plan | 2-5 actionable steps |
+| Verification method | The minimal check from `docs/task-checklist.md` |
+| Risks | Points that are unconfirmed, unverified, or need human judgment |
+| Experience capture | Whether this task needs updates to rules, pitfalls, PROGRESS, or module documentation |
 
-上下文包只保存“会影响下一步决策的信息”。读过但不再需要的日志、候选文件、失败假设和临时输出不应继续带入后续对话。
+The context package should only retain "information that will affect the next decision." Logs, candidate files, failed hypotheses, and temporary output that have been read but are no longer needed should not carry forward into subsequent turns.
 
-## 上下文工程预算
+## Context Engineering Budget
 
-每次任务按“预算 → 检索 → 压缩 → 执行”的顺序管理上下文，避免越做越重。
+Manage context for every task in the order "budget → retrieve → compress → execute" to avoid the task getting heavier as it progresses.
 
-| 阶段 | Token 目标 | 允许进入上下文 | 不应进入上下文 |
+| Stage | Token target | Allowed into context | Should not enter context |
 | --- | --- | --- | --- |
-| 任务启动 | ≤ 1k | 用户目标、分支状态、改动类型、约束 | 全量 README、全量目录树 |
-| 定位文件 | ≤ 2k | `rg` 结果、相关文件路径、关键符号 | 无关搜索结果、大段重复代码 |
-| 读实现 | ≤ 6k | 相关函数、类型、配置片段、错误摘要 | 整个模块、完整构建日志 |
-| 修改验证 | ≤ 4k | diff 摘要、失败测试关键行、验证命令 | 成功日志全文、无关 warning |
-| 交付沉淀 | ≤ 2k | 改动摘要、验证结果、剩余风险、可复用经验 | 过程流水账 |
+| Task kickoff | ≤ 1k | User goal, branch state, change type, constraints | Full README, full directory tree |
+| Locating files | ≤ 2k | `rg` results, relevant file paths, key symbols | Irrelevant search results, large repeated code blocks |
+| Reading implementation | ≤ 6k | Relevant functions, types, config snippets, error summaries | Entire modules, full build logs |
+| Modify and verify | ≤ 4k | Diff summary, key lines from failed tests, verification commands | Full text of successful logs, unrelated warnings |
+| Deliver and capture | ≤ 2k | Change summary, verification results, remaining risks, reusable experience | A blow-by-blow account of the process |
 
-执行规则：
+Execution rules:
 
-- 先用 `rg --files`、`rg -n`、`git diff --stat` 找入口，再局部读取。
-- 同一事实只保留一次；如果已写入计划或文档，不在对话中反复展开。
-- 对长文件按标题、函数名或行号读取；只在结构未知时读取全文。
-- 对测试和构建输出只记录首个根因、相关文件行号、命令和最终状态。
-- 当上下文开始变大时，先产出 5-8 条“当前事实摘要”，再继续下一步。
+- Use `rg --files`, `rg -n`, and `git diff --stat` to find entry points first, then read locally.
+- Keep each fact only once; if it's already been written into a plan or document, don't re-expand it repeatedly in conversation.
+- Read long files by heading, function name, or line number; only read the full file when the structure is unknown.
+- For test and build output, record only the first root cause, relevant file/line numbers, the command, and the final status.
+- When the context starts growing large, first produce a 5-8 item "current fact summary" before continuing to the next step.
 
-## 任务分流
+## Task Routing
 
-| 任务类型 | 优先读取 | 常见同步 |
+| Task type | Read first | Common sync targets |
 | --- | --- | --- |
-| 后端 API / DTO | `docs/api.md`、对应 handler/service/model、前端 services/types | `docs/api.md`、Admin 页面、测试 |
-| Provider | `docs/provider.md`、`docs/provider-template.md`、`backend/internal/providers` | 设置页、连接测试、脱敏展示、Provider 文档 |
-| Admin 页面 | `admin/config/routes.ts`、页面、services、types、UI rules | README 能力描述、相关 docs |
-| Collector | `collector/`、`docs/collector-1688-pitfalls.md`、采集 API | 后端 DTO、草稿映射、`docs/api.md` |
-| 环境变量 | `.env.example`、`docs/env.md`、config 代码 | Docker、开发和部署文档 |
-| Docker / CI | workflow、compose、Dockerfile、`docs/docker-deployment.md` | README、CONTRIBUTING、PR 模板 |
-| 文档 / 规则 | `docs/README.md`、`AGENTS.md`、`.cursor/rules/README.md` | README / README.en 导航、相关 rule |
+| Backend API / DTO | `docs/api.md`, the corresponding handler/service/model, frontend services/types | `docs/api.md`, Admin pages, tests |
+| Provider | `docs/provider.md`, `docs/provider-template.md`, `backend/internal/providers` | Settings page, connection test, masked display, Provider documentation |
+| Admin page | `admin/config/routes.ts`, page, services, types, UI rules | README capability description, related docs |
+| Collector | `collector/`, `docs/collector-1688-pitfalls.md`, collection API | Backend DTO, draft mapping, `docs/api.md` |
+| Environment variables | `.env.example`, `docs/env.md`, config code | Docker, development, and deployment documentation |
+| Docker / CI | Workflow, compose, Dockerfile, `docs/docker-deployment.md` | README, CONTRIBUTING, PR template |
+| Documentation / rules | `docs/README.md`, `AGENTS.md`, `.cursor/rules/README.md` | README / README.en navigation, related rules |
 
-## Token 节约策略
+## Token-Saving Strategies
 
-- 优先用 `rg --files`、`rg -n`、`git diff --stat` 和局部 `Get-Content` / `sed` 读取，不粘贴大文件。
-- 先读目录和符号，再读实现；先读最近相关文件，再扩大范围。
-- 对大文档只读取相关章节；需要长期使用的结论写进计划或文档，不反复重读。
-- 不把构建日志、测试日志和 API 响应原样塞进上下文，只保留错误摘要、文件行号和关键命令。
-- 规则文件保持短而强，详细解释放到 `docs/`；Cursor `.mdc` 只保留高频约束和链接。
-- 一个任务只维护一个当前计划；完成一步更新一步，避免长篇重复复述。
+- Prefer `rg --files`, `rg -n`, `git diff --stat`, and partial `Get-Content` / `sed` reads; don't paste large files whole.
+- Read directories and symbols first, then implementation; read recently relevant files first, then expand scope.
+- For large documents, read only the relevant section; conclusions needed long-term should be written into a plan or document instead of re-read repeatedly.
+- Don't dump build logs, test logs, and API responses verbatim into context — keep only the error summary, file/line numbers, and key commands.
+- Keep rule files short and strong, with detailed explanations in `docs/`; Cursor `.mdc` files should only keep high-frequency constraints and links.
+- Maintain only one current plan per task; update it step by step as you go, avoiding long repeated restatements.
 
-## 自动提示词优化
+## Automatic Prompt Optimization
 
-AI Agent 应把用户原始需求先压缩成“执行提示词”，再开始搜索和修改。执行提示词不是写给用户看的长说明，而是给当前任务使用的短指令。
+An AI agent should first compress the user's raw request into an "execution prompt" before starting to search and modify. The execution prompt is not a long explanation written for the user, but a short instruction used for the current task.
 
-### 标准改写模板
-
-```text
-目标：用一句话描述可验收结果。
-任务类型：后端 / Admin / Collector / Provider / API / 配置 / Docker / CI / 文档。
-范围边界：必须做什么；明确不做什么。
-必读入口：AGENTS.md、docs/ai-workflow.md、docs/module-map.md、任务相关文件。
-事实确认：需要用 rg / git status / 局部读取确认的字段、路由、命令或配置。
-实现策略：2-5 步，优先复用现有分层、Provider、组件和文档结构。
-验证：按 docs/task-checklist.md 选择最小检查命令。
-沉淀：判断是否需要更新 docs / pitfalls / rules / PROGRESS。
-```
-
-### 改写规则
-
-- 模糊需求先补齐验收结果：例如“优化 AI 工作流”应落到“更新文档与规则，使 AI 能自动做提示词改写、上下文预算和经验回写”。
-- 大需求先拆 MVP 闭环：优先完成能验证的最小结果，不默认扩展完整 ERP。
-- 如果用户指定路径、命令或平台，先验证它存在；不存在时记录假设并搜索邻近实现。
-- 对高风险动作生成确认点：生产数据、密钥、付费 AI 调用、外部平台写操作、破坏性命令。
-- 最终提示词保持短，不复制长文档；长规则通过链接引用。
-
-### 需求澄清优先级
-
-只有在无法安全推断时才追问。优先自己从仓库确认以下信息：
-
-1. 路由、脚本、环境变量、Provider 名称、任务类型。
-2. 现有页面、服务、类型、测试和文档入口。
-3. 是否已有相同功能、相同 bug 或相同规则。
-
-必须追问的情况：
-
-- 目标会改变产品边界或引入重型能力。
-- 同一需求存在互斥实现路径且都会影响用户数据。
-- 需要真实密钥、账号、生产数据或外部平台写权限。
-
-## 标准执行流程
-
-1. **对齐目标**：确认任务是否属于当前两条主线，避免默认扩展完整 ERP。
-2. **扫描上下文**：检查分支、未提交改动、模块映射和相关文件。
-3. **形成计划**：列出影响范围、编辑文件和验证命令。
-4. **实施改动**：保持小而聚焦，优先复用已有分层和 Provider 抽象。
-5. **同步文档**：按 `docs/module-map.md` 更新相关文档和入口。
-6. **执行验证**：按 `docs/task-checklist.md` 做最小必要检查。
-7. **沉淀经验**：把可复用结论写到正确位置。
-8. **最终说明**：说明改了什么、验证了什么、未验证原因和剩余风险。
-
-## 质量门槛
-
-为减少返工，AI Agent 在编辑前、验证前和交付前各做一次轻量自检。
-
-| 时机 | 自检问题 |
-| --- | --- |
-| 编辑前 | 这个改动是否在用户目标内？是否查过 `docs/module-map.md`？是否会覆盖用户已有修改？ |
-| 验证前 | 是否同步了 API / 类型 / 配置 / 文档入口？是否需要格式化或构建？ |
-| 交付前 | 是否说明验证结果？未验证是否有原因？是否有可复用经验需要写回？ |
-
-如果某个检查失败，先补齐再继续；如果因为环境限制无法补齐，在最终说明中明确写出。
-
-## 自我成长机制
-
-AI 不应把“成长”理解成在本地偷偷保存私有记忆；TradeMind 的成长应通过仓库可审计文档完成。自我成长遵循“观察 → 归纳 → 写回 → 下次复用”的闭环。
-
-| 触发场景 | 写回位置 |
-| --- | --- |
-| 某类 Bug 第二次出现 | 对应 pitfalls 文档或模块文档 |
-| 新增跨工具长期规则 | `AGENTS.md`、`docs/ai-coding-rules.md`，必要时同步 `.cursor/rules/` |
-| Cursor 专属执行约束 | `.cursor/rules/*.mdc` 与 `.cursor/rules/README.md` |
-| 阶段事实、已完成能力、遗留问题 | `docs/PROGRESS.md` |
-| API / Provider / 队列 / 配置契约变化 | `docs/api.md`、`docs/provider.md`、`docs/env.md` |
-| Prompt、AI 调用链路或质量门槛变化 | Prompt 模板、AI Provider 文档、相关任务文档 |
-| PR 流程、检查命令或分支策略变化 | `docs/branching.md`、`CONTRIBUTING.md`、PR 模板 |
-
-### 经验回写判定
-
-满足任一条件时应写回，而不是只在聊天中说明：
-
-- 同类问题已经出现第二次。
-- 本次为了省 token 或提准确率形成了可复用步骤。
-- 某个模块有新的质量门槛、回归命令或禁止做法。
-- Prompt 模板、Provider 契约、AI 任务输入输出或 token 记录方式改变。
-- 文档或规则之间出现冲突，需要建立优先级。
-
-经验回写必须满足：
-
-- 不记录真实密钥、Cookie、Token、客户数据、生产数据或私密对话。
-- 不把一次性的个人偏好升级为全局规则。
-- 新规则必须短、可执行、能降低后续误判或 token 消耗。
-- 如果规则只适用于某个目录或技术栈，优先写成领域规则，避免污染所有任务。
-
-### 自我进化输出格式
-
-沉淀经验时优先使用以下格式，便于后续 AI 检索：
+### Standard Rewrite Template
 
 ```text
-触发：什么情况会用到这条经验。
-规则：一句可执行约束。
-验证：用什么命令、文件或页面确认。
-位置：规则适用的目录、模块或任务类型。
+Goal: describe the acceptable result in one sentence.
+Task type: backend / Admin / Collector / Provider / API / configuration / Docker / CI / documentation.
+Scope boundaries: what must be done; what is explicitly out of scope.
+Required reading: AGENTS.md, docs/ai-workflow.md, docs/module-map.md, task-related files.
+Fact confirmation: fields, routes, commands, or configuration that need to be confirmed via rg / git status / partial reads.
+Implementation strategy: 2-5 steps, prioritizing reuse of existing layering, Providers, components, and documentation structure.
+Verification: choose the minimal check command per docs/task-checklist.md.
+Capture: determine whether docs / pitfalls / rules / PROGRESS need to be updated.
 ```
 
-## 多工具协作约定
+### Rewrite Rules
 
-- **Codex / Claude Code / 其他 Agent**：先读 `AGENTS.md`、本文和任务相关文档，再执行改动。
-- **Cursor**：主要依赖 `.cursor/rules/*.mdc`，需要细节时跳转到 `docs/`；不要把本文完整复制到每条规则。
-- **Copilot / Continue / Windsurf / Trae**：把 `AGENTS.md` 和本文作为项目说明入口，按任务类型读取最小相关文档。
-- **人工开发者**：可把“最小上下文包”作为 Issue、PR 或交接说明模板。
+- For vague requests, first fill in the acceptance result: e.g. "optimize the AI workflow" should become "update documentation and rules so the AI can automatically do prompt rewriting, context budgeting, and writing back experience."
+- Break large requests down into an MVP closed loop first: prioritize completing the smallest verifiable result, and don't default to expanding into a full ERP.
+- If the user specifies a path, command, or platform, verify it exists first; if it doesn't, note the assumption and search for a nearby implementation.
+- Generate confirmation points for high-risk actions: production data, secrets, paid AI calls, external platform write operations, destructive commands.
+- Keep the final prompt short; don't copy long documents — reference long rules via links.
 
-## 常用提示模板
+### Requirement Clarification Priority
 
-面向任意 AI 工具发起任务时，建议包含：
+Only ask follow-up questions when a safe inference cannot be made. First try to confirm the following from the repository itself:
+
+1. Routes, scripts, environment variables, Provider names, task types.
+2. Existing pages, services, types, tests, and documentation entry points.
+3. Whether the same feature, same bug, or same rule already exists.
+
+Cases where a follow-up question is required:
+
+- The goal would change the product boundary or introduce heavyweight capability.
+- Mutually exclusive implementation paths exist for the same requirement, and both would affect user data.
+- Real secrets, accounts, production data, or external platform write access are needed.
+
+## Standard Execution Flow
+
+1. **Align on the goal**: confirm whether the task belongs to one of the current two main lines of work, avoiding a default expansion into a full ERP.
+2. **Scan context**: check the branch, uncommitted changes, module mapping, and related files.
+3. **Form a plan**: list the scope of impact, files to edit, and verification commands.
+4. **Implement the change**: keep it small and focused, prioritizing reuse of existing layering and Provider abstractions.
+5. **Sync documentation**: update related documentation and entry points per `docs/module-map.md`.
+6. **Run verification**: perform the minimum necessary checks per `docs/task-checklist.md`.
+7. **Capture experience**: write reusable conclusions to the correct location.
+8. **Final summary**: explain what was changed, what was verified, why anything was left unverified, and remaining risks.
+
+## Quality Gates
+
+To reduce rework, an AI agent performs a lightweight self-check before editing, before verifying, and before delivery.
+
+| Timing | Self-check question |
+| --- | --- |
+| Before editing | Is this change within the user's goal? Has `docs/module-map.md` been checked? Would it overwrite the user's existing changes? |
+| Before verifying | Have API / types / configuration / documentation entry points been synced? Is formatting or a build needed? |
+| Before delivery | Are the verification results stated? Is there a reason for anything unverified? Is there reusable experience that needs to be written back? |
+
+If a check fails, fix it before continuing; if it can't be fixed due to environment limitations, state that explicitly in the final summary.
+
+## Self-Improvement Mechanism
+
+AI should not interpret "growth" as secretly saving private memory locally; TradeMind's growth should happen through auditable repository documentation. Self-improvement follows the closed loop "observe → generalize → write back → reuse next time."
+
+| Trigger scenario | Write-back location |
+| --- | --- |
+| A category of bug occurs a second time | The corresponding pitfalls document or module documentation |
+| A new cross-tool long-term rule | `AGENTS.md`, `docs/ai-coding-rules.md`, synced to `.cursor/rules/` if needed |
+| Cursor-specific execution constraints | `.cursor/rules/*.mdc` and `.cursor/rules/README.md` |
+| Phase facts, completed capabilities, known issues | `docs/PROGRESS.md` |
+| API / Provider / queue / configuration contract changes | `docs/api.md`, `docs/provider.md`, `docs/env.md` |
+| Prompt, AI call chain, or quality gate changes | Prompt templates, AI provider documentation, related task documentation |
+| PR process, check commands, or branching strategy changes | `docs/branching.md`, `CONTRIBUTING.md`, PR template |
+
+### Criteria for Writing Back Experience
+
+Write back rather than only explaining in chat when any of the following apply:
+
+- The same type of issue has occurred a second time.
+- A reusable step was formed this time to save tokens or improve accuracy.
+- A module has a new quality gate, regression command, or prohibited practice.
+- A prompt template, Provider contract, AI task input/output, or token-logging approach has changed.
+- A conflict has appeared between documents or rules that needs a priority order.
+
+Writing back experience must satisfy:
+
+- Do not record real secrets, cookies, tokens, customer data, production data, or private conversations.
+- Do not elevate a one-off personal preference into a global rule.
+- New rules must be short, actionable, and reduce future misjudgment or token consumption.
+- If a rule only applies to a specific directory or tech stack, prefer writing it as a scoped rule rather than polluting all tasks.
+
+### Self-Improvement Output Format
+
+When capturing experience, prefer the following format for easier retrieval by future AI runs:
 
 ```text
-目标：
-影响范围：
-必须遵守：
-- 先读 AGENTS.md、docs/ai-workflow.md、docs/module-map.md
-- 保持 MVP 范围，不引入重型 ERP 能力
-- 先把需求改写成短执行提示词，再按最小上下文包读取文件
-- 修改后按 docs/task-checklist.md 验证
-期望输出：
-- 改动摘要
-- 验证结果
-- 未验证原因和剩余风险
+Trigger: the situation in which this experience applies.
+Rule: one actionable constraint.
+Verification: what command, file, or page confirms it.
+Location: the directory, module, or task type the rule applies to.
 ```
 
-## Admin 文案与 UI 规范
+## Multi-Tool Collaboration Conventions
 
-管理端改动（页面、组件、样式）时，除 `docs/module-map.md` 外必须先读取 `.agents/skills/frontend-design/SKILL.md`；该 skill 是 Admin UI 设计规范、共享组件规范、布局规范、响应式验收和 AI 实施流程的唯一完整来源。下表只列常用辅助资源，不替代主规范。
+- **Codex / Claude Code / other agents**: read `AGENTS.md`, this document, and task-related documentation first, then execute the change.
+- **Cursor**: relies mainly on `.cursor/rules/*.mdc`, jumping to `docs/` when detail is needed; don't copy this entire document into every rule.
+- **Copilot / Continue / Windsurf / Trae**: treat `AGENTS.md` and this document as the project-description entry point, reading the minimal relevant documentation per task type.
+- **Human developers**: can use the "minimal context package" as a template for issues, PRs, or handoff notes.
 
-| 资源 | 用途 |
+## Common Prompt Template
+
+When starting a task with any AI tool, it's recommended to include:
+
+```text
+Goal:
+Scope of impact:
+Must follow:
+- Read AGENTS.md, docs/ai-workflow.md, docs/module-map.md first
+- Stay within MVP scope; do not introduce heavyweight ERP capability
+- Rewrite the request into a short execution prompt first, then read files per the minimal context package
+- Verify per docs/task-checklist.md after making changes
+Expected output:
+- Change summary
+- Verification results
+- Reasons for anything unverified, and remaining risks
+```
+
+## Admin Copy and UI Standards
+
+For changes to the Admin side (pages, components, styles), in addition to `docs/module-map.md`, read `.agents/skills/frontend-design/SKILL.md` first; that skill is the single complete source for Admin UI design standards, shared-component conventions, layout rules, responsive acceptance criteria, and the AI implementation workflow. The table below lists only commonly used supporting resources and does not replace the primary standard.
+
+| Resource | Purpose |
 | --- | --- |
-| `.agents/skills/frontend-design/SKILL.md` | Admin UI 主规范、五档视口、`browser_route`、根节点横向溢出、readonly、rowKey、Header / Content 基线、API / payload 保护 |
-| `docs/ui-copywriting.md` | 用户可见文案术语表、禁止项、`pnpm check:ui-copy` |
-| `admin/src/constants/copywriting.ts` | 页面标题、说明、商品/平台/任务/库存统一术语 |
-| `admin/src/constants/layoutTokens.ts` | 页面内边距、卡片间距、表单栅格间距 |
-| `admin/src/constants/errorMessages.ts` | 错误码 → 用户可见提示（含操作建议） |
-| `admin/src/constants/status.ts` | 状态文案与 Tag 颜色 |
-| `admin/src/constants/userFriendly.ts` | 通用标签（规格、存储、运行时、接入方式等） |
-| `admin/src/components/ui/` | PageContainer、SectionCard、FormGrid、EmptyState、TechnicalDetails、TaskJsonBlock 等 |
+| `.agents/skills/frontend-design/SKILL.md` | Primary Admin UI standard: five-tier viewports, `browser_route`, root-node horizontal overflow, readonly, rowKey, Header / Content baseline, API / payload protection |
+| `docs/ui-copywriting.md` | User-facing copy glossary, prohibited items, `pnpm check:ui-copy` |
+| `admin/src/constants/copywriting.ts` | Page titles, descriptions, unified terminology for products/platforms/tasks/inventory |
+| `admin/src/constants/layoutTokens.ts` | Page padding, card spacing, form grid spacing |
+| `admin/src/constants/errorMessages.ts` | Error code → user-facing message (including suggested actions) |
+| `admin/src/constants/status.ts` | Status copy and Tag colors |
+| `admin/src/constants/userFriendly.ts` | Generic labels (spec, storage, runtime, access method, etc.) |
+| `admin/src/components/ui/` | PageContainer, SectionCard, FormGrid, EmptyState, TechnicalDetails, TaskJsonBlock, etc. |
 
-### 文案原则（摘要）
+### Copy Principles (summary)
 
-1. **面向用户，不面向开发者**：主界面不裸写 Provider、Worker、runtime、Storage、Stale、Endpoint 等；完整术语表见 **`docs/ui-copywriting.md`**。
-2. **帮助文字**只回答：有什么用、填什么、填错会怎样。
-3. **技术信息**（错误码、Request ID、原始 JSON）放入「技术详情」折叠区，默认收起；任务详情抽屉内 JSON 使用 `TechnicalDetails` + `TaskJsonBlock`。
-4. **空状态**须包含：标题、原因、建议操作（可选按钮）。
-5. **按钮**用「动词 + 对象」（如「保存设置」「测试连接」），避免裸「确定」「提交」。
-6. **改动用户可见文案后**运行 `pnpm check:ui-copy --strict`（CI 同命令）；新增高频词同步 `userFriendly.ts` 与 `docs/ui-copywriting.md`。
+1. **User-facing, not developer-facing**: the main UI should not surface raw terms like Provider, Worker, runtime, Storage, Stale, Endpoint; see the full glossary in **`docs/ui-copywriting.md`**.
+2. **Help text** should only answer: what it's for, what to enter, and what happens if entered incorrectly.
+3. **Technical information** (error codes, request IDs, raw JSON) belongs in a collapsed "Technical Details" section, collapsed by default; JSON in the task detail drawer uses `TechnicalDetails` + `TaskJsonBlock`.
+4. **Empty states** must include: a title, the reason, and a suggested action (an optional button).
+5. **Buttons** use "verb + object" (e.g. "Save Settings", "Test Connection"), avoiding bare "OK" or "Submit".
+6. **After changing user-facing copy**, run `pnpm check:ui-copy --strict` (same command as CI); sync new high-frequency terms to `userFriendly.ts` and `docs/ui-copywriting.md`.
 
-### 布局原则（摘要）
+### Layout Principles (summary)
 
-布局、横向基线、页面容器、五档视口、Modal / Drawer / Popconfirm 和写请求副作用验收以 `.agents/skills/frontend-design/SKILL.md` 为准。改动 Admin 页面时：先查是否已有 `PAGE_COPY` / 公共组件可复用，避免每页手写样式与重复术语；页面容器优先使用 `TmPageContainer`，看板类页面可按主规范使用 `layoutTokens.dashboardMaxWidth`。
+Layout, horizontal baseline, page container, five-tier viewports, Modal / Drawer / Popconfirm, and write-request side-effect acceptance criteria are governed by `.agents/skills/frontend-design/SKILL.md`. When modifying an Admin page: first check whether an existing `PAGE_COPY` / shared component can be reused, to avoid hand-writing styles and duplicating terminology on every page; prefer `TmPageContainer` for the page container, and dashboard-type pages may use `layoutTokens.dashboardMaxWidth` per the primary standard.
 
-### 已落地的典型模式
+### Established Patterns
 
-| 场景 | 做法 |
+| Scenario | Approach |
 | --- | --- |
-| 任务详情抽屉 | 业务字段在 `Descriptions`；`input` / `output` / 原始 JSON 用 `TechnicalDetails` + `TaskJsonBlock` |
-| 发布 / 库存 / 刊登说明 | 用户可读说明在外；API 参数名、预设键名折叠在 `TechnicalDetails` |
-| 店铺授权表单 | OAuth 主流程外露；密钥覆盖、Token、卖家编号等收进 `TechnicalDetails` |
-| 采集规则 / Prompt JSON | 编辑区整体包在 `TechnicalDetails`，并提示「一般无需修改」 |
-| 状态 Tag | 优先 `constants/status.ts` 或 `commonStatusLabel()`，避免直接渲染英文枚举 |
-| 平台 / 任务类型 | `platformLabel()`、`aiTaskTypeLabel()`、`taskTypeLabel()` 等 |
-| 错误展示 | 主界面用 `formatUserErrorMessage()`；原始 `errorCode` 仅在技术详情区 |
+| Task detail drawer | Business fields in `Descriptions`; `input` / `output` / raw JSON in `TechnicalDetails` + `TaskJsonBlock` |
+| Publishing / inventory / listing descriptions | User-readable description shown directly; API parameter names and preset key names collapsed in `TechnicalDetails` |
+| Store authorization form | OAuth main flow exposed; secret overrides, tokens, seller IDs, etc. collapsed into `TechnicalDetails` |
+| Collection rules / Prompt JSON | The entire editing area is wrapped in `TechnicalDetails`, with a hint that it "usually doesn't need to be changed" |
+| Status tags | Prefer `constants/status.ts` or `commonStatusLabel()`; avoid rendering raw English enum values directly |
+| Platform / task type | `platformLabel()`, `aiTaskTypeLabel()`, `taskTypeLabel()`, etc. |
+| Error display | Main UI uses `formatUserErrorMessage()`; the raw `errorCode` appears only in the technical details section |
 
-### 常用辅助函数（`copywriting.ts` / `status.ts`）
+### Common Helper Functions (`copywriting.ts` / `status.ts`)
 
 - `commonStatusLabel` / `readinessLevelLabel` / `publishModeLabel`
 - `collectTaskEventLabel` / `collectTaskStatusTransition`
-- `AI_FIELD_COPY`（如 AI 优化标题 / 描述）
+- `AI_FIELD_COPY` (e.g. AI-optimized title / description)
 
-新增页面或抽屉时，先对照上表与 `PublishTasks`、`DraftDetail` 刊登 Tab 的实现，再写 UI。
+When adding a new page or drawer, check the table above and the implementation of the `PublishTasks` and `DraftDetail` publishing tabs before writing the UI.
 
-## 完成标准
+## Completion Criteria
 
-一次 AI 协作任务完成前至少确认：
+Before an AI collaboration task is considered complete, confirm at least:
 
-- 已读当前任务相关的代码、配置和文档。
-- 未覆盖用户已有修改。
-- 已按 `docs/module-map.md` 检查关联内容。
-- 已按 `docs/task-checklist.md` 执行或说明验证。
-- 新增长期经验已写到合适文档，而不是只留在聊天里。
+- The code, configuration, and documentation relevant to the current task have been read.
+- The user's existing changes have not been overwritten.
+- Related content has been checked per `docs/module-map.md`.
+- Verification has been performed or explained per `docs/task-checklist.md`.
+- Any new long-term experience has been written to the appropriate document, not left only in chat.
 
-## 生产维护阶段
+## Production Maintenance Phase
 
-历史 F1–F9 规划、冻结审计和增强计划已从当前工作树移除，必要时从 Git 历史查询。当前任务按以下入口执行：
+The historical F1-F9 planning, freeze audits, and enhancement plans have been removed from the current working tree; query Git history when needed. Current tasks should be carried out via the following entry points:
 
-- 从 [文档中心](README.md)、[模块关联索引](module-map.md) 和 [当前维护状态](PROGRESS.md) 确认范围。
-- 自动化回归由 GitHub Actions 执行，产品流程按 [P10 人工验收清单](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md) 签收。
-- 需要 Demo 数据时按 [Demo 数据种子指南](DEMO_SEEDING_GUIDE.md) 临时生成，不提交运行输出。
-- 维护优先处理稳定性、安全问题和必要功能修复，不恢复阶段 gate、一次性报告或冻结证据。
+- Confirm scope from the [Documentation Center](README.md), [Module Reference Index](module-map.md), and [Current Maintenance Status](PROGRESS.md).
+- Automated regression is run by GitHub Actions; product processes are signed off per the [P10 Manual Acceptance Checklist](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md).
+- When demo data is needed, generate it temporarily per the [Demo Data Seeding Guide](DEMO_SEEDING_GUIDE.md); do not commit run output.
+- Maintenance prioritizes stability, security issues, and necessary feature fixes; it does not restore phase gates, one-off reports, or freeze evidence.

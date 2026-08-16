@@ -1,16 +1,16 @@
 import dayjs from 'dayjs';
 
-/** 后台统一日期时间展示格式 */
+/** Unified admin-panel date/time display format */
 export const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
 export type DateTimeInput = string | number | Date | null | undefined;
 
-/** 将 ISO / 时间戳格式化为本地可读时间；无效或空值返回 fallback（默认 —） */
+/** Formats an ISO string / timestamp into a locally readable time; returns fallback for invalid or empty values (default —) */
 export function formatDateTime(value: DateTimeInput, fallback = '—'): string {
   if (value === null || value === undefined || value === '') return fallback;
   const d = dayjs(value);
   return d.isValid() ? d.format(DATETIME_FORMAT) : String(value);
 }
 
-/** @deprecated 请使用 formatDateTime */
+/** @deprecated Use formatDateTime */
 export const formatTs = formatDateTime;

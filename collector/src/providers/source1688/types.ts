@@ -1,19 +1,19 @@
 import type { NormalizedProduct, ProductSku } from '../../types/product.js';
 
-/** 浏览器端从 DOM 抽到的规格维度 */
+/** Spec dimensions extracted from the DOM on the browser side */
 export type DomSkuDimension = {
   name: string;
   values: string[];
 };
 
-/** 浏览器端从尺码表抽到的行（含价/库存文案） */
+/** Rows extracted from the size table on the browser side (includes price/stock text) */
 export type DomSkuTableRow = {
   label: string;
   priceText?: string;
   stockText?: string;
 };
 
-/** 浏览器端 evaluate 返回的原始抽取结果（可序列化） */
+/** Raw extraction result returned by browser-side evaluate (serializable) */
 export type BrowserExtractPayload = {
   finalUrl: string;
   docTitle: string;
@@ -27,12 +27,12 @@ export type BrowserExtractPayload = {
   headingText: string;
   galleryUrls: string[];
   detailUrls: string[];
-  /** DOM 价格区域文本 */
+  /** Text from the DOM price region */
   domPriceTexts: string[];
   paramPairs: Array<{ key: string; value: string }>;
   domSkuDimensions: DomSkuDimension[];
   domSkuTableRows: DomSkuTableRow[];
-  /** 可能含 JSON 的 script 片段（已截断，供 Node 侧再解析） */
+  /** Script fragments that may contain JSON (truncated, for re-parsing on the Node side) */
   scriptSnippets: string[];
 };
 

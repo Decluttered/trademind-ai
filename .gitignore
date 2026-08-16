@@ -14,7 +14,7 @@ tools/k6/
 !/data/storage-states/.gitkeep
 /backend/data/uploads/
 
-# Collector runtime（Playwright userDataDir、Cookie、Local Storage 等，含敏感登录态，禁止提交）
+# Collector runtime (Playwright userDataDir, cookies, local storage, etc.; contains sensitive login state, must not be committed)
 collector/data/browser-profiles/*
 !collector/data/browser-profiles/.gitkeep
 collector/.profiles/
@@ -25,7 +25,7 @@ collector/data/snapshots/*
 !collector/data/snapshots/.gitkeep
 collector/data/tmp/
 collector/data/cache/
-# 历史 bug：debug-snapshot 曾误写入 src/data，兜底忽略残留
+# Historical bug: debug-snapshot was once mistakenly written into src/data; ignore leftovers as a safety net
 collector/src/data/
 
 # Node
@@ -34,22 +34,22 @@ dist/
 build/
 .pnpm-store/
 
-# Umi / Ant Design Pro（构建时生成，任意子目录）
+# Umi / Ant Design Pro (generated at build time, any subdirectory)
 **/.umi/
 **/.umi-production/
 
-# TypeScript / 前端工具缓存
+# TypeScript / frontend tooling cache
 *.tsbuildinfo
 .eslintcache
 .parcel-cache/
 .vite/
 
-# 测试覆盖率
+# Test coverage
 coverage/
 .nyc_output/
 *.lcov
 
-# Playwright（采集/端到端本地跑时可能生成）
+# Playwright (may be generated during local collection/e2e runs)
 playwright-report/
 test-results/
 blob-report/
@@ -57,7 +57,7 @@ blob-report/
 .playwright-mcp/
 ms-playwright/
 
-# Monorepo / 构建工具
+# Monorepo / build tooling
 .turbo/
 
 # Go
@@ -80,7 +80,7 @@ __debug_bin*
 /logs/
 /artifacts/
 
-# IDE / 编辑器
+# IDE / editor
 .idea/
 .fleet/
 .vscode/
@@ -110,7 +110,7 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# 合并/补丁残留
+# Merge/patch leftovers
 *.orig
 *.rej
 

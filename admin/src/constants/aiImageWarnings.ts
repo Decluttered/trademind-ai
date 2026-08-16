@@ -1,4 +1,4 @@
-/** AI 图片结构化 warning / error 码（与 backend aiproductimage/warning_codes.go 对齐） */
+/** AI image structured warning / error codes (aligned with backend aiproductimage/warning_codes.go) */
 export const AI_IMAGE_WARNING_CODES = [
   'provider_config_missing',
   'dashscope_key_missing',
@@ -85,6 +85,6 @@ export function aiImageWarningSettingsUrl(code?: string | null): string | undefi
   return AI_IMAGE_WARNING_SETTINGS_URL[k];
 }
 
-/** 批次概览降级说明（H1.3 统一文案） */
+/** Batch overview degradation note (H1.3 unified copy) */
 export const AI_IMAGE_DEGRADED_SUMMARY =
   '当前图片处理已完成，但部分能力因接入服务配置缺失降级。你可以补充对应密钥后重新处理。';

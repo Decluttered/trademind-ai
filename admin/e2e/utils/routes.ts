@@ -10,6 +10,7 @@ import { imageProviderCapabilities } from '../mocks/image-providers';
 import { observabilityResponse } from '../mocks/observability';
 import { operationTaskResponse } from '../mocks/operation-tasks';
 import { platformRuntimeResponse } from '../mocks/platform-runtime';
+import { mindBayResponse } from '../mocks/mindbay';
 
 export async function seedAdminAuth(page: Page) {
   await page.addInitScript(([key, token]) => {
@@ -25,7 +26,7 @@ export async function routeStaticAssets(page: Page) {
 
 export async function routeAdminApi(page: Page) {
   await routeStaticAssets(page);
-  await page.route('**/api/v1/**', async (route) => {
+  await page.route(/\/(?:api\/v1|v1)\//, async (route) => {
     const request = route.request();
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method().toUpperCase())) {
       await route.fallback();
@@ -46,6 +47,7 @@ export async function routeAdminApi(page: Page) {
       readinessResponse(path) ??
       publishResponse(path) ??
       inventoryResponse(path) ??
+      mindBayResponse(path) ??
       (path.includes('/product-publications/') && path.endsWith('/douyin/sku-bindings') ? skuBindingsResponse(path.split('/').at(-3) || undefined) : null) ??
       ok({ list: [], pagination: { page: 1, pageSize: 20, total: 0, totalPages: 1 } });
 

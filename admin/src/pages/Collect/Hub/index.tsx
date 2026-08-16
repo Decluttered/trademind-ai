@@ -174,7 +174,7 @@ async function openCustomCollectModal(
       message.warning(NO_COLLECT_RULE_MESSAGE);
     }
   } catch {
-    // 仍打开 Modal，由弹窗内引导创建规则
+    // Still open the Modal; the dialog guides the user to create a rule
   }
   setCustomModalOpen(true);
 }

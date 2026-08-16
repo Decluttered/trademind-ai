@@ -310,7 +310,7 @@ func (s *Service) checkShopAuth(ctx context.Context) []CheckItem {
 		}))
 	}
 
-	// 令牌 presence for first authorized shop
+	// Token presence for first authorized shop
 	var probeShop *shop.Shop
 	for i := range shops {
 		if shops[i].AuthStatus == shop.AuthAuthorized {

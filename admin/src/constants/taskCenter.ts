@@ -1,4 +1,4 @@
-/** 失败任务 / 告警 · 严重等级（与后端 failureclassifier 一致） */
+/** Failed task / alert severity levels (matches backend failureclassifier) */
 export const TASK_FAILURE_SEVERITY: Record<string, { text: string; color: string }> = {
   low: { text: '低', color: 'default' },
   medium: { text: '中', color: 'blue' },
@@ -11,7 +11,7 @@ export const TASK_FAILURE_SEVERITY_OPTIONS = Object.entries(TASK_FAILURE_SEVERIT
   value,
 }));
 
-/** 失败归类（与 backend failureclassifier 类别常量一致） */
+/** Failure category (matches backend failureclassifier category constants) */
 export const TASK_FAILURE_CATEGORY_LABEL: Record<string, string> = {
   platform_auth: '平台授权失败',
   platform_permission: '平台权限不足',
@@ -52,7 +52,7 @@ export const TASK_FAILURE_CATEGORY_LABEL: Record<string, string> = {
   worker_lease_expired: '后台任务执行超时',
   system_error: '系统错误',
   unknown: '未知',
-  // AI 批量文案（aiproducttext）
+  // AI batch product copy (aiproducttext)
   ai_text_generation_failed: 'AI 文案生成失败',
   ai_text_apply_conflict: 'AI 文案应用时发现内容冲突',
   ai_text_apply_failed: 'AI 文案应用失败',
@@ -68,7 +68,7 @@ export const TASK_FAILURE_CATEGORY_LABEL: Record<string, string> = {
   ai_image_storage_public_url_missing: '存储公网地址未配置',
   ai_image_download_failed: 'AI 图片源图下载失败',
   ai_image_unsupported_operation: 'AI 图片能力不支持',
-  // 抖店平台级站内告警（douyinruntime/alert.go）
+  // Douyin Shop platform-level in-app alerts (douyinruntime/alert.go)
   douyin_token_refresh_failed: '访问令牌刷新失败',
   douyin_webhook_shop_not_resolved: 'Webhook 店铺未解析',
   douyin_webhook_shop_ambiguous: 'Webhook 店铺绑定歧义',
@@ -107,7 +107,7 @@ export function failureSeverityLabel(sev?: string): string {
   return TASK_FAILURE_SEVERITY[k]?.text || k;
 }
 
-/** 失败任务中心可查询详情的任务类型（与后端 parseTaskType 一致） */
+/** Task types whose detail can be queried in the failed task center (matches backend parseTaskType) */
 export const TASK_CENTER_FAILURE_TASK_TYPES = [
   'collect',
   'image',
@@ -122,13 +122,13 @@ export const TASK_CENTER_FAILURE_TASK_TYPES = [
 
 export type TaskCenterFailureTaskType = (typeof TASK_CENTER_FAILURE_TASK_TYPES)[number];
 
-/** 平台级站内告警 taskType（sourceId 非业务任务 UUID，不可走失败详情接口） */
+/** Platform-level in-app alert taskType (sourceId is not a business task UUID, cannot use the failure detail endpoint) */
 export const PLATFORM_ALERT_TASK_TYPES = ['douyin_platform'] as const;
 
 const TASK_FAILURE_DETAIL_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** 任务类型（失败任务中心列表） */
+/** Task type (failed task center list) */
 export const TASK_CENTER_TASK_TYPE_LABEL: Record<string, string> = {
   collect: '采集',
   image: 'AI 图片',
@@ -157,12 +157,12 @@ export function isTaskFailureDetailId(id?: string | null): boolean {
   return TASK_FAILURE_DETAIL_ID_RE.test(k);
 }
 
-/** 是否可打开 GET /task-center/failures/:taskType/:id */
+/** Whether GET /task-center/failures/:taskType/:id can be opened */
 export function canOpenFailureDetail(taskType?: string | null, sourceId?: string | null): boolean {
   return isTaskCenterFailureTaskType(taskType) && isTaskFailureDetailId(sourceId);
 }
 
-/** 告警中心「相关入口」深链：平台告警走运维页，业务失败任务走详情深链 */
+/** Alert center "related entry" deep link: platform alerts go to the ops page, business failed tasks go to the detail deep link */
 export function resolveAlertRelatedLink(alert: {
   taskType: string;
   sourceId: string;
@@ -188,7 +188,7 @@ export function resolveAlertRelatedLink(alert: {
   return { href: '/ops/task-center/failures', label: '失败任务' };
 }
 
-/** 抖店任务恢复状态 → 用户可见文案（不展示 stale / result_unknown 等内部值） */
+/** Douyin Shop task recovery status → user-visible copy (does not display internal values like stale / result_unknown) */
 export const TASK_RECOVERY_STATUS_LABEL: Record<string, string> = {
   stale: '任务执行时间过长',
   result_unknown: '平台结果暂时无法确认',
@@ -208,7 +208,7 @@ export function recoveryStatusLabel(status?: string | null): string {
   return TASK_RECOVERY_STATUS_LABEL[k] || '—';
 }
 
-/** Worker 进程有效状态（监控页） */
+/** Worker process effective status (monitoring page) */
 export const WORKER_EFFECTIVE_STATUS: Record<string, { text: string; color: string }> = {
   running: { text: '运行中', color: 'success' },
   stale: { text: '心跳超时', color: 'warning' },
@@ -224,7 +224,7 @@ export const WORKER_STATUS_METRIC: Record<
   stopped: { text: '已停止', valueStyle: 'var(--ant-color-text-secondary)' },
 };
 
-/** Worker 监控按类型分组（与后端 byType 键一致） */
+/** Worker monitoring grouped by type (matches backend byType keys) */
 export const WORKER_MONITOR_TYPE_KEYS = [
   'collect',
   'image',
@@ -244,12 +244,12 @@ export function workerTypeLabel(type?: string): string {
   return TASK_CENTER_TASK_TYPE_LABEL[k] || k;
 }
 
-/** 告警中心任务类型显示名（与 workerTypeLabel 一致） */
+/** Alert center task type display name (matches workerTypeLabel) */
 export function taskCenterTaskTypeLabel(taskType?: string): string {
   return workerTypeLabel(taskType);
 }
 
-/** 归一化状态 */
+/** Normalized status */
 export const TASK_NORMALIZED_STATUS: Record<string, { text: string; color: string }> = {
   failed: { text: '失败', color: 'error' },
   partial_success: { text: '部分成功', color: 'warning' },

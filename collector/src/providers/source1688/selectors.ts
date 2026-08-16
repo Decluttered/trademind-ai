@@ -1,6 +1,6 @@
 /**
- * 1688 详情页多套皮肤并存，同一字段多组兜底选择器。
- * 皆为「尽量命中」，未命中则由 script JSON 与 og:image 补全。
+ * Multiple 1688 detail-page skins coexist, so each field has several fallback selector groups.
+ * All are "best effort" matches; when none hit, script JSON and og:image fill in the gaps.
  */
 export const TITLE_SELECTORS = [
   'h1.d-title',
@@ -10,7 +10,7 @@ export const TITLE_SELECTORS = [
   'h1[class*="title"]',
 ];
 
-/** 主图预览区（非详情正文）；避免过宽的 [class*="gallery"] 以免扫到服务图标 */
+/** Main image preview area (not the detail body); avoids overly broad [class*="gallery"] to prevent picking up service icons */
 export const MAIN_GALLERY_SELECTORS = [
   '.vertical-img img',
   '.dot-img-footer-list img',
@@ -25,7 +25,7 @@ export const MAIN_GALLERY_SELECTORS = [
   '.obj-header-image img',
 ];
 
-/** 详情描述区（常为富文本容器） */
+/** Detail description area (usually a rich-text container) */
 export const DETAIL_SELECTORS = [
   '#offer-template-0 img',
   '.offer-description img',
@@ -37,7 +37,7 @@ export const DETAIL_SELECTORS = [
   '.wireless-description img',
 ];
 
-/** 参数 / 属性表 */
+/** Parameters / attributes table */
 export const ATTRIBUTE_ROW_SELECTORS = [
   '.offer-attrprogram .de-feature-item',
   '.offer-attr-item',
@@ -48,7 +48,7 @@ export const ATTRIBUTE_ROW_SELECTORS = [
   '[module-title="商品属性"] tr',
 ];
 
-/** SKU 规格区（颜色/尺码等） */
+/** SKU spec area (color/size, etc.) */
 export const SKU_SECTION_SELECTORS = [
   '[class*="sku-item-wrapper"]',
   '[class*="sku-selector"]',
@@ -59,7 +59,7 @@ export const SKU_SECTION_SELECTORS = [
   '.module-od-sku-selection',
 ];
 
-/** SKU 尺码/库存表格行 */
+/** SKU size/stock table rows */
 export const SKU_TABLE_ROW_SELECTORS = [
   '[class*="sku-table"] tr',
   '[class*="sku-item-list"] [class*="item"]',

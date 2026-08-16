@@ -3,15 +3,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sanitizeProfileKey } from './profile-key.js';
 
-/** collector 包根目录（与运行时 cwd 无关）。 */
+/** Collector package root directory (independent of the runtime cwd). */
 export const COLLECTOR_PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../..',
 );
 
 /**
- * 1688 等 Provider 持久化 Profile 根目录。
- * 优先 COLLECTOR_BROWSER_PROFILE_DIR，其次 BROWSER_PROFILE_ROOT，默认 collector/data/browser-profiles。
+ * Root directory for persistent profiles of providers such as 1688.
+ * Prefers COLLECTOR_BROWSER_PROFILE_DIR, then BROWSER_PROFILE_ROOT, defaulting to collector/data/browser-profiles.
  */
 export function getBrowserProfileRoot(): string {
   const raw =
@@ -25,17 +25,17 @@ export function getBrowserProfileRoot(): string {
   return path.join(COLLECTOR_PACKAGE_ROOT, 'data', 'browser-profiles');
 }
 
-/** 1688 userDataDir：BROWSER_PROFILE_ROOT/1688 */
+/** 1688 userDataDir: BROWSER_PROFILE_ROOT/1688 */
 export function get1688UserDataDir(): string {
   return path.join(getBrowserProfileRoot(), '1688');
 }
 
-/** 拼多多专用 Profile（与 1688 / custom 隔离）：BROWSER_PROFILE_ROOT/pinduoduo */
+/** Pinduoduo-dedicated profile (isolated from 1688 / custom): BROWSER_PROFILE_ROOT/pinduoduo */
 export function getPinduoduoUserDataDir(): string {
   return path.join(getBrowserProfileRoot(), 'pinduoduo');
 }
 
-/** 淘宝/天猫专用 Profile：BROWSER_PROFILE_ROOT/taobao_tmall */
+/** Taobao/Tmall-dedicated profile: BROWSER_PROFILE_ROOT/taobao_tmall */
 export function getTaobaoTmallUserDataDir(): string {
   return path.join(getBrowserProfileRoot(), 'taobao_tmall');
 }

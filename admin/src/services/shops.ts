@@ -235,3 +235,14 @@ export async function postAmazonOAuthCallback(
 ): Promise<ShopDetail> {
   return postJSON(`/api/v1/shops/${shopId}/oauth/amazon/callback`, payload);
 }
+
+export async function getEbayOAuthAuthorizeUrl(shopId: string): Promise<{ authorizeUrl: string; state: string }> {
+  return getWithParams(`/api/v1/shops/${shopId}/oauth/ebay/authorize-url`, {});
+}
+
+export async function postEbayOAuthCallback(
+  shopId: string,
+  payload: { code: string; state: string },
+): Promise<ShopDetail> {
+  return postJSON(`/api/v1/shops/${shopId}/oauth/ebay/callback`, payload);
+}

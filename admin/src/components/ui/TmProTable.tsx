@@ -13,7 +13,7 @@ type TmToolBarRender<T extends Record<string, unknown>, U extends Record<string,
 >;
 
 /**
- * 统一 ProTable：用可点击的 Button 承接刷新（修复工具栏内置 span 图标在某些布局下点击无效的问题）。
+ * Unified ProTable: uses a clickable Button to handle refresh (fixes the toolbar's built-in span icon being unclickable in some layouts).
  */
 export default function TmProTable<
   T extends Record<string, unknown>,
@@ -51,7 +51,7 @@ export default function TmProTable<
         <Button type="text" aria-label="表格密度" icon={<ColumnHeightOutlined />} />
       ),
       setting,
-      // 内置 reload 为 span+图标，点击区域易失效；改由 toolBarRender 中的 Button 触发。
+      // The built-in reload is a span + icon whose click area is easily broken; triggered instead by the Button in toolBarRender.
       reload: false,
     };
   }, [options]);

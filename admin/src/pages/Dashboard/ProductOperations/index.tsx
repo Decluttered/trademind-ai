@@ -856,7 +856,7 @@ export default function ProductOperationsDashboardPage() {
         </OperationToolbar>
       }
     >
-      {/* 筛选 */}
+      {/* Filters */}
       <ProCard variant="outlined" style={{ marginBottom: 16 }} bodyStyle={{ padding: '12px 16px' }}>
         <Space wrap size={[12, 12]}>
           <RangePicker
@@ -925,7 +925,7 @@ export default function ProductOperationsDashboardPage() {
         <DashboardSkeleton />
       ) : (
         <>
-          {/* 1. 顶部欢迎区 + KPI */}
+          {/* 1. Top welcome area + KPI */}
           <ProCard variant="outlined" style={{ marginBottom: 16 }} bodyStyle={{ padding: '20px 24px' }}>
             <Row align="middle" gutter={[16, 16]} wrap style={{ marginBottom: 20 }}>
               <Col flex="auto">
@@ -958,7 +958,7 @@ export default function ProductOperationsDashboardPage() {
             </Row>
           </ProCard>
 
-          {/* 2. 今日待办 */}
+          {/* 2. Today's to-dos */}
           <ProCard title="今日待办" variant="outlined" style={{ marginBottom: 16 }}>
             <Row gutter={[16, 16]}>
               {todos.map((item) => (
@@ -970,14 +970,14 @@ export default function ProductOperationsDashboardPage() {
           </ProCard>
 
           <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-            {/* 4. AI 商品运营进度漏斗 */}
+            {/* 4. AI product operations progress funnel */}
             <Col xs={24} lg={10}>
               <ProCard title="AI 商品运营进度" variant="outlined" bodyStyle={{ padding: '16px 20px 12px' }}>
                 <FunnelSteps steps={funnelSteps} />
               </ProCard>
             </Col>
 
-            {/* 5. 异常与失败提醒 */}
+            {/* 5. Exception and failure alerts */}
             <Col xs={24} lg={14}>
               <ProCard title="异常与失败提醒" variant="outlined">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -989,7 +989,7 @@ export default function ProductOperationsDashboardPage() {
             </Col>
           </Row>
 
-          {/* 最近动态 */}
+          {/* Recent activity */}
           <ProCard title="最近动态" variant="outlined" style={{ marginBottom: 16 }} bodyStyle={{ padding: '12px 16px 16px' }}>
             {recentFlat.length ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1006,7 +1006,7 @@ export default function ProductOperationsDashboardPage() {
             )}
           </ProCard>
 
-          {/* 快捷入口 */}
+          {/* Quick links */}
           <ProCard title="快捷入口" variant="outlined" bodyStyle={{ padding: '16px 20px 20px' }}>
             <QuickLinkGroups links={quickLinks} />
           </ProCard>

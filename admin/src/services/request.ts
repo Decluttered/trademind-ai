@@ -1,6 +1,6 @@
 import { request } from '@umijs/max';
 
-/** 后端统一返回结构（与 Gin Envelope 对齐） */
+/** Unified backend response structure (aligned with Gin Envelope) */
 export type ApiResponse<T> = {
   code: number;
   message: string;
@@ -37,13 +37,13 @@ function unwrap<T>(res: ApiResponse<T>): T {
   return res.data;
 }
 
-/** 通用 GET（后续各模块拆分到独立 service 文件） */
+/** Generic GET (individual modules will later be split into their own service files) */
 export async function getJSON<T>(path: string): Promise<T> {
   const res = await request<ApiResponse<T>>(path, { method: 'GET' });
   return unwrap(res);
 }
 
-/** 通用 PUT */
+/** Generic PUT */
 export async function putJSON<T, B extends object>(path: string, body: B, options?: RequestOptions): Promise<T> {
   const res = await request<ApiResponse<T>>(path, {
     method: 'PUT',
@@ -53,7 +53,7 @@ export async function putJSON<T, B extends object>(path: string, body: B, option
   return unwrap(res);
 }
 
-/** 通用 PATCH */
+/** Generic PATCH */
 export async function patchJSON<T, B extends object>(path: string, body: B, options?: RequestOptions): Promise<T> {
   const res = await request<ApiResponse<T>>(path, {
     method: 'PATCH',
@@ -63,7 +63,7 @@ export async function patchJSON<T, B extends object>(path: string, body: B, opti
   return unwrap(res);
 }
 
-/** 通用 POST */
+/** Generic POST */
 export async function postJSON<T>(path: string, body?: object, options?: RequestOptions): Promise<T> {
   const res = await request<ApiResponse<T>>(path, {
     method: 'POST',
@@ -88,7 +88,7 @@ export async function deleteJSON<T>(path: string): Promise<T> {
   return unwrap(res);
 }
 
-/** multipart/form-data（如上传）；由 request 识别 FormData，勿手动设 Content-Type */
+/** multipart/form-data (e.g. uploads); request detects FormData automatically, do not set Content-Type manually */
 export async function postFormData<T>(path: string, data: FormData): Promise<T> {
   const res = await request<ApiResponse<T>>(path, {
     method: 'POST',

@@ -30,7 +30,7 @@ From highest to lowest priority:
 
 Blocking: missing DB, weak JWT, missing APP_MASTER_KEY, missing public URLs, demo seed / dev routes enabled.
 
-Degraded (warn in config status): AI/OCR/抖店 credentials, storage public_base not E2E tested.
+Degraded (warn in config status): AI/OCR/Douyin Store credentials, storage public_base not E2E tested.
 
 ## Implementation
 

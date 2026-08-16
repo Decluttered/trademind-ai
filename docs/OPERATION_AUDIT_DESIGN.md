@@ -1,22 +1,22 @@
-# 操作审计设计（Phase F5）
+# Operation Audit Design (Phase F5)
 
-## 表
+## Table
 
-`operation_logs` 扩展字段：`adminRole`、`shopId`、`platform`
+`operation_logs` extended fields: `adminRole`, `shopId`, `platform`
 
-## 必记敏感操作
+## Sensitive Operations That Must Be Logged
 
-用户角色/店铺权限变更、AI 应用、刊登草稿、SKU 绑定、库存/客服/任务重试、系统配置与 Storage 测试、抖店授权等。
+User role/shop permission changes, AI application, publish drafts, SKU binding, inventory/customer-service/task retries, system configuration and storage tests, Douyin authorization, etc.
 
-## 禁止记录
+## Must Not Be Logged
 
-完整密钥、Token、完整 Prompt、买家明文敏感信息。
+Full secret keys, tokens, full prompts, buyer plaintext sensitive information.
 
-## 查看权限
+## View Permissions
 
-- admin：全部
-- operator/readonly：按授权店铺过滤（`shop_id` 有值记录）
+- admin: all records
+- operator/readonly: filtered by authorized shop (records with a non-null `shop_id`)
 
 ## API
 
-`GET /api/v1/operation-logs` — 需 `operationlog.view`
+`GET /api/v1/operation-logs` — requires `operationlog.view`

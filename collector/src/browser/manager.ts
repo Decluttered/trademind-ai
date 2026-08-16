@@ -9,15 +9,15 @@ import {
 import { installPublicNetworkGuard } from "../security/public-url.js";
 
 /**
- * 统一管理 Chromium 实例，避免各 Provider 自行 newBrowser 导致泄漏。
- * 1688 采集使用 BrowserSessionManager 持久化 Profile（collector/data/browser-profiles/1688）。
+ * Centrally manages the Chromium instance to avoid leaks from each provider calling newBrowser on its own.
+ * 1688 collection uses BrowserSessionManager to persist the profile (collector/data/browser-profiles/1688).
  */
 export class BrowserManager {
   private browser: Browser | null = null;
   readonly sessions = new BrowserSessionManager();
   readonly customProfiles = new CustomProfileSessionManager();
 
-  /** @deprecated 使用 sessions */
+  /** @deprecated use sessions */
   get profile1688() {
     return this.sessions;
   }
@@ -51,12 +51,16 @@ export class BrowserManager {
   }
 
   async withPage<T>(fn: (page: Page) => Promise<T>): Promise<T> {
+    return this.withPageLocale("zh-CN", fn);
+  }
+
+  async withPageLocale<T>(locale: string, fn: (page: Page) => Promise<T>): Promise<T> {
     const browser = await this.ensureBrowser();
     const context = await browser.newContext({
       userAgent:
         process.env.COLLECTOR_USER_AGENT ??
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      locale: "zh-CN",
+      locale,
       serviceWorkers: "block",
     });
     await context.addInitScript(PAGE_EVALUATE_POLYFILL);

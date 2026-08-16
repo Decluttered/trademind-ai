@@ -2,6 +2,7 @@ import { ok } from './envelope';
 import { E2E_PRODUCT_ID, E2E_PUBLICATION_OLD, E2E_PUBLICATION_NEW, E2E_SHOP_ID, publication } from './product.fixture';
 
 export const E2E_SHOPEE_SHOP_ID = 'e2e-shop-shopee';
+export const E2E_EBAY_SHOP_ID = 'e2e-shop-ebay';
 
 export const e2ePlatformProviders = [
   {
@@ -36,6 +37,16 @@ export const e2eShops = [
     status: 'active',
     authStatus: 'authorized',
     capabilities: { product_publish: 'available', inventory_sync: 'available' },
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: E2E_EBAY_SHOP_ID,
+    platform: 'ebay',
+    shopName: 'E2E eBay Sandbox',
+    status: 'active',
+    authStatus: 'authorized',
+    capabilities: { product_publish: 'beta' },
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
   },

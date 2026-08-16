@@ -80,7 +80,7 @@ function walkJsonImages(
   }
 }
 
-/** 从 script JSON 多字段提取主图/详情图/SKU 图 */
+/** Extract main/detail/SKU images from multiple script JSON fields */
 export function extractImagesFromJsonRoots(roots: unknown[], baseUrl: string): ImageExtractBuckets {
   const main: string[] = [];
   const detail: string[] = [];
@@ -126,7 +126,7 @@ export function mergeDomMetaImages(input: {
   return { main: dedupeStrings(main, 16), detail: dedupeStrings(detail, 40) };
 }
 
-/** 主图缺失时用 detail/sku 图兜底 */
+/** Fall back to detail/sku images when main images are missing */
 export function applyMainImageFallbacks(buckets: ImageExtractBuckets): ImageExtractBuckets {
   if (buckets.mainImages.length > 0) return buckets;
   const fallback = dedupeStrings(

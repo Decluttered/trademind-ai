@@ -1,35 +1,35 @@
-# RBAC 权限设计（Phase F5）
+# RBAC Permission Design (Phase F5)
 
-## 角色
+## Roles
 
-| 角色 | 标识 | 说明 |
+| Role | Identifier | Description |
 | --- | --- | --- |
-| 管理员 | `admin` | 全系统配置、用户管理、全部店铺数据 |
-| 运营 | `operator` | 授权店铺内商品/订单/库存/客服/任务操作 |
-| 只读 | `readonly` | 授权范围内只读，写操作后端拦截 |
+| Admin | `admin` | Full system configuration, user management, all shop data |
+| Operator | `operator` | Product/order/inventory/customer-service/task operations within authorized shops |
+| Read-only | `readonly` | Read-only within the authorized scope; write operations are blocked on the backend |
 
-## 权限矩阵
+## Permission Matrix
 
-实现位置：`backend/internal/pkg/adminperm/matrix.go`  
-Profile 导出：`GET /api/v1/auth/profile` → `permissions[]`
+Implementation location: `backend/internal/pkg/adminperm/matrix.go`
+Profile export: `GET /api/v1/auth/profile` → `permissions[]`
 
-## 错误码
+## Error Codes
 
-| code | 含义 |
+| code | Meaning |
 | --- | --- |
-| 40302 | 无模块权限 |
-| 40303 | 无店铺权限 |
-| 40304 | 只读写操作 |
-| 40305 | 需系统配置权限 |
-| 40306 | 需用户管理权限 |
+| 40302 | No module permission |
+| 40303 | No shop permission |
+| 40304 | Write operation on read-only account |
+| 40305 | System configuration permission required |
+| 40306 | User management permission required |
 
-## 后端校验
+## Backend Enforcement
 
-- 统一包：`backend/internal/pkg/adminperm`
-- 写操作必须 handler/service 校验，不可仅依赖前端隐藏按钮
-- 店铺详情/深链：无权限返回 **404**（不泄露资源存在）
+- Unified package: `backend/internal/pkg/adminperm`
+- Write operations must be validated in the handler/service layer, not merely relying on hidden frontend buttons
+- Shop detail / deep links: return **404** when unauthorized (does not leak resource existence)
 
-## 前端
+## Frontend
 
 - `admin/src/utils/permission.ts`
 - `admin/src/hooks/usePermission.ts`

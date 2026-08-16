@@ -61,6 +61,19 @@ Copy-Item .env.example .env
 
 不要提交 `.env`、真实密钥、Token、Cookie 或平台凭据。完整说明见 [env.md](env.md)。
 
+MindBay reserviert ab Phase 0 folgende sichere Defaults:
+
+```dotenv
+AUTOMATION_MODE=DRY_RUN
+EBAY_ENV=sandbox
+TEMPORAL_ADDRESS=localhost:7233
+TEMPORAL_NAMESPACE=default
+TEMPORAL_ENABLED=false
+AMAZON_REGION=DE
+```
+
+Phase 2 ergänzt den nativen eBay-Go-Adapter, Kalender und den Temporal-Worker. Die Defaults starten den Worker nicht und autorisieren keinen eBay-Schreibzugriff; dafür müssen Temporal explizit aktiviert, ein Service-Token gesetzt und ein Sandbox-Shop per OAuth verbunden werden. Architektur und Modulzuständigkeiten stehen in der [MindBay Modulmatrix](mindbay-module-matrix.md).
+
 ## 测试与验收
 
 - GitHub Actions 是自动化回归入口，持续运行前端、Collector、后端、契约、架构、PostgreSQL、Redis 和 Admin E2E 测试。
@@ -74,6 +87,8 @@ Copy-Item .env.example .env
 ```bash
 pnpm test:frontend
 pnpm test:collector
+pnpm test:temporal
+pnpm build:temporal
 pnpm test:contracts
 pnpm test:backend
 pnpm test:db:inventory
@@ -106,6 +121,17 @@ pnpm collect:test
 ```
 
 `collect:test` 仅用于采集器测试模式，不等同于生产平台验收。
+
+### MindBay Extension und Temporal
+
+`extension/` enthält ab Phase 1 eine private WXT-/React-MV3-Companion-Extension. Bauen und testen:
+
+```bash
+pnpm build:extension
+pnpm test:extension
+```
+
+Die Extension speichert den kurzlebigen Capture-Grant ausschließlich in `storage.session`; Details stehen in `extension/README.md`. Der Phase-2-Worker liegt unter `temporal/` und kann lokal mit `docker compose -f docker-compose.full.yml --profile mindbay up --build` gestartet werden. Das außerhalb des Repositories liegende `../temporal-worker/` bleibt ein Lern-Scaffold.
 
 ## 本地产物
 

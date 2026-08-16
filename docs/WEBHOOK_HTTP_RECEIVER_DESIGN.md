@@ -1,7 +1,7 @@
 # Webhook HTTP Receiver Design (P2.2)
 
 > Public HTTP ingest for platform webhooks with fast ACK and async DB-poll processing.  
-> Foundation only: unknown platforms use **noop** handlers. **非 Production Ready** · not Douyin/real-platform E2E.
+> Foundation only: unknown platforms use **noop** handlers. **Not Production Ready** · not Douyin/real-platform E2E.
 
 ## Route
 

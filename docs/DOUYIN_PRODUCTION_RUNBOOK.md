@@ -1,90 +1,90 @@
-# 抖店生产 Runbook
+# Douyin Shop Production Runbook
 
-> **状态**：Release Candidate  
-> **真实 E2E**：`blocked_by_real_credentials`
+> **Status**: Release Candidate  
+> **Real E2E**: `blocked_by_real_credentials`
 
-## 上线前检查顺序
+## Pre-launch Check Order
 
-1. 备份 PostgreSQL（`orders` / `order_items`）
-2. 启动应用：`migrateDouyinOrderIdempotencyIndexes` **自动**检测重复订单；有重复则启动失败并输出 `sample_ids`（见 [`DOUYIN_DUPLICATE_DATA_REPAIR.md`](DOUYIN_DUPLICATE_DATA_REPAIR.md)）
-3. 设置 → 存储 → **测试公网访问**
-4. 设置 → 平台开放配置 → 抖店 → **生产预检**
-5. 确认 `real_api_enabled`、订单/库存/商品草稿开关符合预期
-6. 确认抖店运行状态为 **正常运行**（非暂停/紧急停用）
+1. Back up PostgreSQL (`orders` / `order_items`)
+2. Start the application: `migrateDouyinOrderIdempotencyIndexes` **automatically** detects duplicate orders; if duplicates are found, startup fails and outputs `sample_ids` (see [`DOUYIN_DUPLICATE_DATA_REPAIR.md`](DOUYIN_DUPLICATE_DATA_REPAIR.md))
+3. Settings → Storage → **Test Public Access**
+4. Settings → Platform Open Configuration → Douyin Shop → **Production Preflight**
+5. Confirm `real_api_enabled` and the order/inventory/product-draft toggles match expectations
+6. Confirm the Douyin Shop runtime status is **Normal** (not paused / emergency-disabled)
 
-## 运行状态操作
+## Runtime Status Operations
 
-| 状态 | 含义 | 操作入口 |
+| Status | Meaning | Operation Entry Point |
 | --- | --- | --- |
-| `normal` | 正常执行任务 | 设置 → 平台开放配置 → 抖店运行状态 → 恢复运行 |
-| `paused` | 暂停新任务与写操作 | 暂停任务（需填写原因） |
-| `emergency_disabled` | 紧急停用所有抖店写接口 | 紧急停用（需二次确认+原因） |
+| `normal` | Tasks execute normally | Settings → Platform Open Configuration → Douyin Shop Runtime Status → Resume |
+| `paused` | New tasks and write operations paused | Pause tasks (reason required) |
+| `emergency_disabled` | All Douyin Shop write APIs disabled in an emergency | Emergency disable (requires confirmation + reason) |
 
-API：`GET/POST /api/v1/platform/douyin/runtime-status/*`
+API: `GET/POST /api/v1/platform/douyin/runtime-status/*`
 
-## Stale / 结果未知任务
+## Stale / Result-Unknown Tasks
 
-| 用户可见文案 | 内部 recoveryStatus | 处理 |
+| User-facing Message | Internal recoveryStatus | Handling |
 | --- | --- | --- |
-| 任务执行时间过长 | `stale` | 检查 Worker/租约；人工重试 |
-| 平台处理结果暂时无法确认 | `result_unknown` | 商品：先 `product.detail` 回查，禁止盲目 `product.addV2` |
-| 需要检查后才能继续 | `recovery_required` | 人工确认后重试 |
+| Task execution took too long | `stale` | Check the worker/lease; retry manually |
+| Platform processing result cannot currently be confirmed | `result_unknown` | Products: verify with `product.detail` first; never call `product.addV2` blindly |
+| Requires review before continuing | `recovery_required` | Retry only after manual confirmation |
 
-## 重试策略（Phase 10.3）
+## Retry Strategy (Phase 10.3)
 
-- 所有抖店 OpenAPI 经 `Client.Do` → `ExecuteWithRetry`（最多 3 次，指数退避+抖动）
-- 权限/参数/配置错误 **不重试**
-- Token 刷新按 `shopId` 单飞
-- 业务 Worker **不嵌套** HTTP 重试
+- All Douyin Shop OpenAPI calls go through `Client.Do` → `ExecuteWithRetry` (up to 3 attempts, exponential backoff with jitter)
+- Permission/parameter/configuration errors are **not retried**
+- Token refresh is singleflighted per `shopId`
+- Business workers **do not nest** HTTP retries
 
-## 故障恢复
+## Failure Recovery
 
-- 订单同步：从 checkpoint 继续，仅重试失败页
-- 库存同步：使用任务创建时 `targetStock`；旧版本任务不覆盖新版本
-- 图片上传：已成功图片跳过；`force=true` 才强制重传
+- Order sync: resumes from checkpoint, retries only the failed page
+- Inventory sync: uses the `targetStock` captured at task creation time; older-version tasks never overwrite newer ones
+- Image upload: already-succeeded images are skipped; only `force=true` forces a re-upload
 
-## 灰度观察阶段（Phase 10.4）
+## Canary Observation Phase (Phase 10.4)
 
-> 有真实凭证、完成生产预检并取得外部生产审批后执行。全程保持 **Release Candidate**，人工验收未完成前不得标记 production available。
+> Executed once real credentials are available, production preflight has completed, and external production approval has been obtained. Remains **Release Candidate** throughout — it must not be marked production-available until manual acceptance is complete.
 
-### Phase G0 — 发布前（0–2h）
+### Phase G0 — Pre-release (0–2h)
 
-1. 在管理端执行生产预检，或人工调用 `POST /api/v1/platform/douyin/production-preflight`（`liveTest: true`）
-2. 确认 `runtime-status=normal`，开关与 Runbook § 上线前检查一致
-3. 备份 PostgreSQL；确认迁移无重复订单阻断
-4. 记录 Git SHA 与配置快照（不含 Secret）
+1. Run production preflight from the admin console, or manually call `POST /api/v1/platform/douyin/production-preflight` (`liveTest: true`)
+2. Confirm `runtime-status=normal` and that toggles match the Runbook's § Pre-launch Check
+3. Back up PostgreSQL; confirm the migration is not blocked by duplicate orders
+4. Record the Git SHA and a configuration snapshot (excluding secrets)
 
-### Phase G1 — 只读观察（2–24h）
+### Phase G1 — Read-only Observation (2–24h)
 
-1. 维护者检查类目、任务中心、运营看板与抖店聚合健康等只读入口
-2. 每 4h 检查：`GET /health` 队列深度、`task-center/summary` 抖店失败数
-3. 操作日志抽查：`douyin.auth.*`、无 Token 明文
-4. **禁止**执行真实平台写操作，除非已进入 G2 并取得明确审批
+1. Maintainers check read-only entry points: categories, task center, operations dashboard, and Douyin Shop aggregate health
+2. Every 4h, check: `GET /health` queue depth, `task-center/summary` Douyin Shop failure count
+3. Spot-check operation logs: `douyin.auth.*`, no tokens in plaintext
+4. **Prohibited**: performing real platform write operations unless already in G2 with explicit approval
 
-### Phase G2 — 写链路小流量（24–72h）
+### Phase G2 — Low-volume Write Path (24–72h)
 
-1. 单测试店铺、单 SKU、小时间窗订单同步
-2. 按 [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md) 人工执行受控写链路
-3. 验证幂等：重复订单 Upsert = 0、重复扣库存 = 0
-4. 失败任务 → 告警 scan → 人工处理；P0 错误立即 `paused` 或 `emergency_disabled`
+1. Order sync limited to a single test shop, single SKU, small time window
+2. Manually execute the controlled write path per [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md)
+3. Verify idempotency: duplicate order upserts = 0, duplicate stock deductions = 0
+4. Failed tasks → alert scan → manual handling; P0 errors trigger immediate `paused` or `emergency_disabled`
 
-### Phase G3 — 收口
+### Phase G3 — Wrap-up
 
-1. 将脱敏发布结论记录在 PR 或发布工单，不向仓库提交报告产物
-2. 按 [`DOUYIN_ROLLBACK_RUNBOOK.md`](DOUYIN_ROLLBACK_RUNBOOK.md) 完成回滚演练，并在发布工单记录结论
-3. 仍 **不** 默认引入 Prometheus；继续用 taskcenter + `/health` + 看板
+1. Record sanitized release conclusions in the PR or release ticket; do not commit report artifacts to the repository
+2. Complete a rollback drill per [`DOUYIN_ROLLBACK_RUNBOOK.md`](DOUYIN_ROLLBACK_RUNBOOK.md) and record the conclusion in the release ticket
+3. Still **do not** introduce Prometheus by default; continue using taskcenter + `/health` + dashboards
 
-## 可观测性（无 Prometheus）
+## Observability (No Prometheus)
 
-| 检查 | 频率 | 入口 |
+| Check | Frequency | Entry Point |
 | --- | --- | --- |
-| 进程与队列 | 5min（自动化） / 人工按需 | `GET /health` |
-| 抖店失败任务 | 每小时 | 运维 → 失败任务中心；`GET /task-center/failures?keyword=DOUYIN` |
-| 告警 | 每 15min（若开启 scan worker） | `POST /task-center/alerts/scan` |
-| 运营 KPI | 每日 | 工作台 → 商品运营看板 |
-| 预检 | 每次发布前 | `POST .../production-preflight` |
+| Process and queue | 5min (automated) / on-demand manual | `GET /health` |
+| Douyin Shop failed tasks | Hourly | Ops → Failed Task Center; `GET /task-center/failures?keyword=DOUYIN` |
+| Alerts | Every 15min (if the scan worker is enabled) | `POST /task-center/alerts/scan` |
+| Operations KPIs | Daily | Workbench → Product Operations Dashboard |
+| Preflight | Before every release | `POST .../production-preflight` |
 
-## 相关文档
+## Related Documents
 
 - [`DOUYIN_E2E_CHECKLIST.md`](DOUYIN_E2E_CHECKLIST.md)
 - [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md)

@@ -108,7 +108,7 @@ export class CustomProfileSessionManager {
     profileKey: string,
     targetUrl: string,
   ): Promise<{ profilePath: string; message: string; alreadyOpen: boolean }> {
-    // 与 1688 open-login 一致：登录窗口强制 headed，不要求全局 COLLECTOR_HEADLESS=0。
+    // Consistent with 1688 open-login: the login window is forced headed, without requiring global COLLECTOR_HEADLESS=0.
     const key = sanitizeProfileKey(profileKey);
     const url = targetUrl.trim();
     if (!url) {

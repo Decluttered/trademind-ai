@@ -2,7 +2,7 @@
 
 ## Categories
 
-Database password, Redis password, JWT secret, APP_MASTER_KEY, AI keys, Storage secrets, 抖店 App Secret, OAuth tokens.
+Database password, Redis password, JWT secret, APP_MASTER_KEY, AI keys, Storage secrets, Doudian App Secret, OAuth tokens.
 
 ## Rules
 

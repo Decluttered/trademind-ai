@@ -1,36 +1,37 @@
-# 抖店订单 Webhook 统一 Upsert 设计
+# Douyin Shop Order Webhook Unified Upsert Design
 
-## 统一入口
+## Unified Entry Point
 
 ```go
 order.Service.UpsertPlatformOrder(ctx, PlatformOrderUpsertInput)
 ```
 
-`source` 取值：`polling` | `webhook` | `manual_sync` | `reconciliation`
+`source` values: `polling` | `webhook` | `manual_sync` | `reconciliation`
 
-## 链路
+## Flow
 
 ```text
-Webhook Receiver → 验签 → Ingest → ProcessEvent
+Webhook Receiver → verify signature → Ingest → ProcessEvent
   → HandleDouyinPlatformEvent → MapDouyinOrderWebhookEvent
-  → UpsertPlatformOrder → MatchOrderItemsForOrder（副作用，幂等保护）
+  → UpsertPlatformOrder → MatchOrderItemsForOrder (side effect, idempotency-protected)
 ```
 
-轮询同步：
+Polling sync:
 
 ```text
 ordersync.ProcessQueuedTask → ToSyncedPayloads → UpsertPlatformOrders(source=polling)
 ```
 
-## 唯一键
+## Unique Key
 
-`shop_id + platform + external_order_id`（租户字段预留于 `Order.TenantID`）
+`shop_id + platform + external_order_id` (tenant field reserved on `Order.TenantID`)
 
-## 禁止
+## Forbidden
 
-- Webhook Handler 直接写 orders 表
-- 绕过 idempotency.Service
-- Webhook 与轮询各写一套逻辑
+- The webhook handler writing directly to the `orders` table
+- Bypassing `idempotency.Service`
+- Maintaining separate logic paths for webhook vs. polling writes
+
 ## P3.2 Tenant/Shop Scope
 
 Order webhooks must use resolver output already stored on the webhook event. `HandleDouyinOrderEvent` validates `tenantId`, `internalShopId`, and `platformShopId` before unified upsert. `UpsertPlatformOrder` receives both `TenantID` and `PlatformShopID`; raw order summaries may include non-sensitive platform shop identifiers, but never secrets or tokens.

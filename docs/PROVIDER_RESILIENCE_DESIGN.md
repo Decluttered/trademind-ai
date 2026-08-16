@@ -1,73 +1,73 @@
-# Provider 韧性设计（P2）
+# Provider Resilience Design (P2)
 
-> 第三方平台、采集服务、AI、存储等出站调用统一经 **`httpclient` + 超时 + 可选熔断 + 健康缓存** 保护主业务。
+> Outbound calls to third-party platforms, collection services, AI, storage, etc. are all protected by **`httpclient` + timeouts + optional circuit breaking + health caching** on top of the core business logic.
 
-## HTTP Client（`internal/pkg/httpclient`）
+## HTTP Client (`internal/pkg/httpclient`)
 
-### 默认配置 `DefaultConfig()`
+### Default Configuration `DefaultConfig()`
 
-| 项 | 默认值 |
+| Item | Default |
 | --- | --- |
 | `ConnectTimeout` | 10s |
 | `RequestTimeout` | 60s |
 | `ResponseHeaderTimeout` | 30s |
 | `MaxResponseBytes` | 32 MiB |
 | `MaxRedirects` | 3 |
-| `RetryPolicy` | `taskretry.DefaultPolicy()`（5 次） |
+| `RetryPolicy` | `taskretry.DefaultPolicy()` (5 attempts) |
 | `UserAgent` | `TradeMind/1.0` |
 
-### 核心方法
+### Core Methods
 
-- `Do(ctx, req)`：单次请求；可选信号量 `maxConcurrent` 限流。
-- `DoWithRetry(ctx, build)`：对 5xx / 429 / 网络错误自动退避重试。
-- `ReadLimitedBody(resp)`：防止超大响应 OOM。
-- `RedactURL(url)`：日志脱敏 query 凭证。
+- `Do(ctx, req)`: Single request; optional semaphore `maxConcurrent` for rate limiting.
+- `DoWithRetry(ctx, build)`: Automatic backoff retry for 5xx / 429 / network errors.
+- `ReadLimitedBody(resp)`: Prevents OOM from oversized responses.
+- `RedactURL(url)`: Redacts query credentials in logs.
 
-### 熔断器挂载
+### Circuit Breaker Attachment
 
 ```go
 client.SetCircuitBreaker(httpclient.NewCircuitBreaker(threshold, openDuration))
 ```
 
-默认 threshold **5**，open 窗口 **30s**（见 `CIRCUIT_BREAKER_AND_RATE_LIMIT.md`）。
+Default threshold is **5**, open window is **30s** (see `CIRCUIT_BREAKER_AND_RATE_LIMIT.md`).
 
-熔断打开时 `Do` 返回 `circuit_open: provider temporarily unavailable`，**不发起网络请求**。
+While the circuit is open, `Do` returns `circuit_open: provider temporarily unavailable` and **does not issue the network request**.
 
-## 错误分类联动
+## Error Classification Integration
 
-`taskretry.Classify(err, httpStatus)` 驱动：
+`taskretry.Classify(err, httpStatus)` drives:
 
-- 是否重试（`DoWithRetry` / 任务 Worker）。
-- 失败任务中心展示码（`rate_limited`、`provider_5xx` 等）。
-- 幂等 `Fail(retryable)` 决策。
+- Whether to retry (`DoWithRetry` / task worker).
+- The code shown in the failed task center (`rate_limited`, `provider_5xx`, etc.).
+- The idempotency `Fail(retryable)` decision.
 
-## Provider Health（`internal/pkg/providerhealth`）
+## Provider Health (`internal/pkg/providerhealth`)
 
-| 状态 | 含义 |
+| State | Meaning |
 | --- | --- |
-| `available` | 探测成功 |
-| `degraded` | 可用但延迟/部分失败 |
-| `rate_limited` | 限流中 |
-| `circuit_open` | 熔断打开 |
-| `unauthorized` | 凭证问题 |
-| `not_configured` | 未配置 Checker |
-| `temporary_unavailable` | 短暂不可用 |
-| `manual_required` | 需人工处理 |
+| `available` | Probe succeeded |
+| `degraded` | Available but with latency/partial failures |
+| `rate_limited` | Currently rate-limited |
+| `circuit_open` | Circuit breaker open |
+| `unauthorized` | Credential issue |
+| `not_configured` | No checker configured |
+| `temporary_unavailable` | Briefly unavailable |
+| `manual_required` | Requires manual intervention |
 
-- `Registry` 缓存 TTL 默认 **5 分钟**。
-- `Get(ctx, provider, capability, force)` 过期后重新探测。
-- 配置状态中心 **Provider Health** 项：缓存检查，失败不影响 `/health/live`。
+- `Registry` cache TTL defaults to **5 minutes**.
+- `Get(ctx, provider, capability, force)` re-probes after expiry.
+- Config status center **Provider Health** item: cached check, failures do not affect `/health/live`.
 
-## 分层约定
+## Layering Convention
 
 ```text
-Handler → Service → Provider 接口 → httpclient → 第三方 API
+Handler → Service → Provider interface → httpclient → Third-party API
 ```
 
-- Provider 实现内构造 `httpclient.Client`，不得绕过超时。
-- 平台 SDK（COS/OSS）使用各自超时配置，语义与 httpclient 对齐。
-- 日志禁止输出完整 API Key / Token；使用 `RedactURL` 与 raw 截断。
+- Provider implementations construct their own `httpclient.Client` and must not bypass the timeout.
+- Platform SDKs (COS/OSS) use their own timeout configuration, kept semantically aligned with httpclient.
+- Logs must never output a full API key / token; use `RedactURL` and raw truncation.
 
-## 生产检查
+## Production Checks
 
-staging/production 须非 local `STORAGE_PROVIDER`；各平台 `timeout_sec` 与 httpclient 取较小值。详见 `provider.md`、`CIRCUIT_BREAKER_AND_RATE_LIMIT.md`。
+Staging/production must not use the local `STORAGE_PROVIDER`; each platform's `timeout_sec` should take the smaller of itself and the httpclient value. See `provider.md`, `CIRCUIT_BREAKER_AND_RATE_LIMIT.md` for details.

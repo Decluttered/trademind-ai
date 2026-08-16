@@ -6,8 +6,10 @@ import type { CollectProviderPublic } from '../types/provider-meta.js';
 import { sourceCustomCollectorProvider } from './sourceCustom/index.js';
 import { pinduoduoCollectorProvider } from './sourcePinduoduo/index.js';
 import { taobaoTmallCollectorProvider } from './sourceTaobaoTmall/index.js';
+import { amazonDECollectorProvider } from './sourceAmazon/index.js';
 
 const providers: CollectorProvider[] = [
+  amazonDECollectorProvider,
   alibaba1688Provider,
   pinduoduoCollectorProvider,
   taobaoTmallCollectorProvider,
@@ -32,7 +34,7 @@ export function listRegisteredSources(): string[] {
   return providers.map((p) => p.sourceId);
 }
 
-/** 对外列表：顺序稳定，便于管理端展示 */
+/** Public-facing list: stable order for easy display in the admin panel */
 export function listProviderPublicMetas(): CollectProviderPublic[] {
   return providers.map((p) => ({
     source: p.sourceId,

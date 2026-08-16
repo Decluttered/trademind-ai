@@ -47,6 +47,31 @@ docker compose -f docker-compose.full.yml up -d --build
 | `JWT_EXPIRE_HOURS` | `168` | backend | 否 | JWT 有效期小时数。 |
 | `UPLOAD_MAX_MB` | `10` | backend | 否 | 单文件上传大小上限。 |
 
+## MindBay 安全默认配置
+
+以下变量固定 Amazon.de → eBay.de 路径的安全默认值。Phase 1 的 Discovery/Listing Studio 不会因为设置这些变量而连接 eBay、启动 Temporal 或执行平台写入。
+
+| 变量 | 默认 | 未来服务 | 敏感 | 说明 |
+| --- | --- | --- | --- | --- |
+| `AUTOMATION_MODE` | `DRY_RUN` | backend / temporal / browser worker | 否 | 允许值规划为 `DRY_RUN`、`SIMULATED_CHECKOUT`、`LIVE`。模板必须保持 `DRY_RUN`；仅设置变量不会在 Phase 0 启用写操作。 |
+| `EBAY_ENV` | `sandbox` | backend eBay provider | 否 | 未来选择 eBay Sandbox 或 Production。模板固定 `sandbox`，真实网络和凭据仍由独立 fail-closed Gates 控制。 |
+| `TEMPORAL_ADDRESS` | `localhost:7233` | backend / temporal worker | 否 | Temporal Frontend gRPC 地址；完整 Compose 的 `mindbay` profile 内为 `temporal:7233`。 |
+| `TEMPORAL_ENABLED` | `false` | backend | 否 | 启用后 Calendar Apply 以稳定 Workflow ID 启动 `PublishListingWorkflow`；模板保持关闭。 |
+| `TEMPORAL_SERVICE_TOKEN` | 空 | backend / temporal worker | 是 | 保护 Worker 调用的内部 publication commands；启用 Temporal 时必须设置独立随机值。 |
+| `TEMPORAL_NAMESPACE` | `default` | temporal worker | 否 | Temporal namespace。Phase 2 本地环境使用 default。 |
+| `API_INTERNAL_BASE_URL` | `http://localhost:8080` | temporal worker | 否 | Worker 调用 Go 内部命令的基地址，不应暴露到公网。 |
+| `AMAZON_REGION` | `DE` | collector / fulfillment | 否 | MindBay MVP 的来源区域；它不是凭据，也不会授权实时采集或结账。 |
+
+OAuth Client Secret, Access-/Refresh-Token, Amazon-Cookies und Browser-Storage-State gehören ausdrücklich nicht in `.env.example`. eBay App-Daten liegen verschlüsselt in `settings.platform_ebay`, Shop-Tokens verschlüsselt in `shop_auth_tokens`.
+
+Phase 2 lokal starten:
+
+```bash
+docker compose -f docker-compose.full.yml --profile mindbay up --build
+```
+
+Das Profil verwendet `temporalio/auto-setup` nur für lokale Entwicklung. Produktion benötigt einen separat betriebenen Temporal Server und startet nicht das Auto-Setup-Image.
+
 ## 可观测性与 OTLP
 
 | 变量 | 示例 / 默认 | 服务 | 敏感 | 说明 |

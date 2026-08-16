@@ -48,6 +48,8 @@ import {
   postLazadaOAuthCallback,
   getAmazonOAuthAuthorizeUrl,
   postAmazonOAuthCallback,
+  getEbayOAuthAuthorizeUrl,
+  postEbayOAuthCallback,
   queryPlatformProviders,
   queryShops,
   refreshDouyinOAuth,
@@ -98,6 +100,8 @@ export default function ShopsPage() {
   const [lazadaOAuthState, setLazadaOAuthState] = useState('');
   const [amazonOAuthAuthorizeUrl, setAmazonOAuthAuthorizeUrl] = useState('');
   const [amazonOAuthState, setAmazonOAuthState] = useState('');
+  const [ebayOAuthAuthorizeUrl, setEbayOAuthAuthorizeUrl] = useState('');
+  const [ebayOAuthState, setEbayOAuthState] = useState('');
   const [authPartnerWarn, setAuthPartnerWarn] = useState<string | null>(null);
 
   const loadProviders = useCallback(async () => {
@@ -171,6 +175,8 @@ export default function ShopsPage() {
     setLazadaOAuthState('');
     setAmazonOAuthAuthorizeUrl('');
     setAmazonOAuthState('');
+    setEbayOAuthAuthorizeUrl('');
+    setEbayOAuthState('');
     setAuthOpen(true);
   };
 
@@ -1612,6 +1618,71 @@ export default function ShopsPage() {
                       }}
                     >
                       提交授权
+                    </Button>
+                    <Divider />
+                  </>
+                )}
+                {detail.platform === 'ebay' && provForShop?.status === 'beta' && (
+                  <>
+                    <Divider>eBay OAuth (Sandbox)</Divider>
+                    <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+                      Der Link verwendet die eBay-App aus den Plattform-Einstellungen. Nach der Freigabe werden nur verschlüsselte Shop-Tokens gespeichert.
+                    </Typography.Paragraph>
+                    <Space wrap>
+                      <Button
+                        type="primary"
+                        onClick={async () => {
+                          if (authPartnerWarn) {
+                            message.warning('Bitte zuerst die eBay-Plattform-Einstellungen vervollständigen.');
+                            return;
+                          }
+                          try {
+                            const result = await getEbayOAuthAuthorizeUrl(detail.id);
+                            setEbayOAuthAuthorizeUrl(result.authorizeUrl);
+                            setEbayOAuthState(result.state);
+                            message.success('eBay-Autorisierungslink erstellt.');
+                          } catch (error: unknown) {
+                            message.error(formatPlatformPartnerErr(error));
+                          }
+                        }}
+                      >
+                        Autorisierungslink erstellen
+                      </Button>
+                      <Button
+                        disabled={!ebayOAuthAuthorizeUrl}
+                        onClick={() => window.open(ebayOAuthAuthorizeUrl, '_blank', 'noopener,noreferrer')}
+                      >
+                        Bei eBay öffnen
+                      </Button>
+                    </Space>
+                    <Form.Item label="authorizeUrl">
+                      <Input.TextArea readOnly value={ebayOAuthAuthorizeUrl} autoSize={{ minRows: 2, maxRows: 6 }} />
+                    </Form.Item>
+                    <Form.Item label="state">
+                      <Input readOnly value={ebayOAuthState} />
+                    </Form.Item>
+                    <Form.Item name="ebayAuthCode" label="Authorization Code">
+                      <Input placeholder="Code aus dem eBay-Callback" />
+                    </Form.Item>
+                    <Button
+                      onClick={async () => {
+                        const code = String(authForm.getFieldValue('ebayAuthCode') || '').trim();
+                        if (!code || !ebayOAuthState) {
+                          message.warning('Authorization Code und state sind erforderlich.');
+                          return;
+                        }
+                        try {
+                          await postEbayOAuthCallback(detail.id, { code, state: ebayOAuthState });
+                          message.success('eBay-Shop wurde autorisiert.');
+                          setAuthOpen(false);
+                          actionRef.current?.reload();
+                          if (detailOpen) void refreshDetail(detail.id);
+                        } catch (error: unknown) {
+                          message.error(formatPlatformPartnerErr(error));
+                        }
+                      }}
+                    >
+                      Code speichern
                     </Button>
                     <Divider />
                   </>

@@ -217,6 +217,12 @@ jobs:
       - name: Collector unit tests
         run: pnpm test:collector
 
+      - name: Temporal workflow tests
+        run: pnpm test:temporal
+
+      - name: Temporal worker build
+        run: pnpm build:temporal
+
       - name: API contract tests
         run: pnpm test:contracts
 

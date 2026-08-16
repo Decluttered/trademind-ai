@@ -98,6 +98,10 @@ func ProductPublishImplementationStatus(p Provider) string {
 		return StatusBeta
 	case "tiktok", "shopee", "lazada", "amazon":
 		return StatusBeta
+	case "ebay":
+		// eBay publication is exclusively owned by calendar + Temporal. Keeping
+		// the generic Redis batch publisher disabled prevents dual writers.
+		return StatusDisabled
 	default:
 		if !HasCapability(p, CapProductPublish) {
 			return StatusDisabled

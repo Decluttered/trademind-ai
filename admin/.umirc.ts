@@ -18,7 +18,7 @@ export default defineConfig({
   initialState: {},
   request: {},
   layout: {
-    /** 侧栏/顶栏品牌仅在 `app.tsx` 的 `logo` 中渲染，此处不设 title，避免与 logo 内文案重复 */
+    /** Sidebar/topnav branding is only rendered via `logo` in `app.tsx`; no title is set here to avoid duplicating the logo's text */
     title: false,
     locale: false,
     layout: 'mix',

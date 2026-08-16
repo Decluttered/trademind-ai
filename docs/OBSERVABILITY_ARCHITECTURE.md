@@ -10,4 +10,4 @@ HTTP / Webhook / Worker
   → Dashboard + Alert Rules + Admin Observability Center
 ```
 
-统一门面：`backend/internal/pkg/observability`。禁止第二套日志/指标系统。
+Unified facade: `backend/internal/pkg/observability`. A second logging/metrics system is prohibited.

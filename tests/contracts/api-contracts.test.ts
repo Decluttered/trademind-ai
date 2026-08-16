@@ -45,6 +45,33 @@ describe('TradeMind API contract registry', () => {
         'PUT /api/v1/customer/shops/:shopId/auto-reply-policy',
         'GET /api/v1/customer/shops/:shopId/auto-reply-runs',
         'POST /api/v1/customer/conversations/:id/send-platform-message',
+        'POST /v1/discovery-runs',
+        'GET /v1/products',
+        'GET /v1/collections',
+        'POST /v1/collections',
+        'POST /v1/collections/:id/products',
+        'POST /v1/listing-drafts',
+        'GET /v1/listing-drafts',
+        'GET /v1/listing-drafts/:id',
+        'POST /v1/listing-drafts/:id/validate',
+        'POST /v1/listing-drafts/:id/generate',
+        'POST /v1/image-assets',
+        'GET /v1/gpsr-profiles',
+        'POST /v1/gpsr-profiles',
+        'POST /v1/extension-tokens',
+        'DELETE /v1/extension-tokens/:id',
+        'POST /v1/extension/captures',
+        'GET /api/v1/shops/:id/oauth/ebay/authorize-url',
+        'POST /api/v1/shops/:id/oauth/ebay/callback',
+        'GET /api/v1/platform/ebay/categories/:categoryId/aspects',
+        'POST /api/v1/platform/ebay/categories/:categoryId/aspects/sync',
+        'GET /v1/calendar/slots',
+        'POST /v1/calendar/preview',
+        'POST /v1/calendar/apply',
+        'POST /v1/publications/:id/approve',
+        'POST /internal/v1/mindbay/publications/:id/revalidate',
+        'POST /internal/v1/mindbay/publications/:id/publish',
+        'POST /internal/v1/mindbay/publications/:id/reconcile',
       ]),
     );
   });
@@ -155,7 +182,21 @@ describe('TradeMind API contract registry', () => {
   });
 
   it('marks every protected Admin endpoint as authenticated', () => {
-    expect(contracts.endpoints).toHaveLength(30);
-    expect(contracts.endpoints.every((endpoint) => endpoint.auth === true)).toBe(true);
+    expect(contracts.endpoints).toHaveLength(57);
+    expect(contracts.endpoints.every((endpoint) => endpoint.auth === true || endpoint.auth === 'mindbay-extension:capture' || endpoint.auth === 'temporal-service')).toBe(true);
+  });
+
+  it('keeps MindBay commands idempotent and extension auth separate',()=>{
+    const phase1=contracts.endpoints.filter((endpoint)=>endpoint.path.startsWith('/v1/'));
+    expect(phase1.filter((endpoint)=>endpoint.method==='POST'&&!endpoint.path.endsWith('extension-tokens')&&!endpoint.path.endsWith('/preview')).every((endpoint)=>endpoint.idempotencyKey===true)).toBe(true);
+    expect(phase1.find((endpoint)=>endpoint.path==='/v1/extension/captures')?.auth).toBe('mindbay-extension:capture');
+  });
+
+  it('keeps calendar preview pure and calendar apply idempotent',()=>{
+    const preview=contracts.endpoints.find((endpoint)=>routeKey(endpoint)==='POST /v1/calendar/preview');
+    const apply=contracts.endpoints.find((endpoint)=>routeKey(endpoint)==='POST /v1/calendar/apply');
+    expect(preview?.idempotencyKey).toBeUndefined();
+    expect(apply?.idempotencyKey).toBe(true);
+    expect(apply?.requestBody).toEqual(['shopId','marketplace','slots','publishConfig']);
   });
 });

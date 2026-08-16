@@ -40,7 +40,7 @@ function resolveDisplayStatus(
 }
 
 type Props = {
-  /** 失败任务 / 采集弹窗中的商品或批发链接，用于打开登录与重新检测 */
+  /** Product or wholesale link from a failed task / collection modal, used to open login and re-check */
   loginUrl?: string;
   compact?: boolean;
   onAuthChange?: (status: ProviderPinduoduoAuthStatus | null) => void;

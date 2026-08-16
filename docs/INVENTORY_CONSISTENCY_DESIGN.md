@@ -1,78 +1,78 @@
-# 库存一致性设计（P2）
+# Inventory Consistency Design (P2)
 
-> 本地库存以 **append-only 台账 + 订单效应表 + 版本化同步任务** 保证可审计、可重试、可去重。
+> Local inventory relies on an **append-only ledger + order-effect table + versioned sync tasks** to guarantee auditability, retryability, and deduplication.
 
-## 核心表
+## Core Tables
 
-### `inventory_change_logs`（台账）
+### `inventory_change_logs` (Ledger)
 
-只追加审计流水，记录每次本地库存变更：
+Append-only audit trail recording every local inventory change:
 
-| 字段 | 说明 |
+| Field | Description |
 | --- | --- |
-| `change_type` | `manual_adjust` / `order_deduct` / `platform_sync` 等 |
-| `before_stock` / `after_stock` / `delta` | 变更前后与差值 |
-| `ref_order_id` / `ref_order_item_id` | 订单关联 |
-| `business_event_key` | **全局唯一**（`uniqueIndex`），防重复记账 |
+| `change_type` | `manual_adjust` / `order_deduct` / `platform_sync`, etc. |
+| `before_stock` / `after_stock` / `delta` | Stock before/after the change and the delta |
+| `ref_order_id` / `ref_order_item_id` | Order association |
+| `business_event_key` | **Globally unique** (`uniqueIndex`), prevents duplicate ledger entries |
 
-### `order_inventory_effects`（订单扣减效应）
+### `order_inventory_effects` (Order Deduction Effects)
 
-每个 `(order_item_id, product_sku_id, effect_type)` 唯一（`ux_oie_item_sku_effect`）：
+Unique per `(order_item_id, product_sku_id, effect_type)` (`ux_oie_item_sku_effect`):
 
-- `deduct` / `restore`；状态 `pending` / `success` / `failed` / `skipped`。
-- 成功行关联 `inventory_change_log_id`。
-- 已成功扣减的行再次请求 → **跳过**（幂等）。
+- `deduct` / `restore`; status `pending` / `success` / `failed` / `skipped`.
+- Successful rows reference `inventory_change_log_id`.
+- Re-requesting a row that already succeeded → **skipped** (idempotent).
 
-## `business_event_key` 约定
+## `business_event_key` Convention
 
-与 `idempotency` key 对齐，写入台账前设置：
+Aligned with the `idempotency` key; set before writing to the ledger:
 
-| 场景 | 推荐格式 |
+| Scenario | Recommended format |
 | --- | --- |
-| 订单扣减 | `inventory-deduct:{orderId}:{orderItemId}:{skuId}` |
-| 订单回滚 | `inventory-restore:{orderId}:{orderItemId}:{skuId}` |
-| 手工调整 | `inventory-adjust:{skuId}:{changeLogId}` 或时间戳批次号 |
-| 平台推送 | `inventory-push:{shopId}:{skuId}:{stockVersion}` |
+| Order deduction | `inventory-deduct:{orderId}:{orderItemId}:{skuId}` |
+| Order rollback | `inventory-restore:{orderId}:{orderItemId}:{skuId}` |
+| Manual adjustment | `inventory-adjust:{skuId}:{changeLogId}` or a timestamp-based batch number |
+| Platform push | `inventory-push:{shopId}:{skuId}:{stockVersion}` |
 
-唯一约束保证 Worker 重试、API 重复提交不会产生第二条台账。
+The unique constraint guarantees that worker retries or duplicate API submissions never produce a second ledger entry.
 
-## 订单扣减流程
+## Order Deduction Flow
 
-`DeductInventoryForOrder`：
+`DeductInventoryForOrder`:
 
-1. 按订单行遍历，SKU 行级 `SELECT FOR UPDATE`。
-2. 检查 `order_inventory_effects` 是否已有 `success`。
-3. 库存不足 → 写 `failed` effect，不部分扣减（可配置负库存策略）。
-4. 成功 → `inventory_change_logs` + 更新 `product_skus.stock` + `success` effect。
+1. Iterate over order lines, applying row-level `SELECT FOR UPDATE` per SKU.
+2. Check whether `order_inventory_effects` already has a `success` row.
+3. Insufficient stock → write a `failed` effect; no partial deduction (negative-stock policy is configurable).
+4. Success → write `inventory_change_logs`, update `product_skus.stock`, and write a `success` effect.
 
-订单同步完成后可选自动扣减；失败进入订单异常工作台 `inventory_deduct_failed`。
+Automatic deduction can be triggered after order sync completes; failures go to the order exceptions workbench under `inventory_deduct_failed`.
 
-## 版本同步（`stockVersion`）
+## Version Sync (`stockVersion`)
 
-出站 `inventory_sync_tasks`：
+Outbound `inventory_sync_tasks`:
 
-- `input.stockVersion` = `targetStock`（当前目标库存快照）。
-- `idempotency.InventoryPush(shopId, skuId, stockVersion)` 作为业务幂等键。
-- `lock_version` 参与 Worker claim，防止并发双推。
+- `input.stockVersion` = `targetStock` (current target-stock snapshot).
+- `idempotency.InventoryPush(shopId, skuId, stockVersion)` serves as the business idempotency key.
+- `lock_version` participates in worker claiming to prevent concurrent duplicate pushes.
 
-### Pending/Running 去重
+### Pending/Running Deduplication
 
-批量创建同步任务时，`blockingPublicationSKUSet` 检测同 `publication_sku_id` 已有 pending/running 任务：
+When creating sync tasks in bulk, `blockingPublicationSKUSet` detects existing pending/running tasks for the same `publication_sku_id`:
 
-- 默认 **跳过** 并记 `duplicate_pending_running_task`；
-- `force=true` 可强制新建（运维场景）。
+- By default it **skips** and records `duplicate_pending_running_task`;
+- `force=true` can force creation of a new task (for operational scenarios).
 
-抖店路径额外要求 SKU 绑定完成（`inventorySyncReady`）。
+The Douyin path additionally requires SKU binding to be complete (`inventorySyncReady`).
 
-## 平台推送副作用
+## Platform Push Side Effects
 
-`ProcessQueuedTask` 成功/失败后 `appendChange` 写台账；Douyin 等指标经 `douyinmetrics` 计数。
+After `ProcessQueuedTask` succeeds or fails, `appendChange` writes to the ledger; Douyin and other metrics are counted via `douyinmetrics`.
 
-## 与订单同步的边界
+## Boundary with Order Sync
 
-- 订单 upsert **不**自动改本地 SKU 库存（除显式策略触发扣减）。
-- 库存推送 **不**回写订单状态；两侧通过 `order_inventory_effects` 关联可追溯。
+- Order upsert does **not** automatically change local SKU stock (except when an explicit policy triggers a deduction).
+- Inventory push does **not** write back to order status; the two sides remain traceable via the `order_inventory_effects` association.
 
-## 验收
+## Acceptance Criteria
 
-重复扣减 skipped；`business_event_key` 唯一防双记账；pending 推送默认去重。API 重试见 `POST /api/v1/inventory-sync/tasks/:id/retry`。
+Duplicate deductions are skipped; `business_event_key` uniqueness prevents double-booking; pending pushes are deduplicated by default. See `POST /api/v1/inventory-sync/tasks/:id/retry` for API retry behavior.
