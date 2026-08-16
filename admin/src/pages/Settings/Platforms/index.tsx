@@ -21,10 +21,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import DouyinE2EPrecheckBanner from '@/components/platform/DouyinE2EPrecheckBanner';
 import StoragePublicUrlBanner from '@/components/platform/StoragePublicUrlBanner';
 import { ActionBar, FormGrid, FormGridFull, FormGridItem, SectionCard, TechnicalDetails, TmPageContainer } from '@/components/ui';
-import { ACTION_COPY, PAGE_COPY } from '@/constants/copywriting';
+import { ACTION_COPY } from '@/constants/copywriting';
 import { confirmPlatformConfigSave } from '@/constants/sensitiveActions';
 import { platformRuntimeHref } from '@/constants/platformRuntime';
 import { formatUserErrorMessage } from '@/constants/errorMessages';
+import { useLocale } from '@/locale';
 import {
   PLATFORM_DEV_PORTALS,
   PLATFORM_STATUS_META,
@@ -441,6 +442,7 @@ function DouyinPreflightPanel() {
 }
 
 function PlatformPanel({ meta }: { meta: PlatformProviderMeta }) {
+  const { t } = useLocale();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -546,7 +548,7 @@ function PlatformPanel({ meta }: { meta: PlatformProviderMeta }) {
             showIcon
             type="info"
             message="eBay OAuth 使用 RuName，不是 https 回调地址"
-            description="在 Developer Portal 复制 Redirect URL name（RuName）填入。应用连接测试只校验 client credentials。店铺连接测试调用 Account API getPrivileges，需要 sell.account.readonly；已有 refresh token 不会自动获得新 scope，请在店铺管理中重新授权。"
+            description={t('page.platforms.ebayRuNameAlert')}
           />
         )}
 
@@ -648,6 +650,7 @@ function PlatformPanel({ meta }: { meta: PlatformProviderMeta }) {
 }
 
 export default function PlatformSettingsPage() {
+  const { t } = useLocale();
   const [loadingProviders, setLoadingProviders] = useState(true);
   const [providers, setProviders] = useState<PlatformProviderMeta[]>([]);
   const [tab, setTab] = useState<string>();
@@ -712,11 +715,11 @@ export default function PlatformSettingsPage() {
   });
 
   return (
-    <TmPageContainer title={PAGE_COPY.platformSettings.title} subTitle={PAGE_COPY.platformSettings.description}>
+    <TmPageContainer title={t('page.platforms.title')} subTitle={t('page.platforms.description')}>
       <div className="tm-settings-stack">
         <SectionCard
-          title={PAGE_COPY.platformSettings.heroTitle}
-          description={PAGE_COPY.platformSettings.heroDescription}
+          title={t('page.platforms.heroTitle')}
+          description={t('page.platforms.heroDescription')}
         >
           <Paragraph type="secondary" style={{ marginBottom: 0 }}>
             开发者门户：
@@ -731,7 +734,7 @@ export default function PlatformSettingsPage() {
           </Paragraph>
         </SectionCard>
 
-        <SectionCard title="选择平台">
+        <SectionCard title={t('page.platforms.selectPlatform')}>
           <Spin spinning={loadingProviders}>
             {items.length === 0 ? (
               <Paragraph type="secondary">暂无可配置的平台，请刷新页面后重试。</Paragraph>

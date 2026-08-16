@@ -10,6 +10,7 @@ import {
   getStoredThemeMode,
   persistThemeMode,
 } from "@/theme";
+import { useLocale } from "@/locale";
 
 const THEME_SWITCHING_CLASS = "tm-theme-switching";
 
@@ -38,6 +39,7 @@ export default function ThemeToggleButton({
   tooltipPlacement = "bottom",
 }: ThemeToggleButtonProps) {
   const setAntdConfig = useAntdConfigSetter();
+  const { t } = useLocale();
   const [themeMode, setThemeMode] = useState(getStoredThemeMode);
   const themeFrameRef = useRef<number>();
 
@@ -56,7 +58,10 @@ export default function ThemeToggleButton({
   );
 
   const nextThemeMode = themeMode === "light" ? "dark" : "light";
-  const nextThemeLabel = nextThemeMode === "dark" ? "深色模式" : "浅色模式";
+  const nextThemeLabel =
+    nextThemeMode === "dark"
+      ? t("theme.switchToDark")
+      : t("theme.switchToLight");
 
   const switchTheme = () => {
     const root = document.documentElement;
@@ -80,11 +85,11 @@ export default function ThemeToggleButton({
   };
 
   return (
-    <Tooltip title={`切换到${nextThemeLabel}`} placement={tooltipPlacement}>
+    <Tooltip title={nextThemeLabel} placement={tooltipPlacement}>
       <button
         type="button"
         className={className}
-        aria-label={`切换到${nextThemeLabel}`}
+        aria-label={nextThemeLabel}
         aria-pressed={themeMode === "dark"}
         onClick={switchTheme}
       >

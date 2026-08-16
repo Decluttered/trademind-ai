@@ -16,6 +16,7 @@ import {
   type PriceDecision,
   type PriceRule,
 } from '@/services/mindbay';
+import { useLocale } from '@/locale';
 
 type RuleForm = {
   name: string;
@@ -34,6 +35,7 @@ type RuleForm = {
 const outcomeColor: Record<PriceDecision['outcome'], string> = { NO_CHANGE: 'default', PROPOSED: 'blue', AUTO_APPLIED: 'green', BLOCKED_MARGIN: 'red', BLOCKED_POLICY: 'orange', BLOCKED_COOLDOWN: 'gold' };
 
 export default function MonitoringPage() {
+  const { t } = useLocale();
   const { readonly, can } = usePermission();
   const writable = !readonly && can(PERMISSIONS.PRODUCT_WRITE);
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
@@ -98,11 +100,11 @@ export default function MonitoringPage() {
     { title: 'Aktion', width: 120, fixed: 'right', render: (_, row) => row.outcome === 'PROPOSED' ? <Button disabled={!writable} onClick={() => setApplyDecision(row)}>Anwenden</Button> : '—' },
   ], [writable]);
 
-  return <TmPageContainer title="Monitoring & Repricing" subTitle="Amazon-Kosten und eBay-Angebote vergleichen, Guardrails dokumentieren und Preisänderungen kontrolliert ausführen.">
+  return <TmPageContainer title={t('mindbay.monitoring.title')} subTitle={t('mindbay.monitoring.subTitle')}>
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Alert type="warning" showIcon message="DRY_RUN bleibt der sichere Standard" description="Monitoring liest das eBay-Angebot. Preisänderungen werden in DRY_RUN nur als Artefakt protokolliert und nicht an eBay gesendet." />
-      {!writable ? <Alert type="info" showIcon message="Nur-Lese-Modus" description="Regeln, Entscheidungen und Gründe bleiben sichtbar; neue Läufe und Apply sind deaktiviert." /> : null}
-      {error ? <ErrorAlert title="Monitoring-Aktion fehlgeschlagen" actionHint={error} /> : null}
+      <Alert type="warning" showIcon message={t('mindbay.monitoring.dryRunTitle')} description={t('mindbay.monitoring.dryRunBody')} />
+      {!writable ? <Alert type="info" showIcon message={t('mindbay.monitoring.readonlyTitle')} description={t('mindbay.monitoring.readonlyBody')} /> : null}
+      {error ? <ErrorAlert title={t('mindbay.monitoring.errorTitle')} actionHint={error} /> : null}
       <SectionCard title="Steuerung" description="Regeln sind unveränderliche Versionen; ein Lauf bindet Snapshot und Regelversion." headerExtra={<Space wrap><Button disabled={!writable} onClick={() => setRuleOpen(true)}>Preisregel anlegen</Button><Button type="primary" disabled={!writable || !listings.length || !rules.length} onClick={() => setRunOpen(true)}>Monitoring ausführen</Button></Space>}>
         <Space wrap>
           <Select aria-label="eBay Listing" value={selectedListing} onChange={setSelectedListing} style={{ minWidth: 300 }} placeholder="eBay Listing auswählen" options={listings.map(row => ({ value: row.id, label: `${row.sku} · ${row.externalListingId} · ${formatEuroCents(row.priceCents)}` }))} />

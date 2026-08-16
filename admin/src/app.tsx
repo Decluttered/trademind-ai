@@ -23,6 +23,14 @@ import {
   createAdminThemeConfig,
   getStoredThemeMode,
 } from "@/theme";
+import {
+  LocaleProvider,
+  MENU_LOCALE_KEYS,
+  antdLocaleFor,
+  applyAdminLocale,
+  getStoredAdminLocale,
+  translate,
+} from "@/locale";
 import { canAccessPath, filterMenuByPermission } from "@/utils/menuAccess";
 import { isPublicAdminPath } from "@/utils/publicRoutes";
 import { useInitialStateModel } from "@/hooks/useInitialStateModel";
@@ -61,19 +69,39 @@ async function loadProfileFromToken(
  */
 export function innerProvider(container: ReactElement) {
   return (
-    <>
+    <LocaleProvider>
       <AppModalBridge />
       <AppMessageBridge />
       {container}
-    </>
+    </LocaleProvider>
   );
+}
+
+function localizeMenuData(menuData: MenuDataItem[]): MenuDataItem[] {
+  const locale = getStoredAdminLocale();
+  return menuData.map((item) => {
+    const path = String(item.path || "");
+    const key = MENU_LOCALE_KEYS[path];
+    const localizedName = key ? translate(locale, key) : item.name;
+    return {
+      ...item,
+      name: localizedName,
+      children: item.children ? localizeMenuData(item.children) : item.children,
+      routes: item.routes
+        ? localizeMenuData(item.routes as MenuDataItem[])
+        : item.routes,
+    };
+  });
 }
 
 export const antd = (memo: ConfigProviderProps): ConfigProviderProps => {
   const mode = getStoredThemeMode();
+  const locale = getStoredAdminLocale();
   applyThemeMode(mode);
+  applyAdminLocale(locale);
   return {
     ...memo,
+    locale: antdLocaleFor(locale),
     drawer: createAdminDrawerConfig(memo.drawer),
     theme: createAdminThemeConfig(mode),
   };
@@ -284,10 +312,12 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => ({
   },
   menu: { locale: false },
   menuDataRender: (menuData: MenuDataItem[]) =>
-    filterMenuByPermission(
-      menuData,
-      initialState?.currentUser?.role,
-      initialState?.currentUser?.permissions,
+    localizeMenuData(
+      filterMenuByPermission(
+        menuData,
+        initialState?.currentUser?.role,
+        initialState?.currentUser?.permissions,
+      ),
     ),
   onPageChange: () => {
     const { pathname } = history.location;

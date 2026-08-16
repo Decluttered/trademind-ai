@@ -85,7 +85,17 @@ const SCAN_DIRS = [
   join(ROOT, 'admin/src/pages'),
   join(ROOT, 'admin/src/constants'),
   join(ROOT, 'admin/src/components'),
+  join(ROOT, 'admin/src/locale/messages'),
 ];
+
+/** English/German locale catalogs are translations; Chinese jargon rules apply to zh + remaining hardcoded UI. */
+function shouldSkipUiCopyFile(file) {
+  const norm = file.replace(/\\/g, '/');
+  return (
+    norm.endsWith('/locale/messages/en.ts') ||
+    norm.endsWith('/locale/messages/de.ts')
+  );
+}
 
 const ALL_RULES = RULES;
 
@@ -138,6 +148,7 @@ for (const dir of SCAN_DIRS) {
     continue;
   }
   for (const file of files) {
+    if (shouldSkipUiCopyFile(file)) continue;
     const content = readFileSync(file, 'utf8');
     const lines = content.split('\n');
     lines.forEach((line, i) => {

@@ -25,6 +25,8 @@ TradeMind 在本仓库中的产品路径是 **Amazon.de → eBay.de**（MindBay�
 
 ## 仓库整理
 
+2026-08-17 Admin 增加薄层 locale：`en`（新浏览器默认）/ `zh`（完整中文与文案检查源）/ `de`（MindBay 为主）；登录页与顶栏可切换；API/JSON 键不变。E2E 通过 localStorage 固定 locale。
+
 2026-08-17 补齐 eBay E1 连接契约：`platform_ebay.redirect_uri` 按 RuName 校验，marketplace 必填，新授权包含 `sell.account.readonly`；店铺探测走 Account getPrivileges，应用设置探测走 client credentials；refresh 使用已授予 scopes 并加店铺锁。Identity getUser 不在 E1 范围。
 
 2026-08-16 删除工作区恢复用第二份 TradeMind 克隆 `tools/trademind-ai/`。产品代码只以 `MindBay/trademind-ai/` 为准；规则、Blueprint 与模块矩阵不再把它列为可对照路径，也不再允许在 `tools/` 下重建该克隆。

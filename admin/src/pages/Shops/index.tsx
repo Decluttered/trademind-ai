@@ -78,8 +78,10 @@ import {
   summarizeShopTest,
   tagFromMap,
 } from './viewHelpers';
+import { useLocale } from '@/locale';
 
 export default function ShopsPage() {
+  const { t } = useLocale();
   const actionRef = useRef<ActionType>();
   const [providers, setProviders] = useState<PlatformProviderMeta[]>([]);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -495,8 +497,8 @@ export default function ShopsPage() {
 
   return (
     <TmPageContainer
-      title="店铺管理"
-      subTitle="授权并管理已连接的电商平台店铺，可在此同步订单与更新店铺信息。"
+      title={t('page.shops.title')}
+      subTitle={t('page.shops.description')}
     >
       <ProTable<ShopListRow>
         rowKey="id"
@@ -897,13 +899,13 @@ export default function ShopsPage() {
                 style={{ marginBottom: 12 }}
                 message={
                   detail.auth?.reauthorizationRequired
-                    ? '需要重新授权 eBay'
+                    ? t('page.shops.ebayReauthTitle')
                     : 'eBay Sell API（测试中）'
                 }
                 description={
                   detail.auth?.reauthorizationRequired
-                    ? '新增 sell.account.readonly 后，现有 refresh token 无法扩大权限。请使用下方授权链接重新完成 eBay OAuth。'
-                    : '请先在「平台接入设置 → eBay」填写 Client ID、Client Secret 和 RuName（不是 https 回调）。连接测试会读取 Account API getPrivileges。'
+                    ? t('page.shops.ebayReauthBody')
+                    : t('page.shops.ebaySetupBody')
                 }
               />
             )}
@@ -1643,7 +1645,7 @@ export default function ShopsPage() {
                   <>
                     <Divider>eBay OAuth (Sandbox)</Divider>
                     <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-                      授权链接使用平台设置中的 eBay 应用与 RuName。新增 sell.account.readonly 后必须重新授权；完成后只保存加密后的店铺 Token。
+                      {t('page.shops.ebayOauthHint')}
                     </Typography.Paragraph>
                     <Space wrap>
                       <Button

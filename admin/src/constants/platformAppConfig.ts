@@ -1,5 +1,10 @@
 import type { AppConfigFieldDTO } from '@/services/shops';
 import { PLATFORM_COPY } from '@/constants/copywriting';
+import { getStoredAdminLocale, translate } from '@/locale';
+
+function ebayT(key: string): string {
+  return translate(getStoredAdminLocale(), key);
+}
 
 /** 开放平台应用配置字段中文映射（按 field.name） */
 export const PLATFORM_APP_FIELD_LABEL: Record<string, string> = {
@@ -43,12 +48,12 @@ export const PLATFORM_APP_FIELD_LABEL: Record<string, string> = {
   dev_id: '开发者 ID',
 };
 
-const EBAY_APP_FIELD_LABEL: Record<string, string> = {
-  redirect_uri: 'RuName（eBay Redirect URL name）',
-  marketplace_id: 'Marketplace ID',
-  environment: 'eBay 环境',
-  client_id: 'Client ID（App ID）',
-  client_secret: 'Client Secret',
+const EBAY_APP_FIELD_LABEL_KEYS: Record<string, string> = {
+  redirect_uri: 'ebayField.redirect_uri_label',
+  marketplace_id: 'ebayField.marketplace_id_label',
+  environment: 'ebayField.environment_label',
+  client_id: 'ebayField.client_id_label',
+  client_secret: 'ebayField.client_secret_label',
 };
 
 export const PLATFORM_APP_FIELD_HELP: Record<string, string> = {
@@ -80,13 +85,12 @@ export const PLATFORM_APP_FIELD_HELP: Record<string, string> = {
   store_url: '须为 HTTPS 安全链接的店铺地址',
 };
 
-const EBAY_APP_FIELD_HELP: Record<string, string> = {
-  redirect_uri:
-    '粘贴 Developer Portal → OAuth 中的 RuName（例如 YourApp-YourApp-SB-…），不要粘贴 https:// 回调地址。沙箱与生产各有独立 RuName。',
-  marketplace_id: '必填。MindBay MVP 仅支持 eBay.de，填写 EBAY_DE。',
-  environment: '沙箱与生产使用不同的 App ID、RuName 和主机。新增 sell.account.readonly 后，已授权店铺需要重新完成 eBay OAuth。',
-  auth_base_url: '留空则使用所选环境的标准授权主机。',
-  api_base_url: '留空则使用所选环境的标准 API 主机。',
+const EBAY_APP_FIELD_HELP_KEYS: Record<string, string> = {
+  redirect_uri: 'ebayField.redirect_uri_help',
+  marketplace_id: 'ebayField.marketplace_id_help',
+  environment: 'ebayField.environment_help',
+  auth_base_url: 'ebayField.auth_base_url_help',
+  api_base_url: 'ebayField.api_base_url_help',
 };
 
 export const PLATFORM_APP_FIELD_PLACEHOLDER: Record<string, string> = {
@@ -126,8 +130,8 @@ export const PLATFORM_DEV_PORTALS: { name: string; url: string }[] = [
 
 export function platformAppFieldLabel(field: AppConfigFieldDTO, platform?: string): string {
   const key = field.name.trim().toLowerCase();
-  if (platform === 'ebay' && EBAY_APP_FIELD_LABEL[key]) {
-    return EBAY_APP_FIELD_LABEL[key];
+  if (platform === 'ebay' && EBAY_APP_FIELD_LABEL_KEYS[key]) {
+    return ebayT(EBAY_APP_FIELD_LABEL_KEYS[key]);
   }
   const mapped = PLATFORM_APP_FIELD_LABEL[key];
   if (mapped) return mapped;
@@ -141,8 +145,8 @@ export function platformAppFieldLabel(field: AppConfigFieldDTO, platform?: strin
 
 export function platformAppFieldHelp(field: AppConfigFieldDTO, platform?: string): string | undefined {
   const key = field.name.trim().toLowerCase();
-  if (platform === 'ebay' && EBAY_APP_FIELD_HELP[key]) {
-    return EBAY_APP_FIELD_HELP[key];
+  if (platform === 'ebay' && EBAY_APP_FIELD_HELP_KEYS[key]) {
+    return ebayT(EBAY_APP_FIELD_HELP_KEYS[key]);
   }
   return PLATFORM_APP_FIELD_HELP[key] || field.help;
 }

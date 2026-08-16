@@ -11,11 +11,25 @@ import { observabilityResponse } from '../mocks/observability';
 import { operationTaskResponse } from '../mocks/operation-tasks';
 import { platformRuntimeResponse } from '../mocks/platform-runtime';
 import { mindBayResponse } from '../mocks/mindbay';
+import { ADMIN_LOCALE_STORAGE_KEY, type AdminLocale } from '../../src/locale/localeMode';
 
 export async function seedAdminAuth(page: Page) {
-  await page.addInitScript(([key, token]) => {
-    window.localStorage.setItem(key, token);
-  }, ['trademind_admin_token', E2E_TOKEN]);
+  await page.addInitScript(
+    ([tokenKey, token, localeKey, locale]) => {
+      window.localStorage.setItem(tokenKey, token);
+      window.localStorage.setItem(localeKey, locale);
+    },
+    ['trademind_admin_token', E2E_TOKEN, ADMIN_LOCALE_STORAGE_KEY, 'zh' satisfies AdminLocale],
+  );
+}
+
+export async function seedAdminLocale(page: Page, locale: AdminLocale) {
+  await page.addInitScript(
+    ([localeKey, value]) => {
+      window.localStorage.setItem(localeKey, value);
+    },
+    [ADMIN_LOCALE_STORAGE_KEY, locale],
+  );
 }
 
 export async function routeStaticAssets(page: Page) {

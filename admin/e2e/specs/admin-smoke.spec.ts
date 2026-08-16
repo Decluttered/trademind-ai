@@ -573,6 +573,7 @@ test.describe("@smoke Admin route smoke", () => {
   }) => {
     await page.addInitScript((authKey) => {
       window.localStorage.removeItem(authKey);
+      window.localStorage.setItem('trademind_admin_locale', 'zh');
     }, AUTH_TOKEN_KEY);
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -654,11 +655,12 @@ test.describe("@smoke Admin route smoke", () => {
   }) => {
     await page.setViewportSize({ width: 659, height: 1301 });
     await page.addInitScript(
-      ([authKey, themeKey]) => {
+      ([authKey, themeKey, localeKey]) => {
         window.localStorage.removeItem(authKey);
         window.localStorage.removeItem(themeKey);
+        window.localStorage.setItem(localeKey, 'zh');
       },
-      [AUTH_TOKEN_KEY, THEME_MODE_STORAGE_KEY],
+      [AUTH_TOKEN_KEY, THEME_MODE_STORAGE_KEY, 'trademind_admin_locale'],
     );
     await page.goto("/user/register");
     await expect(page).toHaveURL(/\/user\/register/);

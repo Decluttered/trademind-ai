@@ -4,6 +4,10 @@ All notable changes to TradeMind are documented here.
 
 ## Unreleased
 
+### Admin locale (2026-08-17)
+
+- Admin UI supports `en` (default for new browsers), `zh`, and `de` via `trademind_admin_locale`. Login and top nav include a language switcher; scoped pages (login, shops/eBay OAuth, settings chrome, Collect Hub, MindBay) use message catalogs. APIs and JSON keys are unchanged. E2E seeds `zh`/`de` as needed.
+
 ### eBay E1 OAuth and connection probe (2026-08-17)
 
 - eBay `redirect_uri` is validated as a Developer Portal RuName. Marketplace ID is required. New consent includes `sell.account.readonly`.

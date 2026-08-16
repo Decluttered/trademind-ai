@@ -19,10 +19,12 @@ import {
   type EbayCategoryAspect,
   type ListingDraft,
 } from '@/services/mindbay';
+import { useLocale } from '@/locale';
 
 const states: DraftState[] = ['DRAFTING', 'NEEDS_REVIEW', 'READY', 'BLOCKED'];
 
 export default function ListingStudioPage() {
+  const { t } = useLocale();
   const [items, setItems] = useState<ListingDraft[]>([]);
   const [profiles, setProfiles] = useState<GPSRProfile[]>([]);
   const [versions, setVersions] = useState<ContentVersion[]>([]);
@@ -60,7 +62,7 @@ export default function ListingStudioPage() {
     try {
       if (kind === 'generate') {
         await generateListing(id);
-        message.success('Neue Inhaltsversion erzeugt.');
+        message.success(t('mindbay.listing.contentGenerated'));
       } else {
         const out = await validateListing(id, {});
         out.errors.length ? message.warning(out.errors.join(' · ')) : message.success(`Validierung abgeschlossen: ${out.state}`);
@@ -88,15 +90,15 @@ export default function ListingStudioPage() {
   };
 
   const columns: ProColumns<ListingDraft>[] = [
-    { title: 'Status', dataIndex: 'state', width: 140, render: (_, row) => <Tag color={row.state === 'READY' ? 'green' : row.state === 'BLOCKED' ? 'red' : 'blue'}>{row.state}</Tag> },
-    { title: 'Source Product', dataIndex: 'sourceProductId', copyable: true, ellipsis: true },
-    { title: 'Kategorie', dataIndex: 'category', width: 160, render: (_, row) => row.category || '—' },
-    { title: 'Preis', width: 120, render: (_, row) => formatEuroCents(row.priceCents) },
-    { title: 'GPSR / Prüfung', width: 220, render: (_, row) => row.validationErrors?.length ? <Tag color="red">{row.validationErrors.length} Blocker</Tag> : <Tag>noch prüfen</Tag> },
-    { title: 'Aktionen', valueType: 'option', width: 330, render: (_, row) => [
-      <Button key="detail" type="link" loading={action === `detail:${row.id}`} onClick={() => void showDetail(row)}>Versionen</Button>,
-      <Button key="gen" type="link" disabled={row.state === 'READY'} loading={action === `generate:${row.id}`} onClick={() => void run(row.id, 'generate')}>AI-Version erzeugen</Button>,
-      <Popconfirm key="val" title="Listing jetzt validieren?" onConfirm={() => run(row.id, 'validate')}><Button type="link" loading={action === `validate:${row.id}`}>Validieren</Button></Popconfirm>,
+    { title: t('mindbay.listing.colStatus'), dataIndex: 'state', width: 140, render: (_, row) => <Tag color={row.state === 'READY' ? 'green' : row.state === 'BLOCKED' ? 'red' : 'blue'}>{row.state}</Tag> },
+    { title: t('mindbay.listing.colSource'), dataIndex: 'sourceProductId', copyable: true, ellipsis: true },
+    { title: t('mindbay.listing.colCategory'), dataIndex: 'category', width: 160, render: (_, row) => row.category || '—' },
+    { title: t('mindbay.listing.colPrice'), width: 120, render: (_, row) => formatEuroCents(row.priceCents) },
+    { title: t('mindbay.listing.colGpsr'), width: 220, render: (_, row) => row.validationErrors?.length ? <Tag color="red">{t('mindbay.listing.blockers', { values: { count: row.validationErrors.length } })}</Tag> : <Tag>{t('mindbay.listing.stillCheck')}</Tag> },
+    { title: t('mindbay.listing.colActions'), valueType: 'option', width: 330, render: (_, row) => [
+      <Button key="detail" type="link" loading={action === `detail:${row.id}`} onClick={() => void showDetail(row)}>{t('mindbay.listing.versions')}</Button>,
+      <Button key="gen" type="link" disabled={row.state === 'READY'} loading={action === `generate:${row.id}`} onClick={() => void run(row.id, 'generate')}>{t('mindbay.listing.generateVersion')}</Button>,
+      <Popconfirm key="val" title={t('mindbay.listing.validateConfirm')} onConfirm={() => run(row.id, 'validate')}><Button type="link" loading={action === `validate:${row.id}`}>{t('mindbay.listing.validate')}</Button></Popconfirm>,
     ] },
   ];
 
@@ -104,7 +106,7 @@ export default function ListingStudioPage() {
     const values = await draftForm.validateFields();
     const cents = parseEuroInput(values.price);
     if (cents === null) {
-      draftForm.setFields([{ name: 'price', errors: ['Bitte einen gültigen EUR-Betrag eingeben.'] }]);
+      draftForm.setFields([{ name: 'price', errors: [t('mindbay.listing.priceInvalid')] }]);
       return;
     }
     setAction('create');
@@ -118,7 +120,7 @@ export default function ListingStudioPage() {
         imageAssetIds: [],
         gpsrProfileId: values.gpsrProfileId,
       });
-      message.success('Listing-Entwurf angelegt.');
+      message.success(t('mindbay.listing.draftCreated'));
       setDraftOpen(false);
       draftForm.resetFields();
       await load();
@@ -132,7 +134,7 @@ export default function ListingStudioPage() {
   const loadCategoryAspects = async () => {
     const category = String(draftForm.getFieldValue('category') || '').trim();
     if (!category) {
-      draftForm.setFields([{ name: 'category', errors: ['Kategorie ist erforderlich.'] }]);
+      draftForm.setFields([{ name: 'category', errors: [t('mindbay.listing.categoryRequired')] }]);
       return;
     }
     setAspectsLoading(true);
@@ -163,19 +165,19 @@ export default function ListingStudioPage() {
     }
   };
 
-  return <TmPageContainer title="MindBay Listing Studio" subTitle="Lokale Entwürfe erzeugen und prüfen; Phase 1 veröffentlicht nichts bei eBay." extra={<Space><Button onClick={() => setProfileOpen(true)}>GPSR-Profil</Button><Button type="primary" onClick={() => setDraftOpen(true)}>Entwurf anlegen</Button></Space>}>
+  return <TmPageContainer title={t('mindbay.listing.title')} subTitle={t('mindbay.listing.subTitle')} extra={<Space><Button onClick={() => setProfileOpen(true)}>{t('mindbay.listing.gpsrProfile')}</Button><Button type="primary" onClick={() => setDraftOpen(true)}>{t('mindbay.listing.createDraft')}</Button></Space>}>
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {error ? <ErrorAlert title="Listing-Aktion fehlgeschlagen" actionHint={error} /> : null}
-      <Alert type="info" showIcon message="READY erfordert Kategorie, positiven Cent-Preis, Bilder, Pflicht-Specifics, faktentreuen Inhalt und ein vollständiges GPSR-Profil." />
-      <Select allowClear value={state} onChange={setState} placeholder="Alle Status" options={states.map(value => ({ value, label: value }))} style={{ width: 220 }} />
+      {error ? <ErrorAlert title={t('mindbay.listing.errorTitle')} actionHint={error} /> : null}
+      <Alert type="info" showIcon message={t('mindbay.listing.readyHint')} />
+      <Select allowClear value={state} onChange={setState} placeholder={t('mindbay.listing.allStates')} options={states.map(value => ({ value, label: value }))} style={{ width: 220 }} />
       <TmProTable rowKey="id" search={false} options={false} pagination={false} loading={loading} columns={columns} dataSource={items} scroll={{ x: 1050 }} />
     </Space>
 
-    <Modal title="Listing-Entwurf anlegen" open={draftOpen} onCancel={() => setDraftOpen(false)} onOk={() => void createDraft()} confirmLoading={action === 'create'} okText="Anlegen" cancelText="Abbrechen" destroyOnHidden>
+    <Modal title={t('mindbay.listing.draftModalTitle')} open={draftOpen} onCancel={() => setDraftOpen(false)} onOk={() => void createDraft()} confirmLoading={action === 'create'} okText={t('mindbay.listing.okCreate')} cancelText={t('mindbay.listing.cancel')} destroyOnHidden>
       <Form form={draftForm} layout="vertical" style={{ marginTop: 16 }}>
-        <Form.Item name="sourceProductId" label="Source Product ID" rules={[{ required: true, message: 'Source Product ID ist erforderlich.' }]}><Input /></Form.Item>
-        <Form.Item name="category" label="eBay-Kategorie-ID" rules={[{ required: true, message: 'Kategorie ist erforderlich.' }]}>
-          <Input.Search loading={aspectsLoading} enterButton="Pflichtfelder laden" onChange={() => setCategoryAspects([])} onSearch={() => void loadCategoryAspects()} />
+        <Form.Item name="sourceProductId" label={t('mindbay.listing.sourceProductId')} rules={[{ required: true, message: t('mindbay.listing.sourceRequired') }]}><Input /></Form.Item>
+        <Form.Item name="category" label={t('mindbay.listing.category')} rules={[{ required: true, message: t('mindbay.listing.categoryRequired') }]}>
+          <Input.Search loading={aspectsLoading} enterButton={t('mindbay.listing.loadAspects')} onChange={() => setCategoryAspects([])} onSearch={() => void loadCategoryAspects()} />
         </Form.Item>
         {categoryAspects.map((aspect) => (
           <Form.Item
@@ -187,8 +189,8 @@ export default function ListingStudioPage() {
             {aspect.options?.length ? <Select showSearch options={aspect.options.map((value) => ({ value, label: value }))} /> : <Input />}
           </Form.Item>
         ))}
-        <Form.Item name="price" label="Preis in EUR" rules={[{ required: true, message: 'Preis ist erforderlich.' }]}><Input inputMode="decimal" placeholder="29,99" /></Form.Item>
-        <Form.Item name="gpsrProfileId" label="GPSR-Profil"><Select allowClear options={profiles.map(profile => ({ value: profile.id, label: profile.name }))} /></Form.Item>
+        <Form.Item name="price" label={t('mindbay.listing.priceEur')} rules={[{ required: true, message: t('mindbay.listing.priceRequired') }]}><Input inputMode="decimal" placeholder="29,99" /></Form.Item>
+        <Form.Item name="gpsrProfileId" label={t('mindbay.listing.gpsrLabel')}><Select allowClear options={profiles.map(profile => ({ value: profile.id, label: profile.name }))} /></Form.Item>
       </Form>
     </Modal>
 

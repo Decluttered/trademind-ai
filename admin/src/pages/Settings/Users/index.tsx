@@ -1,7 +1,6 @@
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { TmPageContainer, TmProTable as ProTable } from '@/components/ui';
 import PermissionGuard from '@/components/PermissionGuard';
-import { PAGE_COPY } from '@/constants/copywriting';
 import {
   confirmAssignStorePermissions,
   confirmChangeUserRole,
@@ -18,6 +17,7 @@ import {
 import { queryShops, type ShopListRow } from '@/services/shops';
 import { Button, Form, Input, Modal, Select, Space, Tag, message } from 'antd';
 import { useCallback, useRef, useState } from 'react';
+import { useLocale } from '@/locale';
 import { usePermission } from '@/hooks/usePermission';
 import { useListEmptyLocale } from '@/hooks/useListEmptyLocale';
 import { PERMISSIONS } from '@/utils/permission';
@@ -52,6 +52,7 @@ function adminUserLabel(row: Pick<AdminUserRow, 'displayName' | 'email' | 'usern
 }
 
 export default function SettingsUsersPage() {
+  const { t } = useLocale();
   const actionRef = useRef<ActionType>();
   const { canManageUsers, user: currentUser } = usePermission();
   const [createOpen, setCreateOpen] = useState(false);
@@ -125,7 +126,7 @@ export default function SettingsUsersPage() {
           onClick={() => {
             let selectedRole = row.role;
             Modal.confirm({
-              title: '修改角色',
+              title: t('page.users.changeRoleTitle'),
               content: (
                 <Select
                   defaultValue={row.role}
@@ -157,7 +158,7 @@ export default function SettingsUsersPage() {
             });
           }}
         >
-          改角色
+          {t('page.users.changeRole')}
         </Button>,
         row.role !== 'admin' ? (
           <Button
@@ -210,7 +211,7 @@ export default function SettingsUsersPage() {
 
   return (
     <PermissionGuard require={PERMISSIONS.USER_MANAGE} showForbiddenPage>
-      <TmPageContainer title={PAGE_COPY.usersSettings.title} subTitle={PAGE_COPY.usersSettings.description}>
+      <TmPageContainer title={t('page.users.title')} subTitle={t('page.users.description')}>
         <ProTable<AdminUserRow>
           actionRef={actionRef}
           rowKey="id"
@@ -219,7 +220,7 @@ export default function SettingsUsersPage() {
           locale={emptyLocale}
           toolBarRender={() => [
             <Button key="create" type="primary" onClick={() => setCreateOpen(true)}>
-              新建用户
+              {t('page.users.createUser')}
             </Button>,
           ]}
           request={async (params) => {
@@ -239,7 +240,7 @@ export default function SettingsUsersPage() {
         />
 
         <Modal
-          title="新建用户"
+          title={t('page.users.createUser')}
           open={createOpen}
           onCancel={() => setCreateOpen(false)}
           onOk={() => createForm.submit()}
@@ -272,7 +273,9 @@ export default function SettingsUsersPage() {
         </Modal>
 
         <Modal
-          title={`分配店铺权限 — ${editUser?.displayName || ''}`}
+          title={t('page.users.assignShops', {
+            values: { name: editUser?.displayName || '' },
+          })}
           open={permOpen}
           width={640}
           onCancel={() => setPermOpen(false)}

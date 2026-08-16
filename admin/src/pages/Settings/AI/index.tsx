@@ -43,7 +43,8 @@ import {
   initialAIConnectionFormValues,
   type AIProviderValue,
 } from '@/constants/aiProviders';
-import { ACTION_COPY, PAGE_COPY } from '@/constants/copywriting';
+import { ACTION_COPY } from '@/constants/copywriting';
+import { useLocale } from '@/locale';
 import { fetchSettingsList, saveSettingsItems, testAIConnection } from '@/services/settings';
 import { pickGroup, toPutItems, type FieldSpec } from '@/utils/settingsForm';
 
@@ -68,6 +69,7 @@ const PROVIDER_ICONS: Record<AIProviderValue, ComponentType<{ style?: CSSPropert
 };
 
 export default function AISettingsPage() {
+  const { t } = useLocale();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -189,8 +191,8 @@ export default function AISettingsPage() {
 
   return (
     <TmPageContainer
-      title="AI 设置"
-      subTitle={PAGE_COPY.aiSettings.description}
+      title={t('page.ai.title')}
+      subTitle={t('page.ai.description')}
     >
       <div className="tm-ai-settings">
         <ProCard variant="outlined" className="tm-ai-settings__hero">
@@ -251,7 +253,7 @@ export default function AISettingsPage() {
         >
           <ProCard
             variant="outlined"
-            title="AI 服务商"
+            title={t('page.ai.providers')}
             className="tm-ai-settings__panel"
             extra={
               <Button type="link" icon={<ReloadOutlined />} onClick={() => void load()} disabled={loading}>
@@ -325,7 +327,7 @@ export default function AISettingsPage() {
 
           <Row gutter={[16, 16]} className="tm-ai-settings__row">
             <Col xs={24} lg={14}>
-              <ProCard variant="outlined" title="连接配置" className="tm-ai-settings__panel tm-ai-settings__panel--fill">
+              <ProCard variant="outlined" title={t('page.ai.connection')} className="tm-ai-settings__panel tm-ai-settings__panel--fill">
                 {providerDocs ? (
                   <Alert
                     type="info"
@@ -354,7 +356,7 @@ export default function AISettingsPage() {
               </ProCard>
             </Col>
             <Col xs={24} lg={10}>
-              <ProCard variant="outlined" title="生成参数" className="tm-ai-settings__panel tm-ai-settings__panel--fill">
+              <ProCard variant="outlined" title={t('page.ai.generation')} className="tm-ai-settings__panel tm-ai-settings__panel--fill">
                 <Row gutter={12}>
                   <Col span={12}>
                     <Form.Item label="随机度（Temperature）" name="temperature" extra="默认 0.7，越低越稳定">

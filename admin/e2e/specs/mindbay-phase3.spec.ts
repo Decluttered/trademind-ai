@@ -2,12 +2,14 @@ import { test, expect } from '../fixtures/admin.fixture';
 import { ok } from '../mocks/envelope';
 import { mindBayDecision } from '../mocks/mindbay';
 import { expectNoRootOverflow } from '../utils/assertions';
+import { seedAdminLocale } from '../utils/routes';
 
 const viewports = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 1024, height: 768 }, { width: 768, height: 900 }, { width: 375, height: 812 }];
 
 test.describe('@mindbay Phase 3 monitoring and profit', () => {
   for (const viewport of viewports) {
     test(`monitoring has no root overflow at ${viewport.width}x${viewport.height}`, async ({ admin, page }) => {
+      await seedAdminLocale(page, 'de');
       await page.setViewportSize(viewport);
       await admin.goto('/mindbay/monitoring');
       await expect(page.getByText('DRY_RUN bleibt der sichere Standard')).toBeVisible({ timeout: 30_000 });
@@ -17,6 +19,7 @@ test.describe('@mindbay Phase 3 monitoring and profit', () => {
   }
 
   test('monitor run and apply require separate confirmations', async ({ admin, page }) => {
+    await seedAdminLocale(page, 'de');
     admin.writeGuard.allow({ operation: 'monitor-run', method: 'POST', path: /^\/v1\/monitor-runs$/, response: ok({ run: { id: 'monitor-run-e2e', status: 'SUCCEEDED' }, decision: mindBayDecision }) });
     admin.writeGuard.allow({ operation: 'decision-apply', method: 'POST', path: /^\/v1\/price-decisions\/price-decision-e2e\/apply$/, response: ok(mindBayDecision) });
     await admin.goto('/mindbay/monitoring');
@@ -40,6 +43,7 @@ test.describe('@mindbay Phase 3 monitoring and profit', () => {
   });
 
   test('profit keeps forecast and realized states separate', async ({ admin, page }) => {
+    await seedAdminLocale(page, 'de');
     await admin.goto('/mindbay/profit');
     await expect(page.getByText('Erwartete Marge').first()).toBeVisible();
     await expect(page.getByText('prognostiziert')).toBeVisible();

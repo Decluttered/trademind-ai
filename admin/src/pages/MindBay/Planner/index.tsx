@@ -15,12 +15,14 @@ import {
   type CalendarSlot,
   type PublishConfig,
 } from '@/services/mindbay';
+import { useLocale } from '@/locale';
 
 type PlannerForm = PublishConfig & { shopId: string; startAt: dayjs.Dayjs; days: number; maxPerDay: number; minSpacingMinutes: number };
 
 const statusColor: Record<CalendarSlot['status'], string> = { DRAFT: 'default', SCHEDULED: 'blue', HELD: 'gold', PUBLISHING: 'processing', PUBLISHED: 'green', FAILED: 'red', CANCELLED: 'default' };
 
 export default function PlannerPage() {
+  const { t } = useLocale();
   const { readonly, can } = usePermission();
   const writable = !readonly && can(PERMISSIONS.PRODUCT_WRITE);
   const [form] = Form.useForm<PlannerForm>();
@@ -73,7 +75,7 @@ export default function PlannerPage() {
     setError('');
     try {
       await applyCalendar({ shopId: values.shopId, marketplace: 'EBAY_DE', slots: preview, publishConfig: { merchantLocationKey: values.merchantLocationKey, paymentPolicyId: values.paymentPolicyId, returnPolicyId: values.returnPolicyId, fulfillmentPolicyId: values.fulfillmentPolicyId, condition: values.condition, quantity: values.quantity, productSafetyStatementIds: values.productSafetyStatementIds?.trim() || undefined } });
-      message.success(`${preview.length} Slot(s) idempotent eingeplant.`);
+      message.success(t('mindbay.planner.scheduledSuccess', { values: { count: preview.length } }));
       setConfirmOpen(false);
       setPreview([]);
       await load();
@@ -101,11 +103,11 @@ export default function PlannerPage() {
     { title: 'Planer-Score', dataIndex: 'plannerScore', width: 120 },
   ], []);
 
-  return <TmPageContainer title="MindBay Planner" subTitle="READY-Listings vorschauen, Slots reservieren und kontrolliert an den eBay-Sandbox-Workflow übergeben.">
+  return <TmPageContainer title={t('mindbay.planner.title')} subTitle={t('mindbay.planner.subTitle')}>
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Alert type="warning" showIcon message="Sicherer Standard: DRY_RUN + eBay Sandbox" description="Preview verändert keine Daten. Erst Einplanen reserviert Slots; DRY_RUN führt keine mutierende eBay-Anfrage aus." />
-      {!writable ? <Alert type="info" showIcon message="Nur-Lese-Modus" description="Preview und Kalender bleiben sichtbar; Einplanen ist deaktiviert." /> : null}
-      {error ? <ErrorAlert title="Planner-Aktion fehlgeschlagen" actionHint={error} /> : null}
+      <Alert type="warning" showIcon message={t('mindbay.planner.safeStandard')} description={t('mindbay.planner.safeStandardBody')} />
+      {!writable ? <Alert type="info" showIcon message={t('mindbay.planner.readonlyTitle')} description={t('mindbay.planner.readonlyBody')} /> : null}
+      {error ? <ErrorAlert title={t('mindbay.planner.errorTitle')} actionHint={error} /> : null}
       <Form form={form} layout="vertical" initialValues={{ startAt: dayjs().add(1, 'hour').startOf('hour'), days: 7, maxPerDay: 4, minSpacingMinutes: 120, marketplace: 'EBAY_DE', condition: 'NEW', quantity: 1 }}>
         <Space wrap align="start">
           <Form.Item name="shopId" label="eBay Shop" rules={[{ required: true, message: 'eBay Shop auswählen.' }]}><Select loading={loading} style={{ width: 230 }} placeholder="eBay Shop" options={shops.map(shop => ({ value: shop.id, label: `${shop.shopName} · ${shop.authStatus}` }))} /></Form.Item>
@@ -123,7 +125,7 @@ export default function PlannerPage() {
           <Form.Item name="quantity" label="Menge" rules={[{ required: true }]}><InputNumber min={1} max={99} /></Form.Item>
           <Form.Item name="productSafetyStatementIds" label="eBay Safety IDs" tooltip="Optionale, komma-separierte Metadata-IDs wie EBPSS102"><Input placeholder="EBPSS102" /></Form.Item>
         </Space>
-        <Space><Button loading={action === 'preview'} onClick={() => void runPreview()}>Preview berechnen</Button><Button type="primary" disabled={!writable || preview.length === 0} onClick={() => setConfirmOpen(true)}>Slots einplanen</Button></Space>
+        <Space><Button loading={action === 'preview'} onClick={() => void runPreview()}>{t('mindbay.planner.preview')}</Button><Button type="primary" disabled={!writable || preview.length === 0} onClick={() => setConfirmOpen(true)}>{t('mindbay.planner.scheduleSlots')}</Button></Space>
       </Form>
 
       <Space><Statistic title="Preview-Slots" value={preview.length} /><Statistic title="Nicht platziert" value={unplaced} /></Space>
@@ -131,7 +133,7 @@ export default function PlannerPage() {
       <TmProTable rowKey="id" headerTitle="Reservierte Slots" search={false} options={false} pagination={false} loading={loading} columns={scheduledColumns} dataSource={scheduled} locale={{ emptyText: 'Noch keine Slots reserviert.' }} scroll={{ x: 1250 }} />
     </Space>
 
-    <Modal title="Slots verbindlich einplanen?" open={confirmOpen} onCancel={() => setConfirmOpen(false)} onOk={() => void apply()} okText="Einplanen" cancelText="Abbrechen" confirmLoading={action === 'apply'}>
+    <Modal title={t('mindbay.planner.confirmTitle')} open={confirmOpen} onCancel={() => setConfirmOpen(false)} onOk={() => void apply()} okText={t('mindbay.planner.okSchedule')} cancelText={t('mindbay.planner.cancel')} confirmLoading={action === 'apply'}>
       <Alert type="warning" showIcon message={`${preview.length} Listing(s) wechseln von READY nach SCHEDULED.`} description="Der gleiche Idempotency-Key kann keine doppelten Slots erzeugen. Bei DRY_RUN bleibt eBay unverändert." />
     </Modal>
   </TmPageContainer>;

@@ -1,6 +1,6 @@
 import { ProCard } from '@ant-design/pro-components';
 import { TmPageContainer } from '@/components/ui';
-import { PAGE_COPY } from '@/constants/copywriting';
+import { useLocale } from '@/locale';
 import { formatDateTime } from '@/utils/formatTime';
 import { history, useLocation } from '@umijs/max';
 import {
@@ -738,6 +738,7 @@ function CollectorPlannedSection({ providerLabel }: { providerLabel: string }) {
 }
 
 export default function CollectorSettingsPage() {
+  const { t } = useLocale();
   const location = useLocation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -1056,9 +1057,9 @@ export default function CollectorSettingsPage() {
   ) : null;
 
   return (
-    <TmPageContainer title="采集设置" subTitle={PAGE_COPY.collectorSettings.description}>
+    <TmPageContainer title={t('page.collector.title')} subTitle={t('page.collector.description')}>
       <div className="tm-collector-settings">
-        <ProCard variant="outlined" className="tm-collector-settings__selector" title="采集器类型">
+        <ProCard variant="outlined" className="tm-collector-settings__selector" title={t('page.collector.selectorTitle')}>
           <CollectorProviderSelector
             activeKey={providerKey}
             providers={providers}
@@ -1073,7 +1074,7 @@ export default function CollectorSettingsPage() {
             <Row gutter={[16, 16]} align="stretch">
               <Col xs={24} xl={10}>
                 <ProCard
-                  title="通用采集设置"
+                  title={t('page.collector.commonTitle')}
                   variant="outlined"
                   className="tm-collector-settings__panel"
                   extra={

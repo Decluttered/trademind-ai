@@ -3,7 +3,7 @@ import { ProCard } from '@ant-design/pro-components';
 import { TmPageContainer } from '@/components/ui';
 import { Button, Col, Divider, Form, Input, InputNumber, Row, Select, Switch, Typography, message } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PAGE_COPY } from '@/constants/copywriting';
+import { useLocale } from '@/locale';
 import {
   ALERT_SEVERITY_OPTIONS,
   SYSTEM_TIMEZONE_OPTIONS,
@@ -106,6 +106,7 @@ function AlertToggleItem({
 }
 
 export default function SystemSettingsPage() {
+  const { t } = useLocale();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const timezoneValue = Form.useWatch('timezone', form);
@@ -189,7 +190,7 @@ export default function SystemSettingsPage() {
   };
 
   return (
-    <TmPageContainer title={PAGE_COPY.systemSettings.title} subTitle={PAGE_COPY.systemSettings.description}>
+    <TmPageContainer title={t('page.system.title')} subTitle={t('page.system.description')}>
       <div className="tm-system-settings">
         <ProCard variant="outlined" className="tm-system-settings__hero">
           <div className="tm-system-settings__hero-inner">
@@ -211,7 +212,7 @@ export default function SystemSettingsPage() {
         <Form form={form} layout="vertical" onFinish={onFinish}>
           <ProCard
             variant="outlined"
-            title="站点信息"
+            title={t('page.system.siteInfo')}
             className="tm-system-settings__panel"
             extra={
               <Button type="link" icon={<ReloadOutlined />} onClick={() => void load()} disabled={loading}>
