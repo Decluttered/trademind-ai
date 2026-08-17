@@ -48,6 +48,8 @@ import {
   postLazadaOAuthCallback,
   getAmazonOAuthAuthorizeUrl,
   postAmazonOAuthCallback,
+  getEbayOAuthAuthorizeUrl,
+  postEbayOAuthCallback,
   queryPlatformProviders,
   queryShops,
   refreshDouyinOAuth,
@@ -76,8 +78,10 @@ import {
   summarizeShopTest,
   tagFromMap,
 } from './viewHelpers';
+import { useLocale } from '@/locale';
 
 export default function ShopsPage() {
+  const { t } = useLocale();
   const actionRef = useRef<ActionType>();
   const [providers, setProviders] = useState<PlatformProviderMeta[]>([]);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -98,6 +102,8 @@ export default function ShopsPage() {
   const [lazadaOAuthState, setLazadaOAuthState] = useState('');
   const [amazonOAuthAuthorizeUrl, setAmazonOAuthAuthorizeUrl] = useState('');
   const [amazonOAuthState, setAmazonOAuthState] = useState('');
+  const [ebayOAuthAuthorizeUrl, setEbayOAuthAuthorizeUrl] = useState('');
+  const [ebayOAuthState, setEbayOAuthState] = useState('');
   const [authPartnerWarn, setAuthPartnerWarn] = useState<string | null>(null);
 
   const loadProviders = useCallback(async () => {
@@ -171,6 +177,8 @@ export default function ShopsPage() {
     setLazadaOAuthState('');
     setAmazonOAuthAuthorizeUrl('');
     setAmazonOAuthState('');
+    setEbayOAuthAuthorizeUrl('');
+    setEbayOAuthState('');
     setAuthOpen(true);
   };
 
@@ -489,8 +497,8 @@ export default function ShopsPage() {
 
   return (
     <TmPageContainer
-      title="店铺管理"
-      subTitle="授权并管理已连接的电商平台店铺，可在此同步订单与更新店铺信息。"
+      title={t('page.shops.title')}
+      subTitle={t('page.shops.description')}
     >
       <ProTable<ShopListRow>
         rowKey="id"
@@ -882,6 +890,23 @@ export default function ShopsPage() {
                 style={{ marginBottom: 12 }}
                 message="Amazon SP-API（测试中）"
                 description="支持店铺授权、连接测试与订单同步。请先在「平台接入设置 → Amazon」填写完整平台应用信息；服务器需按文档配置亚马逊访问凭证。"
+              />
+            )}
+            {detail.platform === 'ebay' && (
+              <Alert
+                type={detail.auth?.reauthorizationRequired ? 'warning' : 'info'}
+                showIcon
+                style={{ marginBottom: 12 }}
+                message={
+                  detail.auth?.reauthorizationRequired
+                    ? t('page.shops.ebayReauthTitle')
+                    : 'eBay Sell API（测试中）'
+                }
+                description={
+                  detail.auth?.reauthorizationRequired
+                    ? t('page.shops.ebayReauthBody')
+                    : t('page.shops.ebaySetupBody')
+                }
               />
             )}
             <Descriptions bordered size="small" column={2}>
@@ -1612,6 +1637,71 @@ export default function ShopsPage() {
                       }}
                     >
                       提交授权
+                    </Button>
+                    <Divider />
+                  </>
+                )}
+                {detail.platform === 'ebay' && provForShop?.status === 'beta' && (
+                  <>
+                    <Divider>eBay OAuth (Sandbox)</Divider>
+                    <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+                      {t('page.shops.ebayOauthHint')}
+                    </Typography.Paragraph>
+                    <Space wrap>
+                      <Button
+                        type="primary"
+                        onClick={async () => {
+                          if (authPartnerWarn) {
+                            message.warning('Bitte zuerst die eBay-Plattform-Einstellungen vervollständigen.');
+                            return;
+                          }
+                          try {
+                            const result = await getEbayOAuthAuthorizeUrl(detail.id);
+                            setEbayOAuthAuthorizeUrl(result.authorizeUrl);
+                            setEbayOAuthState(result.state);
+                            message.success('eBay-Autorisierungslink erstellt.');
+                          } catch (error: unknown) {
+                            message.error(formatPlatformPartnerErr(error));
+                          }
+                        }}
+                      >
+                        Autorisierungslink erstellen
+                      </Button>
+                      <Button
+                        disabled={!ebayOAuthAuthorizeUrl}
+                        onClick={() => window.open(ebayOAuthAuthorizeUrl, '_blank', 'noopener,noreferrer')}
+                      >
+                        Bei eBay öffnen
+                      </Button>
+                    </Space>
+                    <Form.Item label="authorizeUrl">
+                      <Input.TextArea readOnly value={ebayOAuthAuthorizeUrl} autoSize={{ minRows: 2, maxRows: 6 }} />
+                    </Form.Item>
+                    <Form.Item label="state">
+                      <Input readOnly value={ebayOAuthState} />
+                    </Form.Item>
+                    <Form.Item name="ebayAuthCode" label="Authorization Code">
+                      <Input placeholder="Code aus dem eBay-Callback" />
+                    </Form.Item>
+                    <Button
+                      onClick={async () => {
+                        const code = String(authForm.getFieldValue('ebayAuthCode') || '').trim();
+                        if (!code || !ebayOAuthState) {
+                          message.warning('Authorization Code und state sind erforderlich.');
+                          return;
+                        }
+                        try {
+                          await postEbayOAuthCallback(detail.id, { code, state: ebayOAuthState });
+                          message.success('eBay-Shop wurde autorisiert.');
+                          setAuthOpen(false);
+                          actionRef.current?.reload();
+                          if (detailOpen) void refreshDetail(detail.id);
+                        } catch (error: unknown) {
+                          message.error(formatPlatformPartnerErr(error));
+                        }
+                      }}
+                    >
+                      Code speichern
                     </Button>
                     <Divider />
                   </>

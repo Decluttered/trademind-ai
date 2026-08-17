@@ -1,6 +1,6 @@
 /**
- * Umi/Max 在 IDE 中依赖 .umi 生成物与 umi 类型包；在未运行 `max dev` / `max setup` 时
- * 可能报「@umijs/max 没有导出的成员 xxx」。此处做最小类型补充，与运行时一致。
+ * Umi/Max relies on .umi generated artifacts and the umi type package in the IDE; when `max dev` / `max setup` hasn't been run,
+ * it may report "@umijs/max has no exported member xxx". This provides a minimal type supplement, consistent with the runtime.
  */
 export {};
 

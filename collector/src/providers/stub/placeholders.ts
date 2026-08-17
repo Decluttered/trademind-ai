@@ -16,7 +16,7 @@ function notImplemented(message: string) {
   };
 }
 
-/** 拼多多：规划中，仅做链接形态粗校验 */
+/** Pinduoduo: planned, only performs coarse URL shape validation for now */
 export const sourcePddProvider: CollectorProvider = {
   sourceId: 'pdd',
   meta: {
@@ -46,7 +46,7 @@ export const sourcePddProvider: CollectorProvider = {
   collect: notImplemented('拼多多采集器暂未实现'),
 };
 
-/** 淘宝 / 天猫 */
+/** Taobao / Tmall */
 export const sourceTaobaoProvider: CollectorProvider = {
   sourceId: 'taobao',
   meta: {
@@ -77,7 +77,7 @@ export const sourceTaobaoProvider: CollectorProvider = {
   collect: notImplemented('淘宝/天猫采集器暂未实现'),
 };
 
-/** SHEIN / Temu 合并入口 */
+/** SHEIN / Temu combined entry point */
 export const sourceSheinTemuProvider: CollectorProvider = {
   sourceId: 'shein_temu',
   meta: {

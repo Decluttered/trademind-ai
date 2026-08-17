@@ -18,6 +18,8 @@ func Register(g *gin.RouterGroup, h *Handler) {
 	g.GET("/platform/douyin/categories/stats", h.DouyinCategoryStats)
 	g.GET("/platform/douyin/categories/:categoryId/attributes", h.ListDouyinCategoryAttributes)
 	g.POST("/platform/douyin/categories/:categoryId/attributes/sync", h.SyncDouyinCategoryAttributes)
+	g.GET("/platform/ebay/categories/:categoryId/aspects", h.ListEbayCategoryAspects)
+	g.POST("/platform/ebay/categories/:categoryId/aspects/sync", h.SyncEbayCategoryAspects)
 
 	s := g.Group("/shops")
 	s.GET("", h.List)
@@ -41,6 +43,8 @@ func Register(g *gin.RouterGroup, h *Handler) {
 	s.POST("/:id/oauth/lazada/callback", h.LazadaOAuthCallback)
 	s.GET("/:id/oauth/amazon/authorize-url", h.AmazonOAuthAuthorizeURL)
 	s.POST("/:id/oauth/amazon/callback", h.AmazonOAuthCallback)
+	s.GET("/:id/oauth/ebay/authorize-url", h.EbayOAuthAuthorizeURL)
+	s.POST("/:id/oauth/ebay/callback", h.EbayOAuthCallback)
 }
 
 // RegisterPublic mounts OAuth callbacks that external platforms call directly.

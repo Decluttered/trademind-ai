@@ -1,28 +1,28 @@
-# 领域幂等接入指南（P2.1）
+# Domain Idempotency Integration Guide (P2.1)
 
-> 指导新业务写路径接入统一 `backend/internal/modules/idempotency` 服务。P2.1 已完成关键路径接入，本文同时作为后续扩展模板。
+> Guides new business write paths on integrating with the unified `backend/internal/modules/idempotency` service. P2.1 has completed integration of the key paths; this document also serves as a template for future extensions.
 
-## 何时必须接入
+## When Integration Is Required
 
-以下操作 **必须** 走幂等：
+The following operations **must** go through idempotency:
 
-- 会向第三方或 DB 产生 **不可轻易撤销副作用** 的写操作（扣库存、发消息、创建平台订单/商品、Webhook 处理）。
-- 客户端或队列可能 **重试** 同一业务请求（网络超时、429、Worker 重投）。
-- 多实例 API / Worker 可能 **并发** 处理相同业务键。
+- Write operations that produce **side effects that are not easily reversible** against a third party or the DB (deducting inventory, sending messages, creating platform orders/products, webhook processing).
+- Operations where the client or queue may **retry** the same business request (network timeout, 429, worker redelivery).
+- Operations where multiple API/worker instances may process the same business key **concurrently**.
 
-只读查询、纯内存计算、已有 DB 唯一约束且无需重放响应摘要的路径，可评估是否省略（需在 PR 中说明）。
+Read-only queries, pure in-memory computation, and paths that already have a DB unique constraint and don't need to replay a response digest can be evaluated for exemption (must be explained in the PR).
 
-## 接入步骤
+## Integration Steps
 
-### 1. 定义 Scope 与 Key
+### 1. Define Scope and Key
 
-在 `idempotency/scope.go` 增加业务 scope 常量（若尚未存在）：
+Add a business scope constant in `idempotency/scope.go` (if it doesn't already exist):
 
 ```go
 const ScopeMyFeature = "my_feature"
 ```
 
-在 `idempotency/keys.go` 增加稳定键构造器，**禁止**嵌入 API Key、Token、买家 PII：
+Add a stable key constructor in `idempotency/keys.go`. **Do not** embed API keys, tokens, or buyer PII:
 
 ```go
 func MyFeatureAction(shopID, businessID string) string {
@@ -30,20 +30,20 @@ func MyFeatureAction(shopID, businessID string) string {
 }
 ```
 
-键必须仅由业务语义字段组成（平台、店铺、订单号、客户端 messageId、内容版本 hash 等）。
+The key must consist only of business-semantic fields (platform, shop, order number, client messageId, content version hash, etc.).
 
-### 2. 注入 Service
+### 2. Inject the Service
 
-在 `router.go` 将共享实例注入模块 Service：
+Inject the shared instance into the module's service in `router.go`:
 
 ```go
 idempotencySvc := &idempotency.Service{DB: dep.DB}
 mySvc := &myfeature.Service{DB: dep.DB, Idempotency: idempotencySvc}
 ```
 
-### 3. Acquire → 执行业务 → Complete / Fail
+### 3. Acquire → Execute Business Logic → Complete / Fail
 
-推荐模式（与 P2.1 各模块一致）：
+Recommended pattern (consistent with the P2.1 modules):
 
 ```go
 owner := idempotency.OwnerFromRequest(c.GetString("requestId"), "my-feature")
@@ -63,7 +63,7 @@ case idempotency.DecisionAcquired, idempotency.DecisionRetryAllowed:
     // fall through
 }
 
-// 长任务可 Heartbeat(ctx, rec.ID, owner, lease)
+// Long-running tasks can call Heartbeat(ctx, rec.ID, owner, lease)
 if bizErr != nil {
     retryable := taskretry.Classify(bizErr).Retryable
     _ = s.Idempotency.Fail(ctx, rec.ID, owner, bizErr.Error(), retryable)
@@ -77,70 +77,70 @@ return s.Idempotency.Complete(ctx, rec.ID, owner, idempotency.CompleteResult{
 })
 ```
 
-也可使用 `Service.Execute` 简化 Acquire+Complete 编排（见 `execute.go`）。
+`Service.Execute` can also be used to simplify Acquire+Complete orchestration (see `execute.go`).
 
-### 4. 与领域表双写
+### 4. Dual-Write with Domain Tables
 
-幂等记录存 **执行权与重放摘要**；业务事实仍写领域表，并保留 DB 级唯一约束作为最后防线，例如：
+The idempotency record stores **execution ownership and a replay digest**; the business fact is still written to the domain table, and a DB-level unique constraint is retained as the last line of defense, for example:
 
-| 路径 | 领域防重 |
+| Path | Domain-level duplicate prevention |
 | --- | --- |
-| 订单导入 | 平台订单唯一索引 |
-| 库存扣减 | `inventory_change_logs.business_event_key` |
+| Order import | Unique index on platform order |
+| Inventory deduction | `inventory_change_logs.business_event_key` |
 | Webhook | `webhook_events(platform, event_id)` |
-| 刊登批次 | `product_publish_batches.idempotency_key` |
+| Listing batch | `product_publish_batches.idempotency_key` |
 
-### 5. HTTP / API 约定
+### 5. HTTP / API Conventions
 
-- 客户端 **可选** 传 `Idempotency-Key` 或 JSON `idempotencyKey`；服务端 **必须** 能自行生成稳定键。
-- 已成功：`IDEMPOTENCY_ALREADY_SUCCEEDED` → 返回 200 + 缓存摘要或领域资源 ID。
-- 处理中：`IDEMPOTENCY_IN_PROGRESS` → 409 或 202 + 轮询指引。
-- 键冲突（不同 payload）：`IDEMPOTENCY_KEY_CONFLICT` → 409，需人工介入。
+- The client **may optionally** pass `Idempotency-Key` or a JSON `idempotencyKey`; the server **must** be able to generate a stable key on its own.
+- Already succeeded: `IDEMPOTENCY_ALREADY_SUCCEEDED` → return 200 + cached digest or domain resource ID.
+- In progress: `IDEMPOTENCY_IN_PROGRESS` → 409 or 202 + polling guidance.
+- Key conflict (different payload): `IDEMPOTENCY_KEY_CONFLICT` → 409, requires manual intervention.
 
-### 6. 与任务租约协作
+### 6. Coordinating with Task Leases
 
-异步 Worker 路径应同时使用：
+Async worker paths should use both:
 
-1. **业务幂等**（`idempotency.Service`）— 防止重复创建副作用；
-2. **任务租约**（`tasklease`）— 保证同一 `task_id` 仅一个 execution 写结果。
+1. **Business idempotency** (`idempotency.Service`) — prevents duplicate creation of side effects;
+2. **Task lease** (`tasklease`) — ensures only one execution writes the result for a given `task_id`.
 
-长任务在 claim 后调用 `tasklease.StartRenewal`；提交结果前 `ValidateLease` 或 `finish*Task` 带 `execution_id` + `lock_version` 条件更新。
+Long-running tasks call `tasklease.StartRenewal` after claiming; before submitting the result, use `ValidateLease` or `finish*Task` with a conditional update on `execution_id` + `lock_version`.
 
-### 7. 测试与扫描
+### 7. Testing and Scanning
 
-- 单元/集成测试覆盖：并发 Acquire、已成功重放、payload 冲突、租约丢失。
-- 提交前运行：
+- Unit/integration tests should cover: concurrent Acquire, replay of an already-succeeded result, payload conflicts, and lease loss.
+- Run before submitting:
 
 ```bash
 go test ./internal/modules/idempotency/... ./internal/pkg/tasklease/...
 ```
 
-完整自动化回归由 GitHub Actions 执行，不再维护阶段性静态 gate。
+Full automated regression is executed by GitHub Actions; there is no separately maintained staged static gate.
 
-## P2.1 已接入路径索引
+## Index of Paths Integrated in P2.1
 
-| 模块 | 文件 |
+| Module | File |
 | --- | --- |
-| 订单同步 | `ordersync/idempotency_create.go` |
-| 订单导入 | `order/idempotency_import.go` |
-| 库存扣减 | `inventory/idempotency_deduct.go` |
-| 库存推送 | `inventory/idempotency_push.go` |
-| 刊登 | `productpublish/idempotency_batch.go` |
-| 客服外发 | `customerchat/send_platform.go` |
-| AI 文案批次 | `aiproducttext/service.go` (`acquireTextBatch`) |
-| AI 图片批次 | `aiproductimage/service.go` (`acquireImageBatch`) |
+| Order sync | `ordersync/idempotency_create.go` |
+| Order import | `order/idempotency_import.go` |
+| Inventory deduction | `inventory/idempotency_deduct.go` |
+| Inventory push | `inventory/idempotency_push.go` |
+| Listing | `productpublish/idempotency_batch.go` |
+| Outbound customer service messages | `customerchat/send_platform.go` |
+| AI copy batch | `aiproducttext/service.go` (`acquireTextBatch`) |
+| AI image batch | `aiproductimage/service.go` (`acquireImageBatch`) |
 | Webhook | `webhook/service.go` |
 
-当前接入范围以代码和 GitHub Actions 回归为准；历史矩阵可从 Git 历史追溯。
+The current integration scope is authoritative in the code and GitHub Actions regression; the historical matrix can be traced through Git history.
 
-## 常见错误
+## Common Errors
 
-| 现象 | 原因 | 处理 |
+| Symptom | Cause | Handling |
 | --- | --- | --- |
-| 重复扣库存 | 未 Acquire 或 key 不稳定 | 使用 orderItem+sku 固定键 |
-| Complete 返回 lease lost | Worker 租约过期或被接管 | 放弃写入，依赖幂等重放 |
-| 同键不同 body 409 | 客户端复用键但改 payload | 换新键或等 TTL 过期 |
-| 仅 DB unique 无幂等 | 重试返回 500 而非重放 | 补 Acquire + Complete 摘要 |
+| Duplicate inventory deduction | Acquire not called, or key is unstable | Use a fixed key based on orderItem+sku |
+| Complete returns lease lost | Worker lease expired or was taken over | Abandon the write; rely on idempotent replay |
+| Same key, different body → 409 | Client reused the key but changed the payload | Use a new key or wait for TTL expiry |
+| DB unique constraint only, no idempotency | Retry returns 500 instead of replaying | Add Acquire + Complete digest |
 ## P3.2 Douyin Webhook Key Update
 
 The P2.1 `webhook_events(platform, event_id)` wording is historical for the foundation receiver. For Douyin webhook business handling, the domain key is now `webhook_events(platform, tenant_id, platform_shop_id, event_id)`, with idempotency keys generated by `WebhookScoped` / `WebhookProcessScoped`.

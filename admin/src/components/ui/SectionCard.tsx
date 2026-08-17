@@ -12,7 +12,7 @@ export type SectionCardProps = ProCardProps & {
 };
 
 /**
- * 统一区块卡片：左侧标题 + 说明，右侧操作按钮。
+ * Unified section card: title + description on the left, action buttons on the right.
  */
 export default function SectionCard({
   title,

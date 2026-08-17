@@ -1,77 +1,77 @@
-# 陈旧 Worker 防护（P2.1）
+# Stale Worker Protection (P2.1)
 
-> 当 Worker 进程挂起、网络分区或 GC 停顿时，必须防止 **过期 execution** 继续写入任务结果或触发重复副作用。P2.1 通过 **租约 TTL + 心跳 + execution_id** 三层机制实现。
+> When a worker process hangs, a network partition occurs, or a GC pause happens, a **stale execution** must be prevented from continuing to write task results or trigger duplicate side effects. P2.1 implements this via a three-layer mechanism: **lease TTL + heartbeat + execution_id**.
 
-## 威胁模型
+## Threat Model
 
-| 场景 | 无防护后果 | P2.1 防护 |
+| Scenario | Consequence without protection | P2.1 protection |
 | --- | --- | --- |
-| Worker A claim 后长时间 STW | A 恢复后仍写成功，与 B 重复执行 | `locked_until` 过期 + `ValidateLease` 拒绝 |
-| Worker A 与 B 同时认为持有任务 | 双写平台/库存 | claim 原子条件 + `execution_id` 唯一有效 |
-| 心跳停止但进程未退出 | 假 running 占坑 | `heartbeat_at` + Reaper / `TakeoverExpired` |
-| 队列重复投递 | 重复业务副作用 | `idempotency.Service` 业务键 |
+| Worker A stops-the-world for a long time after claiming | A still writes successfully on recovery, duplicating B's execution | `locked_until` expiry + `ValidateLease` rejection |
+| Worker A and B both believe they hold the task | Duplicate writes to platform/inventory | Atomic claim condition + unique valid `execution_id` |
+| Heartbeat stops but the process hasn't exited | A fake "running" state occupies the slot | `heartbeat_at` + Reaper / `TakeoverExpired` |
+| Duplicate queue delivery | Duplicate business side effects | `idempotency.Service` business keys |
 
-## 机制详解
+## Mechanism Details
 
-### 1. 租约 TTL（`locked_until`）
+### 1. Lease TTL (`locked_until`)
 
-- Claim 时设置 `locked_until = now + leaseTTL`（默认约 90s–180s，模块可配置）。
-- 续租失败或不再续租 → TTL 到期后该 execution **失效**。
+- On claim, set `locked_until = now + leaseTTL` (default roughly 90s-180s, configurable per module).
+- If renewal fails or stops, the execution **becomes invalid** once the TTL expires.
 
-### 2. 心跳（`heartbeat_at`）
+### 2. Heartbeat (`heartbeat_at`)
 
-- `tasklease.StartRenewal` 每 `TTL/3` 调用 `RenewHeartbeat`。
-- 更新 `heartbeat_at` 与 `locked_until`。
-- `TakeoverExpired` 要求 `heartbeat_at < staleCutoff`，避免误抢仍健康 Worker。
+- `tasklease.StartRenewal` calls `RenewHeartbeat` every `TTL/3`.
+- Updates `heartbeat_at` and `locked_until`.
+- `TakeoverExpired` requires `heartbeat_at < staleCutoff`, avoiding mistakenly seizing a task from a still-healthy worker.
 
-### 3. 执行身份（`execution_id` + `lock_version`）
+### 3. Execution Identity (`execution_id` + `lock_version`)
 
-每次 claim / takeover 生成新 UUID 并递增 `lock_version`。
+Each claim / takeover generates a new UUID and increments `lock_version`.
 
-结果写入 SQL 必须包含：
+The SQL that writes results must include:
 
 ```sql
 WHERE id = ? AND locked_by = ? AND execution_id = ? AND lock_version = ?
 ```
 
-实现见各模块 `finish*Task`（如 `ordersync/lease.go`）。
+See each module's `finish*Task` implementation (e.g. `ordersync/lease.go`).
 
-### 4. Reaper 与 legacy 回收
+### 4. Reaper and Legacy Reclamation
 
-`WORKER_REAPER_ENABLED` 扫描：
+`WORKER_REAPER_ENABLED` scans for:
 
-- `status = running AND locked_until < now` → 标 `failed` / `retrying` / `lease_expired`。
-- 无租约元数据且 `updated_at` 早于 `WORKER_LEGACY_RUNNING_TIMEOUT_SECONDS` → legacy 回收（刊登模块 `RecoverLegacyRunning`）。
+- `status = running AND locked_until < now` → marked `failed` / `retrying` / `lease_expired`.
+- No lease metadata and `updated_at` older than `WORKER_LEGACY_RUNNING_TIMEOUT_SECONDS` → legacy reclamation (publishing module `RecoverLegacyRunning`).
 
-### 5. 业务幂等兜底
+### 5. Business Idempotency Fallback
 
-即使任务租约失效后发生重复执行，关键写路径仍受 `idempotency_records` 保护（见 [`DOMAIN_IDEMPOTENCY_INTEGRATION.md`](DOMAIN_IDEMPOTENCY_INTEGRATION.md)）。
+Even if a duplicate execution occurs after a task lease has expired, critical write paths are still protected by `idempotency_records` (see [`DOMAIN_IDEMPOTENCY_INTEGRATION.md`](DOMAIN_IDEMPOTENCY_INTEGRATION.md)).
 
-## Worker 侧约定
+## Worker-Side Conventions
 
-1. Claim 成功后 **必须** `StartRenewal`，`defer stop()`。
-2. 调用第三方 API 前可 `ValidateLease`（长 HTTP 前可选）。
-3. 写 DB 终态前 **必须** 条件更新；`ErrLeaseLost` 时：
-   - 不调用 Complete/Fail 幂等（若尚未持有 record）或按 record 状态幂等处理；
-   - 记录日志，依赖队列重投或人工重试。
-4. 禁止在 lease lost 后 **补写** `succeeded` 到任务表。
+1. After a successful claim, `StartRenewal` **must** be called, with `defer stop()`.
+2. Before calling a third-party API, `ValidateLease` may be called (optional before a long HTTP call).
+3. Before writing a final state to the DB, a conditional update **must** be used; on `ErrLeaseLost`:
+   - Do not idempotently call Complete/Fail (if a record isn't already held) — or handle idempotently based on the record's state;
+   - Log the event and rely on queue redelivery or manual retry.
+4. Writing `succeeded` back to the task table after a lease is lost is **prohibited**.
 
-## 运维信号
+## Operational Signals
 
-| 信号 | 含义 |
+| Signal | Meaning |
 | --- | --- |
-| 失败任务 `lease_expired` | Worker 未及时续租或进程死亡 |
-| 幂等 `IDEMPOTENCY_LEASE_LOST` | 业务编排持锁超时 |
-| `/health` workers 块 | 进程级心跳是否正常 |
-| `ix_*_heartbeat_at` 索引 | 支持 Reaper 扫描 |
+| Failed task `lease_expired` | Worker did not renew the lease in time, or the process died |
+| Idempotency `IDEMPOTENCY_LEASE_LOST` | Business orchestration held the lock past its timeout |
+| `/health` workers block | Whether process-level heartbeats are healthy |
+| `ix_*_heartbeat_at` index | Supports Reaper scans |
 
-配置状态中心 **任务行级心跳与租约** 项（`configstatus/domain_idempotency_status.go`）标记为 configured。
+The configuration status center's **task row-level heartbeat and lease** item (`configstatus/domain_idempotency_status.go`) is marked as configured.
 
-## 与「Production Ready」边界
+## Boundary with "Production Ready"
 
-Stale worker 防护降低重复写风险，**不**等同于生产验收通过。AI Provider Key、Storage 公网、抖店真实 E2E 等仍可能阻塞最终验收（见 `PROGRESS.md`）。
+Stale worker protection reduces the risk of duplicate writes; it **does not** equate to passing production acceptance. AI provider keys, public Storage access, real Doudian E2E tests, and other items may still block final acceptance (see `PROGRESS.md`).
 
-## 相关文档
+## Related Documents
 
 - [`TASK_LEASE_AND_HEARTBEAT_DESIGN.md`](TASK_LEASE_AND_HEARTBEAT_DESIGN.md)
 - [`CONCURRENT_WRITE_SAFETY.md`](CONCURRENT_WRITE_SAFETY.md)

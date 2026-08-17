@@ -1,6 +1,6 @@
 /**
- * Umi runtime 配置类型（与 src/app.tsx 一致）。
- * 不直接从 @umijs/max 导入：未运行 max setup 时官方包可能缺少这些导出声明。
+ * Umi runtime config types (consistent with src/app.tsx).
+ * Not imported directly from @umijs/max: the official package may be missing these export declarations when `max setup` hasn't been run.
  */
 
 export type RequestConfig = {
@@ -25,12 +25,12 @@ export type RunTimeLayoutConfig = (initData: {
   [key: string]: unknown;
 }) => Record<string, unknown>;
 
-/** 与 app.tsx `getInitialState` 返回值一致 */
+/** Consistent with app.tsx `getInitialState` return value */
 export type InitialState = {
   currentUser?: API.CurrentUser;
 };
 
-/** Umi `@@initialState` model 形状 */
+/** Shape of the Umi `@@initialState` model */
 export type InitialStateModel = {
   initialState?: InitialState;
   setInitialState: (

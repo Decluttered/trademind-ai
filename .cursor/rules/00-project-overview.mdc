@@ -5,79 +5,65 @@ alwaysApply: true
 
 # 贸灵 TradeMind 项目总规则
 
+## MindBay overlay (parent workspace rules win)
+
+This nested repo is the canonical **MindBay** product code when opened from the parent workspace. Parent rules in `../.cursor/rules/` take precedence on conflict.
+
+Amazon.de collection, eBay Sell API publish/update, Amazon SP-API / PA-API, browser checkout, and **`LIVE` automated Amazon retail buying** are in scope. Do not treat them as forbidden “advanced automation”, “multi-platform listing”, or fail-closed production writes.
+
 ## 项目定位
 
-贸灵 TradeMind 是一个开源 AI 跨境电商运营平台。当前阶段不是完整 ERP，而是优先实现：
+贸灵 TradeMind 是一个开源 AI 跨境电商运营平台。在本工作区作为 MindBay 使用时，优先实现：
 
-- 商品采集
-- 商品草稿管理
-- AI 标题优化
-- AI 描述生成
-- AI 商品图处理预留
-- 店铺授权能力预留
-- AI 客服能力预留
-- 跨平台 ERP 扩展能力预留
+- Amazon.de 采集与评估
+- eBay.de Listing Draft / Sell API 刊登
+- 自动改价、售出检测
+- LIVE Amazon Retail Checkout 与 Tracking
+- Profit Ledger
+- AI 标题/描述与图片处理
+- 店铺授权（eBay OAuth、Amazon 会话/API）
 
 一句话定位：
 
-> 开源 AI 跨境电商运营平台，帮助卖家完成商品采集、AI 商品优化、图片处理、店铺授权和智能客服扩展。
+> 自托管 Amazon.de → eBay.de 自动运营：采集、AI 优化、刊登、监控改价、售出履约与利润台账。
 
 ## 当前 MVP 闭环
 
-任何代码生成或功能设计都要优先服务这个 MVP 闭环：
+任何代码生成或功能设计都只服务这条链路。不要再扩展 1688 / 抖店 / TikTok / Shopee / Lazada / Shopify 等其它货源或目标市场。
 
 ```text
-用户登录
+Amazon.de 发现 / 采集
   ↓
-系统配置 AI Provider / 存储方式
+评分 → Listing Draft → 日历槽
   ↓
-输入 1688 商品链接
+eBay Sell API / Browser 刊登
   ↓
-采集商品信息
+监控 / 改价 / 检测售出
   ↓
-保存为商品草稿
-  ↓
-AI 优化标题
-  ↓
-AI 生成描述
-  ↓
-图片上传 / 图片处理
-  ↓
-形成可编辑商品草稿
+LIVE 自动 Amazon Retail Checkout → Tracking → Profit Ledger
 ```
 
 ## 当前不做的内容
 
-MVP 阶段不要主动实现以下复杂能力，除非任务明确要求：
+除非任务明确要求，不要实现：
 
-- 完整订单系统
-- 完整库存系统
-- 完整财务系统
-- 完整 WMS 仓储系统
-- 多平台自动刊登
-- AI 自动回复买家
-- 企业级多租户 SaaS
-- Kubernetes 部署
-- 自研大模型
-- 自研图片生成模型
+- 其它市场或货源（1688、抖店、TikTok、Shopee、Lazada、Shopify、AliExpress、拼多多、淘宝）
+- 物理仓 / WMS
+- 未审核的 AI 客服自动外发
+- 税务/VAT 引擎（平台只搬运商品与订单数据）
+- 从零重写第二套领域模型
+- Kubernetes、Kafka、复杂微服务
+- 自研大模型或图片生成模型
 
-可以预留接口、表字段和 Provider 抽象，但不要过度实现。
+共享基础设施（认证、设置、AI、存储、队列、店铺、任务中心）保留，并改用于 Amazon → eBay。
 
-## 必须保留的后续扩展方向
+## 必须保留的扩展方向
 
-设计任何模块时，必须避免写死，必须保留扩展能力：
-
-- 多平台店铺授权扩展
-- 多采集源扩展
-- 多 AI Provider 扩展
-- 多图片处理 Provider 扩展
-- 多存储 Provider 扩展
-- AI Tool Calling 扩展
-- AI 客服扩展
-- 批量刊登扩展
-- 订单同步扩展
-- 自动化规则引擎扩展
-- 多租户 SaaS 扩展
+- 多 AI / Storage / Image Provider
+- eBay 订单同步与库存同步
+- AI 客服建议回复（外发须人工确认）
+- Prompt 与 Tool Calling
+- 租户/`workspace_id`（与现有 `tenant_id` 同一 ID 空间）
 
 ## 技术栈总约束
 
@@ -94,7 +80,7 @@ MVP 阶段不要主动实现以下复杂能力，除非任务明确要求：
 ```text
 先做小闭环，再做大 ERP。
 先做 AI 商品优化，再做完整供应链。
-先做可配置，再做高级自动化。
+MindBay 路径自动化优先（刊登、改价、Amazon Checkout）；确认闸门只做 workspace 配置，不是代码硬门。
 先做 Provider 抽象，再接具体平台。
 ```
 
@@ -102,7 +88,8 @@ MVP 阶段不要主动实现以下复杂能力，除非任务明确要求：
 Go 做主业务。
 React 做后台。
 Node 做采集。
-Redis 做队列。
+Redis 做短任务队列。
+Temporal 编排 eBay 刊登等长流程。
 Provider 做扩展。
 Prompt 做 AI 技能。
 本地存储保证开箱即用。

@@ -33,6 +33,11 @@ type IntegrationConfigSchema struct {
 func IntegrationConfigDefinitions() []IntegrationConfigSchema {
 	return []IntegrationConfigSchema{
 		{
+			Key: "mindbay_listing", Title: "MindBay Listing Studio", Category: "product", GroupKey: "mindbay_listing",
+			Description: "Lokale Listing-Validierung. GPSR-Overrides sind standardmäßig deaktiviert und werden bei Nutzung vollständig auditiert.",
+			Fields:      []IntegrationFieldSchema{{Name: "gpsr_override_enabled", Label: "Auditierte GPSR-Ausnahme erlauben", Type: "switch", Required: false, DefaultValue: false, Help: "Erlaubt keinen Publish; jede Ausnahme benötigt einen Grund und erzeugt einen Audit-Eintrag."}},
+		},
+		{
 			Key:         "ai",
 			Title:       "AI 大模型（文本）",
 			Category:    "ai",

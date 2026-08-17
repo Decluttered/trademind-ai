@@ -1,4 +1,4 @@
-/** 与后端 / Redis 任务状态对齐 */
+/** Aligned with backend / Redis task status */
 export const CollectTaskStatus = [
   'pending',
   'running',
@@ -11,7 +11,7 @@ export const CollectTaskStatus = [
 export type CollectTaskStatus = (typeof CollectTaskStatus)[number];
 
 /**
- * Collector 统一错误码（与 Go 自动重试策略对齐）
+ * Collector unified error codes (aligned with the Go automatic retry strategy)
  */
 export type CollectTaskErrorCode =
   | 'INVALID_REQUEST'

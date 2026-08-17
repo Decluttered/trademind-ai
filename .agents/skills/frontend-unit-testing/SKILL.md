@@ -1,59 +1,59 @@
 ---
 name: frontend-unit-testing
-description: TradeMind Admin TypeScript 单元测试、React 组件测试、hooks、请求转换和共享 UI 测试规范
+description: TradeMind Admin TypeScript unit testing, React component testing, hooks, request transformation, and shared UI testing standard
 ---
 
-# TradeMind 前端单元与组件测试规范
+# TradeMind Frontend Unit and Component Testing Standard
 
-## 自动适用
+## Automatic Scope
 
-涉及 `admin/src/**` 中 TypeScript、React 组件、hooks、service、常量、URL 状态、请求 payload、状态映射、共享 UI 或测试配置时自动适用。
+Automatically applies to work involving TypeScript, React components, hooks, services, constants, URL state, request payloads, state mapping, shared UI, or test configuration within `admin/src/**`.
 
-## 技术栈
+## Tech Stack
 
-- Runner：Vitest。
-- 环境：`jsdom` 用于 React 组件，Node 环境用于纯工具时可复用同一配置。
-- 组件测试：React Testing Library、`@testing-library/jest-dom`、`@testing-library/user-event`。
-- 不引入 Jest，不引入 Cypress。MSW 仅在模块级网络 Mock 确有必要时使用。
+- Runner: Vitest.
+- Environment: `jsdom` for React components; the same config can be reused with a Node environment for pure utilities.
+- Component testing: React Testing Library, `@testing-library/jest-dom`, `@testing-library/user-event`.
+- Do not introduce Jest, do not introduce Cypress. MSW is used only when a genuine module-level network mock is required.
 
-## 测试目标
+## Test Targets
 
-优先覆盖：
+Prioritize coverage of:
 
-- API envelope 解包与业务错误。
-- URL tab/section/query 解析、写入 helper。
-- readiness 状态、结果、分组、severity 映射。
-- publish / draft / batch payload 构造。
-- rowKey fallback、状态 Tag、长文本显示。
-- Write Guard 或测试工具纯逻辑。
-- `TmPageContainer`、`EmptyState`、`StatusTag` 等共享 UI 基础行为。
+- API envelope unwrapping and business errors.
+- URL tab/section/query parsing and write helpers.
+- Readiness state, results, grouping, and severity mapping.
+- Publish/draft/batch payload construction.
+- rowKey fallback, status tags, long-text display.
+- Write Guard or test-utility pure logic.
+- Baseline behavior of shared UI such as `TmPageContainer`, `EmptyState`, `StatusTag`.
 
-## 环境处理
+## Environment Setup
 
-Vitest setup 必须处理：
+The Vitest setup must handle:
 
-- `@` alias 指向 `admin/src`。
-- Umi `@umijs/max` 的 `request`、`history` 等最小 mock。
-- CSS/LESS import。
-- `matchMedia`、`ResizeObserver`、`IntersectionObserver`、localStorage、history、URLSearchParams。
-- Ant Design Portal/动画导致的异步行为。
+- The `@` alias pointing to `admin/src`.
+- Minimal mocks for `@umijs/max`'s `request`, `history`, etc.
+- CSS/LESS imports.
+- `matchMedia`, `ResizeObserver`, `IntersectionObserver`, localStorage, history, URLSearchParams.
+- Async behavior caused by Ant Design Portals/animations.
 
-不得用过度宽泛全局 Mock 掩盖真实错误；只 mock Umi runtime、浏览器缺失 API 和外部网络边界。
+Do not mask real errors with overly broad global mocks; only mock the Umi runtime, missing browser APIs, and external network boundaries.
 
-## 断言原则
+## Assertion Principles
 
-- 测用户可见文本、角色、class/结构边界和真实业务输出。
-- 不测试 Ant Design 内部 DOM。
-- 不写无意义 snapshot。
-- 失败信息应能定位业务行为。
+- Test user-visible text, roles, class/structure boundaries, and real business output.
+- Do not test Ant Design's internal DOM.
+- Do not write meaningless snapshots.
+- Failure messages should be able to pinpoint the business behavior.
 
-## 变更测试选择
+## Test Selection for Changes
 
-- 纯 TS 工具：相关单测 + type/build。
-- 组件/页面：相关单测/组件测试 + Admin E2E smoke 或受影响 spec。
-- service/request/payload：service 单测 + API contract + 受影响 E2E。
-- shared UI/layout：组件测试 + Admin smoke + 响应式/overflow 相关 E2E。
+- Pure TS utilities: related unit tests + type/build checks.
+- Components/pages: related unit/component tests + Admin E2E smoke or affected specs.
+- Service/request/payload: service unit tests + API contract checks + affected E2E.
+- Shared UI/layout: component tests + Admin smoke + related responsive/overflow E2E.
 
-## Bug 回归
+## Bug Regression
 
-前端 Bug 修复优先补一个能复现用户可见问题的测试，再做最小修复。无法自动化时报告原因。
+For frontend bug fixes, prioritize adding a test that reproduces the user-visible issue first, then make the minimal fix. If it cannot be automated, report the reason.

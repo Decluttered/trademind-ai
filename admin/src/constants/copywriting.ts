@@ -1,11 +1,11 @@
 /**
- * 管理端统一术语与页面文案字典。
- * 用户可见文案优先从此处引用，避免各页面叫法不一致。
+ * Unified terminology and page copy dictionary for the admin panel.
+ * User-visible copy should preferentially be referenced from here, to avoid inconsistent naming across pages.
  */
 
 import { mapErrorCodeToUserMessage } from '@/constants/errorMessages';
 
-/** 页面标题与说明 */
+/** Page titles and descriptions */
 export const PAGE_COPY = {
   platformSettings: {
     title: '平台接入设置',

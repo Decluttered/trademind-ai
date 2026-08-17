@@ -1,0 +1,18 @@
+---
+description: Amazon.de source collector deltas — ADR-0003, marketplace, no eBay coupling
+globs: collector/src/providers/sourceAmazon/**,collector/src/providers/registry.ts,collector/src/providers/collector-provider.ts,backend/internal/modules/catalog/**/*.go,backend/internal/modules/collect/**/*.go
+alwaysApply: false
+---
+
+# Amazon 采集源（增量）
+
+Amazon 是**货源**，不是刊登目标。实现：`collector/src/providers/sourceAmazon/`，Registry key `amazon.de`。Go 侧快照在 `modules/catalog/`。禁止把 `providers/platform/amazon/`（SP-API 销售渠道）改成货源 Collector。禁止 Collector 写领域库。禁止 Amazon 包 import eBay Provider。
+
+采集策略已由 `docs/adr/0003-amazon-source-collector.md` 决定，记录在 `docs/amazon-to-ebay.md`：有凭证时用官方读接口；Playwright 是对等回退；操作员 CSV/ASIN 始终可用；Companion Extension 可做受控 Capture。
+
+## 必须遵守
+
+- 中性结构：`sourcePlatform=amazon`，`sourceItemId=ASIN`，marketplace 必填（`.de` / `.com` / `.co.uk` 不可静默推断）。
+- 标题、卖点、描述、A+ 分开保存。变体家庭映射为 product + SKU，禁止压成单 SKU。
+- 价格带显式币种。raw 只读保留。不要持久化买家/评价人 PII。
+- Amazon 版权图与 A+ 作为带来源的引用并在草稿上标记，供人工决定是否用于 eBay，禁止默默再发布。

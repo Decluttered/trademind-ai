@@ -14,9 +14,9 @@ Go Gin API
         ↓
 PostgreSQL（默认；MySQL 可选）
         ↓
-Redis Queue
+Redis Queue（短任务） + Temporal（eBay 刊登等长流程）
         ↓
-Node Playwright Collector
+Node Playwright Collector（Amazon.de）
 ```
 
 ## Provider 扩展架构
@@ -50,18 +50,10 @@ Go Gin API
    │     └── jimeng
    │
    ├── Platform Provider
-   │     ├── tiktok
-   │     ├── shopee
-   │     ├── lazada
-   │     ├── shopify
-   │     └── amazon
+   │     └── ebay          （刊登目标；写路径 modules/publication + Temporal）
    │
    └── Collector Provider
-         ├── 1688
-         ├── taobao
-         ├── pdd
-         ├── shein
-         └── custom
+         └── amazon.de     （货源。SP-API 销售适配器 providers/platform/amazon 不得改成 Collector）
 ```
 
 ## 推荐目录结构
@@ -104,7 +96,7 @@ trademind/
 - `service` 处理业务流程，但不直接依赖具体第三方 SDK。
 - `provider` 负责第三方或本地能力适配。
 - `repository` 或 model 层负责数据库访问。
-- `queue` 负责异步任务投递和消费。
+- `queue` 负责短异步任务投递和消费。eBay 刊登等长流程走 Temporal，不要接到 Redis `productpublish`。
 
 ### 前端后台
 

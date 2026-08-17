@@ -1,40 +1,40 @@
-# 抖店类目同步设计
+# Douyin Category Sync Design
 
 ## API
 
-| 功能 | 方法 | 参数 |
+| Function | Method | Parameters |
 |------|------|------|
-| 获取类目树 | `shop.getShopCategory` | shop_id |
-| 获取类目属性 | `product.getCatePropertyV2` | category_id |
+| Get category tree | `shop.getShopCategory` | shop_id |
+| Get category attributes | `product.getCatePropertyV2` | category_id |
 
-## 数据流
+## Data Flow
 
 ```
 GetCategories()
   → shop.getShopCategory
-  → 返回 []Category{ID, ParentID, Name, IsLeaf}
+  → returns []Category{ID, ParentID, Name, IsLeaf}
 
 GetCategoryAttributes(categoryID)
   → product.getCatePropertyV2
-  → 返回 []CategoryAttribute{PropertyID, Name, Required, Options}
+  → returns []CategoryAttribute{PropertyID, Name, Required, Options}
 ```
 
-## 缓存策略
+## Caching Strategy
 
-- 类目树变化少，建议 Redis 缓存 1 小时
-- 属性列表按 category_id 缓存 30 分钟
+- The category tree changes infrequently; cache in Redis for 1 hour
+- Cache attribute lists by category_id for 30 minutes
 
-## 字段映射
+## Field Mapping
 
-| Douyin 字段 | 内部字段 | 说明 |
+| Douyin field | Internal field | Description |
 |------------|---------|------|
 | category_id | PlatformCategoryID | |
-| leaf | IsLeaf | true 表示可挂商品的叶子类目 |
+| leaf | IsLeaf | true means a leaf category that can host products |
 | property_id | AttributeID | |
 | option_value_id | OptionID | |
-| required | Required | 是否必填属性 |
+| required | Required | Whether the attribute is required |
 
-## 注意事项
+## Notes
 
-- 品牌列表 `blocked_by_contract_verification`：`brand.go` 返回显式不支持错误
-- `standard_brand_id` 字段通过商品映射写入，不从品牌列表匹配
+- Brand list `blocked_by_contract_verification`: `brand.go` returns an explicit unsupported error
+- The `standard_brand_id` field is written via product mapping, not matched from the brand list

@@ -10,14 +10,20 @@ import (
 
 // Config holds environment-driven settings for the API server.
 type Config struct {
-	AppEnv         string
-	AppName        string
-	AppVersion     string
-	HTTPAddr       string
-	AdminPublicURL string
-	APIPublicURL   string
-	LogLevel       string
-	MasterKey      string
+	AppEnv               string
+	AppName              string
+	AppVersion           string
+	HTTPAddr             string
+	AdminPublicURL       string
+	APIPublicURL         string
+	LogLevel             string
+	MasterKey            string
+	AutomationMode       string
+	EbayEnv              string
+	TemporalAddress      string
+	TemporalNamespace    string
+	TemporalServiceToken string
+	TemporalEnabled      bool
 
 	// Feature gates (production must disable dangerous flags).
 	EnableSwagger        bool
@@ -204,6 +210,12 @@ func Load() (*Config, error) {
 		APIPublicURL:         strings.TrimSpace(os.Getenv("API_PUBLIC_URL")),
 		LogLevel:             firstNonEmpty(os.Getenv("LOG_LEVEL"), defaultLogLevel(appEnv)),
 		MasterKey:            os.Getenv("APP_MASTER_KEY"),
+		AutomationMode:       strings.ToUpper(strings.TrimSpace(firstNonEmpty(os.Getenv("AUTOMATION_MODE"), "DRY_RUN"))),
+		EbayEnv:              strings.ToLower(strings.TrimSpace(firstNonEmpty(os.Getenv("EBAY_ENV"), "sandbox"))),
+		TemporalAddress:      strings.TrimSpace(firstNonEmpty(os.Getenv("TEMPORAL_ADDRESS"), "localhost:7233")),
+		TemporalNamespace:    strings.TrimSpace(firstNonEmpty(os.Getenv("TEMPORAL_NAMESPACE"), "default")),
+		TemporalServiceToken: strings.TrimSpace(os.Getenv("TEMPORAL_SERVICE_TOKEN")),
+		TemporalEnabled:      envBool(os.Getenv("TEMPORAL_ENABLED"), false),
 		EnableSwagger:        envBool(os.Getenv("ENABLE_SWAGGER"), appEnv != EnvProduction),
 		EnableDevRoutes:      envBool(os.Getenv("ENABLE_DEV_ROUTES"), appEnv != EnvProduction && appEnv != EnvStaging),
 		EnableDemoSeed:       envBool(os.Getenv("ENABLE_DEMO_SEED"), appEnv == EnvDevelopment || appEnv == EnvDemo),

@@ -10,6 +10,7 @@ const base = baseArg?.slice('--base='.length) || process.env.TEST_AFFECTED_BASE 
 const commands = new Map([
   ['frontend', ['pnpm', ['test:frontend']]],
   ['collector', ['pnpm', ['test:collector']]],
+  ['temporal', ['pnpm', ['test:temporal']]],
   ['dev-scripts', ['pnpm', ['test:dev-scripts']]],
   ['backend', ['pnpm', ['test:backend']]],
   ['contracts', ['pnpm', ['test:contracts']]],
@@ -21,6 +22,7 @@ function classify(path) {
   const selected = new Set();
   if (path.startsWith('admin/src/') || path === 'admin/vitest.config.ts') selected.add('frontend');
   if (path.startsWith('collector/src/') || path === 'collector/vitest.config.ts') selected.add('collector');
+  if (path.startsWith('temporal/')) selected.add('temporal');
   if (path === 'scripts/dev-all.ts' || path.startsWith('scripts/utils/collector-dev-env')) selected.add('dev-scripts');
   if (path.startsWith('backend/') && path.endsWith('.go')) selected.add('backend');
   if (path.startsWith('backend/internal/testing/integration/') || path.includes('migrate')) selected.add('backend');
@@ -30,6 +32,7 @@ function classify(path) {
   if (path === 'package.json' || path === 'pnpm-lock.yaml' || path.startsWith('.github/workflows/') || path.startsWith('scripts/testing/')) {
     selected.add('frontend');
     selected.add('collector');
+    selected.add('temporal');
     selected.add('backend');
     selected.add('contracts');
   }

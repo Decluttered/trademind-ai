@@ -1,35 +1,35 @@
-# 抖店库存适配器设计
+# Douyin Shop Inventory Adapter Design
 
-## 写路径（库存推送）
+## Write Path (Inventory Push)
 
-API：`sku.syncStock`
+API: `sku.syncStock`
 
 ```go
 params = {
   product_id:  platformProductID,
   sku_id:      platformSKUID,
   stock_num:   stock,  // >= 0
-  incremental: false,  // 全量覆盖
+  incremental: false,  // full overwrite
 }
 ```
 
-幂等 key：`inventory-push:{platform}:{shopId}:{skuId}:{stockVersion}`
+Idempotency key: `inventory-push:{platform}:{shopId}:{skuId}:{stockVersion}`
 
-## 读路径（库存查询）
+## Read Path (Inventory Query)
 
-**无独立 stock 查询 API**（设计决策）：Douyin OpenAPI 标准合同中无专用库存查询接口。
+**No dedicated stock query API** (design decision): the standard Douyin OpenAPI contract has no dedicated inventory query endpoint.
 
-读取方式：通过 `product.detail` 的 `spec_prices` 字段解析 SKU stock 字段。
+Read approach: parse the SKU stock field from the `spec_prices` field returned by `product.detail`.
 
-函数：`GetSKUStockFromDetail(ctx, client, shopID, platformProductID, platformSKUID)`
+Function: `GetSKUStockFromDetail(ctx, client, shopID, platformProductID, platformSKUID)`
 
-如果 platformSKUID 为空则返回所有 SKU 库存之和。
+If platformSKUID is empty, returns the sum of stock across all SKUs.
 
-## 错误处理
+## Error Handling
 
-| 错误 | 处理 |
+| Error | Handling |
 |------|------|
-| DOUYIN_INVENTORY_RATE_LIMITED | 等待 Retry-After |
-| DOUYIN_SKU_NOT_BOUND | 校验失败，不重试 |
-| DOUYIN_PRODUCT_NOT_BOUND | 校验失败，不重试 |
-| DOUYIN_UNKNOWN_RESULT（push 超时）| ManualReviewRequired=true |
+| DOUYIN_INVENTORY_RATE_LIMITED | Wait for Retry-After |
+| DOUYIN_SKU_NOT_BOUND | Validation failure, no retry |
+| DOUYIN_PRODUCT_NOT_BOUND | Validation failure, no retry |
+| DOUYIN_UNKNOWN_RESULT (push timeout) | ManualReviewRequired=true |

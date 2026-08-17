@@ -21,10 +21,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import DouyinE2EPrecheckBanner from '@/components/platform/DouyinE2EPrecheckBanner';
 import StoragePublicUrlBanner from '@/components/platform/StoragePublicUrlBanner';
 import { ActionBar, FormGrid, FormGridFull, FormGridItem, SectionCard, TechnicalDetails, TmPageContainer } from '@/components/ui';
-import { ACTION_COPY, PAGE_COPY } from '@/constants/copywriting';
+import { ACTION_COPY } from '@/constants/copywriting';
 import { confirmPlatformConfigSave } from '@/constants/sensitiveActions';
 import { platformRuntimeHref } from '@/constants/platformRuntime';
 import { formatUserErrorMessage } from '@/constants/errorMessages';
+import { useLocale } from '@/locale';
 import {
   PLATFORM_DEV_PORTALS,
   PLATFORM_STATUS_META,
@@ -102,8 +103,8 @@ function isFullWidthField(f: AppConfigFieldDTO): boolean {
   return f.type === 'textarea' || f.name === 'oauth_scopes' || f.name === 'scopes' || isPlatformSwitchField(f);
 }
 
-function renderFieldControl(f: AppConfigFieldDTO) {
-  const ph = platformAppFieldPlaceholder(f);
+function renderFieldControl(f: AppConfigFieldDTO, platform?: string) {
+  const ph = platformAppFieldPlaceholder(f, platform);
   switch (f.type) {
     case 'password':
       return <Input.Password placeholder={ph} autoComplete={f.sensitive ? 'new-password' : 'off'} />;
@@ -155,9 +156,9 @@ function SwitchField({
   );
 }
 
-function renderFormField(f: AppConfigFieldDTO) {
-  const label = platformAppFieldLabel(f);
-  const help = platformAppFieldHelp(f);
+function renderFormField(f: AppConfigFieldDTO, platform?: string) {
+  const label = platformAppFieldLabel(f, platform);
+  const help = platformAppFieldHelp(f, platform);
 
   if (isPlatformSwitchField(f)) {
     return (
@@ -181,7 +182,7 @@ function renderFormField(f: AppConfigFieldDTO) {
       rules={[{ required: f.required, message: `请填写${label}` }]}
       extra={help}
     >
-      {renderFieldControl(f)}
+      {renderFieldControl(f, platform)}
     </Form.Item>
   );
 }
@@ -441,6 +442,7 @@ function DouyinPreflightPanel() {
 }
 
 function PlatformPanel({ meta }: { meta: PlatformProviderMeta }) {
+  const { t } = useLocale();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -541,6 +543,15 @@ function PlatformPanel({ meta }: { meta: PlatformProviderMeta }) {
           />
         )}
 
+        {meta.platform === 'ebay' && (
+          <Alert
+            showIcon
+            type="info"
+            message="eBay OAuth 使用 RuName，不是 https 回调地址"
+            description={t('page.platforms.ebayRuNameAlert')}
+          />
+        )}
+
         <SectionCard title={panelTitle} description={schema?.description || undefined}>
           <div style={{ marginBottom: 12 }}>
             <Text type="secondary">接入状态 </Text>
@@ -569,9 +580,9 @@ function PlatformPanel({ meta }: { meta: PlatformProviderMeta }) {
             <FormGrid>
               {fields.map((f) =>
                 isFullWidthField(f) ? (
-                  <FormGridFull key={f.name}>{renderFormField(f)}</FormGridFull>
+                  <FormGridFull key={f.name}>{renderFormField(f, meta.platform)}</FormGridFull>
                 ) : (
-                  <FormGridItem key={f.name}>{renderFormField(f)}</FormGridItem>
+                  <FormGridItem key={f.name}>{renderFormField(f, meta.platform)}</FormGridItem>
                 ),
               )}
             </FormGrid>
@@ -639,6 +650,7 @@ function PlatformPanel({ meta }: { meta: PlatformProviderMeta }) {
 }
 
 export default function PlatformSettingsPage() {
+  const { t } = useLocale();
   const [loadingProviders, setLoadingProviders] = useState(true);
   const [providers, setProviders] = useState<PlatformProviderMeta[]>([]);
   const [tab, setTab] = useState<string>();
@@ -703,11 +715,11 @@ export default function PlatformSettingsPage() {
   });
 
   return (
-    <TmPageContainer title={PAGE_COPY.platformSettings.title} subTitle={PAGE_COPY.platformSettings.description}>
+    <TmPageContainer title={t('page.platforms.title')} subTitle={t('page.platforms.description')}>
       <div className="tm-settings-stack">
         <SectionCard
-          title={PAGE_COPY.platformSettings.heroTitle}
-          description={PAGE_COPY.platformSettings.heroDescription}
+          title={t('page.platforms.heroTitle')}
+          description={t('page.platforms.heroDescription')}
         >
           <Paragraph type="secondary" style={{ marginBottom: 0 }}>
             开发者门户：
@@ -722,7 +734,7 @@ export default function PlatformSettingsPage() {
           </Paragraph>
         </SectionCard>
 
-        <SectionCard title="选择平台">
+        <SectionCard title={t('page.platforms.selectPlatform')}>
           <Spin spinning={loadingProviders}>
             {items.length === 0 ? (
               <Paragraph type="secondary">暂无可配置的平台，请刷新页面后重试。</Paragraph>

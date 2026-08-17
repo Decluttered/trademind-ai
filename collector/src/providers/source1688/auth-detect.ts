@@ -39,7 +39,7 @@ export function getAuthCheckUrls(): string[] {
   return AUTH_CHECK_URLS;
 }
 
-/** 在页面内评估登录/验证/异常信号（已登录特征优先于「登录」关键词）。 */
+/** Evaluate login/verification/anomaly signals in-page (logged-in signals take priority over the "login" keyword). */
 export async function evaluateAuthPage(page: Page): Promise<AuthPageSignals> {
   return page.evaluate(
     ({ loggedInPatterns, verificationPattern, explicitNotLoggedInSource }) => {

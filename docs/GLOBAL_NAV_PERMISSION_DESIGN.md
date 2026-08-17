@@ -1,26 +1,26 @@
-# 全局菜单权限设计（Phase F6）
+# Global Menu Permission Design (Phase F6)
 
-## 目标
+## Goal
 
-F5 已有页面级 `PermissionGuard`；F6 补 **菜单级隐藏**，直接访问仍由 Guard / 后端拦截。
+F5 already has page-level `PermissionGuard`; F6 adds **menu-level hiding** — direct access is still intercepted by the Guard / backend.
 
-## 规则
+## Rules
 
-| 角色 | 菜单 |
+| Role | Menu |
 | --- | --- |
-| admin | 全部 |
-| operator | 可操作模块（无 settings 子项、无用户管理） |
-| readonly | 只读模块（无写操作入口菜单） |
+| admin | All |
+| operator | Actionable modules (no settings sub-items, no user management) |
+| readonly | Read-only modules (no write-operation entry menus) |
 
-## 实现
+## Implementation
 
-- `admin/src/utils/menuAccess.ts` — 路由 → 权限映射 + `filterMenuByPermission`
-- `admin/src/app.tsx` — `menuDataRender` 过滤侧栏
-- `admin/src/utils/permission.ts` — 权限矩阵（与后端 `adminperm` 对齐）
-- `admin/config/routes.ts` — 路由树（名称即菜单文案）
+- `admin/src/utils/menuAccess.ts` — route → permission mapping + `filterMenuByPermission`
+- `admin/src/app.tsx` — `menuDataRender` filters the sidebar
+- `admin/src/utils/permission.ts` — permission matrix (aligned with the backend `adminperm`)
+- `admin/config/routes.ts` — route tree (route names are the menu copy)
 
-## 注意
+## Notes
 
-- 菜单过滤 **不能替代** 后端权限校验
-- 无权限 settings 子菜单（含配置状态中心、用户与权限）对非 admin 隐藏
-- `access.ts` 仍为空，鉴权靠 token + layout + Guard
+- Menu filtering **does not replace** backend permission checks
+- Settings sub-menus the user lacks permission for (including the Configuration Status Center and Users & Permissions) are hidden from non-admin roles
+- `access.ts` remains empty; authorization relies on token + layout + Guard

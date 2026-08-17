@@ -32,18 +32,18 @@ const JUNK_SUBSTR = [
 
 const TINY_SIZE_RE = /[_-](?:16|20|24|30|32|40|48|50|60|64)x(?:16|20|24|30|32|40|48|50|60|64)[x_-]/i;
 
-/** 1688 服务承诺等小图标常见尺寸段 */
+/** Common size segments for small icons like 1688 service-guarantee badges */
 const SERVICE_BADGE_SIZE_RE =
   /[_-](?:48|50|60|64|72|80|96|100|120|140)x(?:48|50|60|64|72|80|96|100|120|140)(?:\.|[_-]|$)/i;
 
-/** 商品主图 CDN 路径特征（优先保留） */
+/** Product main-image CDN path signature (kept with priority) */
 const PRODUCT_IBANK_RE = /\/img\/ibank\//i;
 
 export function trimStr(s: string): string {
   return s.replace(/\s+/g, ' ').trim();
 }
 
-/** 将 //host 或相对路径补全为绝对 https URL */
+/** Complete //host or relative paths into an absolute https URL */
 export function normalizeImageUrl(raw: string, baseUrl: string): string | null {
   const u = trimStr(raw);
   if (!u || u.startsWith('data:') || u.startsWith('blob:')) return null;
@@ -65,14 +65,14 @@ export function isLikelyJunkImage(url: string): boolean {
   if (TINY_SIZE_RE.test(lower)) return true;
   if (SERVICE_BADGE_SIZE_RE.test(lower)) return true;
   if (/_sum\.(jpg|png|webp)/i.test(lower)) return true;
-  /** 非 ibank 且带极小尺寸 query（常见于角标） */
+  /** Not ibank and has a tiny-size query (common for corner badges) */
   if (!PRODUCT_IBANK_RE.test(lower) && /(?:\?|&)(?:width|height|w|h)=\d{1,2}(?:&|$)/i.test(lower)) {
     return true;
   }
   return false;
 }
 
-/** 更像商品主图/详情图的 URL（用于 JSON 补全排序） */
+/** URL more likely to be a product main/detail image (used to rank JSON supplementation) */
 export function isLikelyProductImage(url: string): boolean {
   if (isLikelyJunkImage(url)) return false;
   const lower = url.toLowerCase();
@@ -96,7 +96,7 @@ export function dedupeStrings(urls: string[], max: number): string[] {
 
 const ATTR_VALUE_MAX = 280;
 
-/** 表格 / 列表参数：过滤空键值与过长内容（避免整段详情进 attributes） */
+/** Table / list parameters: filters out empty key-values and overly long content (avoids entire detail sections landing in attributes) */
 export function sanitizeAttributeMap(input: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k0, v0] of Object.entries(input)) {
@@ -110,7 +110,7 @@ export function sanitizeAttributeMap(input: Record<string, string>): Record<stri
   return out;
 }
 
-/** 尽力把价格、库存转成 number */
+/** Best-effort conversion of price/stock to a number */
 export function coerceNumber(v: unknown): number | undefined {
   if (v === null || v === undefined) return undefined;
   if (typeof v === 'number' && Number.isFinite(v)) return v;
@@ -128,13 +128,13 @@ export function coerceInt(v: unknown): number | undefined {
   return Math.round(n);
 }
 
-/** 安全截断字符串，用于 raw 片段 */
+/** Safely truncate a string, used for raw fragments */
 export function truncate(s: string, max: number): string {
   if (s.length <= max) return s;
   return `${s.slice(0, max)}…`;
 }
 
-/** 从 script 文本中尝试截取并 parse 一个顶级 JSON 对象（以第一个 { 匹配嵌套） */
+/** Try to slice out and parse a top-level JSON object from script text (matches nesting from the first {) */
 export function tryParseLeadingJsonObject(text: string, startAt = 0): unknown | null {
   const i = text.indexOf('{', startAt);
   if (i < 0) return null;

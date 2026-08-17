@@ -33,7 +33,7 @@
   <img src="docs/assets/img/readme-hero-en.png" alt="TradeMind Product Preview" width="100%" />
 </p>
 
-TradeMind is an open-source AI operations platform for cross-border sellers, brand teams, and developers. It turns product collection, enrichment, content generation, image processing, draft collaboration, platform listing, order sync, and inventory coordination into one observable workflow, so teams can build a durable product engine instead of moving data by hand.
+TradeMind in this repository is a self-hosted **Amazon.de → eBay.de** operations system: collect and score, AI listing content, eBay publish, monitor and reprice, then Amazon retail fulfillment and a profit ledger. Your data stays under your control; capabilities extend through Providers.
 
 Whether you are building a private commerce workspace or adding AI and platform integrations to an existing business, TradeMind gives you an auditable, self-hosted foundation that can be extended around your own operating model. Your data stays under your control, while every provider and workflow can evolve with your team.
 
@@ -41,9 +41,9 @@ Whether you are building a private commerce workspace or adding AI and platform 
 
 | Area | What TradeMind focuses on |
 | --- | --- |
-| AI Product Growth | Product collection, draft management, AI titles and descriptions, image processing, and publish-readiness checks in one workspace. |
-| Multi-platform Operations | Store authorization, order sync, SKU matching, inventory mirrors, and product publishing around a unified product asset. |
-| Open and Controlled | Provider-based architecture for AI, storage, image, platform, and collector integrations, with permissions, audit trails, and human confirmation for critical actions. |
+| Amazon → eBay | Amazon.de capture and snapshots, Listing Studio, eBay Sell API publish, monitoring/repricing, and a profit ledger. |
+| AI listing ops | Titles, descriptions, image processing, and GPSR-backed readiness checks in one workspace. |
+| Open and Controlled | Provider architecture for AI, storage, images, eBay, and Amazon collection, with permissions, audit, and idempotent writes. |
 
 ## Screenshots
 
@@ -78,20 +78,14 @@ The screenshots below show TradeMind's core workflow: **collection → draft →
 
 ## Core Capabilities
 
-### AI Product Operations
+### Amazon.de → eBay.de
 
-- Product collection from 1688, Pinduoduo, Taobao / Tmall, and custom rules.
-- Product draft management for products, SKUs, images, inventory thresholds, collection warnings, and readiness checks.
-- AI title optimization and description generation with prompt templates, task records, compare/apply flows, and safe rollback.
-- AI image workflows through remove.bg, OpenAI Image, ComfyUI, and async task queues.
-
-### Multi-platform Operations
-
-- Store authorization with Douyin Shop OAuth, encrypted secrets, and connection tests.
-- Order collaboration with sync, SKU matching, and exception handling.
-- Inventory collaboration with stock mirrors, alerts, and sync tasks.
-- Product publishing via a multi-platform listing center, single-product and batch draft creation, multi-product publish workflows, AI title/description review, AI image processing, draft mapping, publish tasks, recovery paths, and manual correction.
-- AI customer-service reply suggestions with manual confirmation before sending.
+- Collection: Amazon.de product pages / ASIN snapshots (Playwright; official read APIs when credentials exist).
+- Listing Studio: EUR cents, GPSR, versioned AI content, and publish-readiness checks.
+- Publishing: eBay OAuth, cached category aspects, Temporal-owned Inventory/Offer publish (sandbox by default).
+- Monitoring: price decisions, offer verification, profit ledger.
+- AI: title optimization, description generation, prompt templates, image tasks.
+- Stores: eBay authorization, encrypted secrets, and connection tests.
 
 ### Engineering and Extensibility
 
@@ -173,7 +167,7 @@ Default URLs:
 | Admin | <http://127.0.0.1:8000> |
 | Backend Health | <http://127.0.0.1:8080/health> |
 
-In the full Compose stack, Collector is reachable only by the backend over the internal network and has no host port. PostgreSQL and Redis bind to host loopback only. Platform connections default to a controlled draft workflow: non-Douyin flows create local listing drafts first, while Douyin actions pass through permission checks and an operator-reviewed task before creating a platform draft.
+In the full Compose stack, Collector is reachable only by the backend over the internal network and has no host port. PostgreSQL and Redis bind to host loopback only. eBay writes go through the Temporal `publication` path; sandbox and production credentials stay separate, with `EBAY_ENV=sandbox` by default.
 
 The Admin root URL serves the public product homepage, with direct links to sign in or register before entering the operations workspace.
 

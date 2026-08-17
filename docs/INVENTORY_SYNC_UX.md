@@ -1,37 +1,37 @@
-# 库存同步 UX（Phase F3）
+# Inventory Sync UX (Phase F3)
 
-## inventory_sync_enabled 引导
+## `inventory_sync_enabled` Onboarding
 
-默认 **关闭**。在以下位置展示统一文案：
+Defaults to **off**. Display consistent copy in the following locations:
 
-> 当前店铺未开启平台库存同步。开启后，系统可在人工确认后将本地库存同步到平台。
+> Platform inventory sync is not currently enabled for this shop. Once enabled, the system can sync local inventory to the platform after manual confirmation.
 
-展示位置：
+Display locations:
 
-- 库存中心横幅
-- 库存同步任务页
-- 商品详情 → 库存 Tab（已有平台配置提示）
-- 平台接入设置（`inventory_sync_enabled` 开关）
+- Inventory center banner
+- Inventory sync tasks page
+- Product detail → Inventory tab (existing platform configuration hint)
+- Platform integration settings (`inventory_sync_enabled` toggle)
 
-操作：**去配置** → `/settings/platforms`；**查看说明** → `/settings/inventory`
+Actions: **Go to settings** → `/settings/platforms`; **View documentation** → `/settings/inventory`
 
-## SKU 阻断（统一文案）
+## SKU Blocking (Standard Copy)
 
-| 场景 | 文案 |
+| Scenario | Copy |
 | --- | --- |
-| 未绑定 | 当前 SKU 尚未绑定平台 SKU，暂不能同步平台库存。请先完成 SKU 绑定后再重试。 |
-| 歧义 | 当前 SKU 存在多个可能匹配项，需要人工确认后才能继续同步库存。 |
+| Not bound | This SKU is not yet bound to a platform SKU, so platform inventory cannot be synced. Please complete the SKU binding before retrying. |
+| Ambiguous | This SKU has multiple possible matches. Manual confirmation is required before inventory sync can continue. |
 
-适用入口：订单扣减、平台同步、商品库存 Tab、库存中心、预警、失败任务、异常工作台。
+Applies to: order deduction, platform sync, product inventory tab, inventory center, alerts, failed tasks, exceptions workbench.
 
-## 同步任务状态（用户可见）
+## Sync Task Status (User-Visible)
 
-等待中 / 执行中 / 成功 / 部分成功 / 失败 / 已取消 / 被阻断
+Pending / Running / Success / Partial Success / Failed / Cancelled / Blocked
 
-阻断原因：SKU 未绑定、绑定冲突、平台商品未创建、平台 SKU 缺失、同步开关未开启、权限不足、库存值非法。
+Blocking reasons: SKU not bound, binding conflict, platform product not created, platform SKU missing, sync toggle not enabled, insufficient permissions, invalid stock value.
 
-## 重试
+## Retry
 
-- 失败与部分成功任务可人工重试
-- 重试保留幂等保护（新任务或批次重试 API）
-- 不调用真实平台 OpenAPI（Demo / RC 环境）
+- Failed and partially successful tasks can be retried manually
+- Retries preserve idempotency protection (new task or batch retry API)
+- Does not call the real platform OpenAPI (Demo / RC environments)

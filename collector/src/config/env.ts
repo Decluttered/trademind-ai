@@ -1,5 +1,5 @@
 /**
- * 环境变量（由 docker / systemd / .env 注入，不写入代码默认值中的密钥）。
+ * Environment variables (injected by docker / systemd / .env; secrets are not written into code defaults).
  */
 import {
   getBrowserProfileRoot,
@@ -47,12 +47,12 @@ export function getHeadersTimeoutMs(): number {
   return Number.isFinite(n) && n >= 1000 && n <= 60000 ? Math.floor(n) : 10000;
 }
 
-/** @deprecated 使用 getBrowserProfileRoot() */
+/** @deprecated use getBrowserProfileRoot() */
 export function getBrowserProfileBaseDir(): string {
   return getBrowserProfileRoot();
 }
 
-/** @deprecated 使用 getStorageStateRoot() */
+/** @deprecated use getStorageStateRoot() */
 export function getStorageStateBaseDir(): string {
   return getStorageStateRoot();
 }

@@ -3,6 +3,8 @@
  * 技术错误码仅在「技术详情」中展示。
  */
 
+import { getStoredAdminLocale, translate } from '@/locale';
+
 export type UserErrorMessage = {
   title: string;
   detail?: string;
@@ -175,6 +177,23 @@ const ERROR_MAP: Record<string, UserErrorMessage> = {
 export function mapErrorCodeToUserMessage(code?: string | null): UserErrorMessage | undefined {
   const c = (code ?? '').trim().toUpperCase();
   if (!c) return undefined;
+
+  const authKeys = [
+    'AUTH_INVALID_CREDENTIALS',
+    'AUTH_ACCOUNT_TEMPORARILY_LOCKED',
+    'AUTH_TOO_MANY_ATTEMPTS',
+    'AUTH_USER_DISABLED',
+  ] as const;
+  for (const key of authKeys) {
+    if (c === key || c.startsWith(key)) {
+      const locale = getStoredAdminLocale();
+      return {
+        title: translate(locale, `errors.${key}_title`),
+        detail: translate(locale, `errors.${key}_detail`),
+      };
+    }
+  }
+
   if (ERROR_MAP[c]) return ERROR_MAP[c];
   // 前缀匹配
   for (const [key, msg] of Object.entries(ERROR_MAP)) {

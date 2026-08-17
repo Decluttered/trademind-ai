@@ -157,7 +157,7 @@ var rules = []rule{
 		reason:  "网络超时或连接异常。",
 		suggest: "请检查本机与平台网络，稍后重试；持续出现需排查代理与防火墙。",
 	},
-	// Collector — page.evaluate 脚本注入失败
+	// Collector — page.evaluate script injection failure
 	{
 		id: "sub:evaluate_script", substrs: []string{"__name is not defined", "evaluate_script_error"},
 		category: CategoryCollectorEvaluateScript, severity: SeverityHigh,
@@ -165,7 +165,7 @@ var rules = []rule{
 		suggest:   "页面解析脚本注入失败，请检查脚本中是否引用了构建工具 helper 或外部函数。",
 		taskTypes: []string{taskTypeCollect},
 	},
-	// Collector — 1688 字段缺失（优先于 unknown）
+	// Collector — 1688 missing field (takes priority over unknown)
 	{
 		id:       "sub:missing_main_images",
 		substrs:  []string{"missing_main_images"},
@@ -230,7 +230,7 @@ var rules = []rule{
 		suggest:   "请使用 pifa.pinduoduo.com/goods/detail/?gid= 链接；移动端商品页暂未完整支持。",
 		taskTypes: []string{taskTypeCollect},
 	},
-	// 采集任务 — 需要登录（全平台；优先于 unknown）
+	// Collection task — login required (all platforms; takes priority over unknown)
 	{
 		id: "sub:login_required_collect",
 		substrs: []string{
@@ -244,7 +244,7 @@ var rules = []rule{
 		suggest:   "该页面需要登录后才能访问。请打开采集浏览器登录对应平台后重试，或换用公开商品详情页链接。",
 		taskTypes: []string{taskTypeCollect},
 	},
-	// 自定义采集 — LOGIN_REQUIRED 错误码（非 1688 专属检测）
+	// Custom collector — LOGIN_REQUIRED error code (not a 1688-specific detection)
 	{
 		id:        "sub:collect_login_required",
 		substrs:   []string{"login_required"},
@@ -254,7 +254,7 @@ var rules = []rule{
 		suggest:   "自定义链接采集器不做自动登录与账号密码保存。请确认该商品页是否公开可访问，或使用带登录态的采集浏览器（后续登录配置扩展）。",
 		taskTypes: []string{taskTypeCollect},
 	},
-	// 自定义采集器 — 非 1688 站点登录墙（须在 1688 规则之前，且仅 custom 源）
+	// Custom collector — non-1688 site login wall (must come before the 1688 rules, and custom source only)
 	{
 		id: "sub:custom_collector_login_wall",
 		substrs: []string{
@@ -271,7 +271,7 @@ var rules = []rule{
 		suggest:   "当前为「自定义链接采集器」且目标站（如京东）需登录才能查看商品；系统未提供该站登录配置。请核对规则选择器，或确认该链接是否必须在已登录浏览器中打开。",
 		taskTypes: []string{taskTypeCollect},
 	},
-	// Collector — 1688 登录/验证失效（仅 1688 采集器或 custom+1688 链接）
+	// Collector — 1688 login/verification expired (1688 collector only, or custom+1688 links)
 	{
 		id: "sub:1688_login_verify",
 		substrs: []string{

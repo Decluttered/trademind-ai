@@ -19,7 +19,7 @@ import {
   updateCollectRule,
 } from '@/services/collectRules';
 
-/** v1 简写：selector + type（保存时后端会规范化为 selectors + attr） */
+/** v1 shorthand: selector + type (the backend normalizes to selectors + attr on save) */
 export const SIMPLE_CUSTOM_RULE_TEMPLATE = `{
   "title": { "selector": "h1", "type": "text" },
   "price": { "selector": ".price", "type": "text" },

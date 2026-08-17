@@ -1,4 +1,4 @@
-/** Phase A3.1 批量 AI 文案任务状态与文案标签 */
+/** Phase A3.1 batch AI copywriting task statuses and copy labels */
 
 export const AI_TEXT_ITEM_STATUS = {
   pending: { label: '等待处理', color: 'default' },

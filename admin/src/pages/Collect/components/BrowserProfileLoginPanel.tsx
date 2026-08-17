@@ -15,14 +15,14 @@ import { mapCollectorErrorCodeDetail } from '@/constants/collectErrors';
 type Props = {
   url: string;
   domain?: string;
-  /** 新建 Profile 时的 provider，默认 custom */
+  /** Provider used when creating a new Profile, defaults to custom */
   profileProvider?: string;
   profileId?: string;
   onProfileIdChange?: (id: string | undefined) => void;
   onUseProfileChange?: (use: boolean) => void;
   useBrowserProfile?: boolean;
   onRecheckDone?: (result: ProfileCheckResult) => void;
-  /** login_required = 规则测试命中登录页；optional = 用户主动启用登录态 */
+  /** login_required = rule test hit a login page; optional = user manually enabled login state */
   tone?: 'login_required' | 'optional';
 };
 

@@ -9,15 +9,19 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/aiproducttext"
 	"github.com/trademind-ai/trademind/backend/internal/modules/aiprompt"
 	"github.com/trademind-ai/trademind/backend/internal/modules/aitask"
+	"github.com/trademind-ai/trademind/backend/internal/modules/catalog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collect"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectbrowserprofile"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectrule"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customerchat"
 	"github.com/trademind-ai/trademind/backend/internal/modules/customersync"
+	"github.com/trademind-ai/trademind/backend/internal/modules/extensiontoken"
 	"github.com/trademind-ai/trademind/backend/internal/modules/files"
 	"github.com/trademind-ai/trademind/backend/internal/modules/imagetask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventory"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysync"
+	"github.com/trademind-ai/trademind/backend/internal/modules/listingstudio"
+	"github.com/trademind-ai/trademind/backend/internal/modules/monitoring"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationtask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/order"
@@ -182,7 +186,33 @@ func AutoMigrate(db *gorm.DB) error {
 		&performance.CapacitySnapshot{},
 		&performance.RateLimitPolicy{},
 		&performance.QuotaPolicy{},
+		&catalog.SourceProduct{},
+		&catalog.ProductSnapshot{},
+		&catalog.Collection{},
+		&catalog.CollectionProduct{},
+		&catalog.OpportunityAssessment{},
+		&listingstudio.ListingDraft{},
+		&listingstudio.ListingContentVersion{},
+		&listingstudio.GPSRProfile{},
+		&listingstudio.ListingGPSR{},
+		&listingstudio.ImageAsset{},
+		&listingstudio.ImageDerivative{},
+		&listingstudio.ImageSet{},
+		&monitoring.MonitorRun{},
+		&monitoring.PriceRule{},
+		&monitoring.PriceDecision{},
+		&monitoring.ProfitLedgerEntry{},
+		&extensiontoken.Grant{},
 	); err != nil {
+		return err
+	}
+	if err := migrateMindBayPhase1Immutability(db); err != nil {
+		return err
+	}
+	if err := migrateMindBayPhase2(db); err != nil {
+		return err
+	}
+	if err := migrateMindBayPhase3(db); err != nil {
 		return err
 	}
 	if err := operationtask.Migrate(db); err != nil {

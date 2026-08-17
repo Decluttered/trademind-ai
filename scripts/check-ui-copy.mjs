@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * 扫描用户可见路径中的常见英文/技术混排与内部码直出。
- * 用法: node scripts/check-ui-copy.mjs [--strict] [--report docs/COPYWRITING_AUDIT.auto.md]
+ * Scans user-visible paths for common English/technical term mixing and internal codes leaking directly into UI copy.
+ * Usage: node scripts/check-ui-copy.mjs [--strict] [--report docs/COPYWRITING_AUDIT.auto.md]
  */
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'fs';
 import { join, relative, dirname } from 'path';
@@ -18,7 +18,7 @@ const INTERNAL_SCAN_DIRS = [
   join(ROOT, 'admin/src/components'),
 ];
 
-/** 代码逻辑 / 映射层 — 不算 UI 主文案直出 */
+/** Code logic / mapping layer — not counted as UI primary copy leaking directly */
 const INTERNAL_CODE_ALLOW =
   /===|!==|dataIndex:|rowKey=|rowKey:|operationTypes|operationType:|filter\(|includes\(|\.status|value:\s*['"`]|label:\s*['"`]|text:\s*['"`]|color:|OP_LABEL|statusTag|getStatus|publishLabels|publishCapabilityLabel|aiProductText|aiProductImage|TechnicalDetails|TaskJsonBlock|copywriting|commonStatusLabel|PublishBoundaryBanner|publishBoundaryCapability|capability=|as const|\/\*\*|\/\/|params\.|detail\.batch|bulkOp|selectedOps|opChoice|form\.|API|ConvertToJson|type\s+\w+|来源类型|来源编号|问题代码|内容快照|qualityWarnings\?|qualityWarnings\.|qualityWarnings\[|expectedUpdatedAt:|sourceType:|sourceId:|postOrderException|deleteOrderException|relatedResource|partial_success:|partial_success,|\['partial_success'|StatusTag\.tsx|addList\(|undoProduct|undoAiDescription|await\s+/i;
 
@@ -85,7 +85,17 @@ const SCAN_DIRS = [
   join(ROOT, 'admin/src/pages'),
   join(ROOT, 'admin/src/constants'),
   join(ROOT, 'admin/src/components'),
+  join(ROOT, 'admin/src/locale/messages'),
 ];
+
+/** English/German locale catalogs are translations; Chinese jargon rules apply to zh + remaining hardcoded UI. */
+function shouldSkipUiCopyFile(file) {
+  const norm = file.replace(/\\/g, '/');
+  return (
+    norm.endsWith('/locale/messages/en.ts') ||
+    norm.endsWith('/locale/messages/de.ts')
+  );
+}
 
 const ALL_RULES = RULES;
 
@@ -138,6 +148,7 @@ for (const dir of SCAN_DIRS) {
     continue;
   }
   for (const file of files) {
+    if (shouldSkipUiCopyFile(file)) continue;
     const content = readFileSync(file, 'utf8');
     const lines = content.split('\n');
     lines.forEach((line, i) => {

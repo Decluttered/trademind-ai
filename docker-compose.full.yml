@@ -1,7 +1,7 @@
-# TradeMind — Docker 部署启动（PostgreSQL + Redis + backend + admin + collector）
-# 使用方式：复制唯一模板 .env.example 为 .env 后执行
+# TradeMind — Docker deployment startup (PostgreSQL + Redis + backend + admin + collector)
+# Usage: copy the single template .env.example to .env, then run
 #   docker compose -f docker-compose.full.yml up --build
-# 请勿与本仓库 docker-compose.yml（仅 infra）混淆；本文件不会删除或修改原有 compose。
+# Do not confuse this with this repo's docker-compose.yml (infra only); this file does not delete or modify the original compose.
 
 name: trademind-full
 
@@ -41,6 +41,54 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  temporal:
+    image: temporalio/auto-setup:1.31.2
+    profiles: ["mindbay"]
+    restart: unless-stopped
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-trademind}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:-trademind_dev_password}
+      POSTGRES_SEEDS: postgres
+      DBNAME: temporal
+      VISIBILITY_DBNAME: temporal_visibility
+    ports:
+      - "127.0.0.1:${TEMPORAL_PUBLISH_PORT:-7233}:7233"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  temporal-ui:
+    image: temporalio/ui:2.53.0
+    profiles: ["mindbay"]
+    restart: unless-stopped
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    ports:
+      - "127.0.0.1:${TEMPORAL_UI_PUBLISH_PORT:-8088}:8080"
+    depends_on:
+      - temporal
+
+  temporal-worker:
+    build:
+      context: .
+      dockerfile: temporal/Dockerfile
+    profiles: ["mindbay"]
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      API_INTERNAL_BASE_URL: http://backend:8080
+      TEMPORAL_SERVICE_TOKEN: ${TEMPORAL_SERVICE_TOKEN:?TEMPORAL_SERVICE_TOKEN is required for the mindbay profile}
+    depends_on:
+      temporal:
+        condition: service_started
+      backend:
+        condition: service_healthy
 
   collector:
     image: ${TRADEMIND_COLLECTOR_IMAGE:-local/trademind-collector:local}
@@ -125,6 +173,10 @@ services:
       P10_INVENTORY_MUTATION_ENABLED: ${P10_INVENTORY_MUTATION_ENABLED:-false}
       P10_BACKGROUND_WORKER_ENABLED: ${P10_BACKGROUND_WORKER_ENABLED:-false}
       P10_AUTOMATIC_RETRY_ENABLED: ${P10_AUTOMATIC_RETRY_ENABLED:-false}
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TEMPORAL_ENABLED: ${TEMPORAL_ENABLED:-false}
+      TEMPORAL_SERVICE_TOKEN: ${TEMPORAL_SERVICE_TOKEN:-}
     ports:
       - "${BACKEND_PUBLISH_PORT:-8080}:8080"
     volumes:

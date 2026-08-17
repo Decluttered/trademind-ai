@@ -279,7 +279,8 @@
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/v1/shops` | 店铺列表（现行路径；legacy `/stores` 已废弃）。 |
-| `GET` | `/api/v1/shops/:id` | 店铺详情。 |
+| `GET` | `/api/v1/shops/:id` | 店铺详情。eBay `auth.reauthorizationRequired` 表示需要重新 OAuth 以授予 `sell.account.readonly`。 |
+| `POST` | `/api/v1/shops/:id/test-connection` | 店铺连接测试。eBay 使用用户 token 调用 Account API getPrivileges；缺少 `sell.account.readonly` 时返回 `EBAY_REAUTHORIZATION_REQUIRED`。 |
 | `POST` | `/api/v1/shops/:id/sync-orders` | 手动触发订单同步。 |
 | `POST` | `/api/v1/shops/:id/oauth/douyin/refresh` | 刷新抖店授权 Token（示例；各平台 OAuth 见下表）。 |
 
@@ -289,8 +290,8 @@
 | --- | --- | --- |
 | `GET` | `/api/v1/platform/providers` | 返回已注册平台 Provider、能力、状态、`appConfigSchema` 与设置分组。`douyin_shop` 已注册为抖店 / Douyin Shop Provider。 |
 | `GET` | `/api/v1/platform/settings/:platform` | 读取平台开放应用配置 schema 与脱敏后的当前值。敏感字段只返回 `****`。 |
-| `PUT` | `/api/v1/platform/settings/:platform` | 保存平台开放应用配置。敏感字段加密存储，传入 `****` 表示保留原值。`douyin_shop` 会校验 App Key、App Secret、回调地址、环境与超时时间；发起 OAuth 还需要 `service_id`。 |
-| `POST` | `/api/v1/platform/settings/:platform/test-connection` | 测试已保存的平台开放应用配置。`douyin_shop` 应用配置测试校验配置完整性与授权可用性，不做商品 / 订单 / 库存调用。 |
+| `PUT` | `/api/v1/platform/settings/:platform` | 保存平台开放应用配置。敏感字段加密存储，传入 `****` 表示保留原值。`douyin_shop` 会校验 App Key、App Secret、回调地址、环境与超时时间；发起 OAuth 还需要 `service_id`。`ebay` 会校验 Client ID/Secret、RuName（非 https URL）、`marketplace_id` 与 environment。 |
+| `POST` | `/api/v1/platform/settings/:platform/test-connection` | 测试已保存的平台开放应用配置。`douyin_shop` 应用配置测试校验配置完整性与授权可用性，不做商品 / 订单 / 库存调用。`ebay` 使用 client credentials 换应用 token（scope `https://api.ebay.com/oauth/api_scope`），不调用 Account getPrivileges。 |
 | `GET` | `/api/v1/shops/oauth/douyin/start` | 发起抖店 OAuth；生成 Redis state（10 分钟，绑定管理员、`platform=douyin_shop`、可选 `shopId`），返回 `redirectUrl`。 |
 | `GET` | `/api/v1/shops/oauth/douyin/callback` | 抖店授权公开回调；校验 state，处理 `code` / `error`，换取 token，创建或更新 `shops` / `shop_auth_tokens`，成功跳转 `/settings/platforms?platform=douyin_shop&auth=success`。 |
 | `GET` | `/api/v1/shops/:id/oauth/douyin/authorize-url` | 已有抖店店铺重新授权，返回 `redirectUrl`。 |
@@ -531,6 +532,67 @@ Planned ops routes remain design-only until implemented with RBAC, re-authentica
 | `POST` | `/api/v1/ops/profiling/cpu` | planned | 内部高权限 profiling，duration 有上限，不返回任意路径。 |
 
 Current code-level P7 endpoints affected: product and order list APIs reject excessive deep offset via P7 pagination guard; HTTP requests can be locally rate-limited when `RATE_LIMIT_ENABLED=true`.
+
+## MindBay Phase 1 API
+
+Phase 1 adds a separate `/v1` contract while retaining every existing `/api/v1` route. Admin calls use the normal access token. Extension captures use a 15-minute token with audience `mindbay-extension` and scope `capture`; this token is not an Admin JWT. Every command below marked as such requires `Idempotency-Key`.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `POST` | `/v1/discovery-runs` | Capture Amazon.de URL through Collector, deduplicate ASIN, append immutable snapshot; idempotent command |
+| `GET` | `/v1/products?q=&collectionId=&minScore=&cursor=&limit=` | Workspace-scoped cursor page with current snapshot and explainable assessment |
+| `GET` | `/v1/collections?cursor=&limit=` | Workspace-scoped cursor page |
+| `POST` | `/v1/collections` | Create manual/search/seller/rule/import collection; idempotent command |
+| `POST` | `/v1/collections/:id/products` | Add canonical source product with an optional reason; workspace-scoped idempotent command |
+| `POST` | `/v1/image-assets` | HTTPS image ingest with SSRF/type/size checks, metadata stripping and content hash; idempotent command |
+| `POST` | `/v1/listing-drafts` | Create local EUR-cent draft; idempotent command |
+| `GET` | `/v1/listing-drafts?state=&cursor=&limit=` | Review inbox cursor page |
+| `GET` | `/v1/listing-drafts/:id` | Draft plus append-only content versions |
+| `POST` | `/v1/listing-drafts/:id/generate` | Generate factual content through prompt `mindbay_listing_studio_v1`; idempotent command |
+| `POST` | `/v1/listing-drafts/:id/validate` | Validate category, cents price, image set, specifics, content and GPSR; idempotent command |
+| `GET` | `/v1/gpsr-profiles` | List workspace GPSR profiles used by Listing Studio |
+| `POST` | `/v1/gpsr-profiles` | Create complete manufacturer/responsible-person/safety/document profile; idempotent command |
+| `POST` | `/v1/extension-tokens` | Mint short-lived capture grant (Admin auth) |
+| `DELETE` | `/v1/extension-tokens/:id` | Revoke capture grant immediately (Admin auth) |
+| `POST` | `/v1/extension/captures` | Same discovery/snapshot path with extension audience; idempotent command |
+
+There is deliberately no eBay publish endpoint in Phase 1. A GPSR override is disabled by default (`mindbay_listing.gpsr_override_enabled=false`), requires a reason, and writes an operation-log audit event.
+
+## MindBay Phase 2 API
+
+Phase 2 keeps eBay access behind the Go provider. Admin and Extension call only TradeMind APIs; the TypeScript Temporal worker calls only service-token-protected internal commands.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `GET` | `/v1/calendar/slots?from=&to=` | Workspace-scoped calendar slots |
+| `POST` | `/v1/calendar/preview` | Pure READY-listing preview; no database mutation |
+| `POST` | `/v1/calendar/apply` | Idempotently reserve slots/jobs and start stable Temporal workflow IDs; requires `Idempotency-Key` |
+| `POST` | `/v1/publications/:id/approve` | Explicit operator execution path; requires `Idempotency-Key` and all publish gates |
+| `GET` | `/api/v1/shops/:id/oauth/ebay/authorize-url` | Create state-bound eBay OAuth URL; Redis-backed state and shop operate permission. `redirect_uri` is the RuName. Consent includes `sell.account.readonly`. |
+| `POST` | `/api/v1/shops/:id/oauth/ebay/callback` | Exchange code, encrypt and persist user token and granted scopes; tenant/store scoped |
+| `GET` | `/api/v1/platform/ebay/categories/:categoryId/aspects` | Read cached eBay category aspects |
+| `POST` | `/api/v1/platform/ebay/categories/:categoryId/aspects/sync` | Refresh Taxonomy aspects using an application token |
+| `POST` | `/internal/v1/mindbay/publications/:id/revalidate` | Temporal service command; bearer service token only |
+| `POST` | `/internal/v1/mindbay/publications/:id/publish` | Temporal service command; sole eBay mutation path |
+| `POST` | `/internal/v1/mindbay/publications/:id/reconcile` | Reconcile persisted marketplace listing |
+
+`AUTOMATION_MODE=DRY_RUN` performs no mutating eBay request. Production eBay additionally requires `EBAY_ENV=production` and explicit `AUTOMATION_MODE=LIVE`; the repository defaults remain Sandbox plus DRY_RUN.
+
+## MindBay Phase 3 API
+
+Phase 3 adds versioned monitoring, repricing decisions and an append-only cent ledger. A monitor run reads the current Amazon snapshot and eBay offer, persists an immutable listing snapshot and binds the result to one immutable price-rule version. `DRY_RUN` may create decisions and request artifacts but never sends an eBay offer update.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `GET` | `/v1/monitorable-listings` | Workspace-scoped eBay listings available for monitoring |
+| `POST` | `/v1/monitor-runs` | Create an idempotent manual run for `marketplaceListingId` + `priceRuleId` |
+| `GET` | `/v1/price-rules` | List immutable rule versions |
+| `POST` | `/v1/price-rules` | Create the next immutable version; requires `Idempotency-Key` |
+| `GET` | `/v1/price-decisions?outcome=` | List decisions and block reasons |
+| `POST` | `/v1/price-decisions/:id/apply` | Idempotently apply a proposed target price; `DRY_RUN` records only an artifact |
+| `GET` | `/v1/profit/report?from=&to=` | Expected and actual ledger totals plus source-linked entries |
+
+Decision outcomes are `NO_CHANGE`, `PROPOSED`, `AUTO_APPLIED`, `BLOCKED_MARGIN`, `BLOCKED_POLICY`, and `BLOCKED_COOLDOWN`. Money remains integer cents. The report never folds expected amounts into realized profit; Phase 4 adds sale-backed actual entries.
 
 ## 修改 API 时的同步要求
 

@@ -1,0 +1,23 @@
+/** Path → message key for scoped menu labels. Unmapped menus keep route `name`. */
+export const MENU_LOCALE_KEYS: Record<string, string> = {
+  '/mindbay': 'menu.mindbay',
+  '/mindbay/discovery': 'menu.mindbayDiscovery',
+  '/mindbay/products': 'menu.mindbayProducts',
+  '/mindbay/collections': 'menu.mindbayCollections',
+  '/mindbay/listing-studio': 'menu.mindbayListingStudio',
+  '/mindbay/planner': 'menu.mindbayPlanner',
+  '/mindbay/monitoring': 'menu.mindbayMonitoring',
+  '/mindbay/profit': 'menu.mindbayProfit',
+  '/collect': 'menu.collect',
+  '/collect/hub': 'menu.collectHub',
+  '/collect/tasks': 'menu.collectTasks',
+  '/shops': 'menu.shops',
+  '/shops/manage': 'menu.shopManage',
+  '/settings': 'menu.settings',
+  '/settings/system': 'menu.settingsSystem',
+  '/settings/platforms': 'menu.settingsPlatforms',
+  '/settings/users': 'menu.settingsUsers',
+  '/settings/collector': 'menu.settingsCollector',
+  '/settings/ai': 'menu.settingsAI',
+  '/settings/storage': 'menu.settingsStorage',
+};

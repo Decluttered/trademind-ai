@@ -1,79 +1,79 @@
-# 任务可靠性设计（P2 / P2.2）
+# Task Reliability Design (P2 / P2.2)
 
-> 异步任务（采集、图片、订单同步、客服同步、刊登、库存同步）统一采用 **DB 租约 + 心跳续期 + 重试策略 + 死信** 模式。
-> 上述六个 Worker 均接入共享 `tasklease`（`TryClaim` / `TryClaimPendingOrRetrying`、`execution_id`、心跳续租、`ValidateLease` + `finish*Task` 守卫写回）。当前行为以代码与 CI 回归为准，历史矩阵可从 Git 历史追溯。
+> Async tasks (collection, images, order sync, customer service sync, publishing, inventory sync) uniformly adopt a **DB lease + heartbeat renewal + retry policy + dead letter** pattern.
+> All six workers above are integrated with the shared `tasklease` package (`TryClaim` / `TryClaimPendingOrRetrying`, `execution_id`, heartbeat renewal, `ValidateLease` + `finish*Task` guarded write-back). Current behavior is defined by the code and CI regression; the historical matrix can be traced from Git history.
 
-## 任务租约字段
+## Task Lease Fields
 
-各任务表共有：
+Common across all task tables:
 
-| 字段 | 说明 |
+| Field | Description |
 | --- | --- |
-| `locked_by` | Worker 实例 ID（`worker.GenerateWorkerID` / Registry） |
-| `locked_until` | 租约到期 UTC 时间 |
-| `lock_version` | 乐观锁版本，claim 时 `+1` |
+| `locked_by` | Worker instance ID (`worker.GenerateWorkerID` / Registry) |
+| `locked_until` | Lease expiration time (UTC) |
+| `lock_version` | Optimistic lock version, incremented `+1` on claim |
 
-Claim 条件：`status` 为 pending/retrying（且 `next_retry_at` 到期），且 `locked_by IS NULL OR locked_until < now`。
+Claim condition: `status` is pending/retrying (and `next_retry_at` has elapsed), and `locked_by IS NULL OR locked_until < now`.
 
-## 心跳与续期
+## Heartbeat and Renewal
 
-- 租约 TTL 来自各队列 env（如 `COLLECT_TASK_TIMEOUT_SECONDS`、`ORDER_SYNC_TASK_TIMEOUT_SECONDS`）。
-- 采集租约 ≥ `COLLECTOR_TIMEOUT_SECONDS + 60s` 余量。
-- 后台 goroutine 每 **TTL/3**（最小 5s）刷新 `locked_until`。
-- Worker 进程通过 `worker.Registry` 写 `worker_instances.last_heartbeat_at`（`WORKER_HEARTBEAT_ENABLED`）。
+- The lease TTL comes from each queue's env var (e.g. `COLLECT_TASK_TIMEOUT_SECONDS`, `ORDER_SYNC_TASK_TIMEOUT_SECONDS`).
+- The collection lease includes a margin of ≥ `COLLECTOR_TIMEOUT_SECONDS + 60s`.
+- A background goroutine refreshes `locked_until` every **TTL/3** (minimum 5s).
+- The worker process writes `worker_instances.last_heartbeat_at` via `worker.Registry` (`WORKER_HEARTBEAT_ENABLED`).
 
-## Reaper（过期回收）
+## Reaper (Expiry Reclamation)
 
-`WORKER_REAPER_ENABLED` 定时扫描：
+`WORKER_REAPER_ENABLED` periodically scans for:
 
-- `locked_until < now` 且仍 `running` → 标失败/重试或 `lease_expired` 事件。
-- `WORKER_LEGACY_RUNNING_TIMEOUT_SECONDS` 清理无租约元数据的历史卡住行。
+- `locked_until < now` while still `running` → marked failed/retrying, or a `lease_expired` event.
+- `WORKER_LEGACY_RUNNING_TIMEOUT_SECONDS` cleans up historical stuck rows that have no lease metadata.
 
-配置状态中心 **任务租约** 项标记为 ready。
+The configuration status center's **task lease** item is marked ready.
 
-## 重试策略（`taskretry`）
+## Retry Policy (`taskretry`)
 
-默认 `Policy`：
+Default `Policy`:
 
-| 次数 | 退避 |
+| Attempt | Backoff |
 | --- | --- |
-| 1 | 立即 |
+| 1 | Immediate |
 | 2 | 30s |
 | 3 | 2m |
 | 4 | 10m |
 | 5 | 30m |
 
-- `MaxAttempts = 5`，`JitterRatio = 0.15`，`MaxDelay = 30m`。
-- `ShouldRetry(attempt, retryable)` 控制是否继续。
-- HTTP 429 / 5xx / 超时 / 网络错误 → `retryable=true`。
-- 权限、校验、幂等冲突 → `retryable=false`。
+- `MaxAttempts = 5`, `JitterRatio = 0.15`, `MaxDelay = 30m`.
+- `ShouldRetry(attempt, retryable)` controls whether to continue.
+- HTTP 429 / 5xx / timeout / network error → `retryable=true`.
+- Permission, validation, and idempotency conflicts → `retryable=false`.
 
-## 错误分类（节选）
+## Error Classification (excerpt)
 
 | Code | Retryable |
 | --- | --- |
-| `timeout`, `network_error`, `provider_5xx`, `rate_limited` | 是 |
-| `lease_expired`, `redis_temporary_failure` | 是 |
-| `permission_denied`, `validation_failed`, `idempotency_conflict` | 否 |
-| `credential_refresh_required` | 否 |
+| `timeout`, `network_error`, `provider_5xx`, `rate_limited` | Yes |
+| `lease_expired`, `redis_temporary_failure` | Yes |
+| `permission_denied`, `validation_failed`, `idempotency_conflict` | No |
+| `credential_refresh_required` | No |
 
-## Dead Letter（`dead_letter`）
+## Dead Letter (`dead_letter`)
 
-- 采集任务定义 `StatusDeadLetter = "dead_letter"`。
-- `taskretry.Policy.IsDeadLetter(attempt)`：attempt ≥ MaxAttempts 时进入死信语义。
-- 失败任务中心：`DeadLetter=true` 时 `SafeRetry=false`，需人工处理或改参数后新建任务。
-- 死信任务保留错误原因与 `retry_count`，不自动入队。
+- Collection tasks define `StatusDeadLetter = "dead_letter"`.
+- `taskretry.Policy.IsDeadLetter(attempt)`: once attempt ≥ MaxAttempts, the task enters dead-letter semantics.
+- Failed task center: when `DeadLetter=true`, `SafeRetry=false`, requiring manual handling or a new task created with adjusted parameters.
+- Dead-lettered tasks retain the failure reason and `retry_count`, and are not automatically re-queued.
 
-## 与幂等服务的协作
+## Cooperation with the Idempotency Service
 
-长耗时编排可并行使用 `idempotency.Service`：
+Long-running orchestration can use `idempotency.Service` in parallel:
 
-1. `Acquire` 获得业务级执行权；
-2. 任务租约保证单 worker 消费；
-3. 成功 `Complete` 幂等记录，失败 `Fail(retryable)`。
+1. `Acquire` obtains business-level execution rights;
+2. The task lease guarantees single-worker consumption;
+3. On success, `Complete` the idempotency record; on failure, `Fail(retryable)`.
 
-## 运维
+## Operations
 
-- Env：`WORKER_HEARTBEAT_*`、`WORKER_REAPER_*`、`COLLECT_TASK_TIMEOUT_SECONDS` 等见 `.env.example`。
-- `/health` 查队列深度；失败任务中心筛 `lease_expired` / `rate_limited`。
-- 多实例须 Redis 队列 + DB 租约。
+- Env: `WORKER_HEARTBEAT_*`, `WORKER_REAPER_*`, `COLLECT_TASK_TIMEOUT_SECONDS`, etc. — see `.env.example`.
+- `/health` reports queue depth; the failed task center can filter by `lease_expired` / `rate_limited`.
+- Multiple instances require a Redis queue plus a DB lease.

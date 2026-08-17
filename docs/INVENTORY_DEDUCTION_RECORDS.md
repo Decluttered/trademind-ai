@@ -1,38 +1,38 @@
-# 库存扣减记录（Phase F3）
+# Inventory Deduction Records (Phase F3)
 
-## 路由
+## Route
 
-`/inventory/deductions`（`/inventory/effects` 301 式 redirect）
+`/inventory/deductions` (`/inventory/effects` 301-style redirect)
 
-## 数据来源
+## Data Source
 
-`order_inventory_effects` 表 + 关联 orders / product_skus。
+The `order_inventory_effects` table, joined with orders / product_skus.
 
-## 字段
+## Fields
 
-| 字段 | 说明 |
+| Field | Description |
 | --- | --- |
-| 扣减时间 | createdAt |
-| 来源订单 | 链接 `/orders/:id?tab=inventory` |
-| 商品 / SKU | 关联 product 标题与 skuCode |
-| 扣减数量 | quantity |
-| 扣减前/后库存 | beforeStock / afterStock |
-| 扣减状态 | success / failed / skipped |
-| 失败原因 | errorMessage |
+| Deduction time | createdAt |
+| Source order | links to `/orders/:id?tab=inventory` |
+| Product / SKU | linked product title and skuCode |
+| Deducted quantity | quantity |
+| Stock before/after deduction | beforeStock / afterStock |
+| Deduction status | success / failed / skipped |
+| Failure reason | errorMessage |
 
-## 来源类型
+## Source Types
 
-- `deduct` → 订单同步扣减
-- `restore` → 系统回滚
-- 人工修正走 `inventory_change_logs`（库存流水页）
+- `deduct` → deduction from order sync
+- `restore` → system rollback
+- Manual corrections go through `inventory_change_logs` (the inventory ledger page)
 
-## 联动
+## Related Flows
 
-- 扣减失败 → 订单异常工作台 `inventory_deduct_failed`
-- 订单详情库存 Tab → 扣减记录深链
-- 失败任务中心（库存同步类任务单独归类）
+- Deduction failure → order exceptions workbench, `inventory_deduct_failed`
+- Order detail inventory tab → deep link to deduction records
+- Failed task center (inventory-sync tasks are categorized separately)
 
-## 禁止
+## Out of Scope
 
-- 静默扣减失败
-- 多仓 WMS 流水（MVP 不做）
+- Silent deduction failures
+- Multi-warehouse WMS ledger (not part of the MVP)

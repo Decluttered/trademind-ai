@@ -53,6 +53,19 @@ func (g *Gateway) Chat(ctx context.Context, req ChatRequest) (*ChatResponse, err
 	return g.chatWithPlain(ctx, plain, req)
 }
 
+// ChatForTenant resolves the workspace-specific AI settings. Chat remains the
+// legacy tenant-0 entry point for existing modules.
+func (g *Gateway) ChatForTenant(ctx context.Context, tenantID int64, req ChatRequest) (*ChatResponse, error) {
+	if g == nil || g.Settings == nil {
+		return nil, fmt.Errorf("ai gateway: not configured")
+	}
+	plain, err := g.Settings.PlainByGroup(ctx, tenantID, "ai")
+	if err != nil {
+		return nil, err
+	}
+	return g.chatWithPlain(ctx, plain, req)
+}
+
 func (g *Gateway) chatWithPlain(ctx context.Context, plain map[string]string, req ChatRequest) (*ChatResponse, error) {
 	pname := normalizeProviderName(plain["provider"])
 	if pname == "" {

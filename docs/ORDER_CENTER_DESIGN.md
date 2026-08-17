@@ -1,35 +1,35 @@
-# 订单中心设计（Phase F2）
+# Order Center Design (Phase F2)
 
-> 路由以 Admin 实现为准：`/orders/list`、`/orders/:id`、`/orders/exceptions`、`/orders/sync-tasks`。
+> Routes follow the Admin implementation: `/orders/list`, `/orders/:id`, `/orders/exceptions`, `/orders/sync-tasks`.
 
-## 目标
+## Goals
 
-- 订单列表展示 SKU 匹配、库存扣减、同步与异常汇总
-- 独立订单详情深链 `/orders/:id?itemId=`
-- 与异常工作台、失败任务中心、同步任务互跳
+- Order list displays SKU matching, inventory deduction, sync, and exception summaries
+- Standalone order detail deep link `/orders/:id?itemId=`
+- Cross-navigation with the exceptions workbench, failed task center, and sync tasks
 
-## 列表字段
+## List Fields
 
-| 字段 | 来源 |
+| Field | Source |
 | --- | --- |
-| SKU 匹配状态 | `order_item_sku_matches` 聚合 |
-| 库存扣减状态 | `order_inventory_effects` 聚合 |
-| 同步状态 | `externalOrderId` + `platform` 推导 |
-| 异常数量 | 未匹配/ambiguous + 扣减失败 |
+| SKU matching status | aggregated from `order_item_sku_matches` |
+| Inventory deduction status | aggregated from `order_inventory_effects` |
+| Sync status | derived from `externalOrderId` + `platform` |
+| Exception count | unmatched/ambiguous + deduction failures |
 
-## 权限（F2 轻量）
+## Permissions (F2 lightweight)
 
-| 角色 | 能力 |
+| Role | Capability |
 | --- | --- |
-| admin / operator | 查看、绑定 SKU、重试 |
-| readonly | 仅查看；写操作 API 403 |
+| admin / operator | View, bind SKU, retry |
+| readonly | View only; write-operation APIs return 403 |
 
-## 敏感信息
+## Sensitive Information
 
-- 详情 API 默认脱敏手机号、邮箱
-- 不返回平台 `rawData` 到列表
+- Detail API masks phone numbers and emails by default
+- Platform `rawData` is not returned in the list
 
-## 相关文档
+## Related Documents
 
 - [ORDER_EXCEPTION_WORKBENCH_DESIGN.md](ORDER_EXCEPTION_WORKBENCH_DESIGN.md)
 - [ORDER_SYNC_PARTIAL_SUCCESS_UX.md](ORDER_SYNC_PARTIAL_SUCCESS_UX.md)

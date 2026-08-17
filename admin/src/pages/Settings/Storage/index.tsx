@@ -30,7 +30,7 @@ import {
 import type { UploadFile } from 'antd';
 import type { ComponentType, CSSProperties } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PAGE_COPY } from '@/constants/copywriting';
+import { useLocale } from '@/locale';
 import { storageConnectionSectionTitle } from '@/constants/storageSettings';
 import { deleteFile, uploadFile, type UploadedFileInfo } from '@/services/files';
 import { fetchSettingsList, saveSettingsItems, testStorageConnection, type SettingPutItem } from '@/services/settings';
@@ -388,6 +388,7 @@ function buildStoragePutItems(values: Record<string, unknown>): SettingPutItem[]
 }
 
 export default function StorageSettingsPage() {
+  const { t } = useLocale();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -475,7 +476,7 @@ export default function StorageSettingsPage() {
   }, [kind, form]);
 
   return (
-    <TmPageContainer title={PAGE_COPY.storageSettings.title} subTitle={PAGE_COPY.storageSettings.description}>
+    <TmPageContainer title={t('page.storage.title')} subTitle={t('page.storage.description')}>
       <div className="tm-storage-settings">
         <ProCard variant="outlined" className="tm-system-settings__hero">
           <div className="tm-system-settings__hero-inner">
@@ -509,7 +510,7 @@ export default function StorageSettingsPage() {
         >
           <ProCard
             variant="outlined"
-            title="存储方式"
+            title={t('page.storage.method')}
             className="tm-system-settings__panel"
             extra={
               <Button type="link" icon={<ReloadOutlined />} onClick={() => void load()} disabled={loading}>
@@ -805,7 +806,7 @@ export default function StorageSettingsPage() {
           </ProCard>
         </Form>
 
-        <ProCard variant="outlined" title="上传测试" className="tm-system-settings__panel">
+        <ProCard variant="outlined" title={t('page.storage.uploadTest')} className="tm-system-settings__panel">
           <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
             保存配置后，可选择图片验证上传与访问是否正常。
           </Typography.Paragraph>

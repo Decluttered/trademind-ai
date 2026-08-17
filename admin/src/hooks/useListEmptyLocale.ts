@@ -5,7 +5,7 @@ import type { ListEmptyKey } from '@/constants/copywriting';
 
 type UseListEmptyLocaleOpts = Omit<ListEmptyOptions, 'readonly'>;
 
-/** 结合 RBAC 的列表空状态 locale（F7 EmptyState rollout）。 */
+/** List empty-state locale combined with RBAC (F7 EmptyState rollout). */
 export function useListEmptyLocale(key: ListEmptyKey, opts?: UseListEmptyLocaleOpts) {
   const { readonly } = usePermission();
   return useMemo(

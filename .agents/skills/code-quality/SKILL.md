@@ -1,227 +1,227 @@
 ---
 name: code-quality
-description: TradeMind 全项目代码质量自动适用、轻量检查、深度审查、Baseline/Ratchet 和 CI 门禁的唯一完整主规范
+description: The single, complete master standard for TradeMind's project-wide code quality — automatic scope, lightweight checks, deep review, Baseline/Ratchet, and CI gating
 ---
 
-# TradeMind 全项目 Code Quality 主规范
+# TradeMind Project-Wide Code Quality Master Standard
 
-本 Skill 是 TradeMind 代码质量规则的唯一完整主规范。其他入口只能引用本文件，不得复制出第二套完整质量规则。
+This Skill is the single, complete master standard for TradeMind code quality rules. Other entry points may only reference this file; they must not duplicate a second complete set of quality rules.
 
-相关专项规范继续独立维护并由本规范引用：
+Related specialized standards continue to be maintained independently and are referenced by this standard:
 
-- 全项目测试：`.agents/skills/project-testing/SKILL.md`
-- Admin UI：`.agents/skills/frontend-design/SKILL.md`
-- Admin E2E：`.agents/skills/admin-e2e-testing/SKILL.md`
-- 前端单元：`.agents/skills/frontend-unit-testing/SKILL.md`
-- 后端测试：`.agents/skills/backend-testing/SKILL.md`
-- API 契约：`.agents/skills/api-contract-testing/SKILL.md`
-- 模块化架构：`.agents/skills/modular-architecture/SKILL.md`
+- Project-wide testing: `.agents/skills/project-testing/SKILL.md`
+- Admin UI: `.agents/skills/frontend-design/SKILL.md`
+- Admin E2E: `.agents/skills/admin-e2e-testing/SKILL.md`
+- Frontend unit tests: `.agents/skills/frontend-unit-testing/SKILL.md`
+- Backend testing: `.agents/skills/backend-testing/SKILL.md`
+- API contracts: `.agents/skills/api-contract-testing/SKILL.md`
+- Modular architecture: `.agents/skills/modular-architecture/SKILL.md`
 
-## 1. 自动适用范围
+## 1. Automatic Scope
 
-任何代码新增、修改、重构或 Bug 修复均自动适用本规范。用户不需要显式说“检查代码质量”“使用 code-quality Skill”“做 Code Review”“优化可维护性”或“检查安全性”。
+This standard automatically applies to any code addition, modification, refactor, or bug fix. The user does not need to explicitly say "check code quality," "use the code-quality Skill," "do a code review," "improve maintainability," or "check security."
 
-自动适用范围包括 Admin、Collector、Go 后端、shared packages、scripts、tests、migrations、API contracts、GitHub Actions、Docker 和环境配置、Redis、queue、worker、scheduler、第三方平台 adapter。
+Automatic scope includes Admin, Collector, the Go backend, shared packages, scripts, tests, migrations, API contracts, GitHub Actions, Docker and environment configuration, Redis, queues, workers, schedulers, and third-party platform adapters.
 
-纯文档修改可以不运行完整代码质量检查，但仍必须检查链接和路径、命令准确性、规范是否冲突、是否包含敏感信息、是否形成重复规则体系。
+Pure documentation changes may skip the full code quality check, but must still verify links and paths, command accuracy, whether the docs conflict with other rules, whether they contain sensitive information, and whether they create a duplicate rule system.
 
-## 2. 轻量检查和深度审查
+## 2. Lightweight Checks and Deep Review
 
-### 2.1 轻量代码质量检查
+### 2.1 Lightweight Code Quality Check
 
-任何代码修改都自动执行轻量检查，至少确认：
+Every code change automatically triggers a lightweight check that confirms at least:
 
-- 修改范围是否最小，是否存在无关格式化、无意义 import 排序或换行格式变化。
-- 命名是否准确，类型是否清晰，是否新增无意义 `any`、`@ts-ignore`、宽泛 `eslint-disable`。
-- 错误是否被吞掉，Promise 是否可能未处理，空值和异常状态是否完整。
-- 是否有重复逻辑、死代码、debug 代码、`.only`、无理由 `.skip` 或遗留 `console.log`。
-- 是否泄露敏感信息，是否缺少必要测试，是否运行受影响测试。
-- 是否修改 API 或业务行为，是否引入额外请求或明显性能退化。
+- Whether the change scope is minimal, and whether there is unrelated formatting, meaningless import reordering, or line-ending changes.
+- Whether naming is accurate, types are clear, and whether meaningless `any`, `@ts-ignore`, or overly broad `eslint-disable` were introduced.
+- Whether errors are swallowed, whether a Promise may go unhandled, and whether null/exception states are fully handled.
+- Whether there is duplicate logic, dead code, debug code, `.only`, unjustified `.skip`, or leftover `console.log`.
+- Whether sensitive information is leaked, whether necessary tests are missing, and whether affected tests were run.
+- Whether the API or business behavior was changed, and whether extra requests or a clear performance regression were introduced.
 
-### 2.2 深度代码质量审查
+### 2.2 Deep Code Quality Review
 
-以下情况自动触发深度审查：认证和权限、商品库存、发布和刊登、抖店等第三方平台、支付或资金、数据库事务、Redis 锁、队列和后台任务、并发、文件上传、鉴权 Token、新增第三方适配器、新增公共基础组件、新增公共 service、修改 API envelope、修改 shared type、修改 migration、跨三个以上业务模块、大型重构、单个文件职责明显继续膨胀、修复数据丢失/重复提交/重复任务问题。
+Deep review is automatically triggered by: authentication and permissions; product inventory; publishing and listing; third-party platforms such as Douyin Shop; payments or funds; database transactions; Redis locks; queues and background tasks; concurrency; file uploads; auth tokens; new third-party adapters; new shared foundational components; new shared services; changes to the API envelope; changes to shared types; changes to migrations; changes spanning more than three business modules; large refactors; a single file whose responsibilities keep visibly growing; and fixes for data loss, duplicate submission, or duplicate task issues.
 
-深度审查在轻量检查基础上增加：事务边界、幂等性、重试边界、timeout、race condition、数据一致性、权限绕过、日志脱敏、第三方失败降级、回滚策略、缓存一致性、锁释放、goroutine 生命周期、数据库查询复杂度、模块依赖方向和测试完整性。
+Deep review adds the following on top of the lightweight check: transaction boundaries, idempotency, retry boundaries, timeouts, race conditions, data consistency, permission bypass, log redaction, third-party failure degradation, rollback strategy, cache consistency, lock release, goroutine lifecycle, database query complexity, module dependency direction, and test completeness.
 
-触发深度审查不等于允许大规模重构；除非任务本身要求，否则只报告风险并做最小必要修改。
+Triggering deep review does not authorize large-scale refactoring; unless the task itself requires it, only report the risks and make the minimal necessary changes.
 
-## 3. 质量问题严重级别
+## 3. Quality Issue Severity Levels
 
 ### Critical
 
-必须阻塞完成：生产凭据或私钥泄露、测试可能连接生产数据库、测试可能调用真实平台写接口、SQL 注入、命令注入、路径遍历、权限绕过、数据破坏、不受控并发写入、死锁、敏感日志泄露、明确的数据竞争、发布或库存重复执行。
+Must block completion: leaked production credentials or private keys; tests that might connect to the production database; tests that might call real platform write endpoints; SQL injection; command injection; path traversal; permission bypass; data corruption; uncontrolled concurrent writes; deadlocks; sensitive data in logs; a clear data race; duplicate execution of a publish or inventory operation.
 
 ### High
 
-默认阻塞：新增 TypeScript 错误、新增 Go 编译错误、新增 lint error、未处理 Promise rejection、外部请求无 timeout、无边界 retry、事务部分提交、幂等性缺失、异常被完全吞掉、关键状态转换缺少校验、API contract 漂移、新功能完全无测试、Bug 修复无合理回归测试且无解释。
+Blocks by default: new TypeScript errors; new Go compile errors; new lint errors; unhandled Promise rejections; external requests without a timeout; retries without a bound; partial transaction commits; missing idempotency; exceptions completely swallowed; missing validation on a critical state transition; API contract drift; a new feature with no tests at all; a bug fix with no reasonable regression test and no explanation.
 
 ### Medium
 
-需要修复或明确说明：大量重复代码、函数职责过多、非必要 `any`、不稳定 rowKey、React Hook 依赖问题、低效重复请求、N+1 查询风险、可读性差、错误上下文不足、测试过度依赖内部实现。
+Needs a fix or an explicit explanation: significant duplicated code; a function with too many responsibilities; unnecessary `any`; unstable `rowKey`; React Hook dependency issues; inefficient duplicate requests; N+1 query risk; poor readability; insufficient error context; tests overly coupled to internal implementation.
 
 ### Advisory
 
-可后续处理：命名可进一步改进、局部抽象机会、历史文件过大、非阻塞性能优化、文档完善建议。
+Can be addressed later: naming could be further improved; local abstraction opportunities; a historically oversized file; non-blocking performance optimizations; documentation improvement suggestions.
 
-最终报告必须按严重等级分类，不能把所有建议都写成阻塞项。
+The final report must be organized by severity level — not every suggestion should be written up as a blocker.
 
-## 4. Baseline/Ratchet 策略
+## 4. Baseline/Ratchet Strategy
 
-Admin 当前存在历史 TypeScript 错误。不得一次性修复全部历史错误，不得直接将全部历史错误设为所有 PR 的硬门禁，不得让 code-quality 上线后阻塞全部后续开发。
+Admin currently has pre-existing TypeScript errors. Do not attempt to fix all historical errors at once, do not turn all historical errors into a hard gate for every PR, and do not let code-quality block all future development once it goes live.
 
-Baseline/Ratchet 要求：
+Baseline/Ratchet requirements:
 
-1. 执行真实 Admin typecheck：`pnpm quality:baseline:admin-ts`。
-2. 收集历史错误，去除不稳定的行号和列号。
-3. Baseline 只记录文件路径、TypeScript diagnostic code、规范化错误信息、同一错误出现次数。
-4. Baseline 不记录绝对本地路径、用户目录、时间戳、临时文件或随机顺序。
-5. 后续检查允许历史错误减少或消失。
-6. 后续检查禁止新增新的错误签名、既有错误数量增加、新文件出现错误、修改文件引入新错误。
-7. Baseline 不得自动扩大；更新 baseline 必须显式执行 `pnpm quality:baseline:admin-ts -- --update` 并说明原因。
-8. 普通 CI 不得自动更新 baseline。
+1. Run the real Admin typecheck: `pnpm quality:baseline:admin-ts`.
+2. Collect historical errors, stripping unstable line and column numbers.
+3. The baseline records only the file path, the TypeScript diagnostic code, a normalized error message, and the occurrence count of the same error.
+4. The baseline must not record absolute local paths, user directories, timestamps, temp files, or a random order.
+5. Later checks allow historical errors to decrease or disappear.
+6. Later checks forbid new error signatures, an increase in the count of an existing error, errors in new files, or new errors introduced in modified files.
+7. The baseline must not expand automatically; updating it requires explicitly running `pnpm quality:baseline:admin-ts -- --update` with a stated reason.
+8. Regular CI must not auto-update the baseline.
 
-Baseline 文件：`tests/quality/baselines/admin-typescript.json`。
+Baseline file: `tests/quality/baselines/admin-typescript.json`.
 
-## 5. TypeScript 通用规范
+## 5. General TypeScript Rules
 
-- 不新增无意义 `any`，不滥用 `unknown as` 和非空断言。
-- 不使用 `@ts-ignore` 掩盖真实错误；必须使用时优先 `@ts-expect-error` 并说明原因。
-- 不使用宽泛 `eslint-disable`。
-- 类型应描述真实领域含义，公共函数应明确输入和输出。
-- API response 不直接当可信数据使用，外部数据必须经过校验或安全归一化。
-- Promise 必须处理 reject，异步函数错误不能静默丢失。
-- 避免隐式字符串枚举漂移，优先使用项目已有共享类型，不复制多个相同 DTO。
-- 不为测试修改生产类型语义。
+- Do not add meaningless `any`; do not abuse `unknown as` or non-null assertions.
+- Do not use `@ts-ignore` to mask a real error; when unavoidable, prefer `@ts-expect-error` with a stated reason.
+- Do not use overly broad `eslint-disable`.
+- Types should describe real domain meaning; public functions should have clear inputs and outputs.
+- Do not treat an API response as trusted data directly — external data must be validated or safely normalized.
+- Promises must handle rejection; async function errors must not be silently lost.
+- Avoid implicit string-enum drift; prefer the project's existing shared types instead of duplicating the same DTO.
+- Do not change production type semantics just for tests.
 
-检查新增或修改文件中的 `any`、`@ts-ignore`、`@ts-expect-error`、`eslint-disable`、空 catch、未处理 Promise、无边界重试和非必要类型强制转换。脚本只负责发现候选，AI 必须结合上下文审查。
+Check new or modified files for `any`, `@ts-ignore`, `@ts-expect-error`, `eslint-disable`, empty catches, unhandled Promises, unbounded retries, and unnecessary type coercion. Scripts are only responsible for surfacing candidates — the AI must review them in context.
 
-## 6. React/Umi/Ant Design 规范
+## 6. React/Umi/Ant Design Rules
 
-Admin 修改必须同时考虑：不在 render 中产生副作用，Hook 依赖正确，避免 effect 重复请求，防止组件卸载后更新状态，防止快速点击重复提交，提交按钮必须有 loading/disabled，rowKey 稳定唯一，不使用会变化列表的数组 index 作为主 key。
+Admin changes must simultaneously account for: no side effects during render; correct Hook dependencies; avoiding duplicate requests from effects; preventing state updates after a component unmounts; preventing duplicate submission from rapid clicks; submit buttons must have loading/disabled states; `rowKey` must be stable and unique; do not use an array index that can change as the primary key for a list.
 
-不得依赖 Ant Design 内部私有 class 做逻辑，不使用宽泛全局 Ant 样式覆盖，不用 `!important` 掩盖结构问题，不创建嵌套 Form，Form instance 必须连接真实 Form，Modal/Drawer 关闭后状态清理明确，URL 状态和组件状态必须保持一致，深链和刷新必须恢复，readonly/disabled 语义准确，error/loading/empty 不得缺失。
+Do not rely on Ant Design's internal private classes for logic; do not use broad global Ant style overrides; do not use `!important` to mask structural problems; do not create nested Forms; a Form instance must be connected to a real Form; state cleanup on Modal/Drawer close must be explicit; URL state and component state must stay in sync; deep links and refresh must be restored correctly; readonly/disabled semantics must be accurate; error/loading/empty states must not be missing.
 
-优先复用 `TmPageContainer`、`SectionCard`、`MetricCard`、`OperationToolbar`、`TmProTable`、`EmptyState`、`AppDrawer`、`layoutTokens`。UI 细节由 `.agents/skills/frontend-design/SKILL.md` 定义，浏览器回归由 `.agents/skills/admin-e2e-testing/SKILL.md` 定义。
+Prefer reusing `TmPageContainer`, `SectionCard`, `MetricCard`, `OperationToolbar`, `TmProTable`, `EmptyState`, `AppDrawer`, and `layoutTokens`. UI details are defined by `.agents/skills/frontend-design/SKILL.md`, and browser regression is defined by `.agents/skills/admin-e2e-testing/SKILL.md`.
 
-## 7. Node.js/Collector 规范
+## 7. Node.js/Collector Rules
 
-环境变量必须验证，不允许缺失配置时 fallback 到生产地址。网络请求必须有 timeout，retry 必须有次数和退避边界，外部响应必须校验，Promise rejection 必须处理，文件/流/句柄/连接必须释放。
+Environment variables must be validated; falling back to a production address when configuration is missing is not allowed. Network requests must have a timeout; retries must have a bounded count and backoff; external responses must be validated; Promise rejections must be handled; files/streams/handles/connections must be released.
 
-转换逻辑尽量保持纯函数，相同输入应产生确定结果；金额和价格不得使用不安全浮点逻辑；时间和时区行为必须明确；不将完整第三方响应、Authorization、Cookie 或 Token 写日志；不使用无限队列或无限递归重试；测试不得访问真实外部站点或平台。
+Transformation logic should stay as pure functions where possible, producing deterministic results for the same input; amounts and prices must not use unsafe floating-point logic; time and timezone behavior must be explicit; do not log full third-party responses, Authorization headers, cookies, or tokens; do not use unbounded queues or unbounded recursive retries; tests must not access real external sites or platforms.
 
-Collector 重点检查 env parsing、price normalize、quality score、抓取失败处理、超时、限流、重试、非法数据、重复商品、大批量数据内存使用和第三方字段缺失。
+For the Collector, focus checks on env parsing, price normalization, quality scoring, scrape failure handling, timeouts, rate limiting, retries, invalid data, duplicate products, memory usage under large batches, and missing third-party fields.
 
-## 8. Go 后端规范
+## 8. Go Backend Rules
 
-所有 error 必须处理，error wrap 必须保留上下文，不用无上下文错误字符串覆盖原始错误。`context.Context` 必须向下传递，外部 HTTP 请求必须设置 timeout，response body 必须关闭。
+All errors must be handled; error wrapping must preserve context — do not overwrite the original error with a context-free error string. `context.Context` must be propagated downward; external HTTP requests must set a timeout; response bodies must be closed.
 
-goroutine 生命周期必须可控，不启动无法停止的后台 goroutine；channel 必须明确关闭责任；shared state 必须同步保护；避免 data race。
+Goroutine lifecycles must be controllable — do not start background goroutines that cannot be stopped; channel-close responsibility must be explicit; shared state must be synchronized; avoid data races.
 
-transaction 必须明确 commit/rollback，rollback 错误需合理处理；查询避免 N+1；批量操作考虑分页和上限；Redis 锁必须有过期时间且释放验证 ownership；queue job 必须幂等；retry 必须有最大次数；第三方平台失败不得错误标记成功。
+Transactions must explicitly commit/rollback, with rollback errors handled sensibly; avoid N+1 queries; batch operations should account for pagination and upper bounds; Redis locks must have an expiry and verify ownership on release; queue jobs must be idempotent; retries must have a maximum count; third-party platform failures must not be mismarked as success.
 
-DTO 校验位于正确边界；handler 不承载大量领域逻辑；repository 不决定业务状态机；service 不依赖 HTTP 细节；日志不得泄露凭据；不使用 panic 处理可恢复业务错误；不忽略 JSON 编解码错误；时间处理统一使用项目标准。
+DTO validation belongs at the correct boundary; handlers should not carry large amounts of domain logic; repositories should not decide business state machines; services should not depend on HTTP details; logs must not leak credentials; do not use panic to handle recoverable business errors; do not ignore JSON encode/decode errors; time handling should follow the project's standard consistently.
 
-自动质量检查优先复用 `gofmt`、`go test`、`go vet`。仅当仓库已使用时复用 staticcheck 或 golangci-lint；本项目当前不新增大型 Go lint 工具。
+Automated quality checks should preferentially reuse `gofmt`, `go test`, and `go vet`. Reuse staticcheck or golangci-lint only if the repo already uses them; this project does not currently add large new Go lint tooling.
 
-## 9. HTTP/API 规范
+## 9. HTTP/API Rules
 
-API 变更必须检查 method、URL、path params、query、payload、response envelope、error envelope、enum、nullable、pagination、permission、readonly、idempotency 和兼容性。
+API changes must check method, URL, path params, query, payload, response envelope, error envelope, enums, nullability, pagination, permissions, readonly state, idempotency, and compatibility.
 
-重点保护多平台草稿、抖店平台草稿、传统 `publishProduct`、readiness 阻断、publication refresh、SKU binding、inventory sync。不得以重构名义修改 API method、payload、路由、权限、readonly、状态机或 reload 语义。
+Give particular protection to multi-platform drafts, Douyin Shop platform drafts, the traditional `publishProduct`, readiness blocking, publication refresh, SKU binding, and inventory sync. Do not change API methods, payloads, routes, permissions, readonly state, state machines, or reload semantics under the guise of a refactor.
 
-第三方平台适配器必须有 timeout、有边界 retry、区分 HTTP 错误和业务错误、校验响应结构、正确处理 token 失效和 rate limit、不把失败误判成功、不记录完整 Token。测试使用 fake adapter 或 mock server，不访问真实平台。API 变更自动读取 `.agents/skills/api-contract-testing/SKILL.md`。
+Third-party platform adapters must have a timeout, a bounded retry, must distinguish HTTP errors from business errors, must validate response structure, must correctly handle token expiry and rate limits, must not mistake failure for success, and must not log the full token. Tests use a fake adapter or mock server — never access a real platform. API changes automatically pull in `.agents/skills/api-contract-testing/SKILL.md`.
 
-## 10. 数据库和事务规范
+## 10. Database and Transaction Rules
 
-检查 migration 是否可重复执行、是否依赖手工数据、事务边界是否完整、部分失败是否回滚、unique/foreign key 是否与业务规则一致、nullable 是否准确、状态字段是否表达真实状态、查询是否 N+1、批量更新是否有限制、分页和排序是否稳定、是否需要乐观锁或并发控制、重复请求是否可能重复写入、JSON/JSONB 是否缺少结构校验、删除行为是否产生孤儿数据、repository 是否泄露 ORM 细节到领域层。
+Check whether migrations are repeatable, whether they depend on manual data, whether transaction boundaries are complete, whether partial failures roll back, whether unique/foreign-key constraints match business rules, whether nullability is accurate, whether state fields express real state, whether queries are N+1, whether bulk updates have limits, whether pagination and ordering are stable, whether optimistic locking or concurrency control is needed, whether duplicate requests could cause duplicate writes, whether JSON/JSONB fields lack structural validation, whether delete behavior produces orphaned data, and whether repositories leak ORM details into the domain layer.
 
-任何 migration 修改自动触发 migration test、database integration、repository tests、API contract 和深度质量审查。测试不得 fallback 到开发或生产数据库。
+Any migration change automatically triggers migration tests, database integration tests, repository tests, API contract checks, and deep quality review. Tests must not fall back to a dev or production database.
 
-## 11. Redis/锁/队列规范
+## 11. Redis/Lock/Queue Rules
 
-检查 Redis key 命名空间、TTL、缓存失效、缓存击穿风险、分布式锁过期、锁释放 token/owner 校验、任务幂等、重复消息安全、retry 上限、dead-letter 可观测性、失败任务不得标记成功、running 状态是否永久卡住、worker 停止是否释放资源、scheduler 是否重复注册、时间逻辑是否可测试、日志是否包含 taskId/traceId 且不记录敏感 payload。
+Check Redis key namespacing, TTLs, cache invalidation, cache stampede risk, distributed lock expiry, lock release token/owner verification, task idempotency, safety of duplicate messages, retry ceilings, dead-letter observability, that failed tasks are not marked successful, whether a "running" state can get permanently stuck, whether stopping a worker releases resources, whether the scheduler double-registers, whether time-based logic is testable, and whether logs include taskId/traceId without logging sensitive payloads.
 
-Redis/queue 变更自动触发 backend tests、Redis integration、queue tests、idempotency tests、retry tests 和深度质量审查。
+Redis/queue changes automatically trigger backend tests, Redis integration tests, queue tests, idempotency tests, retry tests, and deep quality review.
 
-## 12. 并发和异步规范
+## 12. Concurrency and Async Rules
 
-异步入口必须有生命周期、取消、超时和错误传播策略。并发写入必须有同步或幂等边界。后台任务必须能停止，重复启动必须安全。前端异步请求必须避免过期响应覆盖新状态，后端 goroutine 必须能随 context 或进程生命周期退出。
+Async entry points must have a defined lifecycle, cancellation, timeout, and error-propagation strategy. Concurrent writes must have synchronization or an idempotency boundary. Background tasks must be stoppable, and repeated starts must be safe. Frontend async requests must avoid a stale response overwriting newer state; backend goroutines must be able to exit along with the context or process lifecycle.
 
-## 13. 错误处理规范
+## 13. Error Handling Rules
 
-禁止空 catch、捕获后完全忽略、只输出 `console.log(error)`、只返回“失败”而丢失上下文、同一错误多层重复日志、混淆用户可见错误和内部错误、向前端暴露 stack trace。
+Prohibited: empty catches; catching and completely ignoring an error; only doing `console.log(error)`; returning just "failed" while losing context; logging the same error repeatedly at multiple layers; conflating user-facing errors with internal errors; exposing a stack trace to the frontend.
 
-错误至少包含适当上下文：operation、entity ID、task ID、trace ID、provider/platform、retry count。不得包含密码、Token、Cookie、私钥、支付敏感数据或不必要隐私。
+Errors must include appropriate context at minimum: operation, entity ID, task ID, trace ID, provider/platform, retry count. They must not include passwords, tokens, cookies, private keys, sensitive payment data, or unnecessary personal data.
 
-## 14. 日志和可观测性规范
+## 14. Logging and Observability Rules
 
-日志级别必须合理：debug 用于调试细节，info 用于正常业务状态，warn 用于可恢复异常，error 用于需要处理的失败。不得把正常业务校验失败全部记录为 error。不得记录完整第三方响应、Authorization、Cookie、Token 或敏感用户数据。
+Log levels must be reasonable: debug for diagnostic detail, info for normal business state, warn for recoverable anomalies, error for failures that need handling. Do not log every normal business validation failure as an error. Do not log full third-party responses, Authorization headers, cookies, tokens, or sensitive user data.
 
-## 15. 安全和敏感信息规范
+## 15. Security and Sensitive Information Rules
 
-优先复用 GitHub secret scanning 和现有平台能力。本项目本地使用轻量 changed-diff 高置信扫描：私钥头、GitHub classic token、AWS access key、OpenAI 风格高置信 secret、明显 JWT、带用户名密码的数据库 URL、硬编码 Authorization Bearer、硬编码 Cookie、生产环境密码变量赋值。
+Prefer reusing GitHub secret scanning and existing platform capabilities. This project also runs a lightweight, high-confidence local changed-diff scan for: private key headers, GitHub classic tokens, AWS access keys, OpenAI-style high-confidence secrets, obvious JWTs, database URLs with embedded username/password, hardcoded Authorization Bearer tokens, hardcoded cookies, and assignments to production password variables.
 
-扫描只检查新增或修改内容，输出文件和行号，secret 必须脱敏，不输出完整 secret，不上传扫描结果产物。示例值必须明显是假值；不得把普通 UUID 当 secret。发现高置信敏感信息必须非零退出。
+The scan only checks new or modified content, outputs file and line number, must redact secrets (never output the full secret), and must not upload scan result artifacts. Example values must be obviously fake; a plain UUID must not be treated as a secret. Finding high-confidence sensitive information must exit non-zero.
 
-## 16. 性能规范
+## 16. Performance Rules
 
-不得引入明显 N+1、无界分页、无界队列、无限 retry、重复请求风暴或大对象全量日志。批量处理要有上限和分页，外部请求要有 timeout，缓存要有一致性和失效策略。性能优化建议按严重级别分类，不把非阻塞优化写成必须阻塞。
+Do not introduce obvious N+1 queries, unbounded pagination, unbounded queues, unlimited retries, request storms, or logging of large objects in full. Batch processing must have an upper bound and pagination; external requests must have a timeout; caches must have a consistency and invalidation strategy. Classify performance suggestions by severity — do not write non-blocking optimizations as hard blockers.
 
-## 17. 测试代码质量规范
+## 17. Test Code Quality Rules
 
-测试代码同样适用 code-quality。测试名描述真实行为，不依赖执行顺序，不共享可变全局数据，不使用长时间 sleep，不使用随机不确定数据，不吞测试异常，不使用 `.only`，不随意 `.skip`，不降低断言强度，不使用宽泛 console allowlist，不连接真实服务，fixture 最小合法，mock 与真实契约一致，失败信息可读，helper 职责单一，不创建巨大万能测试文件。
+code-quality applies equally to test code. Test names must describe real behavior; tests must not depend on execution order; must not share mutable global data; must not use long sleeps; must not use random, non-deterministic data; must not swallow test exceptions; must not use `.only`; must not use `.skip` casually; must not weaken assertions; must not use a broad console allowlist; must not connect to real services; fixtures should be minimal and valid; mocks must match the real contract; failure messages must be readable; helpers should have a single responsibility; do not create a giant catch-all test file.
 
 ## 18. Diff Hygiene
 
-任务完成前检查是否修改无关文件、产生全文件格式化、改变换行格式、产生无意义 import 排序、引入生成文件/日志/测试产物、误改 lockfile、删除用户已有修改、留下 debug 代码/console.log/TODO 无上下文/`.only`/`.skip`/宽泛白名单。
+Before completing a task, check whether unrelated files were modified, whether a file was fully reformatted, whether line endings changed, whether meaningless import reordering was introduced, whether generated files/logs/test artifacts were introduced, whether the lockfile was accidentally modified, whether existing user changes were deleted, and whether debug code, unexplained TODOs, `.only`, `.skip`, or broad allowlists were left behind.
 
-禁止 `git add .`、全仓无关格式化、为通过质量检查重写无关模块、以“顺便优化”为由扩大范围。
+Prohibited: `git add .`; repo-wide unrelated formatting; rewriting unrelated modules just to pass quality checks; expanding scope under the guise of "opportunistic cleanup."
 
-## 19. 依赖和配置质量
+## 19. Dependency and Configuration Quality
 
-新增依赖必须有必要性说明，不得为了质量门禁盲目安装大型平台或第二套 lint/typecheck。配置修改必须避免重复 CI 和冲突规则，不得引入真实凭据、开发机绝对路径或平台私有缓存。
+New dependencies must include a justification for necessity; do not blindly install a large platform or a second lint/typecheck tool just to satisfy a quality gate. Configuration changes must avoid duplicate CI runs and conflicting rules, and must not introduce real credentials, absolute paths from a developer machine, or platform-private caches.
 
-## 20. 新功能质量要求
+## 20. Quality Requirements for New Features
 
-新功能必须有清晰边界、类型、错误处理、测试和受影响质量检查。高风险新功能必须有幂等、权限、事务、重试、timeout、日志脱敏和回滚/失败语义审查。
+New features must have clear boundaries, types, error handling, tests, and affected quality checks. High-risk new features must undergo review of idempotency, permissions, transactions, retries, timeouts, log redaction, and rollback/failure semantics.
 
-## 21. Bug 修复质量要求
+## 21. Quality Requirements for Bug Fixes
 
-Bug 修复优先补回归测试，修复必须最小化且针对首个真实根因。不得顺手重构无关模块，不得通过 skip、ignore、宽泛 allowlist 或降低断言掩盖失败。
+Bug fixes should prioritize adding a regression test; the fix must be minimal and target the actual root cause. Do not opportunistically refactor unrelated modules, and do not mask failures via skip, ignore, a broad allowlist, or weakened assertions.
 
-## 22. 高风险模块质量要求
+## 22. Quality Requirements for High-Risk Modules
 
-认证权限、发布、库存、第三方平台、数据库、Redis、队列、worker、scheduler、文件上传、Token、API envelope、shared type、migration 和跨模块重构必须做深度审查，并按 Critical/High/Medium/Advisory 输出发现。
+Authentication and permissions, publishing, inventory, third-party platforms, the database, Redis, queues, workers, schedulers, file uploads, tokens, the API envelope, shared types, migrations, and cross-module refactors must undergo deep review, with findings reported as Critical/High/Medium/Advisory.
 
-## 23. 与 project-testing 的联动
+## 23. Coordination with project-testing
 
-任何代码修改必须根据 `.agents/skills/project-testing/SKILL.md` 选择受影响测试。`quality:affected` 负责质量检查选择，`test:affected` 负责测试选择；两者互补，不能互相替代。
+Any code change must select affected tests per `.agents/skills/project-testing/SKILL.md`. `quality:affected` handles quality-check selection, `test:affected` handles test selection; they complement each other and are not interchangeable.
 
-## 24. 与 frontend-design 的联动
+## 24. Coordination with frontend-design
 
-Admin UI 变更必须同时遵循 `.agents/skills/frontend-design/SKILL.md`。code-quality 负责类型、错误、异步、安全、diff hygiene 和测试质量；UI 视觉、布局、响应式和共享组件细节由 frontend-design 定义。
+Admin UI changes must simultaneously follow `.agents/skills/frontend-design/SKILL.md`. code-quality covers types, errors, async, security, diff hygiene, and test quality; UI visuals, layout, responsiveness, and shared component details are defined by frontend-design.
 
-## 25. 与 admin-e2e-testing 的联动
+## 25. Coordination with admin-e2e-testing
 
-涉及 Admin 页面、交互、写请求、响应式、路由、状态或 E2E 文件时，必须遵循 `.agents/skills/admin-e2e-testing/SKILL.md`。code-quality 不复制完整 E2E 规范，只要求必要浏览器回归和写请求安全不得跳过。
+Any change involving Admin pages, interactions, write requests, responsiveness, routing, state, or E2E files must follow `.agents/skills/admin-e2e-testing/SKILL.md`. code-quality does not duplicate the full E2E standard — it only requires that necessary browser regression and write-request safety are not skipped.
 
-## 26. 模块化边界
+## 26. Modular Boundaries
 
-code-quality 负责发现模块化风险：文件职责过多，页面/API/状态机混在同一文件，handler 承载领域逻辑，repository 决定业务规则，UI 直接依赖低层 API 实现，跨层循环依赖，多处重复 DTO/平台判断/状态映射，公共模块反向依赖业务模块。
+code-quality is responsible for surfacing modularity risks: a file with too many responsibilities; pages/API/state machines mixed into a single file; a handler carrying domain logic; a repository deciding business rules; UI depending directly on low-level API implementation; cross-layer circular dependencies; duplicated DTOs/platform checks/state mapping in multiple places; a shared module depending back on a business module.
 
-当变更涉及新模块、跨模块依赖、shared/common、adapter、worker、repository、migration、公共 API/type 或大型重构时，必须读取 `.agents/skills/modular-architecture/SKILL.md`。模块边界、循环依赖、跨应用依赖和 Architecture Baseline/Ratchet 的完整规则由 modular-architecture 统一定义。
+When a change involves a new module, a cross-module dependency, shared/common code, an adapter, a worker, a repository, a migration, a public API/type, or a large refactor, read `.agents/skills/modular-architecture/SKILL.md`. The complete rules for module boundaries, circular dependencies, cross-app dependencies, and the Architecture Baseline/Ratchet are defined there.
 
-不要仅按行数强制拆分。只有新增业务领域、新增平台适配器、跨三个以上模块、大型组件持续膨胀、循环依赖、共享层职责不清或新增 worker/queue/scheduler 体系时，才建议触发模块化专项审查。小修复不得被迫大规模模块化。
+Do not force a file split based on line count alone. Only recommend triggering a dedicated modularity review when a new business domain is added, a new platform adapter is added, more than three modules are touched, a large component keeps growing, there is a circular dependency, a shared layer's responsibilities are unclear, or a new worker/queue/scheduler system is added. Small fixes must not be forced into large-scale modularization.
 
-## 27. 禁止项
+## 27. Prohibited
 
-禁止真实凭据、生产 DB/Redis、真实平台写接口、SQL/命令注入、路径遍历、权限绕过、敏感日志、无界 retry/队列/并发、空 catch、宽泛 ignore/skip/allowlist、无关重构、重复 CI、自动扩大 baseline、未经用户要求 commit/push。
+Prohibited: real credentials; production DB/Redis; real platform write endpoints; SQL/command injection; path traversal; permission bypass; sensitive data in logs; unbounded retries/queues/concurrency; empty catches; broad ignore/skip/allowlist; unrelated refactors; duplicate CI; auto-expanding the baseline; committing/pushing without the user's request.
 
-## 28. 测试失败或检查失败处理
+## 28. Handling Test or Check Failures
 
-失败时定位首个真实根因，区分生产缺陷、测试缺陷、环境错误、历史 baseline、工具配置错误和 flaky。不得直接绕过，不得自动扩大 baseline。无法运行的检查必须说明命令、阻塞原因和风险；不能声称跳过的检查已通过。
+On failure, locate the actual root cause first, distinguishing between a production defect, a test defect, an environment error, a historical baseline entry, a tool misconfiguration, and flakiness. Do not bypass directly, and do not auto-expand the baseline. Checks that cannot be run must state the command, the blocking reason, and the risk — never claim a skipped check passed.
 
-## 29. 完成报告格式
+## 29. Completion Report Format
 
-最终报告列出：当前分支、开始工作区状态、审计结论、Admin 历史 TypeScript 错误数量、Collector/Go 状态、新增/修改文件、自动触发范围、轻量/深度条件、Critical/High 规则、baseline 路径和规范化方式、baseline 更新命令、新错误阻塞方式、quality scripts、CI 触发、是否新增依赖、是否修改生产代码、实际运行命令结果、跳过原因、Critical/High/Medium/Advisory 发现、diff stat、当前未提交文件、是否存在敏感文件/测试产物、是否适合签收/commit/push。
+The final report must list: current branch; starting workspace state; audit conclusion; count of Admin's historical TypeScript errors; Collector/Go status; new/modified files; automatic trigger scope; lightweight/deep conditions; Critical/High rules; baseline path and normalization method; baseline update command; how new errors are blocked; quality scripts; CI triggers; whether new dependencies were added; whether production code was modified; actual results of commands run; reasons for any skips; Critical/High/Medium/Advisory findings; diff stat; currently uncommitted files; whether sensitive files/test artifacts exist; and whether the work is ready for sign-off/commit/push.

@@ -1,43 +1,43 @@
-# 抖店回滚 Runbook
+# Douyin Shop Rollback Runbook
 
-> 回滚演练由维护者在受控环境人工执行，脱敏结论记录在 PR 或发布工单；不向仓库提交演练报告、截图或日志产物。
+> Rollback drills are performed manually by maintainers in a controlled environment; sanitized conclusions are recorded in the PR or release ticket. Do not commit drill reports, screenshots, or log artifacts to the repository.
 
-## 紧急停用（首选，不删数据）
+## Emergency Disable (Preferred, No Data Deletion)
 
-1. 管理端 → 平台开放配置 → 抖店运行状态 → **紧急停用**
-2. 或 API：`POST /api/v1/platform/douyin/runtime-status/emergency-disable` body `{ "reason": "..." }`
-3. 确认 Worker 不再调用抖店写接口；历史任务/订单可查看
+1. Admin console → Platform Open Configuration → Douyin Shop Runtime Status → **Emergency Disable**
+2. Or via API: `POST /api/v1/platform/douyin/runtime-status/emergency-disable` with body `{ "reason": "..." }`
+3. Confirm workers no longer call Douyin Shop write APIs; historical tasks/orders remain viewable
 
-## 功能开关回滚
+## Feature Flag Rollback
 
-在 `platform_douyin_shop` 设置中关闭：
+Disable the following in the `platform_douyin_shop` settings:
 
 - `real_api_enabled`
 - `order_sync_enabled`
 - `inventory_sync_enabled`
 - `product_publish_enabled`
 
-## 数据库索引回滚（仅索引，不删业务数据）
+## Database Index Rollback (Indexes Only, No Business Data Deletion)
 
 ```sql
 DROP INDEX IF EXISTS ux_orders_shop_platform_ext_order;
 DROP INDEX IF EXISTS ux_order_items_order_ext_item;
 ```
 
-## 运行状态恢复
+## Runtime Status Recovery
 
 ```sql
--- 或通过管理端/API 恢复为 normal
+-- Or restore to normal via the admin console/API
 UPDATE settings SET item_value = 'normal'
 WHERE group_key = 'platform_douyin_shop' AND item_key = 'platform_runtime_status';
 ```
 
-## 重复数据导致迁移失败
+## Migration Failure Due to Duplicate Data
 
-见 [`DOUYIN_DUPLICATE_DATA_REPAIR.md`](DOUYIN_DUPLICATE_DATA_REPAIR.md) — **禁止自动删除**，人工处理后重启迁移。
+See [`DOUYIN_DUPLICATE_DATA_REPAIR.md`](DOUYIN_DUPLICATE_DATA_REPAIR.md) — **do not delete automatically**; restart the migration only after manual remediation.
 
-## 验证回滚
+## Verifying the Rollback
 
-- 新建抖店任务应被阻止或标记 `cancelled`
-- 日志无 Token/Secret 明文
-- 应用可正常启动
+- New Douyin Shop tasks should be blocked or marked `cancelled`
+- No tokens/secrets in plaintext in the logs
+- The application starts normally

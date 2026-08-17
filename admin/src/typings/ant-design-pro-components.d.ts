@@ -1,6 +1,6 @@
 /**
- * @ant-design/pro-card 的 CardProps 未包含 antd Card 的 variant；
- * 业务侧统一写 variant="outlined"，此处补充类型，避免 IDE 报错。
+ * @ant-design/pro-card's CardProps does not include antd Card's variant;
+ * the business code consistently writes variant="outlined", so this supplements the type to avoid IDE errors.
  */
 export {};
 

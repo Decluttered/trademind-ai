@@ -1,19 +1,19 @@
-# 抖店客服消息适配器设计
+# Douyin Shop Customer Messaging Adapter Design
 
-## 当前状态
+## Current Status
 
-**blocked_by_contract_verification** — 抖店 IM 消息接口需通过合同申请后方可使用。
+**blocked_by_contract_verification** — The Douyin Shop IM messaging API requires contract approval before it can be used.
 
-## 已实现内容
+## What's Implemented
 
-- `CustomerCapability` 接口（`douyinshop/customer.go`）
-- `PullMessages` / `SendMessage`：返回 `CodeDouyinContractMismatch`
-- `CustomerMessageEnvelope` DTO（用于 fixture 驱动的解析测试）
-- `ParseCustomerMessageEnvelope`：synthetic 测试用，不适用于真实 API
+- `CustomerCapability` interface (`douyinshop/customer.go`)
+- `PullMessages` / `SendMessage`: return `CodeDouyinContractMismatch`
+- `CustomerMessageEnvelope` DTO (used for fixture-driven parsing tests)
+- `ParseCustomerMessageEnvelope`: for synthetic tests only, not applicable to the real API
 
-## 接口形状（待合同确认）
+## API Shape (Pending Contract Confirmation)
 
-以下字段名为推测，**不可用于真实 API 调用**：
+The following field names are speculative and **must not be used for real API calls**:
 
 ```json
 {
@@ -30,13 +30,13 @@
 }
 ```
 
-## 启用条件
+## Activation Conditions
 
-1. 通过抖店开放平台申请 IM 接口权限
-2. 在 settings `platform_douyin_shop.customer_message_api_enabled = true`
-3. 配置消息拉取/推送接口路径
-4. 移除 `contractMismatchError` 拦截
+1. Apply for IM API access through the Douyin Shop Open Platform
+2. Set `platform_douyin_shop.customer_message_api_enabled = true` in settings
+3. Configure the message pull/push API paths
+4. Remove the `contractMismatchError` guard
 
-## MVP 约束
+## MVP Constraint
 
-客服消息必须人工确认后才能发送，不自动外发（规则来自 `.cursorrules`）。
+Customer messages must be manually confirmed before sending; no automatic outbound messaging (per the rule in `.cursorrules`).

@@ -1,0 +1,2 @@
+import {describe,expect,it} from 'vitest';import{formatEuroCents,parseEuroInput}from'../mindbay';
+describe('MindBay money UI',()=>{it('keeps cents exact',()=>{expect(parseEuroInput('1.234,56')).toBe(123456);expect(parseEuroInput('12,9')).toBe(1290);expect(parseEuroInput('12.999')).toBe(1299900);expect(parseEuroInput('abc')).toBeNull()});it('renders EUR',()=>{expect(formatEuroCents(1299)).toContain('12,99')})});

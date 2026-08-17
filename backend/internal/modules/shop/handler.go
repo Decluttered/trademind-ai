@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	"github.com/trademind-ai/trademind/backend/internal/pkg/adminperm"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/ctxkey"
 	"github.com/trademind-ai/trademind/backend/internal/pkg/response"
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
@@ -747,4 +748,79 @@ func (h *Handler) AmazonOAuthCallback(c *gin.Context) {
 		return
 	}
 	response.OK(c, out)
+}
+
+// EbayOAuthAuthorizeURL GET /api/v1/shops/:id/oauth/ebay/authorize-url
+func (h *Handler) EbayOAuthAuthorizeURL(c *gin.Context) {
+	if h == nil || h.Svc == nil {
+		response.Fail(c, 500, response.CodeInternalError, "shop service unavailable")
+		return
+	}
+	id, err := uuid.Parse(strings.TrimSpace(c.Param("id")))
+	if err != nil {
+		response.Fail(c, 400, response.CodeBadRequest, "invalid id")
+		return
+	}
+	out, err := h.Svc.EbayOAuthAuthorizeURL(c, id)
+	if err != nil {
+		response.Fail(c, 400, response.CodeBadRequest, err.Error())
+		return
+	}
+	response.OK(c, out)
+}
+
+// EbayOAuthCallback POST /api/v1/shops/:id/oauth/ebay/callback
+func (h *Handler) EbayOAuthCallback(c *gin.Context) {
+	if h == nil || h.Svc == nil {
+		response.Fail(c, 500, response.CodeInternalError, "shop service unavailable")
+		return
+	}
+	id, err := uuid.Parse(strings.TrimSpace(c.Param("id")))
+	if err != nil {
+		response.Fail(c, 400, response.CodeBadRequest, "invalid id")
+		return
+	}
+	var body EbayOAuthCallbackBody
+	if c.ShouldBindJSON(&body) != nil {
+		response.Fail(c, 400, response.CodeBadRequest, "invalid json body")
+		return
+	}
+	out, err := h.Svc.EbayOAuthCallback(c, id, body, adminUUID(c))
+	if err != nil {
+		response.Fail(c, 400, response.CodeBadRequest, err.Error())
+		return
+	}
+	response.OK(c, out)
+}
+
+func (h *Handler) ListEbayCategoryAspects(c *gin.Context) {
+	if h == nil || h.Svc == nil {
+		response.Fail(c, 500, response.CodeInternalError, "shop service unavailable")
+		return
+	}
+	if !adminperm.RequirePermission(c, h.Svc.DB, adminperm.PermProductView) {
+		return
+	}
+	rows, err := h.Svc.ListEbayCategoryAspects(c, c.Param("categoryId"))
+	if err != nil {
+		response.Fail(c, 500, response.CodeInternalError, "eBay category aspects unavailable")
+		return
+	}
+	response.OK(c, gin.H{"items": rows})
+}
+
+func (h *Handler) SyncEbayCategoryAspects(c *gin.Context) {
+	if h == nil || h.Svc == nil {
+		response.Fail(c, 500, response.CodeInternalError, "shop service unavailable")
+		return
+	}
+	if !adminperm.RequireWrite(c, h.Svc.DB, adminperm.PermProductWrite) {
+		return
+	}
+	rows, err := h.Svc.SyncEbayCategoryAspects(c, c.Param("categoryId"))
+	if err != nil {
+		response.Fail(c, 400, response.CodeBadRequest, err.Error())
+		return
+	}
+	response.OK(c, gin.H{"items": rows, "synced": len(rows)})
 }

@@ -1,8 +1,8 @@
-/** 与管理端 / Go 兜底列表对齐的采集器元信息与能力标签 */
+/** Collector metadata and capability tags aligned with the admin panel / Go fallback list */
 
 export type ProviderStatus = 'available' | 'beta' | 'planned' | 'disabled';
 
-/** 结构化能力枚举（与服务端入库字段对应，不做解析逻辑变更） */
+/** Structured capability enum (corresponds to server-side DB fields, no parsing logic change) */
 export type CollectFeature = 'title' | 'price' | 'mainImages' | 'descriptionImages' | 'attributes' | 'skus';
 
 export type CollectProviderMeta = {
@@ -15,7 +15,7 @@ export type CollectProviderMeta = {
   notes: string;
 };
 
-/** GET /v1/providers 单行（含 source） */
+/** A single row of GET /v1/providers (includes source) */
 export type CollectProviderPublic = {
   source: string;
 } & CollectProviderMeta;

@@ -188,7 +188,7 @@ export default function CollectTasksPage() {
     const picked =
       fromQs && providers.some((p) => p.source === fromQs && providerAllowsSingleCollect(p.status))
         ? fromQs
-        : providers.find((p) => p.source === '1688' && providerAllowsSingleCollect(p.status))?.source ??
+        : providers.find((p) => p.source === 'amazon.de' && providerAllowsSingleCollect(p.status))?.source ??
           providers.find((p) => providerAllowsSingleCollect(p.status))?.source;
     if (!picked) return;
     form.setFieldsValue({
@@ -215,7 +215,7 @@ export default function CollectTasksPage() {
     providers.forEach((p) => {
       rec[p.source] = { text: `${p.name}` };
     });
-    return Object.keys(rec).length ? rec : { '1688': { text: '1688采集器' } };
+    return Object.keys(rec).length ? rec : { 'amazon.de': { text: 'Amazon.de 采集器' } };
   }, [providers]);
 
   const columns: ProColumns<CollectTaskRow>[] = [
@@ -443,7 +443,7 @@ export default function CollectTasksPage() {
           form={form}
           layout="vertical"
           className="tm-collect-task-form"
-          initialValues={{ source: '1688', url: '' }}
+          initialValues={{ source: 'amazon.de', url: '' }}
           onFinish={async (vals) => {
             const url = vals.url?.trim();
             const src = vals.source?.trim() || '';

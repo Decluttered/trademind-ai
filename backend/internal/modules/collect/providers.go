@@ -29,77 +29,14 @@ var (
 func defaultCollectProvidersFallback() []CollectProviderDTO {
 	return []CollectProviderDTO{
 		{
-			Source:         "1688",
-			Name:           "1688采集器",
-			Description:    "采集 1688 商品详情页，支持标题、主图、详情图、属性、SKU",
-			Status:         "available",
-			BatchSupported: true,
-			URLPatterns:    []string{"https://detail.1688.com/offer/*.html"},
-			Features:       []string{"title", "mainImages", "descriptionImages", "attributes", "skus"},
-			Notes:          "",
-		},
-		{
-			Source:         "pinduoduo",
-			Name:           "拼多多采集器",
-			Description:    "采集拼多多批发商品详情，支持标题、价格、主图、规格等基础字段。",
-			Status:         "available",
-			BatchSupported: true,
-			URLPatterns: []string{
-				"https://pifa.pinduoduo.com/goods/detail/?gid=*",
-				"https://mobile.yangkeduo.com/goods.html?goods_id=*",
-			},
-			Features: []string{"title", "price", "mainImages", "descriptionImages", "attributes", "skus"},
-			Notes:    "批量采集默认限速，建议先少量测试。",
-		},
-		{
-			Source:         "taobao_tmall",
-			Name:           "淘宝/天猫采集器",
-			Description:    "采集淘宝、天猫商品详情，支持标题、价格、主图、详情图、商品参数和商品规格。部分商品可能需要登录或人工确认。",
-			Status:         "available",
-			BatchSupported: true,
-			URLPatterns: []string{
-				"https://item.taobao.com/item.htm?id=*",
-				"https://detail.tmall.com/item.htm?id=*",
-				"https://detail.tmall.hk/item.htm?id=*",
-				"https://world.taobao.com/item/*.htm",
-				"https://chaoshi.tmall.com/item.htm?id=*",
-				"https://ju.taobao.com/item.htm?id=*",
-			},
-			Features: []string{"title", "price", "mainImages", "descriptionImages", "attributes", "skus"},
-			Notes:    "淘宝/天猫批量采集已开放。为保证稳定性，系统会逐条采集商品，建议每批不超过 20 条。",
-		},
-		{
-			Source:         "aliexpress",
-			Name:           "速卖通采集器",
-			Description:    "采集 AliExpress 商品详情页，提取标题、图片、属性、SKU 等信息",
+			Source:         "amazon.de",
+			Name:           "Amazon.de Produkt-Collector",
+			Description:    "Erfasst Produktdaten und ASIN-Snapshots von Amazon.de.",
 			Status:         "beta",
 			BatchSupported: false,
-			URLPatterns: []string{
-				"https://www.aliexpress.com/item/*.html",
-				"https://*.aliexpress.com/item/*.html",
-			},
-			Features: []string{"title", "mainImages", "descriptionImages", "attributes", "skus"},
-			Notes:    "",
-		},
-		{
-			Source:         "shein_temu",
-			Name:           "SHEIN/Temu采集器",
-			Description:    "采集 SHEIN、Temu 等平台商品详情（规划中）。",
-			Status:         "planned",
-			BatchSupported: false,
-			URLPatterns:    []string{"https://www.shein.com/…", "https://www.temu.com/…"},
-			Features:       nil,
-			Notes:          "",
-		},
-		{
-			Source:         "custom",
-			Name:           "自定义链接采集器",
-			Description:    "适合采集没有专用采集器的网站商品页，可采集商品标题、价格、图片、参数等基础信息。",
-			Status:         "beta",
-			BatchSupported: false,
-			URLPatterns:    []string{"https://example.com/product/..."},
-			Features:       []string{"title", "price", "mainImages", "descriptionImages", "attributes"},
-			Notes:          "商品规格、库存、动态价格不保证完整。使用前建议先测试采集规则。已支持的平台请优先使用专用采集器；自定义链接批量采集暂未开放。",
+			URLPatterns:    []string{"https://www.amazon.de/dp/*", "https://www.amazon.de/gp/product/*"},
+			Features:       []string{"title", "price", "mainImages", "attributes"},
+			Notes:          "Nur öffentliche Amazon.de-Produktseiten; Login- und Challenge-Seiten werden abgelehnt.",
 		},
 	}
 }
@@ -108,6 +45,9 @@ func findCollectProvider(list []CollectProviderDTO, source string) *CollectProvi
 	key := strings.ToLower(strings.TrimSpace(source))
 	if key == "" {
 		return nil
+	}
+	if key == "amazon" {
+		key = "amazon.de"
 	}
 	for i := range list {
 		if strings.ToLower(strings.TrimSpace(list[i].Source)) == key {

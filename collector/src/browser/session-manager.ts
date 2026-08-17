@@ -102,7 +102,7 @@ function persistentContextOptions(
 }
 
 /**
- * 同一 Provider 仅维护一个 launchPersistentContext，供登录 / 检测 / 采集共用。
+ * Maintains only one launchPersistentContext per provider, shared by login / detection / collection.
  */
 export class BrowserSessionManager {
   private contexts = new Map<string, BrowserContext>();
@@ -142,7 +142,7 @@ export class BrowserSessionManager {
     return this.loginSessionActive.has(provider);
   }
 
-  /** 获取或创建 Provider 持久化上下文（同一 userDataDir 不并发打开）。 */
+  /** Get or create the provider's persistent context (the same userDataDir is not opened concurrently). */
   async getOrCreateProviderContext(
     provider: string = PROVIDER_1688,
     opts?: { headless?: boolean },
@@ -675,7 +675,7 @@ export class BrowserSessionManager {
   }
 }
 
-/** @deprecated 使用 BrowserSessionManager；保留别名便于渐进迁移。 */
+/** @deprecated use BrowserSessionManager; alias kept for gradual migration. */
 export class BrowserProfile1688 {
   constructor(private readonly sessions = new BrowserSessionManager()) {}
 

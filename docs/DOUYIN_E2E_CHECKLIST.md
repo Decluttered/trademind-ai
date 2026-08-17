@@ -1,313 +1,313 @@
-# 抖店整链路验收清单（E2E Checklist）
+# Douyin Shop Full-Chain Acceptance Checklist (E2E Checklist)
 
-> 用于 **真实抖店凭证 + 公网 Storage** 环境下的人工端到端验收。
-> 自动化回归由 GitHub Actions 在隔离环境执行；真实平台写链路必须获得外部生产审批，不由仓库脚本自动触发。
-> 通用人工签收见 [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md)。验收结论记录在 PR 或发布工单，不向仓库提交测试报告、截图或日志产物。
+> For manual end-to-end acceptance in an environment with **real Douyin Shop credentials + public-facing Storage**.
+> Automated regression runs in GitHub Actions in an isolated environment; real platform write paths must obtain external production approval and are never auto-triggered by repository scripts.
+> For the general manual sign-off process, see [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md). Acceptance conclusions are recorded in the PR or release ticket; do not commit test reports, screenshots, or log artifacts to the repository.
 
 ---
 
-## 1. 验收前准备
+## 1. Pre-Acceptance Preparation
 
-### 1.1 验收边界
+### 1.1 Acceptance Scope
 
-- 无 App Key / Secret、未授权店铺或缺少公网 Storage 时，结论必须记录为 **`blocked_by_real_credentials`** 或 **`blocked_by_environment`**，不得伪造通过。
-- 只读检查可由维护者在受控环境人工执行；任何真实平台写操作必须先取得明确审批。
-- 仓库默认 `L0`。只有发布工单批准的 `L3` 才允许运营任务中心创建 `save_as_platform_draft`；不允许正式发布、上架、库存写入、自动业务重试、无审核执行或多店扩容。
-- 验收结果记录在 PR 或发布工单，不向仓库提交 JSON、Markdown 报告、截图或日志产物。
+- Without an App Key/Secret, an authorized shop, or public-facing Storage, the conclusion must be recorded as **`blocked_by_real_credentials`** or **`blocked_by_environment`** — never fake a pass.
+- Read-only checks may be performed manually by a maintainer in a controlled environment; any real platform write operation requires explicit approval beforehand.
+- The repository defaults to `L0`. Only an `L3` approved via a release ticket allows the Ops Task Center to create `save_as_platform_draft` tasks; formal publishing, listing, inventory writes, automatic business retries, unreviewed execution, and multi-shop scale-out are not allowed.
+- Acceptance results are recorded in the PR or release ticket; do not commit JSON, Markdown reports, screenshots, or log artifacts to the repository.
 
-### 1.2 手工检查项
+### 1.2 Manual Checks
 
-| 项 | 说明 | 如何确认 |
+| Item | Description | How to Confirm |
 | --- | --- | --- |
-| 抖店开放平台 App Key | 在抖店开放平台创建应用后获取 | 设置 → 平台开放配置 → 抖店 |
-| 抖店开放平台 App Secret | 加密存库，前端仅脱敏展示 | 保存后重载仍为 `****` 占位 |
-| 抖店回调地址 Redirect URI | 须与开放平台登记完全一致 | 与 `GET /api/v1/shops/oauth/douyin/callback` 对外 URL 一致 |
-| Service ID | 服务市场自定义授权 URL 必填 | 平台开放配置中已填写 |
-| 已授权抖店店铺 | OAuth 完成且连接测试通过 | 店铺管理 → 授权状态 **已授权** |
-| Storage `public_base` | **必须是抖店可访问的公网 HTTPS 地址** | 设置 → 存储；本地 `/static` 仅开发代理，生产须公网域名 |
-| `order_sync_enabled` | 订单同步开关 | 平台开放配置 → **启用订单同步** = 开 |
-| `inventory_sync_enabled` | 库存同步开关 | 平台开放配置 → **启用库存同步** = 开 |
-| `product_publish_enabled` | 商品草稿创建开关 | 建议开启 |
-| P10 L3 草稿写配置 | Provider/网络/凭据/草稿写/Worker=true，刊登队列和任务回收器=true，自动重试与库存 mutation=false | 后端启动校验通过，`GET /api/v1/p10/status` 与工单一致 |
-| 生产控制范围 | 单租户、单白名单已授权店铺、`maxSku<=100` | allowlist 与 active gray 指向同一店铺 |
-| 双人灰度审批 | 两名不同管理员分别承担 Owner 与 Technical Lead 职责 | 工单身份核验 + gray revision 审计 |
-| 写入 kill switch | provider / tenant / shop / write 默认阻断 | 最终 go/no-go 前保持 active，并完成逐级演练 |
-| 测试商品 | 至少 1 个可编辑草稿 | 含标题、价格 |
-| 有 SKU 的商品 | 至少 1 个规格 | 采集或手工维护 |
-| 主图 + 详情图 | 各至少 1 张 | 发布前检查会通过 |
+| Douyin Shop Open Platform App Key | Obtained after creating an app on the Douyin Shop Open Platform | Settings → Platform Configuration → Douyin Shop |
+| Douyin Shop Open Platform App Secret | Stored encrypted; the frontend only shows a masked value | Still shows `****` placeholder after saving and reloading |
+| Douyin Shop callback Redirect URI | Must exactly match what's registered on the Open Platform | Matches the public URL of `GET /api/v1/shops/oauth/douyin/callback` |
+| Service ID | Required for the Service Marketplace custom authorization URL | Filled in under Platform Configuration |
+| Authorized Douyin Shop | OAuth completed and the connection test passes | Shop Management → authorization status **Authorized** |
+| Storage `public_base` | **Must be a publicly reachable HTTPS URL for Douyin Shop** | Settings → Storage; the local `/static` path is dev-proxy only — production requires a public domain |
+| `order_sync_enabled` | Order sync toggle | Platform Configuration → **Enable Order Sync** = on |
+| `inventory_sync_enabled` | Inventory sync toggle | Platform Configuration → **Enable Inventory Sync** = on |
+| `product_publish_enabled` | Product draft creation toggle | Recommended to enable |
+| P10 L3 draft-write configuration | Provider/network/credentials/draft-write/worker = true; publish queue and task reaper = true; auto-retry and inventory mutation = false | Backend startup validation passes, and `GET /api/v1/p10/status` matches the ticket |
+| Production control scope | Single tenant, single allowlisted authorized shop, `maxSku<=100` | The allowlist and active gray target the same shop |
+| Two-person gray approval | Two different admins hold Owner and Technical Lead roles respectively | Ticket identity verification + gray revision audit |
+| Write kill switch | provider / tenant / shop / write default to blocked | Stays active until the final go/no-go, with staged drills completed |
+| Test product | At least 1 editable draft | Includes title and price |
+| Product with SKUs | At least 1 variant | Collected or manually maintained |
+| Main image + detail images | At least 1 of each | Pre-publish check passes |
 
-**不在本 MVP 验收范围：** 直接上架 `publish_online`、售后/退款、财务结算、多仓 WMS、自动补货、复杂 BI。
-
----
-
-## 2. 验收步骤与预期
-
-每一步均包含：操作入口、预期成功、常见失败、排查位置、失败任务中心、是否可重试。
-
-### 2.1 配置抖店应用
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 设置 → 平台开放配置 → 抖店 / Douyin Shop |
-| **预期成功** | App Key、Redirect URI、环境、超时保存成功；App Secret 脱敏；开关项可保存 |
-| **常见失败** | 必填项缺失；Redirect URI 与开放平台不一致 |
-| **排查位置** | 当前页表单校验；操作日志 `platform.settings.update` |
-| **失败任务中心** | 否 |
-| **可重试** | 是（补全配置后保存） |
-
-### 2.2 测试连接
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 同上页 → **测试连接** |
-| **预期成功** | 提示配置完整性通过（Phase 1 不做商品/订单真实调用） |
-| **常见失败** | App Key/Secret 错误；网络超时 |
-| **排查位置** | 页面 Toast；操作日志 |
-| **失败任务中心** | 否 |
-| **可重试** | 是 |
-
-### 2.3 授权店铺
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 平台开放配置 → **连接店铺**，或 店铺管理 → 抖店 → 授权 |
-| **预期成功** | 跳转抖店 OAuth → 回调后店铺状态 **已授权**；不返回 token 明文 |
-| **常见失败** | 未填 Service ID；回调地址不可达；用户取消授权 |
-| **排查位置** | 店铺管理详情；操作日志 `douyin.auth.*` |
-| **失败任务中心** | 否（授权失败 URL 带 `auth=failed&reason=`） |
-| **可重试** | 是（重新发起授权） |
-
-### 2.4 同步类目
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 平台开放配置 → **同步类目**（需已授权店铺） |
-| **预期成功** | 类目缓存 Alert 显示数量与最近同步时间 |
-| **常见失败** | 未授权店铺；token 过期；权限不足 |
-| **排查位置** | 平台开放配置页类目 Alert；`GET /api/v1/platform/douyin/categories/stats` |
-| **失败任务中心** | 否 |
-| **可重试** | 是（刷新授权后重试） |
-
-### 2.5 同步属性
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 商品详情 → 刊登 Tab → 抖店类目与属性 → **刷新属性** |
-| **预期成功** | 选中叶子类目后可加载必填属性表单 |
-| **常见失败** | 类目未同步；非叶子类目；token 过期 |
-| **排查位置** | 刊登 Tab 属性区 Alert；API `.../categories/:id/attributes/sync` |
-| **失败任务中心** | 否 |
-| **可重试** | 是 |
-
-### 2.6 采集商品（1688 / 拼多多 / 淘宝天猫）
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 采集中心 → 对应采集器 → 单采或批量 |
-| **预期成功** | 任务 success → 生成 `status=draft` 商品草稿 |
-| **常见失败** | 未登录；验证码；链接无效；主图缺失 |
-| **排查位置** | 采集任务页；失败任务中心（采集类） |
-| **失败任务中心** | 是 |
-| **可重试** | 是（单条重试） |
-
-### 2.7 AI 标题优化
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 商品详情 → 基础信息 → AI 优化标题 |
-| **预期成功** | 生成候选标题 → **应用到草稿** 写入 `aiTitle` |
-| **常见失败** | AI Provider 未配置；超时 |
-| **排查位置** | AI 任务页；失败任务中心（ai 类） |
-| **失败任务中心** | 是 |
-| **可重试** | 是 |
-
-### 2.8 AI 描述生成
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 商品详情 → 基础信息 → AI 生成描述 |
-| **预期成功** | 生成描述 → 应用到 `aiDescription` |
-| **常见失败** | 同 AI 标题 |
-| **排查位置** | AI 任务页 |
-| **失败任务中心** | 是 |
-| **可重试** | 是 |
-
-### 2.9 应用定价规则
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 商品详情 → 刊登 Tab → **应用定价规则** |
-| **预期成功** | SKU 销售价更新；操作日志 `pricing.apply` |
-| **常见失败** | 成本价缺失；规则未配置 |
-| **排查位置** | 刊登 Tab SKU 表；设置 → 定价 |
-| **失败任务中心** | 否 |
-| **可重试** | 是 |
-
-### 2.10 补全抖店类目属性
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 刊登 Tab → 选择抖店店铺 + 叶子类目 + 必填属性 → **保存抖店刊登配置** |
-| **预期成功** | 配置保存；发布前检查类目/属性项 passed |
-| **常见失败** | 未选店铺；未选叶子类目；必填属性空 |
-| **排查位置** | 刊登 Tab 发布前检查；`product_platform_publish_configs` |
-| **失败任务中心** | 否 |
-| **可重试** | 是 |
-
-### 2.11 生成抖店刊登草稿
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 刊登 Tab → **生成抖店刊登草稿** |
-| **预期成功** | 预览标题/描述/主图/详情图/SKU/价格/库存；errors 为空才可创建 |
-| **常见失败** | 标题/主图/类目/属性/SKU 价格无效 |
-| **排查位置** | 刊登 Tab 映射 errors/warnings |
-| **失败任务中心** | 否（映射校验不写失败中心） |
-| **可重试** | 是 |
-
-### 2.12 上传图片到抖店
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 刊登 Tab → **上传图片到抖店** / 单张重试 |
-| **预期成功** | 主图/详情图状态 **已上传**，有 `platformImageId` |
-| **常见失败** | 外链未同步 Storage；`public_base` 非公网；主图上传失败；SSRF 拦截内网 URL |
-| **排查位置** | 刊登 Tab 图片状态列；操作日志 `douyin.image.*` |
-| **失败任务中心** | 部分场景（刊登任务关联） |
-| **可重试** | 是（单张/全部重试） |
-
-### 2.13 创建抖店商品草稿
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 商品详情的抖店操作跳转 **运营任务中心** → 创建平台草稿任务 → 核对冻结快照 → 人工审核 → 执行（`save_as_platform_draft`，不上架） |
-| **预期成功** | 创建阶段只冻结商品/映射/请求且不访问平台；批准 exact version/hash 后执行一次；返回 `platformProductId`，刊登任务 success，运营任务 `draft_written`，`product_publications` 与 SKU 映射事务写入 |
-| **常见失败** | L0/kill switch 阻断；白名单或 active gray 不一致；双人审批缺失；未授权；类目/属性/图片/SKU 无效；队列不可用；平台 API 错误或结果未知 |
-| **排查位置** | 运营任务详情的草稿/审核/执行/审计 Tab；刊登任务详情；P10 status；失败中心。旧 `.../create-draft` 固定 409 `DOUYIN_OPERATION_TASK_REQUIRED` |
-| **失败任务中心** | 是 |
-| **可重试** | 仅已知失败且运营任务返回 `retryable=true` 时由运营任务中心人工重试；`result_unknown` 禁止重试/重建，只能人工只读恢复对账 |
-
-**人工恢复验证：** 使用具备 `operationtask.execute` 与店铺操作权限的账号，对下游任务、执行尝试和运营任务三层均为 `result_unknown` 的记录调用刊登任务 `recover-douyin-draft`（或 `douyin/recover` 别名），确认请求只执行 `product.detail`。排队中、执行中、已知失败或普通任务固定 409 `DOUYIN_RECOVERY_NOT_ALLOWED` 且状态不变；找到相同 `outer_product_id` 时两个任务中心收敛成功，未找到时保持不可重试并交人工调查。不得从传统刊登、多目标、批量、单任务重试或批次重试入口重建抖店草稿。
-
-### 2.14 校准 SKU 绑定
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 刊登 Tab → **校准抖店 SKU 绑定** |
-| **预期成功** | `product.detail` 拉取平台 SKU；规格一致自动 `bound` |
-| **常见失败** | 无 platformProductId；权限不足；多候选 `ambiguous`；无匹配 `unmatched` |
-| **排查位置** | 抖店 SKU 绑定管理表；`GET .../douyin/sku-bindings` |
-| **失败任务中心** | 否 |
-| **可重试** | 是（重新校准） |
-
-### 2.15 手动绑定 ambiguous / unmatched SKU
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 刊登 Tab → SKU 绑定表 → **手动绑定** / **解除绑定** |
-| **预期成功** | `bindStatus=bound`，`external_sku_id` 写入；冲突被拦截 |
-| **常见失败** | 同一抖店 SKU 绑定到多个本地规格；平台 SKU ID 缺失 |
-| **排查位置** | SKU 绑定表；操作日志 `douyin.sku.binding.*` |
-| **失败任务中心** | 否 |
-| **可重试** | 是 |
-
-### 2.16 同步订单
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 店铺管理 → 抖店店铺 → **同步订单**；或 订单 → 订单同步任务 |
-| **预期成功** | 任务 success / partial_success；订单写入；SKU 匹配摘要 |
-| **常见失败** | `order_sync_enabled=false`；未授权；token 过期；分页部分失败 |
-| **排查位置** | 订单同步任务页；订单列表；失败任务中心 `DOUYIN_ORDER_*` |
-| **失败任务中心** | 是 |
-| **可重试** | 是 |
-
-### 2.17 本地库存扣减
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 订单同步成功后自动（策略允许时）；订单异常工作台可补扣 |
-| **预期成功** | 匹配成功的明细扣减本地库存；重复同步不重复扣 |
-| **常见失败** | SKU 未匹配；库存不足；扣减策略关闭 |
-| **排查位置** | 订单异常工作台；库存流水；`inventory/effects` |
-| **失败任务中心** | 是（扣减失败类） |
-| **可重试** | 是（异常工作台 **重试扣库存**） |
-
-### 2.18 同步库存到抖店
-
-| 字段 | 内容 |
-| --- | --- |
-| **操作入口** | 商品详情 → 库存 Tab → **同步库存到抖店**；或 库存预警页批量同步 |
-| **预期成功** | 库存同步任务 success；抖店 `sku.syncStock` 成功 |
-| **常见失败** | `inventory_sync_enabled=false`；SKU 未绑定；存在 ambiguous/unmatched；库存无效 |
-| **排查位置** | 库存同步任务页；失败任务中心 `DOUYIN_INVENTORY_*` / `DOUYIN_SKU_*` |
-| **失败任务中心** | 是 |
-| **可重试** | 是 |
+**Not in this MVP acceptance scope:** direct listing (`publish_online`), after-sales/refunds, financial settlement, multi-warehouse WMS, auto-replenishment, complex BI.
 
 ---
 
-## 3. 安全检查（验收必过）
+## 2. Acceptance Steps and Expectations
 
-| # | 检查项 | 预期 | 验证方式 |
+Each step covers: entry point, expected success, common failures, where to investigate, whether it appears in the Failed Task Center, and whether it's retryable.
+
+### 2.1 Configure the Douyin Shop App
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Settings → Platform Configuration → Douyin Shop |
+| **Expected success** | App Key, Redirect URI, environment, and timeout save successfully; App Secret is masked; toggles can be saved |
+| **Common failures** | Required fields missing; Redirect URI doesn't match the Open Platform |
+| **Where to investigate** | Form validation on the current page; operation log `platform.settings.update` |
+| **Failed Task Center** | No |
+| **Retryable** | Yes (save again after completing the config) |
+
+### 2.2 Test Connection
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Same page → **Test Connection** |
+| **Expected success** | Confirms configuration completeness (Phase 1 does not make real product/order calls) |
+| **Common failures** | Incorrect App Key/Secret; network timeout |
+| **Where to investigate** | Page toast; operation log |
+| **Failed Task Center** | No |
+| **Retryable** | Yes |
+
+### 2.3 Authorize a Shop
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Platform Configuration → **Connect Shop**, or Shop Management → Douyin Shop → Authorize |
+| **Expected success** | Redirects to Douyin Shop OAuth → after the callback, shop status is **Authorized**; no plaintext token is returned |
+| **Common failures** | Service ID not filled in; callback URL unreachable; user cancels authorization |
+| **Where to investigate** | Shop Management details; operation log `douyin.auth.*` |
+| **Failed Task Center** | No (failed authorization URL carries `auth=failed&reason=`) |
+| **Retryable** | Yes (restart authorization) |
+
+### 2.4 Sync Categories
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Platform Configuration → **Sync Categories** (requires an authorized shop) |
+| **Expected success** | Category cache alert shows count and last sync time |
+| **Common failures** | Shop not authorized; token expired; insufficient permissions |
+| **Where to investigate** | Category alert on Platform Configuration page; `GET /api/v1/platform/douyin/categories/stats` |
+| **Failed Task Center** | No |
+| **Retryable** | Yes (retry after refreshing authorization) |
+
+### 2.5 Sync Attributes
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Product Details → Publish tab → Douyin Shop category & attributes → **Refresh Attributes** |
+| **Expected success** | After selecting a leaf category, the required attribute form loads |
+| **Common failures** | Categories not synced; not a leaf category; token expired |
+| **Where to investigate** | Attribute section alert on the Publish tab; API `.../categories/:id/attributes/sync` |
+| **Failed Task Center** | No |
+| **Retryable** | Yes |
+
+### 2.6 Collect Products (1688 / Pinduoduo / Taobao / Tmall)
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Collection Center → corresponding collector → single or batch collection |
+| **Expected success** | Task succeeds → generates a `status=draft` product draft |
+| **Common failures** | Not logged in; CAPTCHA; invalid link; missing main image |
+| **Where to investigate** | Collection task page; Failed Task Center (collection category) |
+| **Failed Task Center** | Yes |
+| **Retryable** | Yes (retry individual item) |
+
+### 2.7 AI Title Optimization
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Product Details → Basic Info → AI Optimize Title |
+| **Expected success** | Generates candidate titles → **Apply to Draft** writes `aiTitle` |
+| **Common failures** | AI provider not configured; timeout |
+| **Where to investigate** | AI task page; Failed Task Center (AI category) |
+| **Failed Task Center** | Yes |
+| **Retryable** | Yes |
+
+### 2.8 AI Description Generation
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Product Details → Basic Info → AI Generate Description |
+| **Expected success** | Generates a description → applied to `aiDescription` |
+| **Common failures** | Same as AI Title |
+| **Where to investigate** | AI task page |
+| **Failed Task Center** | Yes |
+| **Retryable** | Yes |
+
+### 2.9 Apply Pricing Rule
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Product Details → Publish tab → **Apply Pricing Rule** |
+| **Expected success** | SKU selling price updated; operation log `pricing.apply` |
+| **Common failures** | Cost price missing; rule not configured |
+| **Where to investigate** | SKU table on Publish tab; Settings → Pricing |
+| **Failed Task Center** | No |
+| **Retryable** | Yes |
+
+### 2.10 Complete Douyin Shop Category Attributes
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Publish tab → select Douyin Shop + leaf category + required attributes → **Save Douyin Shop Publish Config** |
+| **Expected success** | Config saved; pre-publish check for category/attribute items passes |
+| **Common failures** | Shop not selected; leaf category not selected; required attribute left empty |
+| **Where to investigate** | Pre-publish check on Publish tab; `product_platform_publish_configs` |
+| **Failed Task Center** | No |
+| **Retryable** | Yes |
+
+### 2.11 Generate Douyin Shop Publish Draft
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Publish tab → **Generate Douyin Shop Publish Draft** |
+| **Expected success** | Preview of title/description/main image/detail images/SKU/price/inventory; can be created only when errors is empty |
+| **Common failures** | Invalid title/main image/category/attributes/SKU price |
+| **Where to investigate** | Mapping errors/warnings on the Publish tab |
+| **Failed Task Center** | No (mapping validation is not written to the failure center) |
+| **Retryable** | Yes |
+
+### 2.12 Upload Images to Douyin Shop
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Publish tab → **Upload Images to Douyin Shop** / retry single image |
+| **Expected success** | Main/detail image status becomes **Uploaded**, with a `platformImageId` |
+| **Common failures** | External link not synced to Storage; `public_base` not public; main image upload failure; SSRF check blocks a private-network URL |
+| **Where to investigate** | Image status column on the Publish tab; operation log `douyin.image.*` |
+| **Failed Task Center** | In some scenarios (associated with a publish task) |
+| **Retryable** | Yes (retry single image / all) |
+
+### 2.13 Create a Douyin Shop Product Draft
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | From Product Details, the Douyin Shop action navigates to the **Ops Task Center** → create a platform draft task → verify the frozen snapshot → manual review → execute (`save_as_platform_draft`, not listed) |
+| **Expected success** | The creation stage only freezes the product/mapping/request and does not call the platform; after approving the exact version/hash it executes once; returns `platformProductId`, the publish task succeeds, the ops task reaches `draft_written`, and `product_publications` plus the SKU mapping are written transactionally |
+| **Common failures** | Blocked by L0/kill switch; allowlist or active gray mismatch; missing two-person approval; not authorized; invalid category/attributes/images/SKU; queue unavailable; platform API error or unknown result |
+| **Where to investigate** | Draft/Review/Execution/Audit tabs on the ops task detail page; publish task detail; P10 status; Failure Center. The legacy `.../create-draft` always returns 409 `DOUYIN_OPERATION_TASK_REQUIRED` |
+| **Failed Task Center** | Yes |
+| **Retryable** | Only for known failures where the ops task returns `retryable=true`, and only via manual retry from the Ops Task Center; `result_unknown` may never be retried or recreated — only manual, read-only recovery reconciliation is allowed |
+
+**Manual recovery verification:** using an account with `operationtask.execute` and shop operation permissions, call the publish task `recover-douyin-draft` (or the `douyin/recover` alias) for records where the downstream task, execution attempt, and ops task are all `result_unknown`, confirming the request only performs `product.detail`. Queued, executing, known-failed, or ordinary tasks always return 409 `DOUYIN_RECOVERY_NOT_ALLOWED` with no state change; when the same `outer_product_id` is found, both task centers converge to success, and when not found, the task remains non-retryable and is handed to manual investigation. Douyin Shop drafts must never be recreated from the legacy publish, multi-target, batch, single-task-retry, or batch-retry entry points.
+
+### 2.14 Calibrate SKU Bindings
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Publish tab → **Calibrate Douyin Shop SKU Bindings** |
+| **Expected success** | Pulls the platform SKUs via `product.detail`; matching variants auto-bind as `bound` |
+| **Common failures** | No `platformProductId`; insufficient permissions; multiple candidates → `ambiguous`; no match → `unmatched` |
+| **Where to investigate** | Douyin Shop SKU binding management table; `GET .../douyin/sku-bindings` |
+| **Failed Task Center** | No |
+| **Retryable** | Yes (recalibrate) |
+
+### 2.15 Manually Bind Ambiguous / Unmatched SKUs
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Publish tab → SKU Binding table → **Manual Bind** / **Unbind** |
+| **Expected success** | `bindStatus=bound`, `external_sku_id` is written; conflicts are blocked |
+| **Common failures** | The same Douyin Shop SKU bound to multiple local variants; platform SKU ID missing |
+| **Where to investigate** | SKU binding table; operation log `douyin.sku.binding.*` |
+| **Failed Task Center** | No |
+| **Retryable** | Yes |
+
+### 2.16 Sync Orders
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Shop Management → Douyin Shop → **Sync Orders**; or Orders → Order Sync Tasks |
+| **Expected success** | Task succeeds / partial_success; orders written; SKU match summary |
+| **Common failures** | `order_sync_enabled=false`; not authorized; token expired; partial pagination failure |
+| **Where to investigate** | Order sync task page; order list; Failed Task Center `DOUYIN_ORDER_*` |
+| **Failed Task Center** | Yes |
+| **Retryable** | Yes |
+
+### 2.17 Local Inventory Deduction
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Automatic after a successful order sync (when the policy allows it); can also be manually deducted from the Order Exceptions Workbench |
+| **Expected success** | Matched line items deduct local inventory; repeated syncs don't double-deduct |
+| **Common failures** | SKU not matched; insufficient inventory; deduction policy disabled |
+| **Where to investigate** | Order Exceptions Workbench; inventory ledger; `inventory/effects` |
+| **Failed Task Center** | Yes (deduction failure category) |
+| **Retryable** | Yes (**Retry Inventory Deduction** in the Exceptions Workbench) |
+
+### 2.18 Sync Inventory to Douyin Shop
+
+| Field | Content |
+| --- | --- |
+| **Entry point** | Product Details → Inventory tab → **Sync Inventory to Douyin Shop**; or batch sync from the Inventory Alerts page |
+| **Expected success** | Inventory sync task succeeds; Douyin Shop `sku.syncStock` succeeds |
+| **Common failures** | `inventory_sync_enabled=false`; SKU not bound; ambiguous/unmatched entries exist; invalid inventory |
+| **Where to investigate** | Inventory sync task page; Failed Task Center `DOUYIN_INVENTORY_*` / `DOUYIN_SKU_*` |
+| **Failed Task Center** | Yes |
+| **Retryable** | Yes |
+
+---
+
+## 3. Security Checks (Must Pass for Acceptance)
+
+| # | Check | Expected | Verification Method |
 | --- | --- | --- | --- |
-| 1 | App Secret 不返回前端明文 | API `GET platform/settings/douyin_shop` 值为 `****` | 浏览器 Network |
-| 2 | accessToken 不返回前端明文 | 店铺详情 `auth.accessToken` 脱敏 | 店铺管理 Network |
-| 3 | refreshToken 不返回前端明文 | 同上 | 同上 |
-| 4 | 日志不打印 token / secret | 后端日志无完整密钥 | 检索 `access_token` / `app_secret` |
-| 5 | 订单收货信息脱敏 | 买家姓名/电话/地址部分掩码 | 订单详情 UI |
-| 6 | raw error 脱敏 | `SanitizeErrorText` 掩码 token | 失败任务详情 |
-| 7 | 图片下载禁止内网地址 | 内网 URL 报 `private network` | 抖店图片上传前校验 |
-| 8 | 前端不直连抖店 API | 无抖店域名请求 | 浏览器 Network |
-| 9 | 抖店调用走后端 Client | 全部经 `/api/v1/*` | 代码审查 `douyinshop.Client` |
-| 10 | 抖店草稿写只有运营任务入口 | 旧直接创建固定 409；传统/多目标/批量/重试入口零写 | Browser Network + DB 前后计数 |
-| 11 | 冻结与审批绑定 | Worker 平台访问前校验 exact task/draft/approval/attempt/downstream/hash | 审计时间线 + 篡改负例 |
-| 12 | 未知结果不自动重建 | `result_unknown` 为不可重试，仅人工只读对账 | 刊登任务、运营任务与平台草稿箱 |
-| 13 | 运行时控制优先 | provider/tenant/shop/write 任一 kill switch 阻断平台调用 | 逐级 kill switch 演练 |
+| 1 | App Secret is not returned in plaintext to the frontend | API `GET platform/settings/douyin_shop` value is `****` | Browser Network tab |
+| 2 | accessToken is not returned in plaintext to the frontend | `auth.accessToken` masked in shop details | Shop Management Network tab |
+| 3 | refreshToken is not returned in plaintext to the frontend | Same as above | Same as above |
+| 4 | Logs do not print tokens / secrets | No complete secrets in backend logs | Search for `access_token` / `app_secret` |
+| 5 | Order shipping info is masked | Buyer name/phone/address partially masked | Order detail UI |
+| 6 | Raw error text is masked | `SanitizeErrorText` masks tokens | Failed task detail |
+| 7 | Image download blocks private-network addresses | Private-network URL returns `private network` error | Pre-check before Douyin Shop image upload |
+| 8 | Frontend never calls the Douyin Shop API directly | No requests to Douyin Shop domains | Browser Network tab |
+| 9 | Douyin Shop calls go through the backend client | All go through `/api/v1/*` | Code review of `douyinshop.Client` |
+| 10 | Douyin Shop draft writes only via the Ops Task Center | Legacy direct-create always returns 409; legacy/multi-target/batch/retry entry points make zero writes | Browser Network + before/after DB counts |
+| 11 | Freeze is bound to approval | Worker validates the exact task/draft/approval/attempt/downstream/hash before accessing the platform | Audit timeline + tamper negative test |
+| 12 | Unknown results are never auto-recreated | `result_unknown` is non-retryable; only manual, read-only reconciliation is allowed | Publish task, ops task, and platform draft box |
+| 13 | Runtime controls take priority | Any of provider/tenant/shop/write kill switches blocks platform calls | Staged kill-switch drills |
 
 ---
 
-## 4. 风险清单（MVP Demo Release）
+## 4. Risk List (MVP Demo Release)
 
-| 级别 | 风险 | 影响 | 缓解 |
+| Level | Risk | Impact | Mitigation |
 | --- | --- | --- | --- |
-| P0 | 无真实抖店凭证未完成 E2E | 无法证明线上字段对齐 | 使用真实 App + 测试店跑本清单 |
-| P0 | `public_base` 非公网 | 图片上传/抖店拉取失败 | 生产配置 HTTPS 公网前缀 |
-| P0 | `product.addV2` / `product.detail` 字段与线上一致性 | 创建草稿或 SKU 绑定失败 | 真实环境校准 payload，记录 requestId |
-| P0 | 平台成功与本地提交/回写之间进程中断 | 两个任务中心状态暂时分裂 | 事务 outbox + 任务租约/reaper + 人工只读对账，不自动重建 |
-| P1 | `order.searchList` 分页/时间字段差异 | 漏单或 partial_success | 对照官方文档与 `pageErrors` |
-| P1 | `sku.syncStock` 参数差异 | 库存同步失败 | 失败任务中心重试 + 日志 |
-| P1 | SKU 自动匹配 ambiguous 率高 | 需人工绑定才能同步库存 | 刊登 Tab 手动绑定流程 |
-| P2 | 定时订单/库存轮询默认关闭 | 需手动触发同步 | 文档说明，不默认开启 |
-| — | 直接上架 | 绕过审核风险 | **MVP 不做**，仅平台草稿 |
-| — | 售后/财务/多仓 | 范围蔓延 | 明确不在本 Release |
+| P0 | E2E not completed without real Douyin Shop credentials | Cannot prove field alignment with production | Run this checklist with a real app + test shop |
+| P0 | `public_base` not public-facing | Image upload / Douyin Shop fetch fails | Configure a public HTTPS prefix in production |
+| P0 | `product.addV2` / `product.detail` field consistency with production | Draft creation or SKU binding failure | Calibrate the payload in a real environment; log the requestId |
+| P0 | Process interruption between platform success and local commit/write-back | The two task centers' states may temporarily diverge | Transactional outbox + task lease/reaper + manual read-only reconciliation, never auto-recreate |
+| P1 | `order.searchList` pagination/time field differences | Missed orders or partial_success | Cross-check against the official docs and `pageErrors` |
+| P1 | `sku.syncStock` parameter differences | Inventory sync failure | Retry via Failed Task Center + logs |
+| P1 | High rate of ambiguous auto-matched SKUs | Requires manual binding before inventory can sync | Manual binding flow on the Publish tab |
+| P2 | Scheduled order/inventory polling is disabled by default | Sync must be triggered manually | Documented behavior; not enabled by default |
+| — | Direct listing | Bypasses review | **Not in MVP** — platform draft only |
+| — | After-sales / finance / multi-warehouse | Scope creep | Explicitly out of scope for this release |
 
 ---
 
-## 5. 人工签收
+## 5. Manual Sign-off
 
-**签收前检查：**
+**Pre-sign-off checks:**
 
-- [ ] 本清单 2.1–2.18 全部通过或已知问题记入 PROGRESS 遗留
-- [ ] GitHub Actions 中 backend、contract、Admin build 与 Admin E2E 等受影响工作流通过
-- [ ] PostgreSQL migration/唯一约束与 Redis queue/outbox/reaper 回归在隔离 CI service container 通过
-- [ ] 生产预检、只读检查和受控写链路均由维护者在授权环境人工执行
-- [ ] 备份、隔离恢复、应用回滚、四级写 kill switch 与灰度暂停/停止演练已在发布工单记录
-- [ ] 两名不同管理员分别承担 Owner/Technical Lead 审批职责，且单租户/单店/最多 100 SKU 范围与工单一致
-- [ ] 默认 L0 配置未被提交；目标环境 L3 只允许平台草稿写，自动重试和库存 mutation 保持关闭
-- [ ] 脱敏结论已记录在 PR 或发布工单，未向仓库提交 JSON、Markdown 报告、截图或日志
-- [ ] `git diff --check` 无冲突标记
-- [ ] `PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md` 中相关流程已人工签收
-- [ ] `docs/PROGRESS.md` 已更新阶段状态
+- [ ] All of sections 2.1–2.18 in this checklist pass, or known issues are logged in PROGRESS as carryover items
+- [ ] Affected GitHub Actions workflows — backend, contract, Admin build, and Admin E2E — pass
+- [ ] PostgreSQL migration/unique constraint and Redis queue/outbox/reaper regressions pass in an isolated CI service container
+- [ ] Production pre-checks, read-only checks, and controlled write paths are all performed manually by a maintainer in an authorized environment
+- [ ] Backup, isolated recovery, application rollback, the four-tier write kill switch, and gray pause/stop drills are recorded in the release ticket
+- [ ] Two different admins hold the Owner/Technical Lead approval roles respectively, and the single-tenant/single-shop/max-100-SKU scope matches the ticket
+- [ ] The default L0 configuration has not been committed; the target environment's L3 allows only platform draft writes, with auto-retry and inventory mutation kept off
+- [ ] Masking conclusions are recorded in the PR or release ticket; no JSON, Markdown reports, screenshots, or logs are committed to the repository
+- [ ] `git diff --check` shows no conflict markers
+- [ ] The relevant process in `PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md` has been manually signed off
+- [ ] `docs/PROGRESS.md` has been updated with the phase status
 
-在 CI、真实凭据、备份恢复、灰度、回滚、人工验收和发布工单全部签收前，结论只能是“代码具备受控生产执行候选能力”，不得记录为“已上线”。
+Until CI, real credentials, backup/recovery, gray rollout, rollback, manual acceptance, and the release ticket are all signed off, the conclusion may only be "the code is a candidate capable of controlled production execution" — never recorded as "live in production."
 
 ---
 
-## 6. 相关文档
+## 6. Related Documents
 
-- [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md) — 当前人工验收清单
-- [`DOUYIN_E2E_PRECHECK_GUIDE.md`](DOUYIN_E2E_PRECHECK_GUIDE.md) — 人工验收前置检查
-- [`DOUYIN_PRODUCTION_RUNBOOK.md`](DOUYIN_PRODUCTION_RUNBOOK.md) — 生产操作与灰度观察
-- [`docs/PROGRESS.md`](PROGRESS.md) — 阶段进度与遗留
-- [`docs/api.md`](api.md) — API 契约（含抖店可观测性）
-- [`docs/provider.md`](provider.md) — Platform Provider 说明
+- [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md) — current manual acceptance checklist
+- [`DOUYIN_E2E_PRECHECK_GUIDE.md`](DOUYIN_E2E_PRECHECK_GUIDE.md) — pre-checks before manual acceptance
+- [`DOUYIN_PRODUCTION_RUNBOOK.md`](DOUYIN_PRODUCTION_RUNBOOK.md) — production operations and gray-rollout observation
+- [`docs/PROGRESS.md`](PROGRESS.md) — phase progress and carryover items
+- [`docs/api.md`](api.md) — API contract (including Douyin Shop observability)
+- [`docs/provider.md`](provider.md) — Platform Provider notes

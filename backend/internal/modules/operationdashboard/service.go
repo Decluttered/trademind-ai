@@ -251,7 +251,7 @@ func (s *Service) GetProductOperationDashboard(ctx context.Context, q Query, sc 
 	collectedTx := s.productTimeScope(ctx, q).
 		Where("products.status <> ?", product.StatusArchived).
 		Where(`(TRIM(COALESCE(products.source_url,'')) <> '' OR products.source IN ?)`,
-			[]string{"1688", "pinduoduo", "pdd", "taobao", "custom", "aliexpress"})
+			[]string{"amazon.de", "amazon"})
 	_ = collectedTx.Count(&sum.CollectedProducts).Error
 
 	// AI title / description completed

@@ -1,21 +1,21 @@
 ---
 name: api-contract-testing
-description: TradeMind API 契约、前后端 DTO、Admin Mock、response envelope 和关键 endpoint 漂移检测规范
+description: TradeMind API contract, frontend/backend DTO, Admin mocks, response envelope, and drift-detection rules for key endpoints
 ---
 
-# TradeMind API 契约测试规范
+# TradeMind API Contract Testing Standard
 
-## 自动适用
+## Automatic Scope
 
-涉及 API URL、HTTP method、query、payload、DTO、response envelope、错误结构、前端 service/types、后端 handler/DTO、Admin E2E mock 时自动适用。
+Automatically applies to work involving API URLs, HTTP methods, query params, payloads, DTOs, response envelopes, error structures, frontend service/types, backend handler/DTOs, or Admin E2E mocks.
 
-## 当前仓库状态
+## Current Repo State
 
-当前没有完整 OpenAPI/Swagger 文件。不要强行一次补齐全项目 OpenAPI；先用关键 endpoint 契约清单、共享 fixtures 和后端/前端测试共同校验。
+There is currently no complete OpenAPI/Swagger file. Do not try to force a full-project OpenAPI spec in one go; for now, cross-check using the key-endpoint contract list, shared fixtures, and backend/frontend tests together.
 
-## 契约范围
+## Contract Scope
 
-至少覆盖：
+Covers at least:
 
 - `GET /api/v1/auth/profile`
 - `GET /api/v1/image/providers`
@@ -27,21 +27,21 @@ description: TradeMind API 契约、前后端 DTO、Admin Mock、response envelo
 - `POST /api/v1/products/:id/platform-configs/douyin_shop/create-draft`
 - `POST /api/v1/products/:id/publish`
 
-## 必须验证
+## Must Verify
 
-- method、URL、path params、query、request body。
-- success envelope：`{ code, message, data, traceId? }`。
-- error envelope：`code !== 0`、message、data/null、traceId。
-- data shape、pagination、nullable、enum、业务错误 code/message。
-- Admin E2E mock 与真实后端 route 的 method/data/envelope 一致。
+- Method, URL, path params, query, request body.
+- Success envelope: `{ code, message, data, traceId? }`.
+- Error envelope: `code !== 0`, message, data/null, traceId.
+- Data shape, pagination, nullability, enums, and business error codes/messages.
+- That Admin E2E mocks match the real backend route's method/data/envelope.
 
-## 实施方式
+## Implementation Approach
 
-- 契约清单位于 `tests/contracts/**`。
-- 前端 unit 测试验证 service 对契约的 URL/payload/envelope 处理。
-- Go 测试验证 handler/DTO/envelope 或至少验证 route 表/关键 shape。
-- Admin Playwright `@contract` 继续验证浏览器 Mock 消费契约。
+- The contract list lives under `tests/contracts/**`.
+- Frontend unit tests verify that the service layer handles the contract's URL/payload/envelope correctly.
+- Go tests verify handlers/DTOs/envelopes, or at minimum the route table and key shapes.
+- Admin Playwright `@contract` tests continue to verify that browser mocks consume the contract correctly.
 
-## 禁止项
+## Prohibited
 
-不得把“前端 Mock 可运行”视为真实后端契约正确。不得只验证 HTTP 200。不得手工复制大量易漂移 schema；无法共享 runtime schema 时只固定关键 endpoint fixtures。
+Do not treat "the frontend mock runs" as proof that the real backend contract is correct. Do not verify only HTTP 200. Do not manually duplicate large, drift-prone schemas; when a shared runtime schema isn't available, pin fixtures for key endpoints only.

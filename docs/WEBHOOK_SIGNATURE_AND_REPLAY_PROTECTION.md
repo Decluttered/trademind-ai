@@ -1,7 +1,7 @@
 # Webhook Signature and Replay Protection (P2.2)
 
 > Authenticity and replay controls for `POST /api/v1/webhooks/:platform/:eventType`.  
-> **非 Production Ready**. Production must not bypass signature verification.
+> **Not Production Ready**. Production must not bypass signature verification.
 
 ## SignatureVerifier
 

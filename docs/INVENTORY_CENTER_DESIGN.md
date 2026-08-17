@@ -1,48 +1,48 @@
-# 库存中心设计（Phase F3）
+# Inventory Center Design (Phase F3)
 
-## 路由
+## Routes
 
-| 路径 | 说明 |
+| Path | Description |
 | --- | --- |
-| `/inventory` | 库存中心主入口（SKU 维度汇总） |
-| `/inventory/alerts` | 库存预警 |
-| `/inventory/deductions` | 库存扣减记录（原 `/inventory/effects` 重定向至此） |
-| `/inventory/sync-tasks` | 平台库存同步任务 |
-| `/inventory/sync-batches` | 同步批次 |
-| `/inventory/logs` | 本地库存流水 |
+| `/inventory` | Inventory Center main entry (SKU-level summary) |
+| `/inventory/alerts` | Inventory alerts |
+| `/inventory/deductions` | Inventory deduction records (the former `/inventory/effects` redirects here) |
+| `/inventory/sync-tasks` | Platform inventory sync tasks |
+| `/inventory/sync-batches` | Sync batches |
+| `/inventory/logs` | Local inventory transaction log |
 
 ## API
 
-- `GET /api/v1/inventory` — 库存中心列表（keyword / stockStatus / skuBindStatus / syncStatus / hasException 等）
-- `GET /api/v1/inventory/alerts` — 预警列表
-- `GET /api/v1/inventory/effects` — 扣减/回滚影响记录
-- `GET /api/v1/inventory-sync/tasks` — 同步任务
+- `GET /api/v1/inventory` — Inventory Center list (keyword / stockStatus / skuBindStatus / syncStatus / hasException, etc.)
+- `GET /api/v1/inventory/alerts` — Alert list
+- `GET /api/v1/inventory/effects` — Deduction/rollback effect records
+- `GET /api/v1/inventory-sync/tasks` — Sync tasks
 
-## 字段
+## Fields
 
-库存中心每行对应一个 **本地 product_sku**，展示：
+Each row in the Inventory Center corresponds to one **local product_sku**, showing:
 
-- 本地库存 / 可用库存（MVP 等同）
-- 预警阈值、库存状态
-- SKU 绑定状态（bound / unbound / ambiguous / none）
-- 平台同步状态摘要
-- 最近扣减、最近同步、异常数量
+- Local stock / available stock (equivalent in the MVP)
+- Alert threshold, stock status
+- SKU binding status (bound / unbound / ambiguous / none)
+- Platform sync status summary
+- Most recent deduction, most recent sync, exception count
 
-## 原则
+## Principles
 
-- 不自动同步平台库存
-- 不自动补货、不创建采购单
-- 技术字段默认折叠（详情 Drawer / 技术详情 Tab）
-- 状态全部中文化
+- Platform inventory is not synced automatically
+- No automatic restocking, no automatic purchase order creation
+- Technical fields are collapsed by default (detail drawer / Technical Details tab)
+- All statuses are localized (Chinese-facing UI text)
 
-## 深链
+## Deep Links
 
-- 订单详情 `?tab=inventory` → 库存影响 Tab
-- `/inventory?skuId=:skuId` → 定位 SKU
-- `/inventory/deductions?orderId=:orderId` → 订单扣减记录
-- `/inventory/sync-tasks?productSkuId=:skuId&id=:taskId` → 同步任务
+- Order detail `?tab=inventory` → Inventory Impact tab
+- `/inventory?skuId=:skuId` → locate a SKU
+- `/inventory/deductions?orderId=:orderId` → order deduction records
+- `/inventory/sync-tasks?productSkuId=:skuId&id=:taskId` → sync task
 
-## 权限（F3 轻量 RBAC）
+## Permissions (F3 Lightweight RBAC)
 
-- `admin` / `operator`：可查看与写操作
-- `readonly`：仅查看；后端拒绝 adjust-stock / sync / retry
+- `admin` / `operator`: can view and perform write operations
+- `readonly`: view only; the backend rejects adjust-stock / sync / retry

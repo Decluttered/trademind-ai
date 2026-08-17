@@ -88,7 +88,7 @@ const WORKFLOW = [
   },
 ] as const;
 
-const PLATFORM_LABELS = ["1688", "Douyin Shop", "Shopee", "Lazada"] as const;
+const PLATFORM_LABELS = ["Amazon.de", "eBay.de"] as const;
 
 function revealDelay(index: number): CSSProperties {
   return { "--landing-reveal-delay": `${index * 70}ms` } as CSSProperties;

@@ -56,6 +56,10 @@ handler → service → repository/model
 - Provider 内部可以封装 SDK 或 HTTP Client。
 - Provider 必须设置超时。
 - Provider 错误必须包装上下文。
+- 平台方法必须对照官方文档实现；方法上方注释官方名称、版本、HTTP method、path。无法核对则停下来询问。
+- eBay 写操作只通过 `providers/platform/ebay`；领域所有者是 `modules/publication`。不要在 `productpublish` 里执行 eBay。
+- 金额用固定最小货币单位（int64 cents）存储，只在 Provider 边界转换成平台小数。
+- Provider 测试用录制 fixtures，禁止依赖真实平台凭据才能通过。
 
 ## API 返回格式
 

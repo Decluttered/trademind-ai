@@ -1,4 +1,4 @@
-/** AI 商品运营工作台待办类型（用户可见中文见 typeLabel） */
+/** AI product operations workbench todo types (user-visible Chinese text is in typeLabel) */
 export const WORKBENCH_TODO_TYPES = [
   { value: 'ai_text_review', label: 'AI 文案待复核' },
   { value: 'ai_text_conflict', label: 'AI 文案内容冲突' },

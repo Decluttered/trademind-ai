@@ -1,6 +1,6 @@
 import { ProCard } from '@ant-design/pro-components';
 import { TmPageContainer } from '@/components/ui';
-import { PAGE_COPY } from '@/constants/copywriting';
+import { useLocale } from '@/locale';
 import { formatDateTime } from '@/utils/formatTime';
 import { history, useLocation } from '@umijs/max';
 import {
@@ -99,12 +99,7 @@ const FIELDS: Record<string, FieldSpec> = {
 };
 
 const PROVIDER_CARD_DESC: Record<CollectSettingsProviderKey, string> = {
-  '1688': '登录态检测与批量采集节流',
-  aliexpress: 'Beta 单条采集与重试策略',
-  pinduoduo: '拼多多登录态、访问检测与批量限速',
-  taobao_tmall: '淘宝/天猫登录态、单品与批量采集限速',
-  shein_temu: '暂未开放，预留配置入口',
-  custom: '登录状态、采集规则与页面访问检测',
+  'amazon.de': 'Amazon.de 商品页采集、ASIN 快照与访问检测',
 };
 
 type AuthDisplayStatus = 'unchecked' | 'checking' | Provider1688AuthStatusValue;
@@ -743,6 +738,7 @@ function CollectorPlannedSection({ providerLabel }: { providerLabel: string }) {
 }
 
 export default function CollectorSettingsPage() {
+  const { t } = useLocale();
   const location = useLocation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -762,7 +758,7 @@ export default function CollectorSettingsPage() {
   const providerKey = useMemo(
     () => {
       const selected = resolveCollectSettingsProvider(new URLSearchParams(location.search || '').get('provider'));
-      return isProductionBuild && findCollectSettingsOption(selected).planned ? '1688' : selected;
+      return selected;
     },
     [location.search],
   );
@@ -934,16 +930,8 @@ export default function CollectorSettingsPage() {
   }, [load]);
 
   useEffect(() => {
-    if (providerKey === '1688') {
-      void loadAuthStatus();
-    }
-    if (providerKey === 'pinduoduo') {
-      void loadPddAuthStatus();
-    }
-    if (providerKey === 'taobao_tmall') {
-      void loadTbAuthStatus();
-    }
-  }, [providerKey, loadAuthStatus, loadPddAuthStatus, loadTbAuthStatus]);
+    /* Amazon.de collection does not use the legacy 1688/PDD/Taobao login-browser panels. */
+  }, [providerKey]);
 
   const handleProviderChange = (key: CollectSettingsProviderKey) => {
     history.replace(`/settings/collector?provider=${encodeURIComponent(key)}`);
@@ -1066,44 +1054,12 @@ export default function CollectorSettingsPage() {
 
   const providerSpecificSection = planned ? (
     <CollectorPlannedSection providerLabel={providerOption.label} />
-  ) : providerKey === '1688' ? (
-    <Collector1688Section
-      authStatus={authStatus}
-      authChecking={authChecking}
-      loginOpening={loginOpening}
-      onRecheck={loadAuthStatus}
-      onOpenLogin={handleOpenLoginBrowser}
-    />
-  ) : providerKey === 'custom' ? (
-    <CollectorCustomSection providerRow={providerRow} />
-  ) : providerKey === 'aliexpress' ? (
-    <CollectorAliExpressSection providerRow={providerRow} />
-  ) : providerKey === 'pinduoduo' ? (
-    <CollectorPinduoduoSection
-      providerRow={providerRow}
-      authStatus={pddAuthStatus}
-      authChecking={pddAuthChecking}
-      authLoaded={pddAuthLoaded}
-      loginOpening={pddLoginOpening}
-      onRecheck={loadPddAuthStatus}
-      onOpenLogin={handleOpenPddLoginBrowser}
-    />
-  ) : providerKey === 'taobao_tmall' ? (
-    <CollectorTaobaoTmallSection
-      providerRow={providerRow}
-      authStatus={tbAuthStatus}
-      authChecking={tbAuthChecking}
-      authLoaded={tbAuthLoaded}
-      loginOpening={tbLoginOpening}
-      onRecheck={loadTbAuthStatus}
-      onOpenLogin={handleOpenTbLoginBrowser}
-    />
   ) : null;
 
   return (
-    <TmPageContainer title="采集设置" subTitle={PAGE_COPY.collectorSettings.description}>
+    <TmPageContainer title={t('page.collector.title')} subTitle={t('page.collector.description')}>
       <div className="tm-collector-settings">
-        <ProCard variant="outlined" className="tm-collector-settings__selector" title="采集器类型">
+        <ProCard variant="outlined" className="tm-collector-settings__selector" title={t('page.collector.selectorTitle')}>
           <CollectorProviderSelector
             activeKey={providerKey}
             providers={providers}
@@ -1118,7 +1074,7 @@ export default function CollectorSettingsPage() {
             <Row gutter={[16, 16]} align="stretch">
               <Col xs={24} xl={10}>
                 <ProCard
-                  title="通用采集设置"
+                  title={t('page.collector.commonTitle')}
                   variant="outlined"
                   className="tm-collector-settings__panel"
                   extra={

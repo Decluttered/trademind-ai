@@ -1,0 +1,20 @@
+---
+description: eBay Platform Provider deltas — OAuth, Sell APIs, publication owner, Temporal
+globs: backend/internal/providers/platform/ebay/**/*.go,backend/internal/modules/shop/ebay*.go,backend/internal/modules/publication/**/*.go,backend/internal/modules/monitoring/**/*.go,backend/internal/workflow/temporal/**/*.go
+alwaysApply: false
+---
+
+# eBay Platform Provider（增量）
+
+内部标识 `ebay`。已有实现：`backend/internal/providers/platform/ebay/`。领域写所有者是 `modules/publication/`，由 Temporal 启动。**不要**把 eBay 写路径接到 Redis `productpublish`（矩阵：**Leave**）。
+
+细则与映射/VeRO 约束见 `docs/amazon-to-ebay.md`、`docs/adr/0001-ebay-go-client.md`、`docs/mindbay-module-matrix.md`。
+
+## 必须遵守
+
+- 业务模块只调用 Provider `Client`。禁止在 service 里手写 eBay URL 或 Header。
+- 每个 eBay API 方法上方注释官方名称、版本、HTTP method、path，并写入 `docs/provider.md`。无法核对官方契约时停下来询问，禁止臆造字段。
+- 优先 Sell APIs（Inventory / Offer / Taxonomy / Account / Fulfillment）。只用 Trading API 时必须写明原因。
+- Sandbox 与 Production 凭据和 Host 分离；环境是显式设置。Marketplace ID 必填，调用层不要静默改市场。
+- App ID / Cert ID / Token 加密存储、前端脱敏、禁止日志与 API 回传明文。
+- 失败码可同时使用 `EBAY_*` 任务中心码和 client 的 `AUTH` / `RATE_LIMIT` / `TRANSIENT` / `VALIDATION`；ADR 的 `AUTH_REQUIRED` / `RETRYABLE_TRANSIENT` 等用于编排，不要再发明第三套。

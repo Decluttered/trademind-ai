@@ -3,6 +3,8 @@ import type { CSSProperties } from "react";
 import { DownOutlined, LogoutOutlined } from "@ant-design/icons";
 import { Avatar, Dropdown } from "antd";
 import { themeTokens, tmSemanticTokens } from "@/constants/layoutTokens";
+import { useLocale } from "@/locale";
+import LocaleSwitch from "./LocaleSwitch";
 import ThemeToggleButton from "./ThemeToggleButton";
 import "./AppTopNav.less";
 
@@ -11,8 +13,11 @@ const avatarStyle: CSSProperties = {
   background: `linear-gradient(135deg, ${themeTokens.colorPrimary} 0%, ${tmSemanticTokens.dataAccent} 100%)`,
 };
 
-export function resolveUserLabels(user?: API.CurrentUser) {
-  const displayName = user?.displayName?.trim() || "管理员";
+export function resolveUserLabels(
+  user?: API.CurrentUser,
+  adminFallback = "Admin",
+) {
+  const displayName = user?.displayName?.trim() || adminFallback;
   const email = user?.email?.trim() || "";
   const username = user?.username?.trim() || "";
   const loginId = email || username;
@@ -40,15 +45,23 @@ type AppTopNavProps = {
 
 export default function AppTopNav({ user, onLogout }: AppTopNavProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { t } = useLocale();
+  const adminFallback = t("nav.adminFallback");
 
   if (!user) {
-    return <nav className="tm-app-top-nav" aria-label="内容导航栏" />;
+    return (
+      <nav className="tm-app-top-nav" aria-label={t("nav.ariaLabel")}>
+        <LocaleSwitch className="tm-app-top-nav__locale-switch" size="small" />
+        <ThemeToggleButton className="tm-app-top-nav__theme-toggle" />
+      </nav>
+    );
   }
 
-  const { primary, secondary, initial } = resolveUserLabels(user);
+  const { primary, secondary, initial } = resolveUserLabels(user, adminFallback);
 
   return (
-    <nav className="tm-app-top-nav" aria-label="内容导航栏">
+    <nav className="tm-app-top-nav" aria-label={t("nav.ariaLabel")}>
+      <LocaleSwitch className="tm-app-top-nav__locale-switch" size="small" />
       <ThemeToggleButton className="tm-app-top-nav__theme-toggle" />
       <Dropdown
         menu={{
@@ -61,10 +74,10 @@ export default function AppTopNav({ user, onLogout }: AppTopNavProps) {
               label: (
                 <span className="tm-app-account-dropdown__label">
                   <span className="tm-app-account-dropdown__title">
-                    退出登录
+                    {t("nav.logout")}
                   </span>
                   <span className="tm-app-account-dropdown__description">
-                    返回登录页面
+                    {t("nav.logoutHint")}
                   </span>
                 </span>
               ),
@@ -85,7 +98,7 @@ export default function AppTopNav({ user, onLogout }: AppTopNavProps) {
         <button
           type="button"
           className="tm-app-top-nav__user"
-          aria-label={`当前用户 ${primary}`}
+          aria-label={`${primary}`}
           aria-haspopup="menu"
           aria-expanded={isMenuOpen}
         >
@@ -102,9 +115,9 @@ export default function AppTopNav({ user, onLogout }: AppTopNavProps) {
             </span>
             <span
               className="tm-app-top-nav__user-account"
-              title={secondary || "管理员"}
+              title={secondary || adminFallback}
             >
-              {secondary || "管理员"}
+              {secondary || adminFallback}
             </span>
           </span>
           <DownOutlined

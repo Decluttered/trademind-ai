@@ -6,7 +6,7 @@ type StatusColor = 'default' | 'processing' | 'success' | 'error' | 'warning' | 
 
 export type StatusTagProps = {
   status?: string | null;
-  /** 直接指定文案，优先于 status 映射 */
+  /** Directly specify the text, takes priority over the status mapping */
   text?: string;
   color?: StatusColor;
   className?: string;
@@ -32,7 +32,7 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   skipped: 'default',
 };
 
-/** 统一状态 Tag */
+/** Unified status Tag */
 export default function StatusTag({ status, text, color, className }: StatusTagProps) {
   const k = (status ?? '').trim().toLowerCase();
   const collectMeta = k ? COLLECT_TASK_STATUS[k as keyof typeof COLLECT_TASK_STATUS] : undefined;

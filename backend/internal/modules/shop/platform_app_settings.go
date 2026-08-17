@@ -15,6 +15,7 @@ import (
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
 	platformamazon "github.com/trademind-ai/trademind/backend/internal/providers/platform/amazon"
 	platformdouyin "github.com/trademind-ai/trademind/backend/internal/providers/platform/douyinshop"
+	platformebay "github.com/trademind-ai/trademind/backend/internal/providers/platform/ebay"
 	platformlazada "github.com/trademind-ai/trademind/backend/internal/providers/platform/lazada"
 	platformshopee "github.com/trademind-ai/trademind/backend/internal/providers/platform/shopee"
 	platformtiktok "github.com/trademind-ai/trademind/backend/internal/providers/platform/tiktok"
@@ -172,6 +173,11 @@ func validateMergedAppSettings(platformSlug string, schema platformp.PlatformApp
 		return nil
 	case "amazon":
 		if _, err := platformamazon.RuntimeFromMergedMap(mm); err != nil {
+			return err
+		}
+		return nil
+	case "ebay":
+		if _, err := platformebay.RuntimeFromMergedMap(mm); err != nil {
 			return err
 		}
 		return nil

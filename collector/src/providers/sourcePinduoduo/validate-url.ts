@@ -14,7 +14,7 @@ export function isPinduoduoHost(hostname: string): boolean {
   return h.endsWith('.yangkeduo.com') || h.endsWith('.pinduoduo.com');
 }
 
-/** 语义校验：http(s) + 拼多多域名 + 可识别的批发详情路径（移动端详情链接受理后返回明确不支持） */
+/** Semantic validation: http(s) + Pinduoduo domain + recognizable wholesale detail path (mobile detail links are accepted but explicitly return unsupported). */
 export function validatePinduoduoUrl(urlStr: string): boolean {
   const urlType = classifyPinduoduoUrl(urlStr);
   return urlType === 'wholesale_detail';

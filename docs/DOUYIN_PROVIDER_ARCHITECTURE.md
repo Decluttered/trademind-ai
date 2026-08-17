@@ -1,47 +1,47 @@
-# 抖店 Provider 架构设计
+# Douyin Shop Provider Architecture Design
 
-> 阶段：P3 | 状态：代码已实现，等待真实凭证 E2E 验证
+> Phase: P3 | Status: Code implemented, pending real-credential E2E verification
 
-## 层次结构
+## Layering
 
 ```
-shop/douyin_oauth.go          ← OAuth 授权入口、token 持久化
+shop/douyin_oauth.go          ← OAuth authorization entry point, token persistence
     ↓
-douyinshop/client.go          ← HTTP 客户端 + token 刷新 + singleflight
+douyinshop/client.go          ← HTTP client + token refresh + singleflight
     ↓
-douyinshop/facade.go          ← DouyinProvider 接口（所有能力统一入口）
+douyinshop/facade.go          ← DouyinProvider interface (unified entry point for all capabilities)
     ↓
 douyinshop/{category,image,product,order,inventory,customer,brand}.go
-                               ← 各能力具体实现
+                               ← Concrete implementations of each capability
     ↓
-douyinshop/sign.go            ← 请求签名（App Key + 时间戳 + 参数 MD5）
-douyinshop/request.go         ← HTTP 请求构建
-douyinshop/response.go        ← 响应解析、平台错误映射
-douyinshop/errors.go          ← 统一错误类型 + ErrorClass
+douyinshop/sign.go            ← Request signing (App Key + timestamp + parameter MD5)
+douyinshop/request.go         ← HTTP request construction
+douyinshop/response.go        ← Response parsing, platform error mapping
+douyinshop/errors.go          ← Unified error types + ErrorClass
 ```
 
-## 关键设计决策
+## Key Design Decisions
 
-### 1. HTTPDoer 接口
-Client 使用 `HTTPDoer` 接口注入 HTTP 实现，便于测试 mock。默认使用 `*http.Client`。
+### 1. HTTPDoer Interface
+The client injects its HTTP implementation via the `HTTPDoer` interface, making it easy to mock in tests. Defaults to `*http.Client`.
 
-### 2. Token 刷新保护
-- `EnsureFreshAccessSingleflight`：同一店铺同时只有一次 token 刷新请求
-- `TokenVersion`（P3 新增）：多实例场景下防止旧版本 token 覆盖新版本
+### 2. Token Refresh Protection
+- `EnsureFreshAccessSingleflight`: only one token refresh request per shop at a time
+- `TokenVersion` (added in P3): prevents an older-version token from overwriting a newer one in multi-instance scenarios
 
-### 3. 错误分类
-所有错误通过 `*Error` 类型传播，包含：
-- `ErrorClass`：`auth_error`, `rate_limited`, `timeout`, `unknown_result`, `contract_mismatch` 等
-- `UnknownResult`：写入超时后设为 true，禁止自动重试
-- `SafeRetry`：幂等安全时为 true（只读操作）
-- `RetryAfter`：来自 Retry-After 响应头
+### 3. Error Classification
+All errors propagate through the `*Error` type, which includes:
+- `ErrorClass`: `auth_error`, `rate_limited`, `timeout`, `unknown_result`, `contract_mismatch`, etc.
+- `UnknownResult`: set to true after a write times out, disabling automatic retries
+- `SafeRetry`: true when idempotency-safe (read-only operations)
+- `RetryAfter`: taken from the Retry-After response header
 
-### 4. 写入幂等性
-- 商品草稿：`douyin-product-draft-create:{shopId}:{draftId}:{version}`
-- 图片上传：`douyin-image-upload:{shopId}:{objectKey}:{contentHash}`
-- 超时后先执行 `tryRecoverDouyinDraftFromPlatform` 再决定是否重试
+### 4. Write Idempotency
+- Product drafts: `douyin-product-draft-create:{shopId}:{draftId}:{version}`
+- Image uploads: `douyin-image-upload:{shopId}:{objectKey}:{contentHash}`
+- After a timeout, `tryRecoverDouyinDraftFromPlatform` runs first before deciding whether to retry
 
-### 5. 外部依赖限制
-- 客服消息 API：`blocked_by_contract_verification`
-- 品牌列表 API：`blocked_by_contract_verification`
-- 所有 OpenAPI 调用：需真实 App Key + 已授权店铺 token
+### 5. External Dependency Constraints
+- Customer service messaging API: `blocked_by_contract_verification`
+- Brand list API: `blocked_by_contract_verification`
+- All OpenAPI calls: require a real App Key and an authorized shop token

@@ -1,10 +1,10 @@
 export type AIProviderValue = 'openai' | 'openai_compatible' | 'deepseek' | 'qwen';
 
 export type AIProviderDocs = {
-  /** API / 接入说明文档 */
+  /** API / integration documentation */
   docsUrl: string;
   docsLabel: string;
-  /** 控制台或申请密钥入口（可选） */
+  /** Console or key application entry point (optional) */
   consoleUrl?: string;
   consoleLabel?: string;
 };
@@ -45,7 +45,7 @@ export const AI_PROVIDER_METAS: AIProviderMeta[] = [
 
 export const AI_PROVIDER_VALUES = AI_PROVIDER_METAS.map((m) => m.value);
 
-/** 各服务商官方文档与控制台链接（管理端 AI 设置页跳转用） */
+/** Official docs and console links per provider (used for links from the admin AI settings page) */
 export const AI_PROVIDER_DOCS: Record<AIProviderValue, AIProviderDocs> = {
   openai: {
     docsUrl:

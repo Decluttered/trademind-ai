@@ -12,7 +12,7 @@ import {
 import { history } from '@umijs/max';
 import { Alert, Button, Col, List, Result, Row, Skeleton, Space, Tag, Typography, message } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PAGE_COPY, commonStatusLabel } from '@/constants/copywriting';
+import { commonStatusLabel } from '@/constants/copywriting';
 import { layoutTokens } from '@/constants/layoutTokens';
 import { EmptyState, MetricCard, OperationToolbar, SectionCard, TmPageContainer } from '@/components/ui';
 import { CustomCollectModal } from '@/pages/Collect/components/CustomCollectModal';
@@ -44,32 +44,33 @@ import CollectSourceCard, {
   type CollectSourceCardCopy,
   type CollectSourceCardFeature,
 } from './components/CollectSourceCard';
+import { getStoredAdminLocale, translate, useLocale } from '@/locale';
 import './index.less';
 
 const { Paragraph, Text, Title } = Typography;
 
-const DEDICATED_FEATURE_LABEL: Record<string, string> = {
-  title: '商品标题',
-  price: '商品价格',
-  mainImages: '商品主图',
-  descriptionImages: '详情图片',
-  attributes: '商品参数',
-  skus: '商品规格',
-  stock: '库存（尽力识别）',
-};
+function featureLabelKey(feature: string): string | undefined {
+  const map: Record<string, string> = {
+    title: 'page.collectHub.featureTitle',
+    price: 'page.collectHub.featurePrice',
+    mainImages: 'page.collectHub.featureMainImages',
+    descriptionImages: 'page.collectHub.featureDescriptionImages',
+    attributes: 'page.collectHub.featureAttributes',
+    skus: 'page.collectHub.featureSkus',
+    stock: 'page.collectHub.featureStock',
+  };
+  return map[feature];
+}
 
-const SOURCE_ORDER = ['1688', 'pinduoduo', 'pdd', 'taobao_tmall', 'taobao', 'aliexpress', 'shein_temu', 'custom'];
+const SOURCE_ORDER = ['amazon.de', 'amazon'];
 
-const DEDICATED_HUB_DESCRIPTION: Record<string, string> = {
-  '1688': '采集 1688 商品详情，支持标题、主图、详情图、属性与 SKU。',
-  pinduoduo: '采集拼多多批发商品详情，支持标题、价格、主图、规格等；发布前请核对。',
-  pdd: '采集拼多多批发商品详情，支持标题、价格、主图、规格等；发布前请核对。',
-  taobao_tmall:
-    '采集淘宝、天猫商品详情，支持标题、价格、主图、详情图、商品参数和商品规格。部分商品可能需要登录或人工确认。',
-  taobao:
-    '采集淘宝、天猫商品详情，支持标题、价格、主图、详情图、商品参数和商品规格。部分商品可能需要登录或人工确认。',
-  aliexpress: '采集速卖通商品详情，支持标题、图片、属性与 SKU（测试中）。',
-};
+function dedicatedHubDescription(source: string): string {
+  const key = source.toLowerCase();
+  if (key === 'amazon.de' || key === 'amazon') {
+    return translate(getStoredAdminLocale(), 'page.collectHub.amazonDescription');
+  }
+  return '';
+}
 
 type LoadState<T> = {
   loading: boolean;
@@ -86,7 +87,9 @@ function batchRowDisabledForProvider(p: CollectProviderRow): boolean {
 }
 
 function batchButtonTooltipForProvider(p: CollectProviderRow): string | undefined {
-  if (!providerRunnableForSingleTask(p.status)) return '当前版本暂未开放';
+  if (!providerRunnableForSingleTask(p.status)) {
+    return translate(getStoredAdminLocale(), 'page.collectHub.notOpen');
+  }
   if (!p.batchSupported) {
     if (p.source === 'custom') return CUSTOM_BATCH_DISABLED_TOOLTIP;
     if (p.source === 'pinduoduo' || p.source === 'pdd') {
@@ -123,7 +126,8 @@ function featureLabelForProvider(p: CollectProviderRow, feature: string): string
   if (p.source === 'custom') {
     return CUSTOM_COLLECT_FEATURE_LABEL[feature] ?? feature;
   }
-  return DEDICATED_FEATURE_LABEL[feature] ?? feature;
+  const key = featureLabelKey(feature);
+  return key ? translate(getStoredAdminLocale(), key) : feature;
 }
 
 function providerCardCopy(p: CollectProviderRow): CollectSourceCardCopy {
@@ -136,7 +140,7 @@ function providerCardCopy(p: CollectProviderRow): CollectSourceCardCopy {
     };
   }
   const key = p.source.toLowerCase();
-  const description = DEDICATED_HUB_DESCRIPTION[key] ?? p.description?.trim() ?? '';
+  const description = dedicatedHubDescription(key) || p.description?.trim() || '';
   const notes = p.notes?.trim() ?? '';
   return {
     description,
@@ -174,7 +178,7 @@ async function openCustomCollectModal(
       message.warning(NO_COLLECT_RULE_MESSAGE);
     }
   } catch {
-    // 仍打开 Modal，由弹窗内引导创建规则
+    // Still open the Modal; the dialog guides the user to create a rule
   }
   setCustomModalOpen(true);
 }
@@ -311,6 +315,7 @@ function BrowserProfileSummary({
 }
 
 export default function CollectHubPage() {
+  const { t } = useLocale();
   const [providerState, setProviderState] = useState<LoadState<CollectProviderRow[]>>({
     loading: true,
     data: [],
@@ -445,8 +450,8 @@ export default function CollectHubPage() {
 
   return (
     <TmPageContainer
-      title={PAGE_COPY.collectHub.title}
-      subTitle={PAGE_COPY.collectHub.description}
+      title={t('page.collectHub.title')}
+      subTitle={t('page.collectHub.description')}
       contentMaxWidth={layoutTokens.dashboardMaxWidth}
       extra={pageExtra}
     >

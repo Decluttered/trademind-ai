@@ -13,6 +13,7 @@ const CodeProductTitleOptimize = "product_title_optimize"
 const CodeProductDescriptionGenerate = "product_description_generate"
 const CodeCustomerReplyGenerate = "customer_reply_generate"
 const CodeCollectRuleGenerate = "collect_rule_generate"
+const CodeMindBayListingStudio = "mindbay_listing_studio_v1"
 
 // EnsureDefaults creates built-in prompts when missing.
 func EnsureDefaults(ctx context.Context, db *gorm.DB) error {
@@ -31,6 +32,9 @@ func EnsureDefaults(ctx context.Context, db *gorm.DB) error {
 	if err := ensureCollectRuleGenerate(ctx, db); err != nil {
 		return err
 	}
+	if err := ensureMindBayListingStudio(ctx, db); err != nil {
+		return err
+	}
 	if err := migrateProductTitleOptimizeMaxTokens(ctx, db); err != nil {
 		return err
 	}
@@ -38,6 +42,19 @@ func EnsureDefaults(ctx context.Context, db *gorm.DB) error {
 		return err
 	}
 	return migrateCollectRuleGenerateQualityHints(ctx, db)
+}
+
+func ensureMindBayListingStudio(ctx context.Context, db *gorm.DB) error {
+	var count int64
+	if err := db.WithContext(ctx).Model(&AIPrompt{}).Where("code = ?", CodeMindBayListingStudio).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+	schema, _ := json.Marshal(map[string]any{"type": "object", "required": []string{"title", "description", "specifics"}, "properties": map[string]any{"title": map[string]string{"type": "string"}, "description": map[string]string{"type": "string"}, "specifics": map[string]string{"type": "object"}}})
+	row := AIPrompt{Code: CodeMindBayListingStudio, Name: "MindBay Listing Studio", Scene: "mindbay_listing", SystemPrompt: strings.TrimSpace(`You create factual German marketplace listing drafts. Return JSON only with title, description and specifics. Use only supplied source facts. Never invent certifications, materials, safety claims, guarantees, medical claims or availability. Keep title at most 80 characters and avoid duplicate terms.`), UserPrompt: "Source facts JSON:\n{{facts}}\n\nReturn factual listing JSON only.", OutputSchema: datatypes.JSON(schema), Temperature: .25, MaxTokens: 1400, Enabled: true}
+	return db.WithContext(ctx).Create(&row).Error
 }
 
 func migrateProductTitleOptimizeMaxTokens(ctx context.Context, db *gorm.DB) error {

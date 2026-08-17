@@ -1,6 +1,6 @@
 import { Typography } from 'antd';
 
-/** 任务详情抽屉内 JSON 展示 */
+/** JSON display inside the task detail drawer */
 export function formatTaskJson(value: unknown): string {
   if (value == null || value === '') return '—';
   try {
@@ -14,7 +14,7 @@ export type TaskJsonBlockProps = {
   title: string;
   value: unknown;
   maxHeight?: number;
-  /** 是否为折叠区内最后一项（去掉段落下边距） */
+  /** Whether this is the last item within the collapsible section (removes paragraph bottom margin) */
   last?: boolean;
 };
 

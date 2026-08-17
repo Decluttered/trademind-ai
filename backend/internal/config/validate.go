@@ -42,6 +42,26 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("%s: config is nil", ErrCodeConfigRequired)
 	}
 	c.AppEnv = NormalizeEnv(c.AppEnv)
+	c.AutomationMode = strings.ToUpper(strings.TrimSpace(c.AutomationMode))
+	if c.AutomationMode == "" {
+		c.AutomationMode = "DRY_RUN"
+	}
+	if c.AutomationMode != "DRY_RUN" && c.AutomationMode != "SIMULATED_CHECKOUT" && c.AutomationMode != "LIVE" {
+		return fmt.Errorf("%s: AUTOMATION_MODE must be DRY_RUN, SIMULATED_CHECKOUT, or LIVE", ErrCodeConfigInvalid)
+	}
+	c.EbayEnv = strings.ToLower(strings.TrimSpace(c.EbayEnv))
+	if c.EbayEnv == "" {
+		c.EbayEnv = "sandbox"
+	}
+	if c.EbayEnv != "sandbox" && c.EbayEnv != "production" {
+		return fmt.Errorf("%s: EBAY_ENV must be sandbox or production", ErrCodeConfigInvalid)
+	}
+	if c.TemporalEnabled && strings.TrimSpace(c.TemporalServiceToken) == "" {
+		return fmt.Errorf("%s: TEMPORAL_SERVICE_TOKEN is required when TEMPORAL_ENABLED=true", ErrCodeConfigRequired)
+	}
+	if c.TemporalEnabled && strings.TrimSpace(c.TemporalNamespace) == "" {
+		return fmt.Errorf("%s: TEMPORAL_NAMESPACE is required when TEMPORAL_ENABLED=true", ErrCodeConfigRequired)
+	}
 
 	if strings.TrimSpace(c.DB.User) == "" || strings.TrimSpace(c.DB.Name) == "" {
 		return fmt.Errorf("%s: DB_USER and DB_NAME are required", ErrCodeConfigRequired)

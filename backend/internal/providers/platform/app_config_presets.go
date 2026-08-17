@@ -195,16 +195,19 @@ func EbayAppConfigSchema() PlatformAppConfigSchema {
 	return PlatformAppConfigSchema{
 		GroupKey:    "platform_ebay",
 		Title:       "eBay",
-		Description: "eBay Developers Program 应用（对接仍 planned）。",
+		Description: "eBay Developers Program OAuth-Anwendung. Sandbox ist der sichere Standard. redirect_uri ist die RuName aus dem Developer Portal, keine https-URL.",
 		Fields: []AppConfigField{
 			{Name: "client_id", Label: "Client ID (App ID)", Type: "text", Required: true, Sensitive: false},
 			{Name: "client_secret", Label: "Client Secret", Type: "password", Required: true, Sensitive: true},
 			{Name: "dev_id", Label: "Dev ID（可选）", Type: "text", Required: false, Sensitive: false},
-			{Name: "redirect_uri", Label: "Redirect URI", Type: "text", Required: true, Sensitive: false},
-			{Name: "auth_base_url", Label: "Auth Base URL", Type: "text", Required: true, Sensitive: false},
-			{Name: "api_base_url", Label: "API Base URL", Type: "text", Required: true, Sensitive: false},
-			{Name: "marketplace_id", Label: "Marketplace ID", Type: "text", Required: false, Sensitive: false},
-			{Name: "sandbox_enabled", Label: "Sandbox", Type: "switch", Required: false, Sensitive: false},
+			{Name: "redirect_uri", Label: "RuName (eBay Redirect URL name)", Type: "text", Required: true, Sensitive: false, Placeholder: "YourApp-YourApp-SB-...", Help: "Paste the RuName from developer.ebay.com/my/auth. Do not paste https://…; sandbox and production have different RuNames."},
+			{Name: "environment", Label: "eBay environment", Type: "select", Required: true, Sensitive: false, DefaultValue: "sandbox", Options: []AppConfigOption{
+				{Label: "sandbox", Value: "sandbox"},
+				{Label: "production", Value: "production"},
+			}, Help: "Sandbox and production use different App IDs, RuNames and hosts."},
+			{Name: "marketplace_id", Label: "Marketplace ID", Type: "text", Required: true, Sensitive: false, DefaultValue: "EBAY_DE", Placeholder: "EBAY_DE", Help: "Required. MindBay MVP is eBay.de (EBAY_DE)."},
+			{Name: "auth_base_url", Label: "Auth Base URL", Type: "text", Required: false, Sensitive: false, Help: "Leave empty to use the standard host for the selected environment."},
+			{Name: "api_base_url", Label: "API Base URL", Type: "text", Required: false, Sensitive: false, Help: "Leave empty to use the standard host for the selected environment."},
 			{Name: "timeout_sec", Label: "Timeout (seconds)", Type: "number", Required: true, Sensitive: false, DefaultValue: 30},
 		},
 	}

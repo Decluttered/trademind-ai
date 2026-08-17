@@ -223,7 +223,7 @@ function inventorySyncCapabilityTag(cap?: string) {
 
 const SKU_BATCH_STOCK_MAX_HINT = 500;
 
-/** 从采集归一化 JSON（products.raw_data）读取 attributes / attributeCandidates */
+/** Read attributes / attributeCandidates from the collected, normalized JSON (products.raw_data) */
 function collectedAttributesFromRaw(rawData: unknown): Record<string, string> {
   if (!rawData || typeof rawData !== 'object') return {};
   const root = rawData as Record<string, unknown>;
@@ -606,7 +606,7 @@ function draftStockStatusTag(raw?: string) {
   return <Tag color={x.c}>{x.t}</Tag>;
 }
 
-/** When stock_status 尚未落库，用阈值在前端推导展示（与后端 CalculateSKUStockStatus 一致）。 */
+/** When stock_status has not yet been persisted, derive it on the frontend using thresholds for display (consistent with the backend CalculateSKUStockStatus). */
 function effectiveStockStatus(r: ProductSKURow): string {
   if (r.stockStatus) return r.stockStatus;
   if (typeof r.stock !== 'number') return '';

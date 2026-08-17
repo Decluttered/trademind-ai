@@ -1,43 +1,43 @@
-# 批量刊登数据库迁移（Phase A2.1）
+# Batch Publishing Database Migration (Phase A2.1)
 
-## 概述
+## Overview
 
-Phase A2 通过 GORM AutoMigrate 扩展 `product_publish_batches` / `product_publish_tasks`。Phase A2.1 补充**显式 PostgreSQL migration**（Go 启动时执行）；生产维护阶段又增加 tenant ownership 回填，用于：
+Phase A2 extended `product_publish_batches` / `product_publish_tasks` via GORM AutoMigrate. Phase A2.1 adds an **explicit PostgreSQL migration** (executed at Go startup); the production maintenance phase further adds tenant-ownership backfill, used for:
 
-- 多商品批次 `product_id` 可空（兼容 `single_product` / `multi_product`）
-- 批次列表、子任务查询索引
-- 活跃批次 `idempotency_key` 部分唯一索引（防并发重复创建）
-- 为历史 `product_publish_tasks`、`product_publications`、`product_publish_batches` 回填可确定的 `tenant_id`
+- Making `product_id` nullable on multi-product batches (compatible with `single_product` / `multi_product`)
+- Indexes for batch list and subtask queries
+- A partial unique index on `idempotency_key` for active batches (prevents concurrent duplicate creation)
+- Backfilling a determinable `tenant_id` for historical `product_publish_tasks`, `product_publications`, and `product_publish_batches`
 
-实现文件：[`backend/internal/database/migrate_publish_batch_a21.go`](../backend/internal/database/migrate_publish_batch_a21.go)、[`backend/internal/database/migrate_product_publish_tenant.go`](../backend/internal/database/migrate_product_publish_tenant.go)
+Implementation files: [`backend/internal/database/migrate_publish_batch_a21.go`](../backend/internal/database/migrate_publish_batch_a21.go), [`backend/internal/database/migrate_product_publish_tenant.go`](../backend/internal/database/migrate_product_publish_tenant.go)
 
-## 执行时机
+## Execution Timing
 
-服务启动时在 GORM **`AutoMigrate` 完成之后**调用（先由 model 补齐 `idempotency_key`、`batch_id` 等列，再建索引与约束）。可重复执行（`IF NOT EXISTS`）。
+Invoked at service startup, **after GORM `AutoMigrate` completes** (the model first fills in columns like `idempotency_key`, `batch_id`, then indexes and constraints are created). Safe to run repeatedly (`IF NOT EXISTS`).
 
-## 变更内容
+## Changes
 
-### 1. `product_publish_batches.product_id` 可空
+### 1. `product_publish_batches.product_id` becomes nullable
 
 ```sql
 ALTER TABLE product_publish_batches ALTER COLUMN product_id DROP NOT NULL;
 ```
 
-仅当 `information_schema` 显示仍为 `NOT NULL` 时执行。历史单商品批次数据不受影响。
+Only executed when `information_schema` still shows `NOT NULL`. Historical single-product batch data is unaffected.
 
-### 2. 查询索引
+### 2. Query Indexes
 
-| 索引名 | 表 | 列 | 用途 |
+| Index Name | Table | Columns | Purpose |
 |--------|-----|-----|------|
-| `ix_publish_batches_created_at` | product_publish_batches | created_at DESC | 最近批次列表 |
-| `ix_publish_batches_status` | product_publish_batches | status | 按状态筛选 |
-| `ix_publish_tasks_batch_id` | product_publish_tasks | batch_id | 批次详情子任务 |
-| `ix_publish_tasks_target_key` | product_publish_tasks | target_key | 目标维度查询 |
+| `ix_publish_batches_created_at` | product_publish_batches | created_at DESC | Recent batch list |
+| `ix_publish_batches_status` | product_publish_batches | status | Filter by status |
+| `ix_publish_tasks_batch_id` | product_publish_tasks | batch_id | Subtasks in batch detail |
+| `ix_publish_tasks_target_key` | product_publish_tasks | target_key | Target-dimension queries |
 | `ix_publish_tasks_batch_status` | product_publish_tasks | batch_id, status | retry-failed / cancel-pending |
 
-### 3. 幂等键部分唯一索引
+### 3. Partial Unique Index on Idempotency Key
 
-**先检查**活跃批次（`status NOT IN ('failed','cancelled')`）中是否存在重复 `idempotency_key`：
+**First check** whether duplicate `idempotency_key` values exist among active batches (`status NOT IN ('failed','cancelled')`):
 
 ```sql
 SELECT idempotency_key, COUNT(*) AS cnt
@@ -48,7 +48,7 @@ GROUP BY idempotency_key
 HAVING COUNT(*) > 1;
 ```
 
-- **无重复**：创建
+- **No duplicates**: create it
 
 ```sql
 CREATE UNIQUE INDEX IF NOT EXISTS ux_publish_batches_idempotency_active
@@ -56,35 +56,35 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_publish_batches_idempotency_active
  WHERE idempotency_key <> '' AND status NOT IN ('failed','cancelled');
 ```
 
-- **有重复**：跳过唯一索引，需人工清理后再重启服务。
+- **Duplicates found**: skip the unique index; requires manual cleanup before the service restarts.
 
-#### 重复数据人工清理（示例）
+#### Manual Duplicate Cleanup (Example)
 
-保留 `created_at` 最新的一条，将其余活跃重复批次标记为 `failed` 或合并子任务后删除：
+Keep the record with the latest `created_at`, and mark the remaining active duplicate batches as `failed` or delete them after merging their subtasks:
 
 ```sql
--- 示例：查看重复组
+-- Example: view a duplicate group
 SELECT id, idempotency_key, status, created_at
 FROM product_publish_batches
 WHERE idempotency_key = '<duplicate_key>'
 ORDER BY created_at DESC;
 ```
 
-清理完成后重启服务，migration 会自动创建唯一索引。
+After cleanup, restart the service; the migration will create the unique index automatically.
 
-### 4. 历史 tenant ownership 回填
+### 4. Historical Tenant Ownership Backfill
 
-`migrateProductPublishTenant` 在刊登表完成 AutoMigrate 后执行，并可重复运行：
+`migrateProductPublishTenant` runs after AutoMigrate completes on the publishing tables, and can be run repeatedly:
 
-- task 与 publication 从已存在的 `products.tenant_id` 回填。
-- 单商品 batch 优先从其 `product_id` 回填；多商品 batch 从已回填的子任务 tenant 回填。
-- 只更新 `tenant_id=0` 且归属可确定的行；孤立商品、孤立任务或无法确定归属的历史行继续保留为 `0`，不会猜测租户。
+- Tasks and publications are backfilled from the existing `products.tenant_id`.
+- Single-product batches are backfilled preferentially from their `product_id`; multi-product batches are backfilled from the tenant of their already-backfilled subtasks.
+- Only updates rows where `tenant_id=0` and ownership can be determined; orphaned products, orphaned tasks, or historical rows whose ownership cannot be determined remain at `0` — tenancy is never guessed.
 
-上线前应先备份并在隔离 PostgreSQL 副本核对 tenant-zero 残留。迁移不会删除或重分配无法确认的历史数据。
+Back up the database and verify remaining tenant-zero rows on an isolated PostgreSQL replica before going live. The migration does not delete or reassign historical data that cannot be confirmed.
 
-## 回滚
+## Rollback
 
-按需执行（**回滚 unique 索引不影响数据**）：
+Run as needed (**rolling back the unique index does not affect data**):
 
 ```sql
 DROP INDEX IF EXISTS ux_publish_batches_idempotency_active;
@@ -95,20 +95,20 @@ DROP INDEX IF EXISTS ix_publish_batches_status;
 DROP INDEX IF EXISTS ix_publish_batches_created_at;
 ```
 
-恢复 `product_id NOT NULL`（仅当确认无 multi_product 批次且全部有 product_id）：
+Restore `product_id NOT NULL` (only if confirmed there are no multi_product batches and all rows have a product_id):
 
 ```sql
--- 谨慎：仅在没有 NULL product_id 行时执行
+-- Caution: only run when there are no rows with a NULL product_id
 ALTER TABLE product_publish_batches ALTER COLUMN product_id SET NOT NULL;
 ```
 
-## 与 GORM AutoMigrate 的关系
+## Relationship to GORM AutoMigrate
 
-列定义（`batch_type`、`name`、`task_count`、`idempotency_key` 等）仍由 GORM model + AutoMigrate 维护。本 migration **只**处理 nullable 约束与索引，不替代 model 演进。
+Column definitions (`batch_type`, `name`, `task_count`, `idempotency_key`, etc.) are still maintained by the GORM model + AutoMigrate. This migration **only** handles the nullable constraint and indexes; it does not replace model evolution.
 
-## 变更记录
+## Changelog
 
-| 日期 | 说明 |
+| Date | Notes |
 |------|------|
-| 2026-08-14 | 增加刊登任务、publication 与批次 tenant ownership 幂等回填 |
-| 2026-06-19 | Phase A2.1 初始 migration |
+| 2026-08-14 | Added idempotent tenant-ownership backfill for publish tasks, publications, and batches |
+| 2026-06-19 | Phase A2.1 initial migration |

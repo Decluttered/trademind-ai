@@ -1,5 +1,10 @@
 import type { AppConfigFieldDTO } from '@/services/shops';
 import { PLATFORM_COPY } from '@/constants/copywriting';
+import { getStoredAdminLocale, translate } from '@/locale';
+
+function ebayT(key: string): string {
+  return translate(getStoredAdminLocale(), key);
+}
 
 /** 开放平台应用配置字段中文映射（按 field.name） */
 export const PLATFORM_APP_FIELD_LABEL: Record<string, string> = {
@@ -43,6 +48,14 @@ export const PLATFORM_APP_FIELD_LABEL: Record<string, string> = {
   dev_id: '开发者 ID',
 };
 
+const EBAY_APP_FIELD_LABEL_KEYS: Record<string, string> = {
+  redirect_uri: 'ebayField.redirect_uri_label',
+  marketplace_id: 'ebayField.marketplace_id_label',
+  environment: 'ebayField.environment_label',
+  client_id: 'ebayField.client_id_label',
+  client_secret: 'ebayField.client_secret_label',
+};
+
 export const PLATFORM_APP_FIELD_HELP: Record<string, string> = {
   app_key: '在抖店开放平台创建应用后获得。',
   app_secret: '保存后只显示星号，空着保存不会修改原有密钥。',
@@ -72,6 +85,14 @@ export const PLATFORM_APP_FIELD_HELP: Record<string, string> = {
   store_url: '须为 HTTPS 安全链接的店铺地址',
 };
 
+const EBAY_APP_FIELD_HELP_KEYS: Record<string, string> = {
+  redirect_uri: 'ebayField.redirect_uri_help',
+  marketplace_id: 'ebayField.marketplace_id_help',
+  environment: 'ebayField.environment_help',
+  auth_base_url: 'ebayField.auth_base_url_help',
+  api_base_url: 'ebayField.api_base_url_help',
+};
+
 export const PLATFORM_APP_FIELD_PLACEHOLDER: Record<string, string> = {
   app_key: '在开放平台控制台获取',
   app_secret: '保存后只显示星号；留空则不修改',
@@ -81,6 +102,12 @@ export const PLATFORM_APP_FIELD_PLACEHOLDER: Record<string, string> = {
   api_version: '202309',
   environment: 'production',
   timeout_sec: '30',
+};
+
+const EBAY_APP_FIELD_PLACEHOLDER: Record<string, string> = {
+  redirect_uri: 'YourApp-YourApp-SB-…',
+  marketplace_id: 'EBAY_DE',
+  environment: 'sandbox',
 };
 
 export const PLATFORM_STATUS_META: Record<string, { label: string; color: string }> = {
@@ -97,11 +124,16 @@ export const PLATFORM_DEV_PORTALS: { name: string; url: string }[] = [
   { name: 'Shopee Open', url: 'https://open.shopee.com/' },
   { name: 'Lazada Open', url: 'https://open.lazada.com/' },
   { name: 'Amazon SP-API', url: 'https://developer-docs.amazon.com/sp-api/' },
+  { name: 'eBay Developers', url: 'https://developer.ebay.com/my/auth' },
   { name: 'Shopify Partners', url: 'https://partners.shopify.com/' },
 ];
 
-export function platformAppFieldLabel(field: AppConfigFieldDTO): string {
-  const mapped = PLATFORM_APP_FIELD_LABEL[field.name.trim().toLowerCase()];
+export function platformAppFieldLabel(field: AppConfigFieldDTO, platform?: string): string {
+  const key = field.name.trim().toLowerCase();
+  if (platform === 'ebay' && EBAY_APP_FIELD_LABEL_KEYS[key]) {
+    return ebayT(EBAY_APP_FIELD_LABEL_KEYS[key]);
+  }
+  const mapped = PLATFORM_APP_FIELD_LABEL[key];
   if (mapped) return mapped;
   return field.label
     .replace(/（路径段）/g, '')
@@ -111,16 +143,24 @@ export function platformAppFieldLabel(field: AppConfigFieldDTO): string {
     .trim();
 }
 
-export function platformAppFieldHelp(field: AppConfigFieldDTO): string | undefined {
-  return PLATFORM_APP_FIELD_HELP[field.name.trim().toLowerCase()] || field.help;
+export function platformAppFieldHelp(field: AppConfigFieldDTO, platform?: string): string | undefined {
+  const key = field.name.trim().toLowerCase();
+  if (platform === 'ebay' && EBAY_APP_FIELD_HELP_KEYS[key]) {
+    return ebayT(EBAY_APP_FIELD_HELP_KEYS[key]);
+  }
+  return PLATFORM_APP_FIELD_HELP[key] || field.help;
 }
 
-export function platformAppFieldPlaceholder(field: AppConfigFieldDTO): string {
+export function platformAppFieldPlaceholder(field: AppConfigFieldDTO, platform?: string): string {
   if (field.placeholder) return field.placeholder;
   if (field.sensitive || field.type === 'password') {
     return '保存后只显示星号；留空则不修改';
   }
-  return PLATFORM_APP_FIELD_PLACEHOLDER[field.name.trim().toLowerCase()] || '';
+  const key = field.name.trim().toLowerCase();
+  if (platform === 'ebay' && EBAY_APP_FIELD_PLACEHOLDER[key]) {
+    return EBAY_APP_FIELD_PLACEHOLDER[key];
+  }
+  return PLATFORM_APP_FIELD_PLACEHOLDER[key] || '';
 }
 
 /** 开关字段：独立行布局 */

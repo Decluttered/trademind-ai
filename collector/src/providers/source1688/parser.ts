@@ -65,7 +65,7 @@ function mergeUrlLists(primary: string[], secondary: string[], baseUrl: string, 
 const OFFER_IMAGE_KEY_RE =
   /offerimage|imagelist|gallery|mainimage|productimage|detailimage|piclist|imageurl|fullpathimage|summImage/i;
 
-/** 仅从 JSON 中带商品图语义的字段收集 URL，避免 script 内服务图标污染主图 */
+/** Collect URLs only from JSON fields with product-image semantics, avoiding service-icon pollution of main images from script content */
 function walkCollectOfferImages(root: unknown, acc: Set<string>): void {
   function walk(x: unknown, depth: number, keyHint: string): void {
     if (depth > 22 || x === null || x === undefined) return;
@@ -92,7 +92,7 @@ function walkCollectOfferImages(root: unknown, acc: Set<string>): void {
   walk(root, 0, '');
 }
 
-/** DOM 主图优先；不足时用 JSON 商品图补全，不再盲扫 script 全文 URL */
+/** Prefer DOM main images; supplement with JSON product images when insufficient, without blindly scanning full script-text URLs */
 function mergeMainImageBuckets(
   domGallery: string[],
   jsonOfferImages: string[],
@@ -138,7 +138,7 @@ function extractTitleFromRoots(roots: unknown[]): string | undefined {
       const t = trimStr(candidate);
       if (t.length >= 6 && t.length <= 300 && !best) best = t;
     }
-    /** 泛化 title 字段：仅当像商品名时采纳 */
+    /** Generic title field: adopted only when it looks like a product name */
     const title = o.title;
     if (typeof title === 'string' && !best) {
       const t = trimStr(title);
@@ -184,7 +184,7 @@ function flattenSkuPropLike(value: unknown): DimRow[] {
   return dims;
 }
 
-/** 多维笛卡尔积（规模过大时裁剪） */
+/** Multi-dimensional Cartesian product (trimmed when the scale is too large) */
 function cartesianCombinations(rows: DimRow[], maxSku: number): Array<Record<string, string>> {
   if (rows.length === 0) return [];
   let combos: Record<string, string>[] = [{}];
@@ -249,7 +249,7 @@ function mineSkuStructures(roots: unknown[], defaultPrice?: number): ProductSku[
   for (const sp of skuPropArrays) rows.push(...flattenSkuPropLike(sp));
   const dimNames = inferTwoDimNames(rows, '', '');
 
-  /** 单行规格（无法组合）：每个值一条 SKU */
+  /** Single-row specs (cannot be combined): one SKU per value */
   function singleDimFallback(): ProductSku[] {
     const out: ProductSku[] = [];
     for (const dim of rows) {
@@ -284,7 +284,7 @@ function mineSkuStructures(roots: unknown[], defaultPrice?: number): ProductSku[
   }
 
   /**
-   * skuMapMerged 形如 { "尺码:XS;颜色:白色": {...}, ... }
+   * skuMapMerged looks like { "尺码:XS;颜色:白色" (size:XS;color:white): {...}, ... }
    */
   const combosFromMap: Array<{ key: string; props: Record<string, string>; bucket: Record<string, unknown> }> = [];
   for (const rawKey of Object.keys(skuMapMerged)) {
@@ -336,11 +336,11 @@ function mineSkuStructures(roots: unknown[], defaultPrice?: number): ProductSku[
     line.raw!.skuBucketKeys = truncate(JSON.stringify(Object.keys(bucket).slice(0, 28)), 2000);
 
 
-    /** 若没有属性名，则用笛卡尔补上 */
+    /** If there is no property name, fill in via the Cartesian product */
     outSkus.push(line);
   }
 
-  /** 格式化 skuName 显示：后端用 properties 推导，附带 raw skuNameHint 便于前端 */
+  /** Format skuName for display: the backend derives it from properties, with a raw skuNameHint attached for the frontend */
   return outSkus.map((ln) => {
     const pname = skuNameFromProps(ln.properties ?? {});
     return {
@@ -388,7 +388,7 @@ function parseJsonFragmentsFromScripts(snips: string[]): unknown[] {
   const seen = new Set<string>();
   function pushDedup(val: unknown) {
     if (!val || typeof val !== 'object') return;
-    /** 仅用结构指纹去重（控制 roots 体量） */
+    /** Dedupe by structural fingerprint only (to control the size of roots) */
     const sig =
       typeof (val as Record<string, unknown>).subject === 'string'
         ? `s:${trimStr(String((val as Record<string, unknown>).subject)).slice(0, 160)}`
@@ -486,7 +486,7 @@ export async function extractBrowserPayload(
   return extract1688BrowserPayload(page);
 }
 
-/** 外层去掉 evaluate 加的临时字段 */
+/** Strip the temporary field added by evaluate at the outer layer */
 function stripEvaluatePayload(payload: BrowserExtractPayload & { __blocked__?: number }): {
   blocked: boolean;
   payload: BrowserExtractPayload;
@@ -510,13 +510,13 @@ export function assembleParsedProduct(
 
   const titleFromModels = extractTitleFromRoots(jsonRoots);
 
-  /** 正文标题优先级：结构化 subject > DOM 标题 > og:title > document.title（过滤拦截页占位） */
+  /** Title priority: structured subject > DOM heading > og:title > document.title (filtering out blocked-page placeholders) */
   let title =
     titleFromModels ||
     trimStr(payload.headingText || '') ||
     trimStr(payload.meta.ogTitle || '') ||
     trimStr(payload.docTitle || '');
-  /** 弱化「登录 / 警告」占位 */
+  /** Suppress "login / warning" placeholder text */
   if (blocked && title.length < 8) title = '';
 
   const contextData = find1688ResultData(jsonRoots);
@@ -544,7 +544,7 @@ export function assembleParsedProduct(
     extractorHints: domImages.main.length ? ['dom-main'] : [],
   });
 
-  /** 结构化 gallery 优先 */
+  /** Structured gallery takes priority */
   if (contextData) {
     const ctxMain = extractMainImagesFrom1688Data(contextData, baseUrl);
     if (ctxMain.length > 0) {
@@ -560,7 +560,7 @@ export function assembleParsedProduct(
     }
   }
 
-  /** legacy offer JSON walk 补全 */
+  /** Fill in remaining data via the legacy offer JSON walk */
   const fromOfferJsonImages = new Set<string>();
   for (const r of jsonRoots) walkCollectOfferImages(r, fromOfferJsonImages);
   if (fromOfferJsonImages.size > 0) {
@@ -593,7 +593,7 @@ export function assembleParsedProduct(
     if (attributes[k]) continue;
     attributes[k] = v;
   }
-  /** JSON 中带「参数」「attributes」块状 */
+  /** Block-shaped "parameters" / "attributes" fields within JSON */
   for (const root of jsonRoots.slice(0, 12)) {
     function pickAttrContainers(x: unknown, depth: number): void {
       if (depth > 16 || x === null || typeof x !== 'object') return;

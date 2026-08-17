@@ -1,26 +1,36 @@
 # 管理端与 API 用户可见文案规范
 
-TradeMind 面向跨境卖家与运营人员，**用户可见文案默认使用中文**。代码标识符、路由、JSON 字段键、日志与「技术详情」折叠区可保留英文；主界面、告警、错误提示、表单 Label/Help、预检项 Title/Message 不得直接裸露英文技术词。
+TradeMind 面向跨境卖家与运营人员。**中文（`zh`）仍是文案规范与 `pnpm check:ui-copy` 的术语源**。管理端运行时支持多语言：
+
+| Locale | 角色 |
+| --- | --- |
+| `en` | **新浏览器默认**（无 `trademind_admin_locale` 时） |
+| `zh` | 完整中文；原 TradeMind 文案与混排检查依据 |
+| `de` | 可选；MindBay 页以德文目录为主，其它页回退到英文 |
+
+存储键：`trademind_admin_locale`（与主题相同，仅本地偏好）。代码标识符、路由、JSON 字段键、日志与「技术详情」折叠区可保留英文；主界面文案走 `admin/src/locale` 目录，勿在页面硬编码混排术语。
 
 ## 必读入口（AI 与开发者）
 
 | 资源 | 用途 |
 | --- | --- |
 | 本文 | 术语表、禁止项、检查方式 |
-| `admin/src/constants/copywriting.ts` | 页面标题、商品/平台/任务/库存统一术语 |
+| `admin/src/locale/` | `en` / `zh` / `de` 文案目录与 `t()` |
+| `admin/src/constants/copywriting.ts` | 尚未迁移页面的中文术语字典 |
 | `admin/src/constants/userFriendly.ts` | 通用标签与 `platformLabel()` 等映射 |
-| `admin/src/constants/errorMessages.ts` | 错误码 → 用户提示 |
+| `admin/src/constants/errorMessages.ts` | 错误码 → 用户提示（鉴权码随 locale） |
 | `docs/ai-workflow.md` § Admin 文案与 UI 规范 | AI 工作流中的摘要约束 |
 | `.cursor/rules/14-ui-copywriting.mdc` | Cursor 领域规则 |
-| `scripts/check-ui-copy.mjs` | 本地/CI 混排英文扫描 |
+| `scripts/check-ui-copy.mjs` | 本地/CI 混排英文扫描（扫描 `zh` 与未迁移硬编码；排除 `en.ts`/`de.ts`） |
 
 ## 核心原则
 
-1. **面向用户，不面向开发者**：主界面不直接展示 Provider、Worker、runtime、Storage、Payload、Stale、Endpoint 等内部词。
-2. **统一术语**：同一概念全项目一个中文叫法（见下表）；新增文案优先从 `copywriting.ts` / `userFriendly.ts` 引用。
+1. **面向用户，不面向开发者**：主界面不直接展示 Provider、Worker、runtime、Storage、Payload、Stale、Endpoint 等内部词（`zh` 与硬编码中文页强制；`en`/`de` 用对应自然语言，不借机塞内部词）。
+2. **统一术语**：同一概念在 `zh` 全项目一个中文叫法（见下表）；新增 `zh` 文案优先从 `copywriting.ts` / `userFriendly.ts` / `locale/messages/zh.ts` 引用。
 3. **必要英文**：平台品牌（TikTok Shop、Amazon SP-API）、协议名（HTTPS）、云厂商产品名（S3、OSS）可保留；配置项若与开放平台文档一致，可用「中文（英文）」如「应用 Key（App Key）」——**副标题与说明句中优先纯中文**。
 4. **技术信息下沉**：错误码、Request ID、原始 JSON、字段名放入 `TechnicalDetails` / `TaskJsonBlock`，默认收起。
-5. **后端同步**：会进入 API `message`、`label`、`title`、`suggestedAction` 的 Go 字符串与前端同等要求。
+5. **后端同步**：会进入 API `message`、`label`、`title`、`suggestedAction` 的 Go 字符串与前端同等要求（本阶段后端仍默认中文，不随 Admin locale 切换）。
+6. **多语言**：不要开启 Umi `locale: true`；使用 `admin/src/locale` 薄层。未翻译键：当前 locale → `en` → `zh` → key。
 
 ## 标准术语表
 
@@ -59,9 +69,10 @@ TradeMind 面向跨境卖家与运营人员，**用户可见文案默认使用�
 
 ### 前端
 
-- 页面 `title` / `subTitle` / `description` / `Alert` / `message.*` / 表格列 `title` / `Form.Item label` 走中文。
+- 已迁移页使用 `useLocale().t('…')`；`zh` 字符串遵守下文术语表。
+- 未迁移页的 `title` / `subTitle` / `description` / `Alert` / `message.*` / 表格列 `title` / `Form.Item label` 仍走中文。
 - 状态 Tag 使用 `commonStatusLabel()`、`platformLabel()`、`failureCategoryLabel()` 等，禁止直接渲染英文枚举。
-- 新增常量放入 `copywriting.ts` 或 `userFriendly.ts`，页面引用而非硬编码。
+- 新增常量：优先写入 `admin/src/locale/messages/{en,zh,de}.ts`；未迁移模块可继续放 `copywriting.ts` / `userFriendly.ts`。
 
 ### 后端
 

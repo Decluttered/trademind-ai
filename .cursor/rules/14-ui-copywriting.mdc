@@ -1,10 +1,10 @@
 ---
-description: 用户可见文案中文化规范；禁止主界面裸英文技术词，统一术语与检查命令
+description: 用户可见文案规范；zh 为术语源，Admin 支持 en/zh/de；禁止裸内部技术词
 globs: admin/src/**/*.{ts,tsx},backend/internal/modules/**/*.go,backend/internal/providers/**/*.go
 alwaysApply: false
 ---
 
-# 用户可见文案中文化
+# 用户可见文案（多语言 + 中文术语源）
 
 ## 适用范围
 
@@ -12,12 +12,19 @@ alwaysApply: false
 
 不约束：代码标识符、路由、类型名、JSON 字段键、日志、注释、`TechnicalDetails` 内原始数据。
 
+## 语言
+
+- 运行时默认 **`en`**（无 `trademind_admin_locale`）。
+- **`zh`** 仍是完整语言与 `pnpm check:ui-copy` / 术语表依据。
+- **`de`** 可选；MindBay 页优先德文目录，其它页回退英文。
+- 不要启用 Umi `locale: true`；使用 `admin/src/locale`。
+
 ## 必须遵守
 
-1. 主界面**不得**裸写：`Worker`、`runtime`、`Provider`、`Storage`、`Stale`、`Endpoint`、`Webhook`（作名词）、`mock`、`blocked_by_*`、`Release Candidate` 等（见 `docs/ui-copywriting.md` 术语表）。
-2. 新增用户文案**优先**引用 `admin/src/constants/copywriting.ts`、`admin/src/constants/userFriendly.ts`。
+1. 主界面**不得**裸写：`Worker`、`runtime`、`Provider`、`Storage`、`Stale`、`Endpoint`、`Webhook`（作名词）、`mock`、`blocked_by_*`、`Release Candidate` 等（见 `docs/ui-copywriting.md` 术语表）。`en`/`de` 翻译不得借机塞这些内部词。
+2. 新增用户文案**优先**写入 `admin/src/locale/messages/*.ts`；未迁移页可继续引用 `copywriting.ts`、`userFriendly.ts`。
 3. 状态/枚举展示用 `commonStatusLabel()`、`platformLabel()` 等映射，**禁止**直接渲染英文枚举值。
-4. 后端用户可见字符串与前端同一术语（如 Storage→存储、Token→访问令牌、SKU→规格）。
+4. 后端用户可见字符串与前端 `zh` 同一术语（如 Storage→存储、Token→访问令牌、SKU→规格）。
 5. 平台品牌（TikTok、Amazon SP-API）、协议（HTTPS）、云产品名（S3）可保留。
 
 ## 改动后检查
@@ -26,7 +33,7 @@ alwaysApply: false
 pnpm check:ui-copy --strict
 ```
 
-涉及大量文案时，同步更新 `docs/ui-copywriting.md` 术语表（若新增高频词）。
+扫描排除 `locale/messages/en.ts` 与 `de.ts`；涉及大量文案时同步 `docs/ui-copywriting.md`。
 
 ## 详细规范
 

@@ -21,7 +21,7 @@ type CreateBody struct {
 }
 
 // UpdateBody binds PUT /products/:id.
-// Source / source URL / rawData are not editable here (采集来源与原始归一数据只读).
+// Source / source URL / rawData are not editable here (collection source and raw normalized data are read-only).
 // JSON accepts camelCase and snake_case for the text fields (e.g. original_title, ai_title).
 type UpdateBody struct {
 	OriginalTitle *string `json:"originalTitle"`

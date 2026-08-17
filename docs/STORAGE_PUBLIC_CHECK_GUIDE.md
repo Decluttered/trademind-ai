@@ -2,7 +2,7 @@
 
 ## Manual test (admin)
 
-Settings → 存储 → **测试公网访问**  
+Settings → Storage → **Test Public Access**  
 Requires `settings.manage` permission.
 
 ## API

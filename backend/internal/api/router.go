@@ -23,6 +23,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/aitask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/alerting"
 	"github.com/trademind-ai/trademind/backend/internal/modules/auth"
+	"github.com/trademind-ai/trademind/backend/internal/modules/catalog"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collect"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectbrowserprofile"
 	"github.com/trademind-ai/trademind/backend/internal/modules/collectrule"
@@ -34,11 +35,14 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/douyinpreflight"
 	"github.com/trademind-ai/trademind/backend/internal/modules/douyinruntime"
 	"github.com/trademind-ai/trademind/backend/internal/modules/exportmod"
+	"github.com/trademind-ai/trademind/backend/internal/modules/extensiontoken"
 	"github.com/trademind-ai/trademind/backend/internal/modules/files"
 	"github.com/trademind-ai/trademind/backend/internal/modules/idempotency"
 	"github.com/trademind-ai/trademind/backend/internal/modules/imagetask"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventory"
 	"github.com/trademind-ai/trademind/backend/internal/modules/inventorysync"
+	"github.com/trademind-ai/trademind/backend/internal/modules/listingstudio"
+	"github.com/trademind-ai/trademind/backend/internal/modules/monitoring"
 	"github.com/trademind-ai/trademind/backend/internal/modules/observabilitymod"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationdashboard"
 	"github.com/trademind-ai/trademind/backend/internal/modules/operationlog"
@@ -51,6 +55,7 @@ import (
 	"github.com/trademind-ai/trademind/backend/internal/modules/productcheck"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productioncontrol"
 	"github.com/trademind-ai/trademind/backend/internal/modules/productpublish"
+	"github.com/trademind-ai/trademind/backend/internal/modules/publication"
 	"github.com/trademind-ai/trademind/backend/internal/modules/securitymod"
 	"github.com/trademind-ai/trademind/backend/internal/modules/settings"
 	"github.com/trademind-ai/trademind/backend/internal/modules/shop"
@@ -67,15 +72,188 @@ import (
 	platformp "github.com/trademind-ai/trademind/backend/internal/providers/platform"
 	platformamazon "github.com/trademind-ai/trademind/backend/internal/providers/platform/amazon"
 	platformdouyin "github.com/trademind-ai/trademind/backend/internal/providers/platform/douyinshop"
+	platformebay "github.com/trademind-ai/trademind/backend/internal/providers/platform/ebay"
 	platformlazada "github.com/trademind-ai/trademind/backend/internal/providers/platform/lazada"
 	platformshopee "github.com/trademind-ai/trademind/backend/internal/providers/platform/shopee"
 	platformtiktok "github.com/trademind-ai/trademind/backend/internal/providers/platform/tiktok"
 	"github.com/trademind-ai/trademind/backend/internal/rdb"
+	workflowtemporal "github.com/trademind-ai/trademind/backend/internal/workflow/temporal"
 	"gorm.io/gorm"
 )
 
 type collectRunnerAdapter struct {
 	c *collect.CollectorClient
+}
+
+type catalogCollectorAdapter struct{ c *collect.CollectorClient }
+
+type ebayListingPublisher struct {
+	shops   *shop.Service
+	ebayEnv string
+}
+
+type ebayOfferGateway struct {
+	shops          *shop.Service
+	ebayEnv        string
+	automationMode string
+}
+
+type ebayShopGate struct{ shops *shop.Service }
+
+func (g ebayShopGate) ValidateEbayShop(ctx context.Context, workspaceID int64, shopID uuid.UUID) error {
+	if g.shops == nil {
+		return fmt.Errorf("eBay shop service unavailable")
+	}
+	row, auth, err := g.shops.PlainAuthForProviderCtx(ctx, shopID)
+	if err != nil {
+		return err
+	}
+	if row.TenantID != workspaceID || row.Platform != "ebay" || row.Status != shop.StatusActive {
+		return fmt.Errorf("active eBay shop does not belong to workspace")
+	}
+	if row.AuthStatus != shop.AuthAuthorized || (strings.TrimSpace(auth.AccessToken) == "" && strings.TrimSpace(auth.RefreshToken) == "") {
+		return fmt.Errorf("eBay shop OAuth is not authorized")
+	}
+	return nil
+}
+
+func (a ebayListingPublisher) Publish(ctx context.Context, workspaceID int64, shopID uuid.UUID, automationMode string, in publication.PublishPayload) (publication.PublishOutcome, error) {
+	cfg, token, err := resolveEbayClient(ctx, a.shops, workspaceID, shopID, a.ebayEnv, automationMode)
+	if err != nil {
+		return publication.PublishOutcome{}, err
+	}
+	out, err := (platformebay.Client{Config: cfg}).Publish(ctx, token, automationMode, platformebay.Listing{SKU: in.SKU, Title: in.Title, Description: in.Description, CategoryID: in.CategoryID, Condition: in.Condition, Currency: in.Currency, PriceCents: in.PriceCents, Quantity: in.Quantity, ImageURLs: in.ImageURLs, Aspects: in.Aspects, Marketplace: in.Marketplace, MerchantLocationKey: in.MerchantLocationKey, PaymentPolicyID: in.PaymentPolicyID, ReturnPolicyID: in.ReturnPolicyID, FulfillmentPolicyID: in.FulfillmentPolicyID, ManufacturerName: in.ManufacturerName, ManufacturerAddress: in.ManufacturerAddress, ResponsiblePersonName: in.ResponsiblePersonName, ResponsibleAddress: in.ResponsibleAddress, SafetyInformation: in.SafetyInformation, SafetyStatementIDs: in.SafetyStatementIDs, GPSROverridden: in.GPSROverridden})
+	if err != nil {
+		return publication.PublishOutcome{}, err
+	}
+	return publication.PublishOutcome{OfferID: out.OfferID, ListingID: out.ListingID, ListingURL: out.ListingURL, DryRun: out.DryRun, RequestArtifact: out.RequestArtifact, ResponseArtifact: out.ResponseArtifact}, nil
+}
+
+func resolveEbayClient(ctx context.Context, shops *shop.Service, workspaceID int64, shopID uuid.UUID, ebayEnv, automationMode string) (platformebay.RuntimeConfig, string, error) {
+	if shops == nil {
+		return platformebay.RuntimeConfig{}, "", fmt.Errorf("eBay shop credentials unavailable")
+	}
+	shopRow, auth, err := shops.PlainAuthForProviderCtx(ctx, shopID)
+	if err != nil {
+		return platformebay.RuntimeConfig{}, "", err
+	}
+	if shopRow.TenantID != workspaceID || shopRow.Platform != "ebay" {
+		return platformebay.RuntimeConfig{}, "", fmt.Errorf("eBay shop does not belong to workspace")
+	}
+	if auth.Extra == nil {
+		auth.Extra = map[string]string{}
+	}
+	if shops.Settings != nil {
+		settings, settingsErr := shops.Settings.PlainByGroup(ctx, 0, "platform_ebay")
+		if settingsErr != nil {
+			return platformebay.RuntimeConfig{}, "", settingsErr
+		}
+		for key, value := range settings {
+			auth.Extra[key] = value
+		}
+	}
+	if strings.TrimSpace(auth.Extra["environment"]) == "" {
+		auth.Extra["environment"] = ebayEnv
+	}
+	if strings.EqualFold(strings.TrimSpace(automationMode), "DRY_RUN") {
+		cfg, resolveErr := platformebay.ResolveRuntime(auth)
+		return cfg, auth.AccessToken, resolveErr
+	}
+	return shops.EbayPublishCredentials(ctx, shopID)
+}
+
+func (a ebayOfferGateway) ReadOffer(ctx context.Context, workspaceID int64, job publication.PublicationJob, listing publication.MarketplaceListing) (monitoring.OfferSnapshot, error) {
+	cfg, token, err := resolveEbayClient(ctx, a.shops, workspaceID, job.ShopID, a.ebayEnv, a.automationMode)
+	if err != nil {
+		return monitoring.OfferSnapshot{}, err
+	}
+	row, err := (platformebay.Client{Config: cfg}).ReadOffer(ctx, token, listing.ExternalOfferID)
+	if err != nil {
+		return monitoring.OfferSnapshot{}, err
+	}
+	return monitoring.OfferSnapshot{PriceCents: row.PriceCents, Quantity: row.Quantity, Status: row.Status, Raw: row.Raw}, nil
+}
+
+func (a ebayOfferGateway) UpdateOffer(ctx context.Context, workspaceID int64, job publication.PublicationJob, listing publication.MarketplaceListing, priceCents int64) (monitoring.OfferSnapshot, map[string]any, bool, error) {
+	cfg, token, err := resolveEbayClient(ctx, a.shops, workspaceID, job.ShopID, a.ebayEnv, a.automationMode)
+	if err != nil {
+		return monitoring.OfferSnapshot{}, nil, false, err
+	}
+	row, artifact, dryRun, err := (platformebay.Client{Config: cfg}).UpdateOffer(ctx, token, a.automationMode, listing.ExternalOfferID, listing.Currency, priceCents)
+	if err != nil {
+		return monitoring.OfferSnapshot{}, nil, false, err
+	}
+	return monitoring.OfferSnapshot{PriceCents: row.PriceCents, Quantity: row.Quantity, Status: row.Status, Raw: row.Raw}, artifact, dryRun, nil
+}
+
+func (a catalogCollectorAdapter) Collect(ctx context.Context, source, rawURL string, options map[string]any) (json.RawMessage, error) {
+	if a.c == nil {
+		return nil, fmt.Errorf("collector unavailable")
+	}
+	out, err := a.c.Collect(ctx, source, rawURL, options)
+	if err != nil {
+		return nil, err
+	}
+	return out.ProductJSON, nil
+}
+
+type listingSourceAdapter struct{ catalog *catalog.Service }
+
+func (a listingSourceAdapter) ReadSource(ctx context.Context, workspaceID int64, id uuid.UUID) (listingstudio.SourceFacts, error) {
+	_, snap, err := a.catalog.GetProductSnapshot(ctx, workspaceID, id)
+	if err != nil {
+		return listingstudio.SourceFacts{}, err
+	}
+	var attrs map[string]any
+	var images []string
+	_ = json.Unmarshal(snap.Attributes, &attrs)
+	_ = json.Unmarshal(snap.Images, &images)
+	return listingstudio.SourceFacts{Title: snap.Title, Brand: snap.Brand, Attributes: attrs, Images: images}, nil
+}
+
+type listingGeneratorAdapter struct {
+	prompts *aiprompt.Service
+	gateway *aigate.Gateway
+}
+
+type listingImageStorageAdapter struct{ files *files.Service }
+
+func (a listingImageStorageAdapter) Save(ctx context.Context, workspaceID int64, key string, data []byte, contentType string) (string, error) {
+	if a.files == nil {
+		return "", fmt.Errorf("file storage unavailable")
+	}
+	row, err := a.files.SaveProcessed(ctx, files.SaveProcessedOpts{TenantID: workspaceID, OriginalName: "mindbay-image", ObjectKey: key, Data: data, ContentType: contentType})
+	if err != nil {
+		return "", err
+	}
+	return row.ObjectKey, nil
+}
+
+func (a listingGeneratorAdapter) Generate(ctx context.Context, workspaceID int64, facts listingstudio.SourceFacts) (listingstudio.GeneratedContent, string, string, error) {
+	if a.prompts == nil || a.gateway == nil {
+		return listingstudio.GeneratedContent{}, "", "", fmt.Errorf("AI listing generator unavailable")
+	}
+	prompt, err := a.prompts.GetEnabledByCode(ctx, "mindbay_listing_studio_v1")
+	if err != nil {
+		return listingstudio.GeneratedContent{}, "", "", fmt.Errorf("listing prompt mindbay_listing_studio_v1 unavailable: %w", err)
+	}
+	factsJSON, _ := json.Marshal(facts)
+	userPrompt := aiprompt.ReplaceVariables(prompt.UserPrompt, map[string]string{"facts": string(factsJSON), "title": facts.Title, "brand": facts.Brand})
+	if strings.TrimSpace(userPrompt) == "" {
+		userPrompt = "Create factual German marketplace listing JSON from these source facts only: " + string(factsJSON)
+	}
+	res, err := a.gateway.ChatForTenant(ctx, workspaceID, aigate.ChatRequest{Model: prompt.Model, Messages: []aigate.Message{{Role: "system", Content: prompt.SystemPrompt}, {Role: "user", Content: userPrompt}}, Temperature: prompt.Temperature, MaxTokens: prompt.MaxTokens, ResponseFormat: &aigate.ResponseFormat{Type: "json_object"}})
+	if err != nil {
+		return listingstudio.GeneratedContent{}, "", prompt.Code, err
+	}
+	var generated listingstudio.GeneratedContent
+	if err := json.Unmarshal([]byte(res.Content), &generated); err != nil {
+		return generated, res.Model, prompt.Code, fmt.Errorf("AI listing output is not valid JSON: %w", err)
+	}
+	if strings.TrimSpace(generated.Title) == "" || strings.TrimSpace(generated.Description) == "" {
+		return generated, res.Model, prompt.Code, fmt.Errorf("AI listing output is incomplete")
+	}
+	return generated, res.Model, prompt.Code, nil
 }
 
 func (a collectRunnerAdapter) RunCollect(ctx context.Context, source, rawURL string, options map[string]any) (json.RawMessage, error) {
@@ -338,6 +516,12 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 		Client:   collectorClient,
 		Redis:    dep.Redis,
 	}
+	catalogSvc := &catalog.Service{DB: dep.DB, Collector: catalogCollectorAdapter{c: collectorClient}}
+	listingSvc := &listingstudio.Service{DB: dep.DB, Sources: listingSourceAdapter{catalog: catalogSvc}, Generator: listingGeneratorAdapter{prompts: promptSvc, gateway: aiGateway}, Settings: settingsSvc}
+	catalogH := &catalog.Handler{Svc: catalogSvc, Idempotency: idempotencySvc}
+	listingH := &listingstudio.Handler{Svc: listingSvc, OpLog: opLogSvc, Idempotency: idempotencySvc}
+	listingImageH := &listingstudio.ImageHandler{Pipeline: &listingstudio.ImagePipeline{DB: dep.DB, Storage: listingImageStorageAdapter{files: fileSvc}}, Idempotency: idempotencySvc}
+	extensionTokenH := &extensiontoken.Handler{DB: dep.DB, Config: dep.Config}
 	if dep.Config != nil {
 		_, tenantSource, tenantErr := dep.Config.ResolveRequestTenantID(0)
 		env := config.NormalizeEnv(dep.Config.AppEnv)
@@ -373,6 +557,7 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	}
 	if dep.Config != nil {
 		shopSvc.AppEnv = dep.Config.AppEnv
+		shopSvc.EbayEnv = dep.Config.EbayEnv
 	}
 	productSvc.Shops = shopSvc
 	platformtiktok.BindShops(shopSvc.TikTokShopsBridge())
@@ -388,7 +573,23 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 	platformlazada.RegisterProvider()
 	platformamazon.BindShops(shopSvc.AmazonShopsBridge())
 	platformamazon.RegisterProvider()
+	platformebay.RegisterProvider()
 	shopH := &shop.Handler{Svc: shopSvc}
+	automationMode := "DRY_RUN"
+	ebayEnv := "sandbox"
+	if dep.Config != nil {
+		automationMode = dep.Config.AutomationMode
+		ebayEnv = dep.Config.EbayEnv
+	}
+	publicationPublisher := ebayListingPublisher{shops: shopSvc, ebayEnv: ebayEnv}
+	publicationPublishSvc := &publication.PublishService{DB: dep.DB, Listings: listingSvc, Publisher: publicationPublisher, AutomationMode: automationMode}
+	publicationSvc := &publication.Service{DB: dep.DB, Listings: listingSvc, Shops: ebayShopGate{shops: shopSvc}}
+	if dep.Config != nil && dep.Config.TemporalEnabled {
+		publicationSvc.Starter = workflowtemporal.Starter{Address: dep.Config.TemporalAddress, Namespace: dep.Config.TemporalNamespace}
+	}
+	publicationH := &publication.Handler{Svc: publicationSvc, PublishSvc: publicationPublishSvc, Idempotency: idempotencySvc}
+	monitoringSvc := &monitoring.Service{DB: dep.DB, Offers: ebayOfferGateway{shops: shopSvc, ebayEnv: ebayEnv, automationMode: automationMode}, AutomationMode: automationMode}
+	monitoringH := &monitoring.Handler{Svc: monitoringSvc, Idempotency: idempotencySvc}
 
 	storagePublicSvc := &storagepublic.Service{Settings: settingsSvc, OpLog: opLogSvc}
 	storagePublicH := &storagepublic.Handler{Svc: storagePublicSvc, OpLog: opLogSvc, DB: dep.DB}
@@ -605,6 +806,20 @@ func Register(r gin.IRouter, dep *Deps) (*collect.Service, *imagetask.Service, *
 
 	authed := v1.Group("")
 	authed.Use(middleware.BearerAuthWithDB(dep.Config, dep.DB, sessionSvc))
+	phase1 := r.Group("/v1")
+	phase1.Use(middleware.BearerAuthWithDB(dep.Config, dep.DB, sessionSvc))
+	catalog.Register(phase1, catalogH)
+	listingstudio.Register(phase1, listingH, listingImageH)
+	publication.Register(phase1, publicationH)
+	monitoring.Register(phase1, monitoringH)
+	if dep.Config != nil && dep.Config.TemporalEnabled {
+		internalPublication := r.Group("/internal/v1/mindbay")
+		publication.RegisterInternal(internalPublication, &publication.InternalHandler{Svc: publicationPublishSvc, Token: dep.Config.TemporalServiceToken})
+	}
+	extensiontoken.RegisterAdmin(phase1, extensionTokenH)
+	extensionAPI := r.Group("/v1/extension")
+	extensionAPI.Use(extensiontoken.Middleware(dep.Config, dep.DB))
+	extensionAPI.POST("/captures", catalogH.Discovery)
 	authed.GET("/auth/profile", authH.Profile)
 	authed.POST("/auth/logout", authH.Logout)
 	authed.GET("/auth/sessions", sessionH.ListSessions)

@@ -1,0 +1,26 @@
+{
+  "name": "@trademind/temporal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "worker": "tsx src/worker.ts"
+  },
+  "dependencies": {
+    "@temporalio/activity": "1.22.0",
+    "@temporalio/client": "1.22.0",
+    "@temporalio/common": "1.22.0",
+    "@temporalio/worker": "1.22.0",
+    "@temporalio/workflow": "1.22.0"
+  },
+  "devDependencies": {
+    "@temporalio/testing": "1.22.0",
+    "@types/node": "^22.15.0",
+    "@types/ms": "^2.1.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

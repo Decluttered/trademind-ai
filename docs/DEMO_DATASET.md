@@ -1,112 +1,112 @@
-# Demo 数据集说明（Phase F7）
+# Demo Dataset Notes (Phase F7)
 
-> **Release 状态**：`MVP Demo Ready`（非 Production Ready）
-> 生成脚本：`scripts/seed-demo-data.ps1` / `scripts/seed-demo-data.sh`
-> 权限种子：`scripts/seed-demo-permissions.ps1`
-> 机器可读输出由种子脚本按需生成；运行产物不作为长期仓库文档维护。
+> **Release status**: `MVP Demo Ready` (not Production Ready)
+> Generation scripts: `scripts/seed-demo-data.ps1` / `scripts/seed-demo-data.sh`
+> Permission seeding: `scripts/seed-demo-permissions.ps1`
+> Machine-readable output is generated on demand by the seed scripts; run artifacts are not maintained as long-term repository documentation.
 
-## 生成方式
+## Generation
 
 ```powershell
-# 需本地 API 与管理员账号（读取 .env 中 ADMIN_BOOTSTRAP_*）
+# Requires a local API and an admin account (reads ADMIN_BOOTSTRAP_* from .env)
 .\scripts\seed-demo-data.ps1 -ApiBase http://127.0.0.1:8080
 .\scripts\seed-demo-permissions.ps1 -ApiBase http://127.0.0.1:8080
 ```
 
-详见 [`DEMO_SEEDING_GUIDE.md`](DEMO_SEEDING_GUIDE.md)。
+See [`DEMO_SEEDING_GUIDE.md`](DEMO_SEEDING_GUIDE.md) for details.
 
-脚本会：
+The script will:
 
-1. 调用 `a1-prepare-samples.ps1` 补齐 A1.1 样本矩阵（20 slot）
-2. 创建 R1 扩展 20 类商品场景（见下表）
-3. 汇总已有 AI 文案/图片批次、失败任务、工作台待办
-4. 可选创建本地刊登批次与 AI 文案种子批次
+1. Call `a1-prepare-samples.ps1` to fill out the A1.1 sample matrix (20 slots)
+2. Create the R1 extended set of 20 product scenario categories (see table below)
+3. Aggregate existing AI copy/image batches, failed tasks, and workbench to-dos
+4. Optionally create local listing batches and AI copy seed batches
 
-## 商品样本（20 类）
+## Product Samples (20 categories)
 
-| # | tag | 说明 |
+| # | tag | Description |
 | --- | --- | --- |
-| 1 | title_complete | 标题完整 |
-| 2 | title_pending_optimize | 标题待优化 |
-| 3 | description_empty | 描述为空 |
-| 4 | description_pending | 描述待优化 |
-| 5 | main_images_complete | 主图完整 |
-| 6 | main_images_missing | 主图缺失 |
-| 7 | detail_images_low | 详情图不足 |
-| 8 | multi_sku | 多规格 |
-| 9 | stock_unknown | 库存未知 |
-| 10 | price_anomaly | 价格异常 |
-| 11 | attributes_missing | 参数缺失 |
-| 12 | publish_check_passed | 发布检查通过候选 |
-| 13 | publish_check_warning | 发布检查 warning |
-| 14 | publish_check_failed | 发布检查 failed |
-| 15 | ai_text_pending_review | AI 文案待复核 |
-| 16 | ai_image_pending_review | AI 图片待复核 |
-| 17 | ai_conflict | AI 冲突 |
-| 18 | local_publish_draft | 本地刊登草稿 |
-| 19 | douyin_blocked_credentials | 抖店 blocked_by_real_credentials |
-| 20 | multi_platform_targets | 多平台多店铺目标 |
+| 1 | title_complete | Title complete |
+| 2 | title_pending_optimize | Title pending optimization |
+| 3 | description_empty | Description empty |
+| 4 | description_pending | Description pending optimization |
+| 5 | main_images_complete | Main images complete |
+| 6 | main_images_missing | Main images missing |
+| 7 | detail_images_low | Insufficient detail images |
+| 8 | multi_sku | Multiple SKUs |
+| 9 | stock_unknown | Stock unknown |
+| 10 | price_anomaly | Price anomaly |
+| 11 | attributes_missing | Attributes missing |
+| 12 | publish_check_passed | Publish check passed candidate |
+| 13 | publish_check_warning | Publish check warning |
+| 14 | publish_check_failed | Publish check failed |
+| 15 | ai_text_pending_review | AI copy pending review |
+| 16 | ai_image_pending_review | AI image pending review |
+| 17 | ai_conflict | AI conflict |
+| 18 | local_publish_draft | Local publish draft |
+| 19 | douyin_blocked_credentials | Douyin blocked_by_real_credentials |
+| 20 | multi_platform_targets | Multiple platform/shop targets |
 
-完整 `productId` 见 `docs/demo-dataset.json` → `productSlots`。
+Full `productId` values are in `docs/demo-dataset.json` → `productSlots`.
 
-## 任务样本
+## Task Samples
 
-| 类型 | 期望状态 | 来源 |
+| Type | Expected status | Source |
 | --- | --- | --- |
-| AI 文案批次 | success / partial_success | 已有批次 + 可选种子 |
-| AI 图片批次 | success / partial_success | 已有批次 |
-| 批量刊登批次 | success / partial_success | 已有 + local_draft_only 种子 |
-| 失败任务中心 | failure | 已有失败任务 |
-| 商品运营工作台 | todos | 聚合待办 |
+| AI copy batch | success / partial_success | Existing batches + optional seeding |
+| AI image batch | success / partial_success | Existing batches |
+| Bulk listing batch | success / partial_success | Existing + local_draft_only seeding |
+| Failed task center | failure | Existing failed tasks |
+| Product operations workbench | todos | Aggregated to-dos |
 
-## 订单样本（Phase F2 / F7）
+## Order Samples (Phase F2 / F7)
 
-| tag | 说明 |
+| tag | Description |
 | --- | --- |
-| normal_matched_order | 已匹配 SKU，可演示扣减 |
-| unmatched_sku_order | 未匹配 SKU，异常工作台 |
-| sync_partial_success | 订单同步 partial_success（需 shop / mock） |
+| normal_matched_order | SKU matched, can demo deduction |
+| unmatched_sku_order | SKU unmatched, anomaly workbench |
+| sync_partial_success | Order sync partial_success (requires shop / mock) |
 
-明细见 `docs/demo-dataset.orders.json`。
+See `docs/demo-dataset.orders.json` for details.
 
-## 库存样本（Phase F3 / F7）
+## Inventory Samples (Phase F3 / F7)
 
-| tag | 说明 |
+| tag | Description |
 | --- | --- |
-| normal_stock_sku | 正常库存 |
-| low_stock_sku | 低于预警线 |
-| zero_stock_sku | 零库存 |
-| deduct_success_order | 扣减成功路径 |
-| deduct_blocked_unmatched_order | SKU 未匹配阻断扣减 |
+| normal_stock_sku | Normal stock |
+| low_stock_sku | Below warning threshold |
+| zero_stock_sku | Zero stock |
+| deduct_success_order | Successful deduction path |
+| deduct_blocked_unmatched_order | Deduction blocked due to unmatched SKU |
 
-明细见 `docs/demo-dataset.inventory.json`。
+See `docs/demo-dataset.inventory.json` for details.
 
-## 客服样本（Phase F4 / F7）
+## Customer Service Samples (Phase F4 / F7)
 
-| tag | 说明 |
+| tag | Description |
 | --- | --- |
-| pending_reply | 待回复会话 |
-| ai_suggestion_generated | AI 建议已生成待确认 |
-| send_failed | 发送失败（best-effort） |
+| pending_reply | Conversation pending reply |
+| ai_suggestion_generated | AI suggestion generated, pending confirmation |
+| send_failed | Send failed (best-effort) |
 
-明细见 `docs/demo-dataset.customer-service.json`。需配置 AI Provider 时 AI 建议步骤可能 skipped。
+See `docs/demo-dataset.customer-service.json` for details. The AI suggestion step may be skipped if the AI provider is not configured.
 
-## Dashboard KPI 样本（Phase F6 / F7）
+## Dashboard KPI Samples (Phase F6 / F7)
 
-运行 seed 后探测 `GET /dashboard/overview|todos|health`，覆盖 10 KPI：采集失败、商品草稿、AI 待复核、发布检查、刊登异常、订单异常、库存预警、客服待回复、失败任务、配置风险。
+After running the seed, probe `GET /dashboard/overview|todos|health`, covering 10 KPIs: collection failures, product drafts, AI pending review, publish checks, listing anomalies, order anomalies, inventory warnings, customer service pending replies, failed tasks, and configuration risk.
 
-明细见 `docs/demo-dataset.dashboard.json`。
+See `docs/demo-dataset.dashboard.json` for details.
 
-## 注意事项
+## Notes
 
-- 抖店真实 create-draft 仍为 **Release Candidate**，无凭证时样本 #19 预期 `blocked_by_real_credentials`
-- 批量刊登种子依赖 `local_draft_only` 平台店铺；性能回归由 GitHub Actions 和维护者人工验收覆盖。
-- 商品标题在种子脚本中使用 ASCII 前缀 `R1 demo`，便于检索；演示前可在后台改为中文展示名
+- Douyin's real create-draft flow is still a **Release Candidate**; without credentials, sample #19 is expected to return `blocked_by_real_credentials`
+- Bulk listing seeding depends on a `local_draft_only` platform shop; performance regressions are covered by GitHub Actions and manual maintainer acceptance testing.
+- Product titles use the ASCII prefix `R1 demo` in the seed script for easy searching; you can rename the display name in the admin panel before a demo
 
-## 变更记录
+## Changelog
 
-| 日期 | 说明 |
+| Date | Description |
 | --- | --- |
-| 2026-06-30 | Phase F7：订单 / 库存 / 客服 / Dashboard 样本 |
-| 2026-06-27 | Phase R1.1：种子数据与 12 步人工走查 |
-| 2026-06-27 | Phase R1 初版：seed 脚本 + demo-dataset.json |
+| 2026-06-30 | Phase F7: order / inventory / customer service / dashboard samples |
+| 2026-06-27 | Phase R1.1: seed data and 12-step manual walkthrough |
+| 2026-06-27 | Phase R1 initial version: seed script + demo-dataset.json |

@@ -17,21 +17,14 @@ import { useInitialStateModel } from '@/hooks/useInitialStateModel';
 import { message } from 'antd';
 import { useEffect, useState, useRef } from 'react';
 import BrandLogo from '@/components/BrandLogo';
+import LocaleSwitch from '@/components/layout/LocaleSwitch';
 import { AUTH_TOKEN_KEY, AUTH_SESSION_MODE_KEY } from '@/constants/auth';
 import { formatUserErrorMessage } from '@/constants/errorMessages';
+import { useLocale } from '@/locale';
 import { login, register, sendEmailCode } from '@/services/auth';
 import './index.less';
 
-const FEATURE_TAGS = [
-  { icon: <CloudDownloadOutlined />, label: '多平台商品采集', className: 'tag-blue' },
-  { icon: <RobotOutlined />, label: 'AI 商品运营', className: 'tag-violet' },
-  { icon: <FileImageOutlined />, label: '图片智能处理', className: 'tag-teal' },
-  { icon: <CloudUploadOutlined />, label: '多平台刊登', className: 'tag-indigo' },
-  { icon: <InboxOutlined />, label: '库存同步', className: 'tag-green' },
-  { icon: <DashboardOutlined />, label: '运营看板', className: 'tag-amber' },
-] as const;
-
-const PLATFORM_ITEMS = ['1688', 'Shopee', 'Lazada', 'Temu'];
+const PLATFORM_ITEMS = ['Amazon.de', 'eBay.de'];
 
 type AuthTabKey = 'login' | 'register';
 
@@ -52,6 +45,7 @@ function getAuthErrorMessage(error: unknown, fallback: string) {
 
 export default function LoginPage() {
   const { setInitialState, initialState } = useInitialStateModel();
+  const { t } = useLocale();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const activeTab = authTabFromPathname(location.pathname);
@@ -61,6 +55,15 @@ export default function LoginPage() {
 
   const [countdown, setCountdown] = useState(0);
   const countdownTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const featureTags = [
+    { icon: <CloudDownloadOutlined />, label: t('login.featureCollect'), className: 'tag-blue' },
+    { icon: <RobotOutlined />, label: t('login.featureAI'), className: 'tag-violet' },
+    { icon: <FileImageOutlined />, label: t('login.featureImage'), className: 'tag-teal' },
+    { icon: <CloudUploadOutlined />, label: t('login.featurePublish'), className: 'tag-indigo' },
+    { icon: <InboxOutlined />, label: t('login.featureInventory'), className: 'tag-green' },
+    { icon: <DashboardOutlined />, label: t('login.featureDashboard'), className: 'tag-amber' },
+  ] as const;
 
   const loggedIn = Boolean(initialState?.currentUser);
   useEffect(() => {
@@ -91,9 +94,9 @@ export default function LoginPage() {
         localStorage.setItem(AUTH_SESSION_MODE_KEY, data.sessionMode);
       }
       await setInitialState((s) => ({ ...s, currentUser: data.user }));
-      message.success('登录成功');
+      message.success(t('login.successLogin'));
     } catch (e: unknown) {
-      message.error(getAuthErrorMessage(e, '登录失败'));
+      message.error(getAuthErrorMessage(e, t('login.failLogin')));
     } finally {
       setLoading(false);
     }
@@ -110,9 +113,9 @@ export default function LoginPage() {
       });
       localStorage.setItem(AUTH_TOKEN_KEY, data.token);
       await setInitialState((s) => ({ ...s, currentUser: data.user }));
-      message.success('注册并登录成功');
+      message.success(t('login.successRegister'));
     } catch (e: unknown) {
-      message.error(getAuthErrorMessage(e, '注册失败'));
+      message.error(getAuthErrorMessage(e, t('login.failRegister')));
     } finally {
       setLoading(false);
     }
@@ -127,7 +130,7 @@ export default function LoginPage() {
     const email = registerForm.getFieldValue('email');
     try {
       await sendEmailCode(email, 'register');
-      message.success('验证码已发送');
+      message.success(t('login.codeSent'));
       setCountdown(60);
       countdownTimer.current = setInterval(() => {
         setCountdown((c) => {
@@ -139,7 +142,7 @@ export default function LoginPage() {
         });
       }, 1000);
     } catch (e: unknown) {
-      message.error(getAuthErrorMessage(e, '发送失败'));
+      message.error(getAuthErrorMessage(e, t('login.codeSendFail')));
     }
   };
 
@@ -159,29 +162,26 @@ export default function LoginPage() {
             <div className="brand">
               <BrandLogo height={32} />
               <div>
-                <div className="brand-text">贸灵 TradeMind</div>
-                <div className="brand-sub">AI-Powered Cross-Border ERP</div>
+                <div className="brand-text">{t('login.brand')}</div>
+                <div className="brand-sub">{t('login.brandSub')}</div>
               </div>
             </div>
 
             <div className="slogan">
               <div className="eyebrow">
                 <SafetyCertificateOutlined />
-                <span>面向跨境团队的 AI 运营工作台</span>
+                <span>{t('login.eyebrow')}</span>
               </div>
               <h1>
-                用 <span className="highlight">AI</span> 串联商品、
-                <br />
-                刊登与库存增长
+                {t('login.sloganTitleBefore')}{' '}
+                <span className="highlight">{t('login.sloganTitleHighlight')}</span>{' '}
+                {t('login.sloganTitleAfter')}
               </h1>
-              <p>
-                从商品采集、图片处理、AI 优化到多平台刊登，TradeMind
-                把高频运营动作收进一个更轻、更快的工作台。
-              </p>
+              <p>{t('login.sloganBody')}</p>
             </div>
 
             <div className="features">
-              {FEATURE_TAGS.map((tag, index) => (
+              {featureTags.map((tag, index) => (
                 <div
                   key={tag.label}
                   className={`feature-tag ${tag.className}`}
@@ -214,7 +214,7 @@ export default function LoginPage() {
               </div>
               <div className="hero-board__task">
                 <CheckCircleOutlined />
-                <span>AI 已生成 36 条商品优化建议</span>
+                <span>{t('login.heroTask')}</span>
               </div>
             </div>
           </div>
@@ -222,11 +222,14 @@ export default function LoginPage() {
 
         <div className="login-right">
           <div className="login-right-inner">
+            <div className="login-locale-bar">
+              <LocaleSwitch size="small" />
+            </div>
             <div className="mobile-brand">
               <BrandLogo height={28} />
               <div>
-                <div className="brand-text">贸灵 TradeMind</div>
-                <div className="brand-sub">AI-Powered Cross-Border ERP</div>
+                <div className="brand-text">{t('login.brand')}</div>
+                <div className="brand-sub">{t('login.brandSub')}</div>
               </div>
             </div>
 
@@ -237,17 +240,21 @@ export default function LoginPage() {
                 centered
                 onChange={changeAuthTab}
                 items={[
-                  { key: 'login', label: '登录' },
-                  { key: 'register', label: '注册' },
+                  { key: 'login', label: t('login.tabLogin') },
+                  { key: 'register', label: t('login.tabRegister') },
                 ]}
               />
 
               <div className="welcome-text" key={`welcome-${activeTab}`}>
-                <h2>{activeTab === 'login' ? '欢迎回来' : '注册账号'}</h2>
+                <h2>
+                  {activeTab === 'login'
+                    ? t('login.welcomeBack')
+                    : t('login.welcomeRegister')}
+                </h2>
                 <p>
                   {activeTab === 'login'
-                    ? '登录你的 TradeMind 工作台'
-                    : '开启你的 AI 跨境之旅'}
+                    ? t('login.welcomeLoginHint')
+                    : t('login.welcomeRegisterHint')}
                 </p>
               </div>
 
@@ -261,12 +268,12 @@ export default function LoginPage() {
               >
                 <Form.Item
                   name="account"
-                  label="邮箱 / 手机号"
-                  rules={[{ required: true, message: '请输入邮箱或手机号' }]}
+                  label={t('login.account')}
+                  rules={[{ required: true, message: t('login.accountRequired') }]}
                   validateTrigger="onBlur"
                 >
                   <Input
-                    placeholder="请输入邮箱或手机号"
+                    placeholder={t('login.accountPlaceholder')}
                     prefix={<MailOutlined />}
                     autoComplete="off"
                     data-lpignore="true"
@@ -276,12 +283,12 @@ export default function LoginPage() {
 
                 <Form.Item
                   name="password"
-                  label="密码"
-                  rules={[{ required: true, message: '请输入登录密码' }]}
+                  label={t('login.password')}
+                  rules={[{ required: true, message: t('login.passwordRequired') }]}
                   validateTrigger="onBlur"
                 >
                   <Input.Password
-                    placeholder="请输入登录密码"
+                    placeholder={t('login.passwordPlaceholder')}
                     prefix={<LockOutlined />}
                     autoComplete="new-password"
                     data-lpignore="true"
@@ -291,10 +298,10 @@ export default function LoginPage() {
 
                 <div className="form-actions">
                   <Form.Item name="remember" valuePropName="checked" noStyle initialValue={true}>
-                    <Checkbox>记住我</Checkbox>
+                    <Checkbox>{t('login.rememberMe')}</Checkbox>
                   </Form.Item>
                   <a href="#" className="forgot-link" onClick={(e) => e.preventDefault()}>
-                    忘记密码？
+                    {t('login.forgotPassword')}
                   </a>
                 </div>
 
@@ -306,17 +313,15 @@ export default function LoginPage() {
                     loading={loading}
                     disabled={loading}
                   >
-                    登录工作台
+                    {t('login.submitLogin')}
                     <ArrowRightOutlined />
                   </Button>
                 </Form.Item>
 
                 <div className="register-link">
-                  还没有账号？
-                  <Link
-                    to={`/user/register${location.search}`}
-                  >
-                    立即注册
+                  {t('login.noAccount')}
+                  <Link to={`/user/register${location.search}`}>
+                    {t('login.registerNow')}
                   </Link>
                 </div>
               </Form>
@@ -329,25 +334,29 @@ export default function LoginPage() {
               >
                 <Form.Item
                   name="email"
-                  label="邮箱"
+                  label={t('login.email')}
                   rules={[
-                    { required: true, message: '请输入邮箱' },
-                    { type: 'email', message: '请输入有效的邮箱地址' },
+                    { required: true, message: t('login.emailRequired') },
+                    { type: 'email', message: t('login.emailInvalid') },
                   ]}
                   validateTrigger="onBlur"
                 >
-                  <Input placeholder="请输入邮箱" prefix={<MailOutlined />} autoComplete="email" />
+                  <Input
+                    placeholder={t('login.emailPlaceholder')}
+                    prefix={<MailOutlined />}
+                    autoComplete="email"
+                  />
                 </Form.Item>
 
-                <Form.Item label="邮箱验证码" required>
+                <Form.Item label={t('login.code')} required>
                   <Row gutter={8}>
                     <Col span={15}>
                       <Form.Item
                         name="code"
                         noStyle
-                        rules={[{ required: true, message: '请输入验证码' }]}
+                        rules={[{ required: true, message: t('login.codeRequired') }]}
                       >
-                        <Input placeholder="6位验证码" />
+                        <Input placeholder={t('login.codePlaceholder')} />
                       </Form.Item>
                     </Col>
                     <Col span={9}>
@@ -356,7 +365,9 @@ export default function LoginPage() {
                         onClick={handleSendCode}
                         disabled={countdown > 0}
                       >
-                        {countdown > 0 ? `${countdown}s 后重发` : '获取验证码'}
+                        {countdown > 0
+                          ? t('login.resendIn', { values: { seconds: countdown } })
+                          : t('login.sendCode')}
                       </Button>
                     </Col>
                   </Row>
@@ -364,15 +375,15 @@ export default function LoginPage() {
 
                 <Form.Item
                   name="password"
-                  label="密码"
+                  label={t('login.password')}
                   rules={[
-                    { required: true, message: '请输入密码' },
-                    { min: 6, message: '密码至少6位' },
+                    { required: true, message: t('login.passwordRequired') },
+                    { min: 6, message: t('login.passwordMin') },
                   ]}
                   validateTrigger="onBlur"
                 >
                   <Input.Password
-                    placeholder="请输入至少6位密码"
+                    placeholder={t('login.passwordMinPlaceholder')}
                     prefix={<LockOutlined />}
                     autoComplete="new-password"
                   />
@@ -380,23 +391,23 @@ export default function LoginPage() {
 
                 <Form.Item
                   name="confirmPassword"
-                  label="确认密码"
+                  label={t('login.confirmPassword')}
                   dependencies={['password']}
                   validateTrigger="onBlur"
                   rules={[
-                    { required: true, message: '请确认密码' },
+                    { required: true, message: t('login.confirmPasswordRequired') },
                     ({ getFieldValue }) => ({
                       validator(_, value) {
                         if (!value || getFieldValue('password') === value) {
                           return Promise.resolve();
                         }
-                        return Promise.reject(new Error('两次输入的密码不一致!'));
+                        return Promise.reject(new Error(t('login.confirmPasswordMismatch')));
                       },
                     }),
                   ]}
                 >
                   <Input.Password
-                    placeholder="请再次输入密码"
+                    placeholder={t('login.confirmPasswordPlaceholder')}
                     prefix={<LockOutlined />}
                     autoComplete="new-password"
                   />
@@ -410,24 +421,24 @@ export default function LoginPage() {
                     loading={loading}
                     disabled={loading}
                   >
-                    注册
+                    {t('login.submitRegister')}
                     <ArrowRightOutlined />
                   </Button>
                 </Form.Item>
 
                 <div className="register-link">
-                  已有账号？
-                  <Link
-                    to={`/user/login${location.search}`}
-                  >
-                    去登录
+                  {t('login.hasAccount')}
+                  <Link to={`/user/login${location.search}`}>
+                    {t('login.goLogin')}
                   </Link>
                 </div>
               </Form>
             )}
 
             <div className="agreement">
-              {activeTab === 'login' ? '登录' : '注册'}即表示你已阅读并同意用户协议与隐私政策
+              {activeTab === 'login'
+                ? t('login.agreementLogin')
+                : t('login.agreementRegister')}
             </div>
           </div>
         </div>

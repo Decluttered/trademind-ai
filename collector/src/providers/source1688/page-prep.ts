@@ -3,7 +3,7 @@ import type { Page } from 'playwright';
 const CORE_SELECTORS =
   'h1, h1.d-title, [class*="title"], [class*="price"], [class*="gallery"], [class*="offer-img"], [class*="sku"], [class*="obj-sku"]';
 
-/** 1688 详情页：等待核心区域 + 分段滚动触发懒加载 */
+/** 1688 detail page: wait for the core area + scroll in segments to trigger lazy loading */
 export async function prepare1688OfferPage(page: Page, batchMode: boolean): Promise<void> {
   const delayMs = batchMode ? 2000 + Math.floor(Math.random() * 2000) : 2500 + Math.floor(Math.random() * 2500);
   await page.waitForTimeout(delayMs);

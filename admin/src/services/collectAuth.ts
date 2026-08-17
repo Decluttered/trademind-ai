@@ -71,9 +71,9 @@ export type ProviderPinduoduoOpenLoginResult = {
 };
 
 export type PinduoduoCheckLoginParams = {
-  /** 优先：失败任务 / 采集弹窗中的商品详情链接 */
+  /** Preferred: the product detail link from a failed task / collection dialog */
   url?: string;
-  /** 设置页「用于检测的商品链接」（可传未保存的表单值） */
+  /** The "product link used for detection" on the settings page (an unsaved form value may be passed) */
   testUrl?: string;
 };
 
@@ -89,7 +89,7 @@ export async function checkPinduoduoLogin(params?: PinduoduoCheckLoginParams) {
   );
 }
 
-/** @deprecated 使用 checkPinduoduoLogin */
+/** @deprecated Use checkPinduoduoLogin */
 export async function fetchPinduoduoAuthStatus(contextUrl?: string, testUrl?: string) {
   return checkPinduoduoLogin({
     url: contextUrl?.trim() || undefined,

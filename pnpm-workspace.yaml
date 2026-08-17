@@ -1,3 +1,5 @@
 packages:
   - "admin"
   - "collector"
+  - "extension"
+  - "temporal"

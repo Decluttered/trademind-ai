@@ -1,61 +1,61 @@
 ---
 name: backend-testing
-description: TradeMind Go/Gin/GORM 后端单元、HTTP、PostgreSQL、Redis、队列、状态机和第三方适配器测试规范
+description: Testing standard for TradeMind's Go/Gin/GORM backend — unit, HTTP, PostgreSQL, Redis, queues, state machines, and third-party adapters
 ---
 
-# TradeMind 后端测试规范
+# TradeMind Backend Testing Standard
 
-## 自动适用
+## Automatic Scope
 
-涉及 `backend/**`、Go handler/service/model/repository/provider、数据库、Redis、队列、worker、scheduler、auth、权限、状态机或后端 CI 时自动适用。后端生产代码和测试代码质量由 `.agents/skills/code-quality/SKILL.md` 约束。
+Automatically applies to work involving `backend/**`, Go handlers/services/models/repositories/providers, the database, Redis, queues, workers, schedulers, auth, permissions, state machines, or backend CI. Backend production and test code quality is governed by `.agents/skills/code-quality/SKILL.md`.
 
-handler/service/repository/adapter/worker 的测试应验证模块边界、事务归属、幂等和越层调用风险；详细边界、循环依赖和 Architecture Baseline/Ratchet 由 `.agents/skills/modular-architecture/SKILL.md` 定义。
+Tests for handlers/services/repositories/adapters/workers should verify module boundaries, transaction ownership, idempotency, and cross-layer call risks; detailed boundaries, circular dependencies, and the Architecture Baseline/Ratchet are defined in `.agents/skills/modular-architecture/SKILL.md`.
 
-## 技术栈
+## Tech Stack
 
-- 语言：Go 1.25 module `github.com/trademind-ai/trademind/backend`。
-- HTTP：Gin。
-- ORM：GORM；默认 PostgreSQL，也存在 MySQL driver。
-- Redis：go-redis v9，LIST 队列 + workers。
-- 测试：标准 `go test`、`httptest`、`testify`。不引入第二套冲突框架。
+- Language: Go 1.25, module `github.com/trademind-ai/trademind/backend`.
+- HTTP: Gin.
+- ORM: GORM; PostgreSQL by default, with a MySQL driver also present.
+- Redis: go-redis v9, LIST-based queues + workers.
+- Testing: standard `go test`, `httptest`, `testify`. No second, conflicting framework.
 
-## 单元测试
+## Unit Tests
 
-覆盖 domain/service/provider 纯逻辑：正常、参数错误、资源不存在、权限不足、状态不允许、外部依赖失败、事务回滚、幂等、重复请求、错误 envelope、边界值。
+Cover pure domain/service/provider logic: normal cases, invalid arguments, resource not found, insufficient permissions, disallowed state, external dependency failure, transaction rollback, idempotency, duplicate requests, error envelopes, and boundary values.
 
-重点模块：auth、adminperm、product、SKU、pricing、inventory、productcheck readiness、productpublish、Douyin draft/SKU binding、image/files、taskcenter、idempotency、queue/worker、webhook、observability。
+Key modules: auth, adminperm, product, SKU, pricing, inventory, productcheck readiness, productpublish, Douyin draft/SKU binding, image/files, taskcenter, idempotency, queue/worker, webhook, observability.
 
-## HTTP 集成测试
+## HTTP Integration Tests
 
-使用 Gin + `httptest`。测试真实 route、middleware、auth、DTO、handler、service、error handler 和 response envelope。第三方平台必须 fake/stub，不访问真实平台。
+Use Gin + `httptest`. Test real routes, middleware, auth, DTOs, handlers, services, error handlers, and the response envelope. Third-party platforms must be faked/stubbed — never access real platforms.
 
-关键 endpoint：auth/profile、image/providers、product detail、readiness、inventory、publications、publication SKUs、publish targets、Douyin create-draft、traditional publish。
+Key endpoints: auth/profile, image/providers, product detail, readiness, inventory, publications, publication SKUs, publish targets, Douyin create-draft, traditional publish.
 
-## PostgreSQL 集成测试
+## PostgreSQL Integration Tests
 
-必须通过安全守卫：数据库名或 URL 包含 `test`、`_test` 或 `e2e`，环境为 test，禁止生产域名/生产库名/默认开发库。无安全测试库时测试应明确 skip 或失败原因，不 fallback 到开发库。
+Must pass the safety guard: the database name or URL contains `test`, `_test`, or `e2e`, the environment is `test`, and production domains/database names/default dev databases are forbidden. If no safe test database is available, the test should explicitly skip or fail with a clear reason — never fall back to the dev database.
 
-覆盖 AutoMigrate 从空库执行、关键表/索引/约束、repository CRUD、unique/foreign key、transaction rollback、pagination、ordering、concurrency、idempotency、JSON/enum/state 字段。
+Cover AutoMigrate running against an empty database, key tables/indexes/constraints, repository CRUD, unique/foreign-key constraints, transaction rollback, pagination, ordering, concurrency, idempotency, and JSON/enum/state fields.
 
-## Redis / 队列测试
+## Redis / Queue Tests
 
-必须通过安全守卫：`TEST_REDIS_URL`、测试 DB 编号或测试 key 前缀，不连接生产/开发业务 Redis。覆盖 cache set/get/expire、miss、invalidation、lock/idempotency、enqueue、consume、retry、failed task、duplicate task、状态转换。
+Must pass the safety guard: `TEST_REDIS_URL`, a test DB number, or a test key prefix — never connect to production/dev business Redis. Cover cache set/get/expire, miss, invalidation, lock/idempotency, enqueue, consume, retry, failed tasks, duplicate tasks, and state transitions.
 
-## 后台任务和状态机
+## Background Tasks and State Machines
 
-queue/worker/scheduler/cron/background task 需要覆盖 created/running/success/failure/retry/cancel/timeout/duplicate/idempotency/非法转换/外部平台失败/事务失败。时间逻辑使用 fake clock 或短上下文，不长 sleep。
+Queue/worker/scheduler/cron/background tasks need coverage for created/running/success/failure/retry/cancel/timeout/duplicate/idempotency/illegal transitions/external platform failure/transaction failure. Use a fake clock or a short context for time-based logic — no long sleeps.
 
-## 第三方适配器
+## Third-Party Adapters
 
-Douyin、TikTok、Shopee、Lazada、Amazon、AI、image、storage、OCR、email、collector 均使用 fake server/stub。覆盖 4xx/5xx/timeout/非法 JSON/字段缺失/限流/token 失效/签名失败/retry 边界。
+Douyin, TikTok, Shopee, Lazada, Amazon, AI, image, storage, OCR, email, and collector integrations all use a fake server/stub. Cover 4xx/5xx/timeout/invalid JSON/missing fields/rate limiting/token expiry/signature failure/retry boundaries.
 
-## 命令
+## Commands
 
-- `pnpm test:backend`：Go 单元测试。
-- `pnpm test:backend:integration`：PostgreSQL/HTTP 集成测试（需安全测试库）。
-- `pnpm test:db`：数据库迁移/约束测试。
-- `pnpm test:redis`：Redis/队列集成测试（需安全测试 Redis）。
+- `pnpm test:backend`: Go unit tests.
+- `pnpm test:backend:integration`: PostgreSQL/HTTP integration tests (requires a safe test database).
+- `pnpm test:db`: database migration/constraint tests.
+- `pnpm test:redis`: Redis/queue integration tests (requires a safe test Redis).
 
-## 禁止项
+## Prohibited
 
-不得修改业务逻辑让测试容易；不得连接真实服务；不得 skip/only 掩盖失败；不得用真实凭据或真实店铺。
+Do not modify business logic just to make tests easier. Do not connect to real services. Do not use skip/only to mask failures. Do not use real credentials or real stores.

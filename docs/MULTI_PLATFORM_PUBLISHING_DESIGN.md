@@ -1,170 +1,170 @@
-# 多平台刊登设计（Phase A2）
+# Multi-Platform Publishing Design (Phase A2)
 
-> 单商品多平台 / 多店铺刊登中心（A1.2）+ **多商品批量创建刊登草稿**（A2）。
+> Single-product multi-platform / multi-shop publishing center (A1.2) + **bulk creation of publish drafts for multiple products** (A2).
 
-## 平台能力分级
+## Platform Capability Tiers
 
-| 内部能力码 | 运营可见文案 | 行为 |
+| Internal capability code | Operator-facing copy | Behavior |
 | --- | --- | --- |
-| `real_draft_create` | 可创建平台草稿 | 调用平台真实写接口创建草稿（当前仅 **抖店**） |
-| `local_draft_only` | 仅生成本地草稿 | 生成本地 `product_publications` + 任务快照，**不调用**外部平台 API |
-| `not_configured` | 尚未配置 | 平台开放配置或刊登预设未完成 |
-| `not_authorized` | 店铺未授权 | 需先在店铺管理完成 OAuth |
-| `disabled` | 已停用 | Provider 或能力已关闭 |
+| `real_draft_create` | Can create a platform draft | Calls the platform's real write API to create a draft (currently **Douyin** only) |
+| `local_draft_only` | Generates a local draft only | Generates a local `product_publications` entry + task snapshot; **does not call** the external platform API |
+| `not_configured` | Not yet configured | Platform open-API configuration or publishing preset is incomplete |
+| `not_authorized` | Shop not authorized | OAuth must be completed in shop management first |
+| `disabled` | Disabled | Provider or capability has been turned off |
 
-能力来源：`GET /api/v1/platform/providers` 注册表 + 店铺表 + 平台开放配置完整性；**不在页面写死平台列表**。
+Capability source: the `GET /api/v1/platform/providers` registry + shop table + completeness of the platform open-API configuration; **the platform list is never hardcoded in the page**.
 
-## 单商品多目标刊登（A1.2）
+## Single-Product Multi-Target Publishing (A1.2)
 
-1. **刊登目标**：按平台展示已授权店铺，支持多选。
-2. **统一配置**：标题 / 描述 / 价格 / 图片 / 包裹 / 库存策略（接口预留 `commonConfig`）。
-3. **单独配置**：各平台 Tab 内覆盖（抖店类目属性、图片同步等）；**单独配置优先生效**。
+1. **Publish targets**: shows authorized shops grouped by platform, supports multi-select.
+2. **Common configuration**: title / description / price / images / package / inventory strategy (the interface reserves `commonConfig`).
+3. **Per-target overrides**: overridden within each platform tab (Douyin category attributes, image sync, etc.); **per-target overrides take precedence**.
 
-### 单商品 API
+### Single-Product API
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 | --- | --- | --- |
-| GET | `/api/v1/products/:id/publish-targets` | 可刊登平台与店铺及能力分级 |
-| POST | `/api/v1/products/:id/publish-targets/check` | 多目标独立预检查（不写库、不调平台写接口） |
-| POST | `/api/v1/products/:id/publish-targets/create-drafts` | 批量创建刊登草稿；每目标一子任务，汇总为 `product_publish_batches`（`batch_type=single_product`） |
+| GET | `/api/v1/products/:id/publish-targets` | Publishable platforms and shops with capability tiers |
+| POST | `/api/v1/products/:id/publish-targets/check` | Independent precheck for multiple targets (no DB writes, no platform write API calls) |
+| POST | `/api/v1/products/:id/publish-targets/create-drafts` | Batch-creates publish drafts; one subtask per target, aggregated into `product_publish_batches` (`batch_type=single_product`) |
 
-## 多商品批量刊登（Phase A2）
+## Multi-Product Bulk Publishing (Phase A2)
 
-### 场景
+### Scenarios
 
 ```text
-多个商品 → 单平台单店铺
-多个商品 → 单平台多店铺
-多个商品 → 多平台多店铺
+Multiple products → single platform, single shop
+Multiple products → single platform, multiple shops
+Multiple products → multiple platforms, multiple shops
 ```
 
-### 运营入口
+### Operator Entry Points
 
-- 商品草稿列表：多选 → **批量创建刊登草稿**
-- 向导页：`/product/publish-batch?productIds=...`（5 步）
-- 批次列表：商品 → 刊登任务 → **刊登批次** Tab
-- 批次详情：`/product/publish-batches/:id`
+- Product draft list: multi-select → **Bulk create publish drafts**
+- Wizard page: `/product/publish-batch?productIds=...` (5 steps)
+- Batch list: Products → Publish tasks → **Publish Batches** tab
+- Batch detail: `/product/publish-batches/:id`
 
-### 批量 API
+### Bulk API
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 | --- | --- | --- |
-| GET | `/api/v1/product-publish/targets` | 全局平台 / 店铺能力（向导第 2 步） |
-| POST | `/api/v1/product-publish/batch-targets/check` | 多商品 × 多目标矩阵预检查 |
-| POST | `/api/v1/product-publish/batch-targets/create-drafts` | 创建多商品批次与子任务 |
-| GET | `/api/v1/product-publish/batches` | 批次列表 |
-| GET | `/api/v1/product-publish/batches/:id` | 批次详情 + 子任务 |
-| POST | `/api/v1/product-publish/batches/:id/retry-failed` | 只重试失败子任务 |
-| POST | `/api/v1/product-publish/batches/:id/cancel-pending` | 只取消 pending 子任务 |
+| GET | `/api/v1/product-publish/targets` | Global platform / shop capabilities (wizard step 2) |
+| POST | `/api/v1/product-publish/batch-targets/check` | Precheck for the multi-product × multi-target matrix |
+| POST | `/api/v1/product-publish/batch-targets/create-drafts` | Creates a multi-product batch with subtasks |
+| GET | `/api/v1/product-publish/batches` | Batch list |
+| GET | `/api/v1/product-publish/batches/:id` | Batch detail + subtasks |
+| POST | `/api/v1/product-publish/batches/:id/retry-failed` | Retries only the failed subtasks |
+| POST | `/api/v1/product-publish/batches/:id/cancel-pending` | Cancels only the pending subtasks |
 
-### 检查响应摘要
+### Check-Response Summary
 
-- `ready` → 可以创建草稿
-- `warning` → 建议检查（可继续，需人工确认）
-- `blocked` → 暂不能创建草稿
+- `ready` → draft can be created
+- `warning` → recommended to review (can proceed, requires manual confirmation)
+- `blocked` → draft cannot be created yet
 
-每个 **商品 × 目标** 的 `issues[]` 含中文化 `title` / `message`；内部码在 `technicalDetails.rawCode`。
+Each **product × target** combination's `issues[]` includes a localized `title` / `message`; the internal code is in `technicalDetails.rawCode`.
 
-创建参数：
+Creation parameters:
 
-- `onlyReady=true`：只创建 ready 项
-- `includeWarnings=false`：跳过 warning 项
-- `blocked` 项默认跳过，不可强行提交
+- `onlyReady=true`: creates only `ready` items
+- `includeWarnings=false`: skips `warning` items
+- `blocked` items are skipped by default and cannot be force-submitted
 
-### 批次与子任务模型
+### Batch and Subtask Model
 
-- `product_publish_batches`：`batch_type=multi_product` 时 `product_id` 可为空；保存 `product_count`、`target_count`、`task_count`、配置快照 `input`
-- `product_publish_tasks.batch_id` + `target_key`：每个商品 × 每个目标一条子任务
-- 子任务 `input` 保存 `effectiveConfig` + `configSources` 快照
+- `product_publish_batches`: when `batch_type=multi_product`, `product_id` can be null; stores `product_count`, `target_count`, `task_count`, and a configuration snapshot `input`
+- `product_publish_tasks.batch_id` + `target_key`: one subtask per product × per target
+- Subtask `input` stores a snapshot of `effectiveConfig` + `configSources`
 
-批次状态：`pending` / `running` / `partial_success` / `success` / `failed` / `cancelled`
+Batch status: `pending` / `running` / `partial_success` / `success` / `failed` / `cancelled`
 
-### 配置优先级
+### Configuration Priority
 
 ```text
-系统默认 → 平台默认 → 店铺默认 → 批量统一配置 → 商品覆盖 → 平台覆盖 → 店铺覆盖 → 商品+平台+店铺覆盖
+System default → Platform default → Shop default → Bulk common configuration → Product override → Platform override → Shop override → Product+platform+shop override
 ```
 
-MVP 统一字段：`priceRule`、`imageStrategy`、`stockStrategy`、`packageWeight`、`packageSize`、`remark`
+MVP common fields: `priceRule`, `imageStrategy`, `stockStrategy`, `packageWeight`, `packageSize`, `remark`
 
-### 幂等
+### Idempotency
 
-- 批次：`publish-batch:{userId}:{productIdsHash}:{targetsHash}:{configHash}`
-- 子任务：同一商品 + 店铺 + 平台已有成功抖店 / 本地草稿时不重复创建
+- Batch: `publish-batch:{userId}:{productIdsHash}:{targetsHash}:{configHash}`
+- Subtask: not recreated when the same product + shop + platform already has a successful Douyin / local draft
 
-### 操作日志
+### Operation Logs
 
 - `product.publish.batch.check`
 - `product.publish.batch.create`
 - `product.publish.batch.retry_failed`
 - `product.publish.batch.cancel_pending`
 
-失败任务中心：子任务 `batch_id` 存在时，详情链接跳转批次详情页。
+Failed task center: when a subtask has a `batch_id`, its detail link navigates to the batch detail page.
 
-## 与直接上架的边界
+## Boundary with Direct Listing
 
-- 本阶段名称准确为 **批量创建刊登草稿**，不是「一键发布 / 直接上架」。
-- 未接入真实 Provider 的平台**不得**伪装为已发布成功。
-- 抖店仍为 **Release Candidate**；OpenAPI 字段未改；复用现有 `create-draft` 链路。
+- This phase is accurately named **bulk creation of publish drafts**, not "one-click publish / direct listing."
+- Platforms without a real Provider integration **must not** be disguised as having published successfully.
+- Douyin remains a **Release Candidate**; the OpenAPI fields are unchanged; it reuses the existing `create-draft` pipeline.
 
-## Phase A2 实施边界（禁止）
+## Phase A2 Implementation Boundaries (Prohibited)
 
-- 自动直接上架
-- 新增真实平台 OpenAPI
-- 修改抖店 OpenAPI 字段
-- 一个子任务失败导致整个批次回滚
-- 把 `local_draft_only` 伪装成真实平台发布成功
+- Automatic direct listing
+- Adding a new real platform OpenAPI
+- Modifying Douyin OpenAPI fields
+- A single subtask failure rolling back the entire batch
+- Disguising `local_draft_only` as a successful real-platform publish
 
-## 下一阶段（不在 A2.2）
+## Next Phase (Not in A2.2)
 
-- 标题 / 描述策略纳入统一配置（Phase A3 前可选）
-- 各跨境平台真实 `ProductPublishProvider` 草稿创建升级
-- 批次异步队列化（当前同步创建子任务，抖店异步 worker 照旧）
+- Fold title / description strategy into the common configuration (optional before Phase A3)
+- Upgrade real `ProductPublishProvider` draft creation for each cross-border platform
+- Make batch processing async/queued (currently subtasks are created synchronously; the Douyin async worker remains unchanged)
 
-## Phase A2.1 验收与生产安全收口
+## Phase A2.1 Acceptance and Production Safety Closure
 
-### 批量规模上限
+### Bulk Size Limits
 
-| 环境变量 | 默认 | 说明 |
+| Environment variable | Default | Description |
 | --- | --- | --- |
-| `PUBLISH_BATCH_MAX_PRODUCTS` | 100 | 单批最多商品数 |
-| `PUBLISH_BATCH_MAX_TARGETS` | 20 | 单批最多刊登目标数 |
-| `PUBLISH_BATCH_MAX_TASKS` | 300 | 商品数 × 目标数上限 |
+| `PUBLISH_BATCH_MAX_PRODUCTS` | 100 | Maximum products per batch |
+| `PUBLISH_BATCH_MAX_TARGETS` | 20 | Maximum publish targets per batch |
+| `PUBLISH_BATCH_MAX_TASKS` | 300 | Cap on products × targets |
 
-超限 HTTP 400：`本次选择的商品和刊登目标较多，请分批创建刊登草稿。`
+Over the limit, HTTP 400: "The selected products and publish targets are too many; please create publish drafts in smaller batches."
 
-### 数据库 migration
+### Database Migration
 
-显式 Postgres migration：[`PUBLISH_BATCH_MIGRATION.md`](PUBLISH_BATCH_MIGRATION.md)（`product_id` 可空、查询索引、活跃批次 `idempotency_key` 部分唯一索引）。
+Explicit Postgres migration: [`PUBLISH_BATCH_MIGRATION.md`](PUBLISH_BATCH_MIGRATION.md) (nullable `product_id`, query indexes, partial unique index on `idempotency_key` for active batches).
 
-### 执行策略（本阶段结论）
+### Execution Strategy (Conclusion for This Phase)
 
-- **保持** create-drafts 同步 orchestration；单批 ≤300 子任务。
-- `local_draft_only`：同步 DB，预计可接受。
-- 抖店：子任务 pending + Redis worker；生产应保持 `PRODUCT_PUBLISH_QUEUE_ENABLED=true`。
-- 未引入独立批次 worker 队列。
+- **Keep** create-drafts as synchronous orchestration; ≤300 subtasks per batch.
+- `local_draft_only`: synchronous DB writes, expected to be acceptable.
+- Douyin: subtasks are pending + processed by a Redis worker; production should keep `PRODUCT_PUBLISH_QUEUE_ENABLED=true`.
+- No dedicated batch worker queue has been introduced.
 
-### 测试与脚本
+### Tests and Scripts
 
-- 集成测试：`backend/internal/modules/productpublish/batch_targets_integration_test.go`
-- 性能回归由 GitHub Actions 执行，产品体验由维护者人工验收；不保存一次性性能报告。
-- UX 与业务流程按 [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md) 人工签收。
+- Integration test: `backend/internal/modules/productpublish/batch_targets_integration_test.go`
+- Performance regression runs via GitHub Actions; product experience is manually accepted by maintainers; one-off performance reports are not retained.
+- UX and business flows are manually signed off per [`PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md`](PRODUCTION_MANUAL_ACCEPTANCE_CHECKLIST.md).
 
-## Phase A2.2 统一配置与覆盖配置 UI（2026-06-19）
+## Phase A2.2 Common Configuration and Override Configuration UI (2026-06-19)
 
-### 现状审计（改造前）
+### Current-State Audit (Before the Change)
 
-| 项 | 改造前 | 改造后 |
+| Item | Before | After |
 | --- | --- | --- |
-| 第 3 步统一配置 | MVP 平铺字段（`priceRule` 文本等） | 结构化表单：价格 / 图片 / 库存 / 包裹 / 备注 |
-| 第 4 步单独覆盖 | `window.prompt` + 硬编码默认值 | Tab 表格 + Modal 编辑器，支持增删改复制 |
-| 生效配置预览 | 无 | 第 5 步「查看生效配置」 |
-| 配置校验 | 仅矩阵规模 | 前后端数值 / 策略 / 越权校验 |
-| 向导状态 | 切换步骤易丢 | `localStorage` 草稿（含 user + productIds hash） |
+| Step 3 common configuration | MVP flat fields (`priceRule` as text, etc.) | Structured form: price / images / inventory / package / remark |
+| Step 4 per-target overrides | `window.prompt` + hardcoded defaults | Tab table + modal editor, supports add/remove/edit/copy |
+| Effective configuration preview | None | Step 5 "View effective configuration" |
+| Configuration validation | Matrix size only | Frontend and backend numeric / strategy / privilege validation |
+| Wizard state | Easily lost when switching steps | `localStorage` draft (keyed by user + productIds hash) |
 
-### 统一配置字段（`commonConfig`）
+### Common Configuration Fields (`commonConfig`)
 
-嵌套结构（兼容 A2 平铺 legacy 字段）：
+Nested structure (compatible with A2's legacy flat fields):
 
 ```json
 {
@@ -172,11 +172,11 @@ MVP 统一字段：`priceRule`、`imageStrategy`、`stockStrategy`、`packageWei
   "image": { "mainImageStrategy", "detailImageStrategy", "preferProcessedImages", "skipFailedImages" },
   "inventory": { "strategy", "safetyStock", "fixedQuantity", "outOfStockAction" },
   "package": { "weight", "weightUnit", "length", "width", "height", "sizeUnit" },
-  "remark": "内部备注"
+  "remark": "Internal remark"
 }
 ```
 
-### 覆盖层级（`overrides`）
+### Override Layers (`overrides`)
 
 ```text
 products[productId]
@@ -185,28 +185,28 @@ shops[shopId]
 productTargets[productId:platform:shopId]
 ```
 
-### 配置优先级（运营可见）
+### Configuration Priority (Operator-Visible)
 
 ```text
-系统默认 → 平台默认 → 店铺默认 → 统一配置 → 商品覆盖 → 平台覆盖 → 店铺覆盖 → 商品目标覆盖
+System default → Platform default → Shop default → Common configuration → Product override → Platform override → Shop override → Product-target override
 ```
 
-子任务 `input` 仍保存 `effectiveConfig` + `configSources`（叶子路径，如 `price.markupValue`）。`retry-failed` 从批次 `input` 重算配置，**不改变**已成功子任务快照。
+Subtask `input` still stores `effectiveConfig` + `configSources` (leaf paths, e.g. `price.markupValue`). `retry-failed` recomputes configuration from the batch's `input`; it **does not change** the snapshot of subtasks that already succeeded.
 
-### 配置校验错误
+### Configuration Validation Errors
 
-HTTP 400，`code=40004`，`data`：
+HTTP 400, `code=40004`, `data`:
 
 ```json
 {
   "code": "PUBLISH_CONFIG_INVALID",
-  "title": "刊登配置不正确",
-  "message": "统一库存必须是大于或等于 0 的整数。",
+  "title": "Invalid publish configuration",
+  "message": "Common inventory must be an integer greater than or equal to 0.",
   "technicalDetails": { "field": "commonConfig.inventory.fixedQuantity" }
 }
 ```
 
-### 前端组件
+### Frontend Components
 
 - `admin/src/pages/Product/PublishBatch/components/PublishConfigEditor.tsx`
 - `admin/src/pages/Product/PublishBatch/components/OverrideConfigTabs.tsx`
@@ -214,20 +214,20 @@ HTTP 400，`code=40004`，`data`：
 - `admin/src/constants/publishConfig.ts`
 - `admin/src/utils/publishConfigMerge.ts`
 
-### window.prompt 清理
+### `window.prompt` Cleanup
 
-批量刊登向导内 **0 处** `window.prompt`（全项目 `admin` 扫描通过）。
+**Zero** occurrences of `window.prompt` in the bulk publishing wizard (verified by a project-wide scan of `admin`).
 
-### 仍不做
+### Still Out of Scope
 
-- 自动直接上架
-- 新增真实跨境平台 OpenAPI
-- 修改抖店 OpenAPI 字段
-- 批次异步队列化
-- Phase A3 批量 AI
+- Automatic direct listing
+- Adding new real cross-border platform OpenAPIs
+- Modifying Douyin OpenAPI fields
+- Making batch processing async/queued
+- Phase A3 bulk AI
 
-### 下一阶段
+### Next Phase
 
-- 标题 / 描述策略纳入统一配置
-- 各跨境平台真实 `ProductPublishProvider` 草稿创建升级
-- 批次异步队列化（可选）
+- Fold title / description strategy into the common configuration
+- Upgrade real `ProductPublishProvider` draft creation for each cross-border platform
+- Make batch processing async/queued (optional)

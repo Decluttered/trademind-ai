@@ -1,12 +1,19 @@
 # TradeMind 当前维护状态
 
-更新时间：2026-08-15
+更新时间：2026-08-17
 
 ## 生命周期
 
-TradeMind 已由项目所有者确认进入生产维护阶段。当前工作重点是稳定性、安全修复、必要功能维护和简洁的生产文档，不再在工作树中累积阶段性开发报告、一次性验收门禁或本地运行证据。
+TradeMind 在本仓库中的产品路径是 **Amazon.de → eBay.de**（MindBay）。工作重点是这条链路的稳定性、安全修复和必要功能，以及把共享基础设施从历史多平台适配中收敛过来。
 
-“生产维护阶段”描述项目生命周期，不代表仓库可以自动启用真实平台能力。仓库默认仍为 `L0`，真实凭据、真实平台网络、抖店草稿写、后台 Worker 和灰度均关闭，库存写入与自动业务重试继续禁止。代码具备候选能力不等于部署或上线；CI、独立预生产、真实平台验收、备份恢复/回滚和发布审批仍是外部前置。
+“生产维护阶段”描述生命周期，不代表自动启用真实平台能力。仓库默认仍为 `L0` / `EBAY_ENV=sandbox`。真实凭据、真实网络和 LIVE Checkout 仍由显式配置打开。
+
+## 当前边界
+
+- 不要扩展 1688、抖店、TikTok、Shopee、Lazada、Shopify 作为货源或刊登目标。
+- 不在本次整理中提交、推送、打 Tag 或发布 Release。
+- 不创建或连接本地测试数据库。
+- 后续变更仍须保持核心 CI 绿色，并完成人工验收说明。
 
 ## 验收模式
 
@@ -17,6 +24,20 @@ TradeMind 已由项目所有者确认进入生产维护阶段。当前工作重�
 - 本地生成的 Playwright 报告、测试结果、截图、临时日志和运行证据不纳入版本控制，完成诊断后可直接清理。
 
 ## 仓库整理
+
+2026-08-17 Admin 增加薄层 locale：`en`（新浏览器默认）/ `zh`（完整中文与文案检查源）/ `de`（MindBay 为主）；登录页与顶栏可切换；API/JSON 键不变。E2E 通过 localStorage 固定 locale。
+
+2026-08-17 补齐 eBay E1 连接契约：`platform_ebay.redirect_uri` 按 RuName 校验，marketplace 必填，新授权包含 `sell.account.readonly`；店铺探测走 Account getPrivileges，应用设置探测走 client credentials；refresh 使用已授予 scopes 并加店铺锁。Identity getUser 不在 E1 范围。
+
+2026-08-16 删除工作区恢复用第二份 TradeMind 克隆 `tools/trademind-ai/`。产品代码只以 `MindBay/trademind-ai/` 为准；规则、Blueprint 与模块矩阵不再把它列为可对照路径，也不再允许在 `tools/` 下重建该克隆。
+
+2026-08-15 wurde MindBay Phase 3 als sicherer Monitoring-, Repricing- und Profit-Slice implementiert: Ein Monitor-Lauf bindet den aktuellen Amazon-Snapshot, einen immutable eBay-Listing-Snapshot und eine versionierte Preisregel an genau eine idempotente `PriceDecision`. Margin-, Max-Delta-, Max-Preis-, Verfügbarkeits- und Cooldown-Guardrails laufen ausschließlich in Integer-Cents/Basispunkten. Apply setzt denselben Offer-Preis idempotent, verifiziert das eBay-Ergebnis und bleibt bei `DRY_RUN` ein reines Request-Artefakt ohne Plattformmutation. Das append-only Ledger trennt erwartete von realisierten Typen; Phase 4 ergänzt Sale-basierte Ist-Buchungen. Admin bietet eine bestätigungspflichtige Decision-Inbox und eine responsive Profit-Sicht. Reale eBay-Sandbox-/Production-Updates, isolierte PostgreSQL-Migration und vollständige Admin-E2E-Abnahme bleiben externe CI-/Operator-Schritte.
+
+2026-08-15 wurde MindBay Phase 2 als API-first Kalender- und eBay-Publish-Slice umgesetzt: READY-Drafts erhalten deterministische, mutierungsfreie Preview-Slots und idempotente Jobs; ein einzelner Temporal-Workflow-Owner revalidiert, veröffentlicht und reconciled über den nativen Go-eBay-Adapter. OAuth-Tokens bleiben verschlüsselt, Taxonomy-Pflichtmerkmale werden gecacht, Cents werden erst an der Provider-Grenze in Dezimalwerte gewandelt, Timeout-Ergebnisse werden per stabiler SKU reconciled, und DRY_RUN/Production-Gates verhindern unbeabsichtigte Writes. Admin ergänzt eBay OAuth, echte Kategorie-Merkmale und den responsiven Planner. Der bestehende Redis-/Douyin-Publish bleibt unverändert und für eBay ausdrücklich deaktiviert. Lokale Unit-, Contract-, Architektur-, Build-, Compose- und Mock-E2E-Prüfungen decken den Codepfad ab; der externe Nachweis eines sichtbaren eBay-Sandbox-Angebots bleibt mangels eingegebener Sandbox-Credentials ein manueller Abnahmeschritt.
+
+2026-08-15 wurde MindBay Phase 1 als additiver, lokal verifizierter Vertical Slice umgesetzt: Amazon.de-Captures laufen über einen eigenen Collector-Provider in eine workspace-isolierte, ASIN-deduplizierte und unveränderliche Snapshot-Domäne mit erklärbarem Opportunity-Score. Das Listing Studio speichert EUR-Preise ausschließlich in Cents, versioniert AI-Inhalte append-only, erzwingt den dokumentierten Review-Zustandsautomaten sowie GPSR-Gates und führt Bilder über eine HTTPS-/SSRF-geschützte, metadatenbereinigte Storage-Pipeline. Die Admin-Oberfläche bietet Discovery, Produkte, Collections und Review-Inbox; die WXT-MV3-Extension verwendet kurzlebige, widerrufbare Capture-Tokens mit eigener JWT-Audience. Alle neuen Commands außer Token-Ausgabe/Widerruf sind workspace-gebunden idempotent, und es existiert bewusst kein eBay-Publish. Backend-, Admin-, Collector-, Extension-, Architektur-, Contract- und gezielte E2E-Tests liefen lokal erfolgreich; Docker/PostgreSQL/Redis-Runtime blieb mangels lokaler Infrastruktur unverifiziert.
+
+2026-08-15 wurde das Repository-Fundament für den additiven MindBay-Pfad Amazon.de → eBay.de dokumentiert: Die vollständige Modul-/Provider-Matrix legt Reuse-, Extend-, Leave- und Do-not-touch-Grenzen fest; vier akzeptierte ADRs entscheiden nativen Go-eBay-Client, hybride Redis-/Temporal-Orchestrierung, einen getrennten Amazon-Source-Collector und eine WXT-Companion-Extension. `workspace_id` bleibt semantischer Alias desselben bestehenden `tenant_id`-Scopes. Ein dependency-freier `extension/`-Workspace und sichere, noch nicht runtime-wirksame Konfigurationsplatzhalter wurden ergänzt. Es wurden keine API-Routen, Produktivmodule, Plattformzugriffe oder Legacy-Worker verändert.
 
 2026-08-14 增加统一容器镜像发布：`deploy/IMAGE_VERSION` 作为镜像版本来源，GitHub Actions 为 backend、admin、collector 发布 `linux/amd64` 与 `linux/arm64` GHCR 镜像。分支构建生成规范化分支、完整提交 SHA 与分支版本标签；只有与版本文件一致且指向 `main` 已包含提交的 `v<version>` Tag 才生成正式版本标签和 `latest`。工作流同时输出不可变 manifest digest，完整 Compose 可在本地构建和预构建镜像之间切换；P10 预生产继续要求 `image@sha256:<digest>`。镜像发布只提供部署输入，不自动部署、切流、修改数据库、启用真实平台能力、创建 Git Tag 或发布 GitHub Release。
 
@@ -62,9 +83,10 @@ TradeMind 已由项目所有者确认进入生产维护阶段。当前工作重�
 
 ## 当前边界
 
+- 不要扩展 1688、抖店、TikTok、Shopee、Lazada、Shopify 作为货源或刊登目标。
 - 不在本次整理中提交、推送、打 Tag 或发布 Release。
 - 不创建或连接本地测试数据库。
-- 不在仓库默认配置中启用真实平台能力；L3 仅由独立发布工单在目标环境启用。
+- 不在仓库默认配置中启用真实平台能力；eBay 默认沙箱。LIVE Checkout 与生产写入需显式配置。
 - 后续变更仍须保持核心 CI 绿色，并完成人工验收说明。
 
 ## AI 客服生产加固

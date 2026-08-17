@@ -71,7 +71,7 @@ function mapPrefixedError(
 }
 
 /**
- * 采集任务入口：校验 source → 选择 Provider → 执行 collect（不写库，仅返回结构化 JSON）。
+ * Collection task entry point: validate source → select Provider → execute collect (does not write to the DB, only returns structured JSON).
  */
 export async function runCollectTask(
   input: { source: string; url: string; options?: Record<string, unknown> },

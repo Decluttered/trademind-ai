@@ -5,7 +5,7 @@ export type CollectProviderStatusPresentation = {
   color: 'success' | 'processing' | 'default' | 'error' | 'blue';
 };
 
-/** Hub / 采集设置：按 source + status 展示采集器状态文案（custom+beta → 基础可用）。 */
+/** Hub / collection settings: display collector status text by source + status (custom+beta -> basic availability). */
 export function collectProviderStatusPresentation(
   source: string,
   status: CollectProviderStatus,
@@ -28,7 +28,7 @@ export function collectProviderStatusPresentation(
   }
 }
 
-/** 自定义链接采集器展示的能力标签（不含 SKU / 库存）。 */
+/** Capability labels displayed for the custom link collector (excludes SKU / inventory). */
 export const CUSTOM_COLLECT_FEATURE_LABEL: Record<string, string> = {
   title: '商品标题',
   price: '商品价格',

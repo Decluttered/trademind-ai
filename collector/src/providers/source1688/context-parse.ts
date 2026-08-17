@@ -13,7 +13,7 @@ import {
 
 const BASE = 'https://detail.1688.com/offer/';
 
-/** 从 window.context / result.data 等模块树定位 1688 详情 data 节点 */
+/** Locate the 1688 detail data node from the window.context / result.data module tree */
 export function find1688ResultData(roots: unknown[]): Record<string, unknown> | null {
   function walk(x: unknown, depth: number): Record<string, unknown> | null {
     if (depth > 10 || !x || typeof x !== 'object') return null;
@@ -55,7 +55,7 @@ function normalize1688Img(raw: string, baseUrl: string): string | null {
   return abs;
 }
 
-/** 主图：gallery.fields.mainImage / offerImgList */
+/** Main images: gallery.fields.mainImage / offerImgList */
 export function extractMainImagesFrom1688Data(data: Record<string, unknown>, baseUrl: string): string[] {
   const urls: string[] = [];
   const gallery = data.gallery;
@@ -86,7 +86,7 @@ export function extractMainImagesFrom1688Data(data: Record<string, unknown>, bas
   return dedupeStrings(urls, 12);
 }
 
-/** 详情图：detail 模块或 description 富文本字段中的 ibank 图 */
+/** Detail images: ibank images from the detail module or the description rich-text field */
 export function extractDetailImagesFrom1688Data(data: Record<string, unknown>, baseUrl: string): string[] {
   const urls: string[] = [];
   function collectStrings(x: unknown, depth: number, keyHint: string): void {
@@ -122,7 +122,7 @@ function isLikelyProductDetailUrl(url: string): boolean {
   return /\/img\/ibank\//i.test(url);
 }
 
-/** 默认单价（阶梯价取第一档）；跳过 unitWeight 等非价格字段 */
+/** Default unit price (first tier for tiered pricing); skips non-price fields like unitWeight */
 export function extractDefaultOfferPrice(data: Record<string, unknown>): number | undefined {
   const priorityKeys = ['tradeModel', 'price', 'mainPrice', 'skuModel', 'orderModel', 'offerPrice'];
   for (const key of priorityKeys) {
@@ -236,7 +236,7 @@ export function extractAttributesFrom1688Data(data: Record<string, unknown>): Re
   return attrs;
 }
 
-/** 从 1688 context data 模块解析 SKU 列表 */
+/** Parse the SKU list from the 1688 context data module */
 export function mineSkusFrom1688Data(
   data: Record<string, unknown>,
   dimRows: DimRow[],
