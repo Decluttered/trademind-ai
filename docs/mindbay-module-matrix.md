@@ -14,6 +14,7 @@ Diese Matrix beschreibt den in Phase 0 verifizierten Ausgangspunkt und den nach 
 | **Extend** | Bestehende Verantwortung beibehalten und additiv für MindBay ergänzen. |
 | **Leave** | Bestehender Legacy-Pfad bleibt lauffähig, wird für das MindBay-MVP aber nicht ausgebaut. |
 | **Do-not-touch** | Kein Produktcode; weder ändern noch in die MindBay-Domäne importieren. |
+| **Removed** | Legacy-Pfad war unregistriert/referenzfrei und wurde gelöscht; siehe CHANGELOG für Datum und Commit. |
 
 ## Schnellnavigation für Phase 1 und 2
 
@@ -124,11 +125,11 @@ Der Vertrag bleibt `collector/src/providers/collector-provider.ts`. Collector-Re
 | `providers/registry.ts` | Stabile Registrierung aller Quellen | `sourceAmazon` später additiv registrieren | **Extend** |
 | `providers/shared/` | Gemeinsame Page-Guards | Nur wirklich quellenübergreifende Logik aufnehmen | **Reuse** |
 | `providers/source1688/` | 1688-Quelle und Login-/Parser-Logik | Legacy, nicht zum Amazon-Default machen | **Leave** |
-| `providers/sourceAliExpress/` | AliExpress-Quelle | Legacy | **Leave** |
+| `providers/sourceAliExpress/` | Entfernt (2026-08-17): unregistrierte AliExpress-Quelle ohne Referenzen | Außerhalb des Amazon.de→eBay.de-Scopes | **Removed** |
 | `providers/sourceCustom/` | Regelbasierte Custom-Quelle und Normalisierung | Wiederverwendbare Normalisierungsbausteine prüfen | **Reuse** |
 | `providers/sourcePinduoduo/` | Pinduoduo-Quelle | Legacy | **Leave** |
 | `providers/sourceTaobaoTmall/` | Taobao/Tmall-Quelle | Legacy | **Leave** |
-| `providers/stub/` | SHEIN/Temu-Platzhalter | Nicht für MindBay ausbauen | **Leave** |
+| `providers/stub/` | Entfernt (2026-08-17): unregistrierter SHEIN/Temu-Platzhalter ohne Referenzen | Außerhalb des Amazon.de→eBay.de-Scopes | **Removed** |
 | `providers/sourceAmazon/` | Amazon.de-Produktseitenparser mit ASIN-/EUR-Normalisierung und Fehlerklassen | Phase-1-Quelladapter; keine Domain-DB-Schreibrechte | **Extend** |
 
 ## Admin-Oberflächen
