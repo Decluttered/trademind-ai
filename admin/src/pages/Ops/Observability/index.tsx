@@ -26,28 +26,28 @@ type StatusMeta = {
 };
 
 const STATUS_META: Record<string, StatusMeta> = {
-  healthy: { color: 'success', text: '运行正常', intent: 'success' },
-  needs_attention: { color: 'error', text: '需要处理', intent: 'danger' },
-  waiting: { color: 'processing', text: '等待首次评估', intent: 'warning' },
-  warming_up: { color: 'processing', text: '评估器预热中', intent: 'warning' },
-  succeeded: { color: 'success', text: '最近评估成功', intent: 'success' },
-  failed: { color: 'error', text: '最近评估失败', intent: 'danger' },
-  disabled: { color: 'default', text: '未启用', intent: 'default' },
-  active: { color: 'success', text: '运行中', intent: 'success' },
-  unavailable: { color: 'error', text: '不可用', intent: 'danger' },
-  unprotected: { color: 'error', text: '保护不完整', intent: 'danger' },
-  achieved: { color: 'success', text: '目标内', intent: 'success' },
-  violated: { color: 'error', text: '目标外', intent: 'danger' },
-  insufficient_data: { color: 'warning', text: '数据不足', intent: 'warning' },
-  standard_protocol_ready: { color: 'success', text: '最近导出成功', intent: 'success' },
-  export_pending: { color: 'processing', text: '等待首次导出', intent: 'warning' },
-  real_backend_deferred: { color: 'default', text: '未配置导出后端', intent: 'default' },
-  export_degraded: { color: 'error', text: '导出异常', intent: 'danger' },
-  incomplete: { color: 'error', text: '配置不完整', intent: 'danger' },
+  healthy: { color: 'success', text: 'Healthy', intent: 'success' },
+  needs_attention: { color: 'error', text: 'Needs attention', intent: 'danger' },
+  waiting: { color: 'processing', text: 'Waiting for first evaluation', intent: 'warning' },
+  warming_up: { color: 'processing', text: 'Evaluator warming up', intent: 'warning' },
+  succeeded: { color: 'success', text: 'Latest evaluation succeeded', intent: 'success' },
+  failed: { color: 'error', text: 'Latest evaluation failed', intent: 'danger' },
+  disabled: { color: 'default', text: 'Disabled', intent: 'default' },
+  active: { color: 'success', text: 'Active', intent: 'success' },
+  unavailable: { color: 'error', text: 'Unavailable', intent: 'danger' },
+  unprotected: { color: 'error', text: 'Protection incomplete', intent: 'danger' },
+  achieved: { color: 'success', text: 'Within objective', intent: 'success' },
+  violated: { color: 'error', text: 'Outside objective', intent: 'danger' },
+  insufficient_data: { color: 'warning', text: 'Insufficient data', intent: 'warning' },
+  standard_protocol_ready: { color: 'success', text: 'Latest export succeeded', intent: 'success' },
+  export_pending: { color: 'processing', text: 'Waiting for first export', intent: 'warning' },
+  real_backend_deferred: { color: 'default', text: 'Export backend not configured', intent: 'default' },
+  export_degraded: { color: 'error', text: 'Export degraded', intent: 'danger' },
+  incomplete: { color: 'error', text: 'Configuration incomplete', intent: 'danger' },
 };
 
 function statusMeta(status?: string): StatusMeta {
-  return STATUS_META[status ?? ''] ?? { color: 'default', text: status || '未知', intent: 'default' };
+  return STATUS_META[status ?? ''] ?? { color: 'default', text: status || 'Unknown', intent: 'default' };
 }
 
 function StatusValue({ status }: { status?: string }) {
@@ -67,7 +67,7 @@ export default function ObservabilityCenterPage() {
       setOverview(result?.data ?? null);
       setLoadError(false);
     } catch {
-      message.error('加载可观测性数据失败');
+      message.error('Observability data could not be loaded.');
       setLoadError(true);
     } finally {
       setLoading(false);
@@ -85,8 +85,8 @@ export default function ObservabilityCenterPage() {
   const activeAlerts = overview?.alerts?.active ?? 0;
   const alertValue = overview?.alerts?.status === 'active' ? activeAlerts : alertMeta.text;
   const alertDescription = overview?.alerts?.status === 'active'
-    ? `严重 ${overview?.alerts?.critical ?? 0} · 警告 ${overview?.alerts?.warning ?? 0}`
-    : overview?.alerts?.status === 'disabled' ? '系统告警未启用' : '无法读取系统告警';
+    ? `Critical ${overview?.alerts?.critical ?? 0} · Warning ${overview?.alerts?.warning ?? 0}`
+    : overview?.alerts?.status === 'disabled' ? 'System alerts are disabled' : 'System alerts cannot be read';
   const alertIntent = overview?.alerts?.status === 'active'
     ? activeAlerts > 0 ? 'danger' : 'success'
     : alertMeta.intent;
@@ -94,8 +94,8 @@ export default function ObservabilityCenterPage() {
 
   return (
     <TmPageContainer
-      title="可观测性中心"
-      subTitle="查看系统指标、告警评估、SLO 与遥测导出运行状态"
+      title="Observability"
+      subTitle="View system metrics, alert evaluation, SLOs, and telemetry export status."
       className={styles.page}
       extra={[
         <Button
@@ -103,11 +103,11 @@ export default function ObservabilityCenterPage() {
           icon={<BellOutlined />}
           onClick={() => history.push('/ops/task-center/alerts?source=system')}
         >
-          查看系统告警
+          View system alerts
         </Button>,
-        <Tooltip key="reload" title="刷新运行状态">
+        <Tooltip key="reload" title="Refresh runtime status">
           <Button
-            aria-label="刷新运行状态"
+            aria-label="Refresh runtime status"
             icon={<ReloadOutlined />}
             onClick={() => void load()}
             loading={loading}
@@ -117,14 +117,14 @@ export default function ObservabilityCenterPage() {
     >
       {loadError ? (
         <ErrorAlert
-          title="可观测性概览加载失败"
-          actionHint="请检查后端健康状态后重试。"
+          title="Observability overview could not be loaded"
+          actionHint="Check backend health, then try again."
           className={styles.error}
         />
       ) : null}
 
       {!overview && loading ? (
-        <div className={styles.loading} aria-label="正在加载可观测性概览">
+        <div className={styles.loading} aria-label="Loading observability overview">
           <Spin size="large" />
         </div>
       ) : null}
@@ -133,14 +133,14 @@ export default function ObservabilityCenterPage() {
         <div className={styles.content}>
           <div className={styles.metricsGrid}>
             <MetricCard
-              title="总体运行状态"
+              title="Overall runtime status"
               value={overallMeta.text}
-              description={`环境：${overview?.environment || '未知'}`}
+              description={`Environment: ${overview?.environment || 'Unknown'}`}
               icon={overview?.overallStatus === 'healthy' ? <CheckCircleOutlined /> : <ExclamationCircleOutlined />}
               intent={overallMeta.intent}
             />
             <MetricCard
-              title="活跃系统告警"
+              title="Active system alerts"
               value={alertValue}
               description={alertDescription}
               icon={<BellOutlined />}
@@ -148,82 +148,82 @@ export default function ObservabilityCenterPage() {
               onClick={() => history.push('/ops/task-center/alerts?source=system')}
             />
             <MetricCard
-              title="告警评估器"
+              title="Alert evaluator"
               value={evaluationMeta.text}
-              description={`已检查 ${overview?.evaluation?.rulesChecked ?? 0} 条规则`}
+              description={`${overview?.evaluation?.rulesChecked ?? 0} rules checked`}
               icon={<SafetyCertificateOutlined />}
               intent={evaluationMeta.intent}
             />
             <MetricCard
-              title="指标注册表"
+              title="Metrics registry"
               value={metricMeta.text}
-              description={overview?.metrics?.internalOnly ? '内部端点已保护' : '端点未限制内部访问'}
+              description={overview?.metrics?.internalOnly ? 'Internal endpoint is protected' : 'Endpoint is not restricted to internal access'}
               icon={<CloudServerOutlined />}
               intent={metricMeta.intent}
             />
           </div>
 
           <div className={styles.detailGrid}>
-            <SectionCard title="告警与服务目标" variant="outlined" compact>
+            <SectionCard title="Alerts and service objectives" variant="outlined" compact>
               <div className={styles.statusList}>
                 <div className={styles.statusRow}>
                   <div>
-                    <Text strong>告警规则评估</Text>
-                    <Text type="secondary">窗口指标、样本保护与恢复检测</Text>
+                    <Text strong>Alert rule evaluation</Text>
+                    <Text type="secondary">Window metrics, sample protection, and recovery detection</Text>
                   </div>
                   <StatusValue status={overview?.evaluation?.status} />
                 </div>
                 <div className={styles.statusRow}>
                   <div>
-                    <Text strong>SLO 评估</Text>
-                    <Text type="secondary">可用性、延迟和关键后台任务目标</Text>
+                    <Text strong>SLO evaluation</Text>
+                    <Text type="secondary">Availability, latency, and critical background-task objectives</Text>
                   </div>
                   <StatusValue status={overview?.slo?.status} />
                 </div>
               </div>
               <Descriptions className={styles.descriptions} column={{ xs: 1, sm: 2 }} size="small">
-                <Descriptions.Item label="最近告警评估">
+                <Descriptions.Item label="Latest alert evaluation">
                   {formatDateTime(overview?.evaluation?.lastEvaluatedAt)}
                 </Descriptions.Item>
-                <Descriptions.Item label="最近 SLO 评估">
+                <Descriptions.Item label="Latest SLO evaluation">
                   {formatDateTime(overview?.slo?.lastEvaluatedAt)}
                 </Descriptions.Item>
-                <Descriptions.Item label="本轮触发">
+                <Descriptions.Item label="Triggered this run">
                   {overview?.evaluation?.alertsFired ?? 0}
                 </Descriptions.Item>
-                <Descriptions.Item label="本轮恢复">
+                <Descriptions.Item label="Recovered this run">
                   {overview?.evaluation?.alertsResolved ?? 0}
                 </Descriptions.Item>
               </Descriptions>
             </SectionCard>
 
-            <SectionCard title="指标与遥测" variant="outlined" compact>
+            <SectionCard title="Metrics and telemetry" variant="outlined" compact>
               <div className={styles.statusList}>
                 <div className={styles.statusRow}>
                   <div>
-                    <Text strong>Prometheus 指标</Text>
+                    <Text strong>Prometheus metrics</Text>
                     <Text type="secondary" copyable={{ text: overview?.metrics?.path || '' }}>
-                      {overview?.metrics?.path || '未配置路径'}
+                      {overview?.metrics?.path || 'Path not configured'}
                     </Text>
                   </div>
                   <StatusValue status={overview?.metrics?.status} />
                 </div>
                 <div className={styles.statusRow}>
                   <div>
-                    <Text strong>遥测导出</Text>
-                    <Text type="secondary">{overview?.telemetry?.protocol || '未配置协议'}</Text>
+                    <Text strong>Telemetry export</Text>
+                    <Text type="secondary">{overview?.telemetry?.protocol || 'Protocol not configured'}</Text>
                   </div>
                   <StatusValue status={overview?.telemetry?.status} />
                 </div>
               </div>
               <Descriptions className={styles.descriptions} column={{ xs: 1, sm: 2 }} size="small">
-                <Descriptions.Item label="导出成功">
+                <Descriptions.Item label="Successful exports">
                   {overview?.telemetry?.exportSuccess ?? 0}
                 </Descriptions.Item>
-                <Descriptions.Item label="导出失败">
+                <Descriptions.Item label="Failed exports">
                   {overview?.telemetry?.exportFailures ?? 0}
                 </Descriptions.Item>
-                <Descriptions.Item label="失败丢弃">
+                <Descriptions.Item label="Failures dropped">
                   {overview?.telemetry?.dropped ?? 0}
                 </Descriptions.Item>
               </Descriptions>
@@ -232,10 +232,10 @@ export default function ObservabilityCenterPage() {
 
           <div className={styles.runtimeBand}>
             <div className={styles.runtimeItems}>
-              <span><Text type="secondary">模式</Text><Text strong>{overview?.mode || '未知'}</Text></span>
-              <span><Text type="secondary">环境</Text><Text strong>{overview?.environment || '未知'}</Text></span>
-              <span><Text type="secondary">指标端点</Text><Text strong>{overview?.metrics?.internalOnly ? '仅内部访问' : '未保护'}</Text></span>
-              <span><Text type="secondary">最近刷新</Text><Text strong>{lastUpdated}</Text></span>
+              <span><Text type="secondary">Mode</Text><Text strong>{overview?.mode || 'Unknown'}</Text></span>
+              <span><Text type="secondary">Environment</Text><Text strong>{overview?.environment || 'Unknown'}</Text></span>
+              <span><Text type="secondary">Metrics endpoint</Text><Text strong>{overview?.metrics?.internalOnly ? 'Internal only' : 'Unprotected'}</Text></span>
+              <span><Text type="secondary">Last refreshed</Text><Text strong>{lastUpdated}</Text></span>
             </div>
             <StatusValue status={overview?.telemetry?.status} />
           </div>

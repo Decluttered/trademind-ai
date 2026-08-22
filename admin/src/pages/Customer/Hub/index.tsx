@@ -57,21 +57,21 @@ export default function CustomerHubPage() {
 
   return (
     <TmPageContainer
-      title="客服中心"
-      subTitle="查看待回复会话、AI 建议、受控自动回复与消息同步状态。"
+      title="Customer service"
+      subTitle="View conversations awaiting replies, AI suggestions, controlled auto-replies, and message-sync status."
     >
       <Alert
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="默认人工确认，自动回复需显式启用"
-        description="默认仅生成 AI 建议；管理员可按店铺启用低风险自动回复，高风险内容始终转人工。"
+        message="Manual confirmation is the default; auto-replies must be explicitly enabled"
+        description="By default, only AI suggestions are generated. Administrators can enable low-risk auto-replies by shop; high-risk content always goes to a human."
       />
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space wrap>
           <Select
             allowClear
-            placeholder="平台"
+            placeholder="Platform"
             style={{ width: 160 }}
             options={PLATFORM_OPTIONS}
             value={urlState.platform}
@@ -79,7 +79,7 @@ export default function CustomerHubPage() {
           />
           <Select
             allowClear
-            placeholder="店铺"
+            placeholder="Shop"
             style={{ width: 220 }}
             showSearch
             optionFilterProp="label"
@@ -95,61 +95,61 @@ export default function CustomerHubPage() {
             <Row gutter={[16, 16]}>
               <Col xs={24} sm={12} md={8} lg={6}>
                 <Card hoverable onClick={() => history.push(buildConversationLink('replyStatus=pending'))}>
-                  <Statistic title="待回复会话" value={data.pendingReplyCount} />
+                  <Statistic title="Conversations awaiting reply" value={data.pendingReplyCount} />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={8} lg={6}>
                 <Card>
-                  <Statistic title="今日新消息" value={data.todayNewMessages} />
+                  <Statistic title="New messages today" value={data.todayNewMessages} />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={8} lg={6}>
                 <Card hoverable onClick={() => history.push(buildConversationLink('aiSuggestionStatus=pending'))}>
-                  <Statistic title="AI 建议待确认" value={data.aiSuggestionPendingCount} />
+                  <Statistic title="AI suggestions awaiting confirmation" value={data.aiSuggestionPendingCount} />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={8} lg={6}>
                 <Card hoverable onClick={() => history.push(buildConversationLink('sendStatus=failed'))}>
-                  <Statistic title="发送失败" value={data.sendFailureCount} valueStyle={{ color: data.sendFailureCount ? 'var(--ant-color-error)' : undefined }} />
+                  <Statistic title="Send failures" value={data.sendFailureCount} valueStyle={{ color: data.sendFailureCount ? 'var(--ant-color-error)' : undefined }} />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={8} lg={6}>
                 <Card>
-                  <Statistic title="未授权店铺" value={data.unauthorizedShopCount} />
+                  <Statistic title="Unauthorized shops" value={data.unauthorizedShopCount} />
                   {data.unauthorizedShopCount > 0 ? (
                     <Button type="link" size="small" onClick={() => history.push('/settings/platforms')}>
-                      前往平台授权
+                      Open platform authorization
                     </Button>
                   ) : null}
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={8} lg={6}>
                 <Card hoverable onClick={() => history.push(appendSourceToUrl('/customer/message-sync-tasks'))}>
-                  <Statistic title="同步任务异常(7日)" value={data.syncTaskFailureCount} />
+                  <Statistic title="Sync-task failures (7 days)" value={data.syncTaskFailureCount} />
                 </Card>
               </Col>
             </Row>
-            <Card title="快捷入口" style={{ marginTop: 16 }}>
+            <Card title="Quick links" style={{ marginTop: 16 }}>
               <Row gutter={[8, 8]}>
                 <Col>
                   <Button type="primary" onClick={() => history.push(buildConversationLink(''))}>
-                    会话列表
+                    Conversations
                   </Button>
                 </Col>
                 <Col>
-                  <Button onClick={() => history.push('/customer/message-sync-tasks')}>消息同步任务</Button>
+                  <Button onClick={() => history.push('/customer/message-sync-tasks')}>Message sync tasks</Button>
                 </Col>
                 <Col>
-                  <Button onClick={() => history.push('/customer/auto-reply-settings')}>AI 自动回复</Button>
+                  <Button onClick={() => history.push('/customer/auto-reply-settings')}>AI auto-replies</Button>
                 </Col>
                 <Col>
                   <Button onClick={() => history.push(appendSourceToUrl('/ops/task-center/failures?taskType=customer_failure', 'taskcenter'))}>
-                    失败任务中心
+                    Failed-task center
                   </Button>
                 </Col>
               </Row>
             </Card>
-            <Card title="会话状态说明" style={{ marginTop: 16 }} size="small">
+            <Card title="Conversation status guide" style={{ marginTop: 16 }} size="small">
               {Object.entries(CUSTOMER_CONVERSATION_STATUS).map(([k, v]) => (
                 <Tag key={k} color={v.color} style={{ marginBottom: 4 }}>
                   {v.text}

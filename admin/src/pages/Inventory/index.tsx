@@ -97,16 +97,16 @@ export default function InventoryCenterPage() {
   const columns: ProColumns<InventoryCenterRow>[] = useMemo(
     () => [
       {
-        title: '关键词',
+        title: 'Keyword',
         dataIndex: 'keyword',
         hideInTable: true,
-        fieldProps: { placeholder: '商品标题 / 规格编码 / 名称', ...keywordFieldProps },
+        fieldProps: { placeholder: 'Product title / SKU code / name', ...keywordFieldProps },
       },
-      { title: '规格 ID', dataIndex: 'productSkuId', hideInTable: true },
-      { title: '店铺 ID', dataIndex: 'shopId', hideInTable: true },
-      { title: '平台', dataIndex: 'platform', hideInTable: true },
+      { title: 'SKU ID', dataIndex: 'productSkuId', hideInTable: true },
+      { title: 'Shop ID', dataIndex: 'shopId', hideInTable: true },
+      { title: 'Platform', dataIndex: 'platform', hideInTable: true },
       {
-        title: '库存状态',
+        title: 'Inventory status',
         dataIndex: 'stockStatus',
         hideInTable: true,
         valueType: 'select',
@@ -120,21 +120,21 @@ export default function InventoryCenterPage() {
         valueEnum: Object.fromEntries(Object.entries(INVENTORY_BIND_STATUS).map(([k, v]) => [k, { text: v.text }])),
       },
       {
-        title: '同步状态',
+        title: 'Sync status',
         dataIndex: 'syncStatus',
         hideInTable: true,
         valueType: 'select',
         valueEnum: Object.fromEntries(Object.entries(INVENTORY_SYNC_STATUS).map(([k, v]) => [k, { text: v.text }])),
       },
       {
-        title: '仅有异常',
+        title: 'Exceptions only',
         dataIndex: 'hasException',
         hideInTable: true,
         valueType: 'select',
-        valueEnum: { true: { text: '是' }, false: { text: '否' } },
+        valueEnum: { true: { text: 'Yes' }, false: { text: 'No' } },
       },
       {
-        title: '商品',
+        title: 'Product',
         dataIndex: 'productTitle',
         width: 180,
         search: false,
@@ -152,16 +152,16 @@ export default function InventoryCenterPage() {
         render: (_, r) => r.skuCode || '—',
       },
       {
-        title: '规格',
+        title: 'SKU',
         dataIndex: 'skuName',
         width: 120,
         search: false,
         ellipsis: true,
         render: (_, r) => r.skuName || '—',
       },
-      { title: '本地库存', dataIndex: 'stock', width: 88, search: false },
-      { title: '可用库存', dataIndex: 'availableStock', width: 88, search: false },
-      { title: '预警阈值', dataIndex: 'warningStock', width: 88, search: false },
+      { title: 'Local stock', dataIndex: 'stock', width: 88, search: false },
+      { title: 'Available stock', dataIndex: 'availableStock', width: 88, search: false },
+      { title: 'Alert threshold', dataIndex: 'warningStock', width: 88, search: false },
       {
         title: '库存状态',
         dataIndex: 'stockStatus',
@@ -177,28 +177,28 @@ export default function InventoryCenterPage() {
         render: (_, r) => tagFrom(r.skuBindStatus, INVENTORY_BIND_STATUS),
       },
       {
-        title: '平台同步',
+        title: 'Platform sync',
         dataIndex: 'platformSyncStatus',
         width: 96,
         search: false,
         render: (_, r) => tagFrom(r.platformSyncStatus, INVENTORY_SYNC_STATUS),
       },
       {
-        title: '最近扣减',
+        title: 'Latest deduction',
         dataIndex: 'lastDeductAt',
         width: 156,
         search: false,
         render: (_, r) => (r.lastDeductAt ? formatDateTime(r.lastDeductAt) : '—'),
       },
       {
-        title: '最近同步',
+        title: 'Latest sync',
         dataIndex: 'lastSyncAt',
         width: 156,
         search: false,
         render: (_, r) => (r.lastSyncAt ? formatDateTime(r.lastSyncAt) : '—'),
       },
       {
-        title: '异常',
+        title: 'Exceptions',
         dataIndex: 'exceptionCount',
         width: 72,
         search: false,
@@ -206,21 +206,21 @@ export default function InventoryCenterPage() {
           r.exceptionCount > 0 ? <Tag color="red">{r.exceptionCount}</Tag> : <Tag>0</Tag>,
       },
       {
-        title: '操作',
+        title: 'Actions',
         valueType: 'option',
         width: 280,
         fixed: 'right',
         render: (_, r) => (
           <Space wrap size="small">
-            <Link to={`/product/drafts/${r.productId}?tab=inventory`}>查看商品</Link>
+            <Link to={`/product/drafts/${r.productId}?tab=inventory`}>View product</Link>
             <Link to={`/inventory/deductions?productSkuId=${encodeURIComponent(r.productSkuId)}`}>
-              扣减记录
+              Deduction records
             </Link>
             <Link to={`/inventory/sync-tasks?productSkuId=${encodeURIComponent(r.productSkuId)}`}>
-              同步任务
+              Sync tasks
             </Link>
             {r.exceptionCount > 0 ? (
-              <Link to={`/ops/task-center/failures?taskType=inventory_sync`}>失败任务</Link>
+              <Link to={`/ops/task-center/failures?taskType=inventory_sync`}>Failed tasks</Link>
             ) : null}
           </Space>
         ),
@@ -231,8 +231,8 @@ export default function InventoryCenterPage() {
 
   return (
     <TmPageContainer
-      title="库存中心"
-      subTitle="查看本地库存、SKU 绑定与平台同步状态；不自动同步、不自动补货。"
+      title="Inventory center"
+      subTitle="View local inventory, SKU bindings, and platform-sync status. It does not automatically sync or replenish stock."
     >
       <InventorySyncDisabledBanner />
       <KeywordSafetyHint visible={showSensitiveHint} />
@@ -309,7 +309,7 @@ export default function InventoryCenterPage() {
             });
             return { data: res.list ?? [], success: true, total: res.pagination?.total ?? 0 };
           } catch (e: unknown) {
-            message.error((e as Error)?.message || '加载失败');
+            message.error((e as Error)?.message || 'Loading failed.');
             return { data: [], success: false, total: 0 };
           }
         }}

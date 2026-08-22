@@ -30,12 +30,12 @@ const LEASE_SECTIONS: {
   title: string;
   dataKey: keyof WorkerMonitorData['leasedTasks'];
 }[] = [
-  { title: '采集', dataKey: 'collect' },
-  { title: 'AI 图片', dataKey: 'image' },
-  { title: '订单同步', dataKey: 'orderSync' },
-  { title: '客服消息同步', dataKey: 'customerMessageSync' },
-  { title: '商品刊登', dataKey: 'productPublish' },
-  { title: '库存同步', dataKey: 'inventorySync' },
+  { title: 'Collection', dataKey: 'collect' },
+  { title: 'AI image processing', dataKey: 'image' },
+  { title: 'Order sync', dataKey: 'orderSync' },
+  { title: 'Customer-message sync', dataKey: 'customerMessageSync' },
+  { title: 'Product publishing', dataKey: 'productPublish' },
+  { title: 'Inventory sync', dataKey: 'inventorySync' },
 ];
 
 
@@ -117,42 +117,42 @@ export default function WorkersMonitorPage() {
   const columns: ProColumns<WorkerMonitorInstance>[] = useMemo(
     () => [
       {
-        title: '类型',
+        title: 'Type',
         dataIndex: 'workerType',
         width: 120,
         render: (_, row) => workerTypeLabel(row.workerType),
       },
       {
-        title: '进程 ID',
+        title: 'Worker ID',
         dataIndex: 'workerId',
         ellipsis: true,
         copyable: true,
       },
       {
-        title: '主机',
+        title: 'Host',
         dataIndex: 'hostname',
         width: 140,
         ellipsis: true,
       },
       {
-        title: '系统进程号',
+        title: 'System PID',
         dataIndex: 'pid',
         width: 80,
       },
       {
-        title: '状态',
+        title: 'Status',
         dataIndex: 'status',
         width: 110,
         render: (_, row) => statusTag(row.effectiveStatus, row.status),
       },
       {
-        title: '最近心跳',
+        title: 'Last heartbeat',
         dataIndex: 'lastHeartbeatAt',
         width: 172,
         render: (_, row) => formatDateTime(row.lastHeartbeatAt),
       },
       {
-        title: '启动时间',
+        title: 'Started',
         dataIndex: 'startedAt',
         width: 172,
         render: (_, row) => formatDateTime(row.startedAt),
@@ -162,17 +162,17 @@ export default function WorkersMonitorPage() {
   );
 
   const leaseCols = (): ProColumns<LeasedTaskRow>[] => [
-    { title: '任务 ID', dataIndex: 'id', copyable: true, ellipsis: true },
-    { title: '状态', dataIndex: 'status', width: 90, render: (_, row) => commonStatusLabel(row.status) },
-    { title: '锁定者', dataIndex: 'lockedBy', ellipsis: true },
+    { title: 'Task ID', dataIndex: 'id', copyable: true, ellipsis: true },
+    { title: 'Status', dataIndex: 'status', width: 90, render: (_, row) => commonStatusLabel(row.status) },
+    { title: 'Locked by', dataIndex: 'lockedBy', ellipsis: true },
     {
-      title: '执行截止',
+      title: 'Lease expires',
       dataIndex: 'lockedUntil',
       width: 172,
       render: (_, r) => formatDateTime(r.lockedUntil || undefined),
     },
     {
-      title: '更新时间',
+      title: 'Updated',
       dataIndex: 'updatedAt',
       width: 172,
       render: (_, r) => formatDateTime(r.updatedAt),
@@ -184,60 +184,60 @@ export default function WorkersMonitorPage() {
 
   return (
     <TmPageContainer
-      title={'后台任务监控'}
-      subTitle={'查看采集、图片处理、订单同步、商品刊登等后台任务是否在正常运行'}
+      title="Worker monitor"
+      subTitle="Check that collection, image processing, order sync, product publishing, and other background tasks are running normally."
     >
       <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
-        展示各类型后台任务进程状态与正在执行中的任务（每 {POLL_MS / 1000} 秒刷新；页面隐藏时暂停）。
+        Shows the process status and active work for each worker type. Refreshes every {POLL_MS / 1000} seconds and pauses while this page is hidden.
       </Typography.Paragraph>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} xl={14}>
-          <ProCard variant="outlined" title="失败任务中心快照" size="small">
+          <ProCard variant="outlined" title="Failed-task center snapshot" size="small">
             {failSum ? (
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
                 <Row gutter={[16, 8]}>
                   <Col xs={12} sm={8}>
-                    <Statistic title="失败(归一)" value={failSum.totalFailed ?? 0} />
+                    <Statistic title="Failed (normalized)" value={failSum.totalFailed ?? 0} />
                   </Col>
                   <Col xs={12} sm={8}>
-                    <Statistic title="可重试" value={failSum.retryableCount ?? 0} />
+                    <Statistic title="Retryable" value={failSum.retryableCount ?? 0} />
                   </Col>
                   <Col xs={24} sm={8}>
                     <Statistic
-                      title="重试中 / 停滞 / 执行超时"
+                      title="Retrying / stale / timed out"
                       value={`${failSum.retryingTotal ?? 0}/${failSum.staleTotal ?? 0}/${failSum.leaseExpiredTotal ?? 0}`}
                     />
                   </Col>
                 </Row>
                 <Row gutter={[16, 8]}>
                   <Col xs={12} sm={8}>
-                    <Statistic title="忽略标记" value={failSum.ignoredCount ?? 0} />
+                    <Statistic title="Marked ignored" value={failSum.ignoredCount ?? 0} />
                   </Col>
                   <Col xs={12} sm={8}>
-                    <Statistic title="已处理标记" value={failSum.handledCount ?? 0} />
+                    <Statistic title="Marked handled" value={failSum.handledCount ?? 0} />
                   </Col>
                   <Col xs={24} sm={8} style={{ display: 'flex', alignItems: 'flex-end' }}>
                     <Button type="primary" block onClick={() => history.push('/ops/task-center/failures')}>
-                      打开失败任务中心
+                      Open failed-task center
                     </Button>
                   </Col>
                 </Row>
               </Space>
             ) : (
-              <Typography.Text type="secondary">载入中...</Typography.Text>
+              <Typography.Text type="secondary">Loading…</Typography.Text>
             )}
           </ProCard>
         </Col>
         <Col xs={24} xl={10}>
-          <ProCard variant="outlined" title="实例状态汇总" size="small">
+          <ProCard variant="outlined" title="Instance status summary" size="small">
             <WorkerStatusMetrics summary={summary} />
           </ProCard>
         </Col>
       </Row>
 
       <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 12 }}>
-        按任务类型
+        By worker type
       </Typography.Title>
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         {WORKER_MONITOR_TYPE_KEYS.map((k) => {
@@ -250,7 +250,7 @@ export default function WorkersMonitorPage() {
                 size="small"
                 title={TASK_CENTER_TASK_TYPE_LABEL[k] || k}
                 extra={
-                  <Tag color={total > 0 ? 'processing' : 'default'}>{total} 个实例</Tag>
+                  <Tag color={total > 0 ? 'processing' : 'default'}>{total} instances</Tag>
                 }
               >
                 <WorkerStatusMetrics summary={typeSummary} />
@@ -260,7 +260,7 @@ export default function WorkersMonitorPage() {
         })}
       </Row>
 
-      <ProCard title="后台进程列表" variant="outlined" style={{ marginBottom: 16 }}>
+      <ProCard title="Worker process list" variant="outlined" style={{ marginBottom: 16 }}>
         <ProTable<WorkerMonitorInstance>
           rowKey={(r) => r.workerInstanceId || r.workerId}
           columns={columns}
@@ -274,7 +274,7 @@ export default function WorkersMonitorPage() {
       {LEASE_SECTIONS.map(({ title, dataKey }) => (
         <ProCard
           key={dataKey}
-          title={`租约中的任务 · ${title}`}
+          title={`Leased tasks · ${title}`}
           variant="outlined"
           style={{ marginBottom: 16 }}
           size="small"

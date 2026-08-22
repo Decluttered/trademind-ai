@@ -28,7 +28,7 @@ function mappedCellLabel(label: string, raw?: string) {
   const key = (raw || '').trim();
   const content = <Typography.Text>{text}</Typography.Text>;
   if (!key || text === key) return content;
-  return <Tooltip title={`原始值：${key}`}>{content}</Tooltip>;
+  return <Tooltip title={`Raw value: ${key}`}>{content}</Tooltip>;
 }
 
 function mappedResourceTag(resource?: string) {
@@ -40,7 +40,7 @@ function mappedResourceTag(resource?: string) {
     </Tag>
   );
   if (!key || label === key) return tag;
-  return <Tooltip title={`原始值：${key}`}>{tag}</Tooltip>;
+  return <Tooltip title={`Raw value: ${key}`}>{tag}</Tooltip>;
 }
 
 export default function OperationLogsPage() {
@@ -49,20 +49,20 @@ export default function OperationLogsPage() {
 
   const columns: ProColumns<OperationLogRow>[] = [
     {
-      title: '时间',
+      title: 'Time',
       dataIndex: 'createdAt',
       width: 172,
       search: false,
       render: (_, row) => formatDateTime(row.createdAt),
     },
     {
-      title: '用户',
+      title: 'User',
       dataIndex: 'username',
       width: 120,
       ellipsis: true,
     },
     {
-      title: '操作',
+      title: 'Action',
       dataIndex: 'action',
       width: 168,
       ellipsis: true,
@@ -75,7 +75,7 @@ export default function OperationLogsPage() {
       render: (_, row) => mappedCellLabel(operationLogActionLabel(row.action), row.action),
     },
     {
-      title: '资源',
+      title: 'Resource',
       dataIndex: 'resource',
       width: 140,
       ellipsis: true,
@@ -88,14 +88,14 @@ export default function OperationLogsPage() {
       render: (_, row) => mappedResourceTag(row.resource),
     },
     {
-      title: '状态',
+      title: 'Status',
       dataIndex: 'status',
       width: 96,
       search: false,
       render: (_, row) => statusTag(row.status),
     },
     {
-      title: '来源 IP',
+      title: 'Source IP',
       dataIndex: 'ip',
       width: 132,
       search: false,
@@ -109,19 +109,19 @@ export default function OperationLogsPage() {
       search: false,
     },
     {
-      title: '路径',
+      title: 'Path',
       dataIndex: 'path',
       ellipsis: true,
       search: false,
     },
     {
-      title: '说明',
+      title: 'Description',
       dataIndex: 'message',
       ellipsis: true,
       search: false,
     },
     {
-      title: '时间范围',
+      title: 'Time range',
       dataIndex: 'dateRange',
       valueType: 'dateTimeRange',
       hideInTable: true,

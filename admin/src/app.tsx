@@ -196,8 +196,8 @@ function AppBrandButton() {
     >
       <BrandLogo height={28} className="tm-app-brand-logo" />
       <span className="tm-app-brand-header__name">
-        <span className="tm-app-brand-header__name-primary">贸灵</span>
-        <span className="tm-app-brand-header__name-secondary">TradeMind</span>
+        <span className="tm-app-brand-header__name-primary">TradeMind</span>
+        <span className="tm-app-brand-header__name-secondary">AI Operations</span>
       </span>
     </button>
   );

@@ -93,12 +93,12 @@ function batchButtonTooltipForProvider(p: CollectProviderRow): string | undefine
   if (!p.batchSupported) {
     if (p.source === 'custom') return CUSTOM_BATCH_DISABLED_TOOLTIP;
     if (p.source === 'pinduoduo' || p.source === 'pdd') {
-      return '拼多多批量采集会自动限速，建议先少量测试。部分页面可能需要登录或触发验证。';
+      return 'Pinduoduo batch collection is rate-limited automatically. Start with a small test batch; some pages may require login or verification.';
     }
     if (p.source === 'taobao_tmall' || p.source === 'taobao') {
-      return '淘宝/天猫批量采集会逐条打开商品页面，建议每批不要超过 20 条。遇到登录或安全验证时，请先完成验证后重试。';
+      return 'Taobao/Tmall batch collection opens each product page individually. Keep batches to 20 or fewer; complete any login or security verification before retrying.';
     }
-    return p.status === 'beta' ? '测试阶段暂未开放批量' : '该平台暂不支持批量采集';
+    return p.status === 'beta' ? 'Batch collection is not available during beta' : 'This platform does not support batch collection yet';
   }
   return undefined;
 }
@@ -199,11 +199,11 @@ function RecentTaskList({
     return (
       <Result
         status="warning"
-        title="最近任务加载失败"
-        subTitle="可以进入采集任务列表查看任务状态，或稍后重新打开采集中心。"
+        title="Recent tasks could not be loaded"
+        subTitle="Open the collection task list to check task status, or reopen Collect Hub later."
         extra={
           <Button onClick={() => history.push('/collect/tasks')}>
-            查看采集任务
+            View collection tasks
           </Button>
         }
       />
@@ -213,9 +213,9 @@ function RecentTaskList({
     return (
       <EmptyState
         compact
-        title="暂无最近采集任务"
-        description="从上方选择采集来源并提交商品链接后，任务会出现在这里。"
-        actionLabel="开始采集商品"
+        title="No recent collection tasks"
+        description="Choose a source and submit a product link above. Tasks will appear here."
+        actionLabel="Start collecting products"
         actionPath="/collect/hub"
       />
     );
@@ -229,7 +229,7 @@ function RecentTaskList({
         <List.Item
           actions={[
             <Button key="view" type="link" onClick={() => history.push(`/collect/tasks?source=${encodeURIComponent(task.source)}`)}>
-              查看
+              View
             </Button>,
           ]}
         >
@@ -276,9 +276,9 @@ function BrowserProfileSummary({
       <Alert
         type="warning"
         showIcon
-        message="登录状态加载失败"
-        description="需要登录或验证码的平台，请到采集浏览器登录状态页面重新检测后再采集。"
-        action={<Button size="small" onClick={() => history.push('/collect/browser-profiles')}>去处理</Button>}
+        message="Login state could not be loaded"
+        description="For platforms that require login or verification, recheck the collector browser login state before collecting."
+        action={<Button size="small" onClick={() => history.push('/collect/browser-profiles')}>Open login state</Button>}
       />
     );
   }
@@ -286,9 +286,9 @@ function BrowserProfileSummary({
     return (
       <EmptyState
         compact
-        title="暂无已保存登录状态"
-        description="淘宝/天猫、拼多多或部分自定义网站可能需要登录后采集。"
-        actionLabel="管理登录状态"
+        title="No saved login state"
+        description="Taobao/Tmall, Pinduoduo, and some custom sites may require login before collection."
+        actionLabel="Manage login state"
         actionPath="/collect/browser-profiles"
       />
     );
@@ -345,7 +345,7 @@ export default function CollectHubPage() {
         setProviderState({
           loading: false,
           data: [],
-          error: error instanceof Error ? error.message : '采集来源加载失败',
+          error: error instanceof Error ? error.message : 'Collection sources could not be loaded.',
         });
       }
     }
@@ -377,7 +377,7 @@ export default function CollectHubPage() {
           setRecentState({
             loading: false,
             data: [],
-            error: error instanceof Error ? error.message : '最近采集任务加载失败',
+            error: error instanceof Error ? error.message : 'Recent collection tasks could not be loaded.',
           });
           setFailedTotal(undefined);
         }
@@ -402,7 +402,7 @@ export default function CollectHubPage() {
           setProfileState({
             loading: false,
             data: [],
-            error: error instanceof Error ? error.message : '登录状态加载失败',
+            error: error instanceof Error ? error.message : 'Login state could not be loaded.',
           });
         }
       }
@@ -440,10 +440,10 @@ export default function CollectHubPage() {
   const pageExtra = (
     <OperationToolbar>
       <Button icon={<HistoryOutlined />} onClick={() => history.push('/collect/tasks')}>
-        采集任务
+        Collection tasks
       </Button>
       <Button icon={<SettingOutlined />} onClick={() => history.push('/settings/collector')}>
-        采集设置
+        Collector settings
       </Button>
     </OperationToolbar>
   );
@@ -458,12 +458,12 @@ export default function CollectHubPage() {
       <div className="tm-collect-hub">
         <section className="tm-collect-hub-hero">
           <div className="tm-collect-hub-hero__main">
-            <Text className="tm-collect-hub-hero__eyebrow">跨境商品采集入口</Text>
+            <Text className="tm-collect-hub-hero__eyebrow">Cross-border product collection</Text>
             <Title level={4} className="tm-collect-hub-hero__title">
-              先选择来源，再把商品链接转成可运营草稿
+              Choose a source, then turn product links into operational drafts.
             </Title>
             <Paragraph className="tm-collect-hub-hero__desc">
-              采集任务会进入队列处理。遇到登录、验证码或平台限制时，请先完成采集浏览器登录状态检测，再重试或批量恢复失败任务。
+              Collection tasks enter a queue. If login, verification, or platform limits interrupt work, check collector browser login state, then retry or recover failed tasks in bulk.
             </Paragraph>
             <OperationToolbar>
               <Button
@@ -473,42 +473,42 @@ export default function CollectHubPage() {
                 disabled={!primaryProvider || providerState.loading}
                 onClick={() => primaryProvider && openSingleCollect(primaryProvider)}
               >
-                开始采集商品
+                Start collecting products
               </Button>
               <Button size="large" icon={<FileSearchOutlined />} onClick={() => history.push('/collect/batches')}>
-                批量采集
+                Batch collection
               </Button>
               <Button size="large" type="link" onClick={() => history.push('/collect/rules')}>
-                管理采集规则
+                Manage collection rules
               </Button>
             </OperationToolbar>
           </div>
           <div className="tm-collect-hub-hero__side">
             <MetricCard
-              title="支持来源"
+              title="Supported sources"
               value={providerState.loading ? '—' : sortedProviders.length}
-              description="按接口返回的采集器列表"
+              description="Based on collectors returned by the API"
               intent="primary"
               icon={<LinkOutlined />}
             />
             <MetricCard
-              title="可单条采集"
+              title="Single-item collection"
               value={providerState.loading ? '—' : runnableProviders.length}
-              description="已可用或测试中"
+              description="Available or in beta"
               intent="success"
               icon={<CloudDownloadOutlined />}
             />
             <MetricCard
-              title="批量入口"
+              title="Batch entry points"
               value={providerState.loading ? '—' : batchProviders.length}
-              description="支持批量提交的来源"
+              description="Sources that accept batch submission"
               intent="data"
               icon={<FileSearchOutlined />}
             />
             <MetricCard
-              title="失败待恢复"
+              title="Failed tasks to recover"
               value={recentState.loading ? '—' : failedTotal ?? '—'}
-              description="来自采集任务接口"
+              description="From the collection tasks API"
               intent="warning"
               icon={<WarningOutlined />}
               onClick={() => history.push('/collect/tasks?status=failed')}
@@ -519,15 +519,15 @@ export default function CollectHubPage() {
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={16}>
             <SectionCard
-              title="采集来源"
-              description="专用采集器优先用于已适配平台；自定义采集器适合未适配网站，使用前建议先测试规则。"
+              title="Collection sources"
+              description="Use dedicated collectors for supported platforms first. Custom collectors are for unsupported sites; test their rules before use."
               headerExtra={
                 <Button
                   icon={<ReloadOutlined />}
                   loading={providerState.loading}
                   onClick={() => void loadProviders()}
                 >
-                  重新加载
+                  Reload
                 </Button>
               }
             >
@@ -542,15 +542,15 @@ export default function CollectHubPage() {
               ) : providerState.error ? (
                 <Result
                   status="warning"
-                  title="采集来源加载失败"
-                  subTitle="请检查采集服务配置或稍后重试。已有任务可以继续在采集任务页面查看。"
+                  title="Collection sources could not be loaded"
+                  subTitle="Check collector service configuration or try again later. Existing tasks remain available in the collection task list."
                   extra={
                     <Space wrap>
                       <Button type="primary" onClick={() => history.push('/settings/collector')}>
-                        检查采集设置
+                        Check collector settings
                       </Button>
                       <Button onClick={() => history.push('/collect/tasks')}>
-                        查看采集任务
+                        View collection tasks
                       </Button>
                     </Space>
                   }

@@ -205,7 +205,7 @@ export default function OperationTasksPage() {
     const shop = shops.find((item) => item.id === requestedShopId);
     const fingerprint = `${productionCreatePrefill.productId}:${requestedShopId || ''}`;
     if (!product || !shop || !allowlistedShopId || shop.id !== allowlistedShopId) {
-      message.warning('链接中的商品或抖店不在当前可用范围，请从运营任务中心重新选择。');
+      message.warning('The product or Douyin Shop in the link is not currently available. Select it again from Operations Task Center.');
       setCreateOpen(false);
       clearState(['create', 'productId', 'shopId'], { replace: true });
       return;
@@ -217,7 +217,7 @@ export default function OperationTasksPage() {
 
   useEffect(() => {
     if (urlState.create !== 'production' || productionCreatePrefill) return;
-    message.warning('创建链接参数无效，请从运营任务中心重新选择。');
+    message.warning('The create-link parameters are invalid. Select the item again from Operations Task Center.');
     clearState(['create', 'productId', 'shopId'], { replace: true });
   }, [clearState, productionCreatePrefill, urlState.create]);
 
@@ -309,34 +309,34 @@ export default function OperationTasksPage() {
 
   const columns = useMemo<ProColumns<OperationTaskSummary>[]>(() => [
     {
-      title: '任务标题',
+      title: 'Task title',
       dataIndex: 'title',
       width: 260,
       render: (_, row) => (
         <Space direction="vertical" size={2}>
           <Button type="link" className="operation-tasks-page__title-link" onClick={() => openTask(row.id)}>
-            {row.title || '未命名任务'}
+            {row.title || 'Untitled task'}
           </Button>
           <Text type="secondary" ellipsis style={{ maxWidth: 240 }}>{row.summary || '—'}</Text>
         </Space>
       ),
     },
-    { title: '任务类型', dataIndex: 'taskType', width: 130, render: (v) => taskTypeLabel(String(v || '')) },
-    { title: '平台', dataIndex: 'platform', width: 110, render: (v) => platformLabel(String(v || '')) },
-    { title: '状态', dataIndex: 'status', width: 130, render: (v) => <OperationTaskStatusTag status={String(v || '')} /> },
-    { title: '优先级', dataIndex: 'priority', width: 100, render: (v) => <OperationPriorityTag priority={String(v || '')} /> },
-    { title: '最新草稿', dataIndex: 'latestDraftVersion', width: 110, render: (v) => v ? `v${v}` : '—' },
-    { title: '最新执行状态', dataIndex: 'latestExecutionStatus', width: 130, render: (v) => v ? <OperationAttemptStatusTag status={String(v)} /> : '—' },
-    { title: '创建人', dataIndex: 'createdBy', width: 130, render: (v) => copyableText(String(v || ''), 10) },
-    { title: '创建时间', dataIndex: 'createdAt', width: 170, render: (v) => formatDateTime(String(v || '')) },
-    { title: '更新时间', dataIndex: 'updatedAt', width: 170, render: (v) => formatDateTime(String(v || '')) },
+    { title: 'Task type', dataIndex: 'taskType', width: 130, render: (v) => taskTypeLabel(String(v || '')) },
+    { title: 'Platform', dataIndex: 'platform', width: 110, render: (v) => platformLabel(String(v || '')) },
+    { title: 'Status', dataIndex: 'status', width: 130, render: (v) => <OperationTaskStatusTag status={String(v || '')} /> },
+    { title: 'Priority', dataIndex: 'priority', width: 100, render: (v) => <OperationPriorityTag priority={String(v || '')} /> },
+    { title: 'Latest draft', dataIndex: 'latestDraftVersion', width: 110, render: (v) => v ? `v${v}` : '—' },
+    { title: 'Latest execution status', dataIndex: 'latestExecutionStatus', width: 130, render: (v) => v ? <OperationAttemptStatusTag status={String(v)} /> : '—' },
+    { title: 'Created by', dataIndex: 'createdBy', width: 130, render: (v) => copyableText(String(v || ''), 10) },
+    { title: 'Created', dataIndex: 'createdAt', width: 170, render: (v) => formatDateTime(String(v || '')) },
+    { title: 'Updated', dataIndex: 'updatedAt', width: 170, render: (v) => formatDateTime(String(v || '')) },
     {
-      title: '操作',
+      title: 'Actions',
       valueType: 'option',
       width: 120,
       render: (_, row) => [
         <Button key="detail" type="link" icon={<EyeOutlined />} onClick={() => openTask(row.id)}>
-          查看详情
+          View details
         </Button>,
       ],
     },
@@ -344,7 +344,7 @@ export default function OperationTasksPage() {
 
   const filterActive = !!(urlState.status || urlState.platform || urlState.taskType);
   const emptyLocale = useListEmptyLocale('operationTasks', filterActive
-    ? { description: '当前筛选条件下没有运营任务，请调整筛选条件后重试。' }
+    ? { description: 'No operations tasks match the current filters. Adjust the filters and try again.' }
     : undefined);
   const openCreateModal = () => {
     setCreatePayload('{}');
@@ -441,8 +441,8 @@ export default function OperationTasksPage() {
       subTitle={PAGE_COPY.operationTasks.description}
       extra={(
         <Space wrap className="operation-tasks-page__header-actions">
-          <Button icon={<ReloadOutlined />} onClick={() => { void load(); void loadProductionStatus(); }} loading={loading || productionStatusLoading}>刷新</Button>
-          {canCreate ? <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>创建运营任务</Button> : null}
+          <Button icon={<ReloadOutlined />} onClick={() => { void load(); void loadProductionStatus(); }} loading={loading || productionStatusLoading}>Refresh</Button>
+          {canCreate ? <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>Create operations task</Button> : null}
         </Space>
       )}
     >
@@ -460,32 +460,32 @@ export default function OperationTasksPage() {
         ) : null}
         <SectionCard
           className="operation-tasks-page__filters"
-          title="筛选任务"
-          description="按任务状态、平台和任务类型缩小处理范围。"
+          title="Filter tasks"
+          description="Narrow the work area by task status, platform, and task type."
           compact
         >
           <Form form={form} layout="vertical" onFinish={updateFilters}>
             <Row gutter={[16, 12]}>
               <Col xs={24} md={8} lg={6}>
-                <Form.Item name="status" label="任务状态">
-                  <Select allowClear options={optionsFromLabels(OPERATION_TASK_STATUS_LABELS)} placeholder="全部状态" />
+                <Form.Item name="status" label="Task status">
+                  <Select allowClear options={optionsFromLabels(OPERATION_TASK_STATUS_LABELS)} placeholder="All statuses" />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8} lg={6}>
-                <Form.Item name="platform" label="平台">
-                  <Select allowClear options={optionsFromLabels(OPERATION_PLATFORM_LABELS)} placeholder="全部平台" />
+                <Form.Item name="platform" label="Platform">
+                  <Select allowClear options={optionsFromLabels(OPERATION_PLATFORM_LABELS)} placeholder="All platforms" />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8} lg={6}>
-                <Form.Item name="taskType" label="任务类型">
-                  <Select allowClear options={optionsFromLabels(OPERATION_TASK_TYPE_LABELS)} placeholder="全部类型" />
+                <Form.Item name="taskType" label="Task type">
+                  <Select allowClear options={optionsFromLabels(OPERATION_TASK_TYPE_LABELS)} placeholder="All types" />
                 </Form.Item>
               </Col>
               <Col xs={24} lg={6} className="operation-tasks-page__filter-action-column">
                 <Form.Item>
                   <OperationToolbar className="operation-tasks-page__filter-actions">
-                    <Button icon={<FilterOutlined />} htmlType="submit">应用筛选</Button>
-                    <Button onClick={clearFilters}>清除筛选</Button>
+                    <Button icon={<FilterOutlined />} htmlType="submit">Apply filters</Button>
+                    <Button onClick={clearFilters}>Clear filters</Button>
                   </OperationToolbar>
                 </Form.Item>
               </Col>
@@ -508,8 +508,8 @@ export default function OperationTasksPage() {
               options={false}
               headerTitle={(
                 <div className="operation-tasks-page__table-heading">
-                  <Text strong className="operation-tasks-page__table-title">任务列表</Text>
-                  <Text type="secondary">查看任务状态、草稿进度和最近执行结果。</Text>
+                  <Text strong className="operation-tasks-page__table-title">Tasks</Text>
+                  <Text type="secondary">View task status, draft progress, and latest execution results.</Text>
                 </div>
               )}
               toolBarRender={() => [
@@ -520,8 +520,8 @@ export default function OperationTasksPage() {
             />
 
             <OperationToolbar className="operation-tasks-page__pagination">
-              <Button disabled={cursorStack.length === 0 || loading} onClick={goPrev}>上一批</Button>
-              <Button disabled={!hasMore || !nextCursor || loading} onClick={goNext}>下一批</Button>
+              <Button disabled={cursorStack.length === 0 || loading} onClick={goPrev}>Previous</Button>
+              <Button disabled={!hasMore || !nextCursor || loading} onClick={goNext}>Next</Button>
             </OperationToolbar>
           </>
         ) : null}

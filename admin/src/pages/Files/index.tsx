@@ -23,7 +23,7 @@ export default function FilesPage() {
 
   const columns: ProColumns<FileRow>[] = [
     {
-      title: '预览',
+      title: 'Preview',
       key: 'preview',
       dataIndex: 'url',
       width: 88,
@@ -36,7 +36,7 @@ export default function FilesPage() {
         ),
     },
     {
-      title: '文件名',
+      title: 'File name',
       dataIndex: 'filename',
       ellipsis: true,
       search: false,
@@ -47,53 +47,53 @@ export default function FilesPage() {
       width: 160,
     },
     {
-      title: '大小',
+      title: 'Size',
       dataIndex: 'size',
       width: 100,
       search: false,
       render: (_, row) => formatSize(row.size),
     },
     {
-      title: '访问地址',
+      title: 'URL',
       dataIndex: 'url',
       ellipsis: true,
       copyable: true,
       search: false,
     },
     {
-      title: '存储',
+      title: 'Storage',
       dataIndex: 'storageKind',
       width: 100,
       search: false,
     },
     {
-      title: '上传时间',
+      title: 'Uploaded',
       dataIndex: 'createdAt',
       width: 180,
       search: false,
       render: (_, row) => formatDateTime(row.createdAt),
     },
     {
-      title: '操作',
+      title: 'Actions',
       valueType: 'option',
       width: 100,
       render: (_, row) => [
         <Popconfirm
           key="del"
-          title="删除文件？"
-          description="将删除存储对象与记录"
+            title="Delete this file?"
+            description="This deletes the stored object and its record."
           onConfirm={async () => {
             try {
               await deleteFile(row.id);
-              message.success('已删除');
+              message.success('Deleted.');
               actionRef.current?.reload();
             } catch (e: unknown) {
-              message.error((e as Error)?.message || '删除失败');
+              message.error((e as Error)?.message || 'Deletion failed.');
             }
           }}
         >
           <Button type="link" danger size="small">
-            删除
+            Delete
           </Button>
         </Popconfirm>,
       ],
@@ -102,11 +102,11 @@ export default function FilesPage() {
 
   return (
     <TmPageContainer
-      title="文件管理"
-      subTitle="管理已上传的商品图片与附件。"
+      title="Files"
+      subTitle="Manage uploaded product images and attachments."
       extra={
         <Link key="hint" to="/settings/storage">
-          存储设置
+          Storage settings
         </Link>
       }
     >

@@ -89,9 +89,9 @@ function truthyInventorySetting(v: string | undefined): boolean {
 
 function summarizeInvResp(sum?: Record<string, unknown>) {
   if (!sum) return '';
-  if (sum.skipped) return `跳过：${String(sum.skipReason || '')}`;
+  if (sum.skipped) return `Skipped: ${String(sum.skipReason || '')}`;
   if (typeof sum.message === 'string' && sum.message) return sum.message;
-  return '已完成';
+  return 'Completed';
 }
 
 const ORDER_STATUS_OPTS = Object.keys(ORDER_STATUS).map((v) => ({
@@ -219,7 +219,7 @@ export default function OrdersPage() {
       const r = await getOrderInventoryEffects(orderId, { page: 1, pageSize: 100 });
       setInvEffectRows(r.list);
     } catch (e: unknown) {
-      message.error((e as Error)?.message || '加载库存影响失败');
+      message.error((e as Error)?.message || 'Inventory effects could not be loaded.');
     }
   }, []);
 
@@ -262,21 +262,21 @@ export default function OrdersPage() {
   const columns: ProColumns<OrderListRow>[] = useMemo(
     () => [
       {
-        title: '关联店铺',
+        title: 'Related shop',
         dataIndex: 'shopId',
         hideInTable: true,
         valueType: 'select',
         fieldProps: { options: shopOptions, allowClear: true, showSearch: true },
       },
       {
-        title: '关键词',
+        title: 'Keyword',
         dataIndex: 'keyword',
         hideInTable: true,
-        fieldProps: { placeholder: '订单号 / 买家 / 平台单号', ...keywordFieldProps },
+        fieldProps: { placeholder: 'Order number / buyer / platform order number', ...keywordFieldProps },
       },
-      { title: '订单号', dataIndex: 'orderNo', copyable: true, width: 148 },
+      { title: 'Order number', dataIndex: 'orderNo', copyable: true, width: 148 },
       {
-        title: '外部单号',
+        title: 'External order number',
         dataIndex: 'externalOrderId',
         width: 140,
         search: false,
@@ -285,13 +285,13 @@ export default function OrdersPage() {
         render: (_, r) => r.externalOrderId || '—',
       },
       {
-        title: '平台',
+        title: 'Platform',
         dataIndex: 'platform',
         width: 96,
         fieldProps: { allowClear: true },
       },
       {
-        title: '店铺',
+        title: 'Shop',
         dataIndex: 'shopName',
         search: false,
         width: 140,
@@ -306,9 +306,9 @@ export default function OrdersPage() {
             '—'
           ),
       },
-      { title: '客户', dataIndex: 'customerName', ellipsis: true, width: 120 },
+      { title: 'Customer', dataIndex: 'customerName', ellipsis: true, width: 120 },
       {
-        title: '订单状态',
+        title: 'Order status',
         dataIndex: 'status',
         width: 108,
         valueType: 'select',
@@ -316,7 +316,7 @@ export default function OrdersPage() {
         render: (_, r) => statusTag(r.status, ORDER_STATUS),
       },
       {
-        title: '支付',
+        title: 'Payment',
         dataIndex: 'paymentStatus',
         width: 94,
         valueType: 'select',
@@ -324,14 +324,14 @@ export default function OrdersPage() {
         render: (_, r) => statusTag(r.paymentStatus, ORDER_PAYMENT_STATUS),
       },
       {
-        title: '商品数',
+        title: 'Items',
         dataIndex: 'itemCount',
         search: false,
         width: 72,
         render: (_, r) => r.itemCount ?? '—',
       },
       {
-        title: '规格匹配',
+        title: 'SKU matching',
         dataIndex: 'skuMatchStatus',
         width: 108,
         valueType: 'select',
@@ -354,7 +354,7 @@ export default function OrdersPage() {
         },
       },
       {
-        title: '库存扣减',
+        title: 'Inventory deduction',
         dataIndex: 'inventoryDeductStatus',
         width: 100,
         valueType: 'select',
@@ -367,7 +367,7 @@ export default function OrdersPage() {
         },
       },
       {
-        title: '同步',
+        title: 'Sync',
         dataIndex: 'syncStatus',
         width: 96,
         valueType: 'select',
@@ -380,44 +380,44 @@ export default function OrdersPage() {
         },
       },
       {
-        title: '是否有异常',
+        title: 'Has exceptions',
         dataIndex: 'hasException',
         hideInTable: true,
         valueType: 'select',
         valueEnum: {
-          true: { text: '有异常' },
-          false: { text: '无异常' },
+          true: { text: 'Has exceptions' },
+          false: { text: 'No exceptions' },
         },
       },
       {
-        title: '异常',
+        title: 'Exceptions',
         dataIndex: 'openExceptionCount',
         width: 72,
         search: false,
         render: (_, r) =>
           (r.openExceptionCount ?? 0) > 0 ? (
             <Badge count={r.openExceptionCount} size="small">
-              <Tag color="error">待处理</Tag>
+              <Tag color="error">Needs attention</Tag>
             </Badge>
           ) : (
-            <Tag>无</Tag>
+            <Tag>None</Tag>
           ),
       },
       {
-        title: '履约',
+        title: 'Fulfillment',
         dataIndex: 'fulfillmentStatus',
         hideInTable: true,
         valueType: 'select',
         valueEnum: ORDER_FULFILLMENT_STATUS,
       },
       {
-        title: '金额',
+        title: 'Amount',
         search: false,
         width: 120,
         render: (_, r) => `${r.currency} ${r.totalAmount}`,
       },
       {
-        title: '物流',
+        title: 'Shipping',
         dataIndex: 'latestShipmentStatus',
         search: false,
         width: 96,
@@ -425,14 +425,14 @@ export default function OrdersPage() {
           r.latestShipmentStatus ? statusTag(r.latestShipmentStatus, ORDER_SHIPMENT_STATUS) : '—',
       },
       {
-        title: '下单时间',
+        title: 'Ordered',
         dataIndex: 'orderedAt',
         search: false,
         width: 160,
         render: (_, r) => (r.orderedAt ? formatDateTime(r.orderedAt) : '—'),
       },
       {
-        title: '创建时间',
+        title: 'Created',
         dataIndex: 'createdAt',
         width: 160,
         valueType: 'dateTimeRange',
@@ -445,20 +445,20 @@ export default function OrdersPage() {
         render: (_, r) => formatDateTime(r.createdAt),
       },
       {
-        title: '更新时间',
+        title: 'Updated',
         dataIndex: 'updatedAt',
         width: 160,
         search: false,
         render: (_, r) => (r.updatedAt ? formatDateTime(r.updatedAt) : '—'),
       },
       {
-        title: '操作',
+        title: 'Actions',
         valueType: 'option',
         width: 220,
         fixed: 'right',
         render: (_, r) => (
           <Space wrap size={4}>
-            <a onClick={() => history.push(`/orders/${encodeURIComponent(r.id)}`)}>详情</a>
+            <a onClick={() => history.push(`/orders/${encodeURIComponent(r.id)}`)}>Details</a>
             {(r.openExceptionCount ?? 0) > 0 ? (
               <a
                 onClick={() =>
@@ -470,11 +470,11 @@ export default function OrdersPage() {
                   )
                 }
               >
-                异常
+                Exceptions
               </a>
             ) : null}
             <a onClick={() => history.push(`/orders/sync-tasks?shopId=${encodeURIComponent(r.shopId || '')}`)}>
-              同步
+              Sync
             </a>
           </Space>
         ),

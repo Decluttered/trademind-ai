@@ -87,7 +87,7 @@ export default function PlatformRuntimePage() {
         <span className={styles.platformTabLabel}>
           <span>{p.name}</span>
           <span className={styles.platformTabTags}>
-            {runtimeReady ? null : <Tag color="default">未接入</Tag>}
+            {runtimeReady ? null : <Tag color="default">Not connected</Tag>}
             {st && p.status !== 'available' ? <Tag color={st.color}>{st.label}</Tag> : null}
           </span>
         </span>
@@ -98,17 +98,17 @@ export default function PlatformRuntimePage() {
 
   return (
     <TmPageContainer
-      title="平台运行状态"
-      subTitle="按平台查看健康检查、运行指标、运行控制与发布门禁；未接入运行时的平台仅展示说明，不可操作。"
+      title="Platform runtime status"
+      subTitle="View health checks, runtime metrics, controls, and publishing gates by platform. Platforms without a connected runtime are informational only."
       className={styles.page}
     >
       {providersError ? (
         <ErrorAlert
-          title="平台列表加载失败"
-          actionHint="请检查后端服务后重试。"
+          title="Platform list could not be loaded"
+          actionHint="Check the backend service, then try again."
           action={
             <Button size="small" onClick={() => void loadProviders()}>
-              重新加载
+              Reload
             </Button>
           }
           className={styles.providersError}
@@ -119,8 +119,8 @@ export default function PlatformRuntimePage() {
           <Alert
             showIcon
             type="info"
-            message="暂无平台"
-            description="请刷新页面或先在平台接入设置中确认平台接入方已注册。"
+            message="No platforms"
+            description="Refresh this page, or confirm that a platform provider is registered under Platform settings."
           />
         ) : (
           <Tabs

@@ -117,10 +117,10 @@ function severityCell(sev?: string) {
 }
 
 const ALERT_ST_META: Record<string, { color: string; text: string }> = {
-  none: { color: 'default', text: '无' },
-  generated: { color: 'gold', text: '告警中' },
-  handled: { color: 'green', text: '告警已处理' },
-  ignored: { color: 'default', text: '告警忽略' },
+  none: { color: 'default', text: 'None' },
+  generated: { color: 'gold', text: 'Alert open' },
+  handled: { color: 'green', text: 'Alert handled' },
+  ignored: { color: 'default', text: 'Alert ignored' },
 };
 
 function alertStatusUi(st?: string) {
@@ -147,15 +147,15 @@ function relatedHref(row: UnifiedTaskDTO): string | undefined {
 function detailLinkLabel(detailUrl?: string | null): string {
   const url = (detailUrl || '').trim();
   if (url.includes('/product/publish-batches/')) {
-    return '批次详情';
+    return 'Batch details';
   }
   if (url.includes('/product/ai-text-batches/') || url.includes('/product/ai-image-batches/')) {
-    return '复核工作台';
+    return 'Review workbench';
   }
   if (url.includes('/orders/sync-tasks')) {
-    return '订单同步任务';
+    return 'Order sync task';
   }
-  return '打开任务详情';
+  return 'Open task details';
 }
 
 export default function TaskCenterFailuresPage() {
@@ -295,12 +295,12 @@ export default function TaskCenterFailuresPage() {
     }
     if (!canOpenFailureDetail(taskType, jumpId)) {
       if (taskType.trim() === 'douyin_platform') {
-        message.info('该平台级告警无对应失败任务详情，已跳转到平台运行状态页');
+        message.info('This platform alert has no matching failed-task detail. You have been redirected to platform runtime status.');
         history.replace('/ops/platform-runtime?platform=douyin_shop');
         return;
       }
       if (isPlatformAlertTaskType(taskType)) {
-        message.info('该平台级告警无对应失败任务详情，请在告警中心查看');
+        message.info('This platform alert has no matching failed-task detail. View it in Alert Center.');
         sp.delete('jumpId');
         sp.delete('drawer');
         sp.delete('id');
@@ -309,7 +309,7 @@ export default function TaskCenterFailuresPage() {
         history.replace(qs ? `${location.pathname}?${qs}` : location.pathname);
         return;
       }
-      message.warning('链接中的任务类型或 ID 无效，无法打开失败详情');
+      message.warning('The task type or ID in the link is invalid, so failed-task details cannot be opened.');
       sp.delete('jumpId');
       sp.delete('drawer');
       sp.delete('id');
@@ -340,7 +340,7 @@ export default function TaskCenterFailuresPage() {
   const columns: ProColumns<UnifiedTaskDTO>[] = useMemo(
     () => [
       {
-        title: '更新时间',
+        title: 'Updated',
         dataIndex: 'timeRange',
         hideInTable: true,
         valueType: 'dateTimeRange',
@@ -352,7 +352,7 @@ export default function TaskCenterFailuresPage() {
         },
       },
       {
-        title: '任务类型',
+        title: 'Task type',
         dataIndex: 'taskType',
         width: 120,
         valueType: 'select',
@@ -362,12 +362,12 @@ export default function TaskCenterFailuresPage() {
             value: k,
           })),
           allowClear: true,
-          placeholder: '请选择',
+          placeholder: 'Select',
         },
         render: (_, r) => TASK_CENTER_TASK_TYPE_LABEL[r.taskType] || r.taskType,
       },
       {
-        title: '状态(归一)',
+        title: 'Normalized status',
         dataIndex: 'normalizedStatus',
         width: 110,
         valueType: 'select',
@@ -382,7 +382,7 @@ export default function TaskCenterFailuresPage() {
         render: (_, r) => normTag(r.normalizedStatus),
       },
       {
-        title: '失败类别',
+        title: 'Failure category',
         dataIndex: 'failureCategory',
         width: 132,
         valueType: 'select',
@@ -395,7 +395,7 @@ export default function TaskCenterFailuresPage() {
         render: (_, r) => failureCategoryLabel(r.failureCategory),
       },
       {
-        title: '恢复状态',
+        title: 'Recovery status',
         dataIndex: 'recoveryStatus',
         width: 148,
         valueType: 'select',
@@ -411,7 +411,7 @@ export default function TaskCenterFailuresPage() {
         },
       },
       {
-        title: '严重等级',
+        title: 'Severity',
         dataIndex: 'severity',
         width: 106,
         valueType: 'select',
@@ -423,44 +423,44 @@ export default function TaskCenterFailuresPage() {
         render: (_, r) => severityCell(r.severity),
       },
       {
-        title: '平台',
+        title: 'Platform',
         dataIndex: 'platform',
         width: 90,
       },
       {
-        title: '店铺 ID',
+        title: 'Shop ID',
         dataIndex: 'shopId',
         width: 120,
         hideInTable: true,
       },
       {
-        title: '店铺',
+        title: 'Shop',
         dataIndex: 'shopName',
         width: 120,
         search: false,
         ellipsis: true,
       },
       {
-        title: '关键词',
+        title: 'Keyword',
         dataIndex: 'keyword',
         hideInTable: true,
         fieldProps: keywordFieldProps,
       },
       {
-        title: '创建时间',
+        title: 'Created',
         dataIndex: 'createdAt',
         width: 156,
         search: false,
         render: (_, r) => formatDateTime(r.createdAt),
       },
       {
-        title: '标题',
+        title: 'Title',
         dataIndex: 'title',
         ellipsis: true,
         search: false,
       },
       {
-        title: '关联',
+        title: 'Related',
         search: false,
         width: 140,
         render: (_, r) => {
@@ -474,27 +474,27 @@ export default function TaskCenterFailuresPage() {
         },
       },
       {
-        title: '重试次数',
+        title: 'Retry count',
         dataIndex: 'retryCount',
         width: 76,
         search: false,
       },
       {
-        title: '建议动作',
+        title: 'Suggested action',
         dataIndex: 'suggestedAction',
         width: 160,
         search: false,
         ellipsis: true,
       },
       {
-        title: '错误摘要',
+        title: 'Error summary',
         dataIndex: 'errorMessage',
         ellipsis: true,
         search: false,
         width: 180,
       },
       {
-        title: '告警',
+        title: 'Alert',
         search: false,
         width: 100,
         render: (_, r) => alertStatusUi(r.alertStatus),
@@ -505,23 +505,23 @@ export default function TaskCenterFailuresPage() {
         width: 100,
         render: (_, r) => (
           <Space size={[0, 4]} wrap>
-            {r.ignored ? <Tag>忽略</Tag> : null}
-            {r.handled ? <Tag color="blue">已处理</Tag> : null}
+            {r.ignored ? <Tag>Ignored</Tag> : null}
+            {r.handled ? <Tag color="blue">Handled</Tag> : null}
           </Space>
         ),
       },
       {
-        title: '操作',
+        title: 'Actions',
         valueType: 'option',
         width: 320,
         fixed: 'right',
         render: (_, r) => (
           <Space wrap size={4}>
             <Button size="small" type="link" onClick={() => void openDetail(r)}>
-              详情
+              Details
             </Button>
             <Button size="small" type="link" onClick={() => void doGenerateAlert(r)}>
-              生成告警
+              Create alert
             </Button>
             <Button
               size="small"
@@ -529,7 +529,7 @@ export default function TaskCenterFailuresPage() {
               disabled={!r.relatedAlertId}
               onClick={() => history.push('/ops/task-center/alerts')}
             >
-              告警列表
+              Alert list
             </Button>
             {r.detailUrl ? (
               <Button size="small" type="link" onClick={() => history.push(appendSourceToUrl(r.detailUrl!, 'taskcenter'))}>
@@ -542,24 +542,24 @@ export default function TaskCenterFailuresPage() {
               disabled={!r.retryable}
               onClick={() => confirmRetry(r)}
             >
-              重试
+              Retry
             </Button>
             <Dropdown
               menu={{
                 items: [
                   {
                     key: 'ignore',
-                    label: '忽略',
+                    label: 'Ignore',
                     onClick: () => promptMark('ignore', r),
                   },
                   {
                     key: 'handle',
-                    label: '标记已处理',
+                    label: 'Mark handled',
                     onClick: () => promptMark('handle', r),
                   },
                   {
                     key: 'unmark',
-                    label: '取消标记',
+                    label: 'Clear mark',
                     disabled: !r.ignored && !r.handled,
                     onClick: () => void doUnmark(r),
                   },
@@ -567,7 +567,7 @@ export default function TaskCenterFailuresPage() {
               }}
             >
               <Button size="small" type="link">
-                更多
+                More
               </Button>
             </Dropdown>
           </Space>
@@ -579,11 +579,11 @@ export default function TaskCenterFailuresPage() {
 
   async function doGenerateAlert(row: UnifiedTaskDTO) {
     Modal.confirm({
-      title: '为该失败任务手动生成站内告警（可覆盖告警状态）',
+      title: 'Manually create an in-app alert for this failed task (may override the alert status).',
       onOk: async () => {
         try {
           await generateTaskFailureAlert(row.taskType, row.id);
-          message.success('已生成/刷新告警');
+          message.success('Alert created or refreshed.');
           actionRef.current?.reload?.();
         } catch (e) {
           message.error((e as Error).message);
@@ -611,7 +611,7 @@ export default function TaskCenterFailuresPage() {
   function confirmRetry(row: UnifiedTaskDTO) {
     confirmFailureTaskRetry(1, async () => {
       await retryTaskFailure(row.taskType, row.id);
-      message.success('已提交重试');
+      message.success('Retry submitted.');
       actionRef.current?.reload?.();
     });
   }
@@ -619,10 +619,10 @@ export default function TaskCenterFailuresPage() {
   function promptMark(kind: 'ignore' | 'handle', row: UnifiedTaskDTO) {
     let txt = '';
     Modal.confirm({
-      title: kind === 'ignore' ? '忽略此失败任务（列表默认隐藏）' : '标记为已线下处理（列表默认隐藏）',
+      title: kind === 'ignore' ? 'Ignore this failed task (hidden by default)' : 'Mark as handled outside the system (hidden by default)',
       content: (
         <Input.TextArea
-          placeholder="可选备注（不记录敏感信息）"
+          placeholder="Optional note (do not include sensitive information)"
           rows={3}
           onChange={(e) => {
             txt = e.target.value;
@@ -636,7 +636,7 @@ export default function TaskCenterFailuresPage() {
           } else {
             await handleTaskFailure(row.taskType, row.id, txt);
           }
-          message.success('已保存标记');
+          message.success('Mark saved.');
           actionRef.current?.reload?.();
         } catch (e) {
           message.error((e as Error).message);
@@ -648,7 +648,7 @@ export default function TaskCenterFailuresPage() {
   async function doUnmark(row: UnifiedTaskDTO) {
     try {
       await unmarkTaskFailure(row.taskType, row.id);
-      message.success('已取消标记');
+      message.success('Mark cleared.');
       actionRef.current?.reload?.();
     } catch (e) {
       message.error((e as Error).message);
@@ -674,26 +674,26 @@ export default function TaskCenterFailuresPage() {
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <Row gutter={[16, 16]}>
                 <Col xs={12} sm={8} md={6} lg={4}>
-                  <Statistic title="归一失败" value={summary.totalFailed ?? 0} />
+                  <Statistic title="Normalized failures" value={summary.totalFailed ?? 0} />
                 </Col>
                 <Col xs={12} sm={8} md={6} lg={4}>
-                  <Statistic title="可重试" value={summary.retryableCount ?? 0} />
+                  <Statistic title="Retryable" value={summary.retryableCount ?? 0} />
                 </Col>
                 <Col xs={24} sm={16} md={12} lg={6}>
                   <Statistic
-                    title="重试中 / 停滞 / 租约过期"
+                    title="Retrying / stale / lease expired"
                     value={`${summary.retryingTotal ?? 0} / ${summary.staleTotal ?? 0} / ${summary.leaseExpiredTotal ?? 0}`}
                   />
                 </Col>
                 <Col xs={12} sm={8} md={6} lg={4}>
-                  <Statistic title="忽略标记" value={summary.ignoredCount ?? 0} />
+                  <Statistic title="Marked ignored" value={summary.ignoredCount ?? 0} />
                 </Col>
                 <Col xs={12} sm={8} md={6} lg={4}>
-                  <Statistic title="已处理标记" value={summary.handledCount ?? 0} />
+                  <Statistic title="Marked handled" value={summary.handledCount ?? 0} />
                 </Col>
                 {latestFailedText ? (
                   <Col xs={24} sm={24} md={12} lg={6}>
-                    <Statistic title="最近失败" value={latestFailedText} valueStyle={{ fontSize: 16 }} />
+                    <Statistic title="Latest failure" value={latestFailedText} valueStyle={{ fontSize: 16 }} />
                   </Col>
                 ) : null}
               </Row>
@@ -701,7 +701,7 @@ export default function TaskCenterFailuresPage() {
               {Object.keys(summary.byType || {}).length ? (
                 <div>
                   <Typography.Text type="secondary" style={{ marginRight: 8 }}>
-                    按类型：
+                    By type:
                   </Typography.Text>
                   <Space size={[8, 8]} wrap>
                     {Object.entries(summary.byType || {}).map(([k, v]) => (
@@ -718,7 +718,7 @@ export default function TaskCenterFailuresPage() {
               <Row gutter={[16, 12]} align="middle" justify="space-between">
                 <Col xs={24} lg={14}>
                   <Space wrap align="center">
-                    <Typography.Text type="secondary">批量操作</Typography.Text>
+                    <Typography.Text type="secondary">Bulk actions</Typography.Text>
                     <Button
                       disabled={!batchRows.length}
                       type="primary"
@@ -727,24 +727,24 @@ export default function TaskCenterFailuresPage() {
                           const res = await batchRetryTaskFailures(
                             batchRows.map((r) => ({ taskType: r.taskType, id: r.id })),
                           );
-                          message.info(`成功 ${res.successCount}，失败 ${res.failedCount}`);
+                          message.info(`Succeeded: ${res.successCount}; failed: ${res.failedCount}`);
                           actionRef.current?.reload?.();
                         });
                       }}
                     >
-                      批量重试
+                      Retry selected
                     </Button>
                     <Button
                       disabled={!batchRows.length}
                       onClick={() =>
                         Modal.confirm({
-                          title: `批量忽略 ${batchRows.length} 条任务？`,
+                          title: `Ignore ${batchRows.length} selected tasks?`,
                           onOk: async () => {
                             try {
                               const res = await batchIgnoreTaskFailures(
                                 batchRows.map((r) => ({ taskType: r.taskType, id: r.id })),
                               );
-                              message.info(`忽略成功 ${res.successCount}，失败 ${res.failedCount}`);
+                              message.info(`Ignored: ${res.successCount}; failed: ${res.failedCount}`);
                               actionRef.current?.reload?.();
                             } catch (e) {
                               message.error((e as Error).message);
@@ -753,19 +753,19 @@ export default function TaskCenterFailuresPage() {
                         })
                       }
                     >
-                      批量忽略
+                      Ignore selected
                     </Button>
                     <Button
                       disabled={!batchRows.length}
                       onClick={() =>
                         Modal.confirm({
-                          title: `批量标记已处理（${batchRows.length} 条）？`,
+                          title: `Mark ${batchRows.length} selected tasks as handled?`,
                           onOk: async () => {
                             try {
                               const res = await batchHandleTaskFailures(
                                 batchRows.map((r) => ({ taskType: r.taskType, id: r.id })),
                               );
-                              message.info(`成功 ${res.successCount}，失败 ${res.failedCount}`);
+                              message.info(`Succeeded: ${res.successCount}; failed: ${res.failedCount}`);
                               actionRef.current?.reload?.();
                             } catch (e) {
                               message.error((e as Error).message);
@@ -774,22 +774,22 @@ export default function TaskCenterFailuresPage() {
                         })
                       }
                     >
-                      批量已处理
+                      Mark selected handled
                     </Button>
                     <Typography.Text type="secondary">
-                      已选 {sel.length} 条{sel.length > 50 ? '（批量操作仅前 50 条）' : ''}
+                      {sel.length} selected{sel.length > 50 ? ' (bulk actions apply only to the first 50)' : ''}
                     </Typography.Text>
                   </Space>
                 </Col>
                 <Col xs={24} lg={10}>
                   <Space wrap align="center" style={{ justifyContent: 'flex-end', width: '100%' }}>
-                    <Typography.Text type="secondary">列表范围</Typography.Text>
+                    <Typography.Text type="secondary">List scope</Typography.Text>
                     <Space size={6}>
-                      <Typography.Text>含已恢复</Typography.Text>
+                      <Typography.Text>Include recovered</Typography.Text>
                       <Switch
                         checked={includeResolved}
-                        checkedChildren="是"
-                        unCheckedChildren="否"
+                        checkedChildren="Yes"
+                        unCheckedChildren="No"
                         onChange={(checked) => {
                           listFilterRef.current.includeResolved = checked;
                           setIncludeResolved(checked);
@@ -800,7 +800,7 @@ export default function TaskCenterFailuresPage() {
                       />
                     </Space>
                     <Space size={6}>
-                      <Typography.Text>含已标记</Typography.Text>
+                      <Typography.Text>Include marked</Typography.Text>
                       <Switch
                         checked={includeMarked}
                         checkedChildren="是"
@@ -815,14 +815,14 @@ export default function TaskCenterFailuresPage() {
                       />
                     </Space>
                     <Typography.Link onClick={() => history.push('/ops/workers/monitor')}>
-                      后台任务监控
+                      Worker monitor
                     </Typography.Link>
                   </Space>
                 </Col>
               </Row>
             </Space>
           ) : (
-            <Badge status="processing" text="载入统计..." />
+            <Badge status="processing" text="Loading statistics…" />
           )}
         </ProCard>
 

@@ -144,7 +144,7 @@ export default function ShopsPage() {
           );
         }
       } catch {
-        setAuthPartnerWarn('无法校验平台应用配置，请检查网络或稍后重试。');
+        setAuthPartnerWarn('Platform app configuration could not be checked. Check the network or try again later.');
       }
     }
     const base: Record<string, unknown> = {
@@ -186,7 +186,7 @@ export default function ShopsPage() {
     const res = await getDouyinOAuthAuthorizeUrl(shopId);
     const target = res.redirectUrl || res.authorizeUrl;
     if (!target) {
-      message.error('缺少抖店授权链接');
+      message.error('Douyin Shop authorization link is missing.');
       return;
     }
     window.location.href = target;
@@ -194,21 +194,21 @@ export default function ShopsPage() {
 
   const refreshDouyinFor = async (shopId: string) => {
     await refreshDouyinOAuth(shopId);
-    message.success('抖店授权已刷新');
+    message.success('Douyin Shop authorization refreshed.');
     actionRef.current?.reload();
     if (detail?.id === shopId) await refreshDetail(shopId);
   };
 
   const revokeDouyinFor = async (shopId: string) => {
     await revokeDouyinOAuth(shopId);
-    message.success('抖店店铺已解除授权，历史数据不会删除');
+    message.success('Douyin Shop authorization revoked; historical data was not deleted.');
     actionRef.current?.reload();
     if (detail?.id === shopId) await refreshDetail(shopId);
   };
 
   const syncDouyinInfoFor = async (shopId: string) => {
     await syncDouyinShopInfo(shopId);
-    message.success('抖店店铺信息已同步');
+    message.success('Douyin Shop information synchronized.');
     actionRef.current?.reload();
     if (detail?.id === shopId) await refreshDetail(shopId);
   };
@@ -216,16 +216,16 @@ export default function ShopsPage() {
   const openCustomerMessageSyncModal = (platform: string, shopId: string) => {
     const p = providers.find((x) => x.platform === platform);
     if (platform === 'manual') {
-      message.warning('手工店铺不支持平台客服消息同步');
+      message.warning('Manual shops do not support platform customer-message sync.');
       return;
     }
     const cm = p?.capabilityStatus?.customer_message;
     if (cm === 'planned' || cm === 'disabled') {
-      message.warning('当前平台客服消息接口尚未接入；请使用模拟店铺验证联调，或等待后续版本。');
+      message.warning('Customer-message sync is not connected for this platform yet. Use a test shop for integration verification or wait for a later release.');
       return;
     }
     if (cm !== 'available' && cm !== 'beta') {
-      message.warning('当前平台不支持客服消息同步');
+      message.warning('This platform does not support customer-message sync.');
       return;
     }
     setCmSyncTarget({ id: shopId, platform });
@@ -235,20 +235,20 @@ export default function ShopsPage() {
   const openOrderSyncModal = (platform: string, shopId: string) => {
     const p = providers.find((x) => x.platform === platform);
     if (platform === 'manual') {
-      message.warning('手工店铺不支持订单同步');
+      message.warning('Manual shops do not support order sync.');
       return;
     }
     const os = p?.capabilityStatus?.order_sync;
     if (os === 'planned' || os === 'disabled') {
-      message.warning('当前平台订单同步尚未接入');
+      message.warning('Order sync is not connected for this platform yet.');
       return;
     }
     if (p?.status === 'planned') {
-      message.warning('平台订单同步暂未实现');
+      message.warning('Order sync is not implemented for this platform yet.');
       return;
     }
     if (platform === 'douyin_shop' && p?.status === 'beta') {
-      message.info('请先在「设置 → 平台接入设置 → 抖店」开启订单同步，并完成店铺授权。');
+      message.info('First enable order sync under Settings → Platform settings → Douyin Shop, then complete shop authorization.');
     }
     setSyncTarget({ id: shopId, platform });
     setSyncOpen(true);
@@ -257,7 +257,7 @@ export default function ShopsPage() {
   const columns: ProColumns<ShopListRow>[] = useMemo(
     () => [
       {
-        title: '平台',
+        title: 'Platform',
         dataIndex: 'platform',
         width: 148,
         valueType: 'select',
@@ -266,7 +266,7 @@ export default function ShopsPage() {
         render: (_, r) => renderPlatformCell(r.platform, providers),
       },
       {
-        title: '店铺名',
+        title: 'Shop name',
         dataIndex: 'shopName',
         width: 160,
         ellipsis: true,
@@ -287,7 +287,7 @@ export default function ShopsPage() {
         ),
       },
       {
-        title: '编码',
+        title: 'Code',
         dataIndex: 'shopCode',
         width: 108,
         search: false,
@@ -295,7 +295,7 @@ export default function ShopsPage() {
         render: (_, r) => cellText(r.shopCode),
       },
       {
-        title: '状态',
+        title: 'Status',
         dataIndex: 'status',
         width: 88,
         valueType: 'select',
@@ -303,7 +303,7 @@ export default function ShopsPage() {
         render: (_, r) => tagFromMap(r.status, SHOP_STATUS),
       },
       {
-        title: '授权',
+        title: 'Authorization',
         dataIndex: 'authStatus',
         width: 104,
         valueType: 'select',
@@ -311,28 +311,28 @@ export default function ShopsPage() {
         render: (_, r) => tagFromMap(r.authStatus, SHOP_AUTH_STATUS),
       },
       {
-        title: '地区',
+        title: 'Region',
         dataIndex: 'region',
         width: 80,
         search: false,
         render: (_, r) => cellText(r.region),
       },
       {
-        title: '币种',
+        title: 'Currency',
         dataIndex: 'currency',
         width: 72,
         search: false,
         render: (_, r) => cellText(r.currency),
       },
       {
-        title: '能力',
+        title: 'Capabilities',
         dataIndex: 'capabilities',
         width: 168,
         search: false,
         render: (_, r) => renderCapabilityTags(r.capabilities),
       },
       {
-        title: '更新时间',
+        title: 'Updated',
         dataIndex: 'updatedAt',
         width: 168,
         search: false,
@@ -343,7 +343,7 @@ export default function ShopsPage() {
         ),
       },
       {
-        title: '操作',
+        title: 'Actions',
         valueType: 'option',
         width: 280,
         onCell: () => ({ style: { whiteSpace: 'nowrap' } }),
@@ -353,26 +353,26 @@ export default function ShopsPage() {
           if (r.platform === 'douyin_shop') {
             moreItems.push({
               type: 'group',
-              label: '抖店授权',
+              label: 'Douyin Shop authorization',
               children: [
                 {
                   key: 'dy-oauth',
-                  label: '重新授权',
+                  label: 'Re-authorize',
                   onClick: () => void redirectDouyinOAuth(r.id),
                 },
                 {
                   key: 'dy-refresh',
-                  label: '刷新授权',
+                  label: 'Refresh authorization',
                   onClick: () => void refreshDouyinFor(r.id),
                 },
                 {
                   key: 'dy-sync-shop',
-                  label: '同步店铺信息',
+                  label: 'Sync shop information',
                   onClick: () => void syncDouyinInfoFor(r.id),
                 },
                 {
                   key: 'dy-revoke',
-                  label: '解除授权',
+                  label: 'Revoke authorization',
                   danger: true,
                   onClick: () => {
                     confirmRevokeStoreAuth(r.shopName || r.id, async () => {
@@ -386,29 +386,29 @@ export default function ShopsPage() {
 
           moreItems.push({
             type: 'group',
-            label: '数据同步',
+            label: 'Data sync',
             children: [
               {
                 key: 'osync',
-                label: '同步订单',
+                label: 'Sync orders',
                 onClick: () => openOrderSyncModal(r.platform, r.id),
               },
               {
                 key: 'olog',
                 label: (
-                  <Link to={`/orders/sync-tasks?shopId=${encodeURIComponent(r.id)}`}>订单同步记录</Link>
+                  <Link to={`/orders/sync-tasks?shopId=${encodeURIComponent(r.id)}`}>Order sync history</Link>
                 ),
               },
               {
                 key: 'cmsync',
-                label: '拉取客服消息',
+                label: 'Fetch customer messages',
                 onClick: () => openCustomerMessageSyncModal(r.platform, r.id),
               },
               {
                 key: 'cmlog',
                 label: (
                   <Link to={`/customer/message-sync-tasks?shopId=${encodeURIComponent(r.id)}`}>
-                    客服同步记录
+                    Customer sync history
                   </Link>
                 ),
               },
@@ -417,7 +417,7 @@ export default function ShopsPage() {
 
           moreItems.push({
             key: 'test',
-            label: '测试连接',
+            label: 'Test connection',
             icon: <ApiOutlined />,
             onClick: async () => {
               try {
@@ -432,17 +432,17 @@ export default function ShopsPage() {
           moreItems.push({ type: 'divider' });
           moreItems.push({
             key: 'delete',
-            label: '删除店铺',
+            label: 'Delete shop',
             icon: <DeleteOutlined />,
             danger: true,
             onClick: () => {
               Modal.confirm({
-                title: '删除店铺？',
-                content: '删除后不可恢复，请确认是否继续。',
+                title: 'Delete shop?',
+                content: 'This cannot be undone. Confirm to continue.',
                 okType: 'danger',
                 onOk: async () => {
                   await deleteShop(r.id);
-                  message.success('已删除');
+                  message.success('Deleted.');
                   actionRef.current?.reload();
                 },
               });
@@ -458,7 +458,7 @@ export default function ShopsPage() {
                 icon={<EyeOutlined />}
                 onClick={() => void openDetail(r)}
               >
-                查看
+                View
               </Button>
               <Button
                 type="link"
@@ -471,7 +471,7 @@ export default function ShopsPage() {
                   setEditOpen(true);
                 }}
               >
-                编辑
+                Edit
               </Button>
               <Button
                 type="link"
@@ -480,11 +480,11 @@ export default function ShopsPage() {
                 icon={<SafetyCertificateOutlined />}
                 onClick={() => void openAuthFor(r.id)}
               >
-                授权
+                Authorize
               </Button>
               <Dropdown menu={{ items: moreItems }} trigger={['click']}>
                 <Button type="link" size="small" style={{ paddingInline: 4 }} icon={<MoreOutlined />}>
-                  更多
+                  More
                 </Button>
               </Dropdown>
             </Space>
@@ -513,10 +513,10 @@ export default function ShopsPage() {
         }}
         options={{ reload: true, density: true, setting: true }}
         pagination={{ defaultPageSize: 20, showSizeChanger: true, showQuickJumper: true }}
-        headerTitle="店铺列表"
+        headerTitle="Shops"
         toolBarRender={() => [
           <Button key="n" type="primary" onClick={() => setCreateOpen(true)}>
-            新建店铺
+            Create shop
           </Button>,
         ]}
         request={async (params) => {

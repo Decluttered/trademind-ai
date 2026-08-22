@@ -78,7 +78,7 @@ function IntegrationHubCard({ title, desc, configured, to, Icon, extra }: HubCar
       </Space>
       {extra ? <div style={{ flex: 1, marginBottom: 12 }}>{extra}</div> : <div style={{ flex: 1 }} />}
       <Link to={to} style={{ fontSize: 13 }}>
-        前往配置 <RightOutlined style={{ fontSize: 11 }} />
+        Configure <RightOutlined style={{ fontSize: 11 }} />
       </Link>
     </div>
   );
@@ -109,12 +109,12 @@ function PlatformIntegrationCard({ name, appConfigured, status }: PlatformCardPr
       </Space>
       <div style={{ marginBottom: 10 }}>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          运行时{' '}
+          Runtime{' '}
         </Text>
         <Tag color={runtime?.color}>{runtime?.text ?? status}</Tag>
       </div>
       <Link to="/settings/platforms" style={{ fontSize: 13 }}>
-        编辑应用参数 <RightOutlined style={{ fontSize: 11 }} />
+        Edit app settings <RightOutlined style={{ fontSize: 11 }} />
       </Link>
     </div>
   );
@@ -158,26 +158,26 @@ export default function IntegrationsHubPage() {
     if (!data) return null;
     const parts: string[] = [];
     if (data.ai.provider) {
-      parts.push(`服务商：${aiTextProviderLabel(data.ai.provider)}`);
+      parts.push(`Provider: ${aiTextProviderLabel(data.ai.provider)}`);
     }
     if (data.ai.model) {
-      parts.push(`模型：${data.ai.model}`);
+      parts.push(`Model: ${data.ai.model}`);
     }
-    return parts.length ? parts.join(' · ') : '尚未填写 API 密钥与接口地址';
+    return parts.length ? parts.join(' · ') : 'API key and endpoint are not configured';
   }, [data]);
 
   const imageDetail = useMemo(() => {
     if (!data) return null;
     const items = [
-      { label: 'remove.bg 抠图', ok: data.image.removebg, kind: 'key' as const },
-      { label: 'OpenAI 图片', ok: data.image.openaiImage, kind: 'key' as const },
-      { label: 'ComfyUI 工作流', ok: data.image.comfyui, kind: 'url' as const },
+      { label: 'remove.bg background removal', ok: data.image.removebg, kind: 'key' as const },
+      { label: 'OpenAI image generation', ok: data.image.openaiImage, kind: 'key' as const },
+      { label: 'ComfyUI workflow', ok: data.image.comfyui, kind: 'url' as const },
     ];
     return (
       <Space direction="vertical" size={6} style={{ width: '100%' }}>
         {data.image.providerCurrent ? (
           <Text type="secondary" style={{ fontSize: 12 }}>
-            当前默认：{imageProviderLabel(data.image.providerCurrent)}
+            Current default: {imageProviderLabel(data.image.providerCurrent)}
           </Text>
         ) : null}
         <Space wrap size={[4, 6]}>
@@ -194,7 +194,7 @@ export default function IntegrationsHubPage() {
   const storageDetail = useMemo(() => {
     if (!data) return null;
     const kindLabel = storageKindLabel(data.storage.kind);
-    return data.storage.configured ? `当前方式：${kindLabel}` : `请先完善 ${kindLabel} 所需凭据`;
+    return data.storage.configured ? `Current method: ${kindLabel}` : `Complete the credentials required by ${kindLabel}`;
   }, [data]);
 
   return (
@@ -208,18 +208,18 @@ export default function IntegrationsHubPage() {
             <ProCard variant="outlined" style={{ marginBottom: 16 }}>
               <Row gutter={[24, 16]}>
                 <Col xs={24} sm={12} md={8}>
-                  <Statistic title="核心集成就绪" value={`${summary.configured} / ${summary.total}`} />
+                  <Statistic title="Core integrations ready" value={`${summary.configured} / ${summary.total}`} />
                 </Col>
                 <Col xs={24} sm={12} md={8}>
-                  <Statistic title="平台应用参数" value={sortedPlatforms.filter((p) => p.appConfigured).length} suffix={`/ ${sortedPlatforms.length}`} />
+                  <Statistic title="Platform app settings" value={sortedPlatforms.filter((p) => p.appConfigured).length} suffix={`/ ${sortedPlatforms.length}`} />
                 </Col>
                 <Col xs={24} sm={12} md={8}>
                   <Statistic
-                    title="自定义采集规则"
+                    title="Custom collection rules"
                     value={data.collectRulesCount}
                     suffix={
                       <Link to="/collect/rules" style={{ fontSize: 13, marginLeft: 8 }}>
-                        管理规则
+                        Manage rules
                       </Link>
                     }
                   />
@@ -228,13 +228,13 @@ export default function IntegrationsHubPage() {
             </ProCard>
 
             <Title level={5} style={{ marginBottom: 12 }}>
-              核心能力
+              Core capabilities
             </Title>
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               <Col xs={24} sm={12} lg={8}>
                 <IntegrationHubCard
-                  title="AI 大模型"
-                  desc="标题优化、描述生成、客服建议等文本能力"
+                  title="AI text"
+                  desc="Text capabilities such as title optimization, description generation, and customer-service suggestions"
                   configured={data.ai.configured}
                   to="/settings/ai"
                   Icon={RobotOutlined}
@@ -247,8 +247,8 @@ export default function IntegrationsHubPage() {
               </Col>
               <Col xs={24} sm={12} lg={8}>
                 <IntegrationHubCard
-                  title="图片 AI"
-                  desc="抠图、场景图、ComfyUI 工作流等图片处理"
+                  title="Image AI"
+                  desc="Image processing such as background removal, scene images, and ComfyUI workflows"
                   configured={data.image.removebg || data.image.openaiImage || data.image.comfyui}
                   to="/settings/image"
                   Icon={PictureOutlined}
@@ -257,8 +257,8 @@ export default function IntegrationsHubPage() {
               </Col>
               <Col xs={24} sm={12} lg={8}>
                 <IntegrationHubCard
-                  title="文件存储"
-                  desc="商品图片与附件的上传与访问"
+                  title="File storage"
+                  desc="Uploading and accessing product images and attachments"
                   configured={data.storage.configured}
                   to="/settings/storage"
                   Icon={CloudOutlined}
@@ -271,28 +271,28 @@ export default function IntegrationsHubPage() {
               </Col>
               <Col xs={24} sm={12} lg={8}>
                 <IntegrationHubCard
-                  title="邮箱 SMTP"
-                  desc="告警通知、测试邮件等系统发信"
+                  title="Email SMTP"
+                  desc="System email such as alert notifications and test messages"
                   configured={data.mail.configured}
                   to="/settings/email"
                   Icon={MailOutlined}
                   extra={
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      {data.mail.configured ? 'SMTP 主机与发件人地址已填写' : '请填写 SMTP 主机与发件人地址'}
+                      {data.mail.configured ? 'SMTP host and sender address are configured' : 'Configure the SMTP host and sender address'}
                     </Text>
                   }
                 />
               </Col>
               <Col xs={24} sm={12} lg={8}>
                 <IntegrationHubCard
-                  title="自定义采集规则"
-                  desc="非内置站点的 XPath / CSS 采集规则"
+                  title="Custom collection rules"
+                  desc="XPath/CSS collection rules for sites without a built-in collector"
                   configured={data.collectRulesCount > 0}
                   to="/collect/rules"
                   Icon={ApiOutlined}
                   extra={
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      已创建 {data.collectRulesCount} 条规则
+                      {data.collectRulesCount} rules created
                     </Text>
                   }
                 />
@@ -302,11 +302,10 @@ export default function IntegrationsHubPage() {
             {sortedPlatforms.length ? (
               <>
                 <Title level={5} style={{ marginBottom: 4 }}>
-                  跨境平台
+                  Cross-border platforms
                 </Title>
                 <Paragraph type="secondary" style={{ marginBottom: 12 }}>
-                  此处为各平台开放平台应用参数（应用 Key / 密钥等）。店铺授权后的授权凭证保存在「店铺 →
-                  授权配置」，请勿写入此处。
+                  These are open-platform app settings for each platform (app key, secret, and similar values). Credentials created by shop authorization are stored under Shops → Authorization and must not be entered here.
                 </Paragraph>
                 <Row gutter={[16, 16]}>
                   {sortedPlatforms.map((p) => (
@@ -321,7 +320,7 @@ export default function IntegrationsHubPage() {
                 </Row>
                 <div style={{ marginTop: 16 }}>
                   <Link to="/settings/platforms">
-                    前往「平台接入设置」编辑 <RightOutlined style={{ fontSize: 11 }} />
+                    Open Platform settings <RightOutlined style={{ fontSize: 11 }} />
                   </Link>
                 </div>
               </>

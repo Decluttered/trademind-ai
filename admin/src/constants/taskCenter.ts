@@ -1,9 +1,9 @@
 /** Failed task / alert severity levels (matches backend failureclassifier) */
 export const TASK_FAILURE_SEVERITY: Record<string, { text: string; color: string }> = {
-  low: { text: '低', color: 'default' },
-  medium: { text: '中', color: 'blue' },
-  high: { text: '高', color: 'orange' },
-  critical: { text: '紧急', color: 'red' },
+  low: { text: 'Low', color: 'default' },
+  medium: { text: 'Medium', color: 'blue' },
+  high: { text: 'High', color: 'orange' },
+  critical: { text: 'Critical', color: 'red' },
 };
 
 export const TASK_FAILURE_SEVERITY_OPTIONS = Object.entries(TASK_FAILURE_SEVERITY).map(([value, m]) => ({
@@ -13,86 +13,86 @@ export const TASK_FAILURE_SEVERITY_OPTIONS = Object.entries(TASK_FAILURE_SEVERIT
 
 /** Failure category (matches backend failureclassifier category constants) */
 export const TASK_FAILURE_CATEGORY_LABEL: Record<string, string> = {
-  platform_auth: '平台授权失败',
-  platform_permission: '平台权限不足',
-  platform_rate_limit: '平台限流',
-  platform_api_error: '平台接口错误',
-  platform_config_incomplete: '平台配置不完整',
-  network_timeout: '网络超时',
-  collector_blocked: '采集被拦截',
-  collector_platform_login: '平台登录/验证失效',
-  login_required: '需要登录',
-  collector_missing_images: '图片缺失',
-  collector_missing_price: '价格字段缺失',
-  collector_evaluate_script: '采集脚本执行错误',
-  collector_invalid_url: '采集链接无效',
-  ai_provider_error: 'AI 服务错误',
-  ai_config_incomplete: 'AI 配置不完整',
-  image_provider_error: '图片服务错误',
-  storage_error: '存储错误',
-  validation_error: '校验失败',
-  inventory_mapping_missing: '规格绑定缺失',
-  inventory_deduct_failed: '库存扣减失败',
-  inventory_sync_failed: '库存同步失败',
-  inventory_sync_partial_success: '库存同步部分成功',
-  inventory_sku_not_bound: 'SKU 未绑定阻断',
-  inventory_sku_ambiguous: 'SKU 绑定歧义阻断',
-  inventory_stock_invalid: '库存值非法',
-  inventory_platform_permission_denied: '平台库存权限不足',
-  customer_reply_generate_failed: 'AI 回复建议生成失败',
-  customer_reply_send_failed: '客服回复发送失败',
-  customer_reply_permission_denied: '客服消息权限不足',
-  customer_platform_not_authorized: '平台未授权',
-  customer_message_sync_failed: '客服消息同步失败',
-  customer_message_sync_partial_success: '客服消息同步部分成功',
-  customer_conversation_not_found: '会话不存在',
-  inventory_product_not_bound: '平台商品未绑定',
-  inventory_platform_sku_missing: '平台 SKU 缺失',
-  sku_mapping_missing: '规格绑定缺失',
-  worker_lease_expired: '后台任务执行超时',
-  system_error: '系统错误',
-  unknown: '未知',
+  platform_auth: 'Platform authorization failed',
+  platform_permission: 'Insufficient platform permission',
+  platform_rate_limit: 'Platform rate limit reached',
+  platform_api_error: 'Platform API error',
+  platform_config_incomplete: 'Platform configuration is incomplete',
+  network_timeout: 'Network timeout',
+  collector_blocked: 'Collection was blocked',
+  collector_platform_login: 'Platform login or verification expired',
+  login_required: 'Login required',
+  collector_missing_images: 'Images are missing',
+  collector_missing_price: 'Price field is missing',
+  collector_evaluate_script: 'Collection script failed',
+  collector_invalid_url: 'Collection link is invalid',
+  ai_provider_error: 'AI provider error',
+  ai_config_incomplete: 'AI configuration is incomplete',
+  image_provider_error: 'Image provider error',
+  storage_error: 'Storage error',
+  validation_error: 'Validation failed',
+  inventory_mapping_missing: 'Variant mapping is missing',
+  inventory_deduct_failed: 'Inventory deduction failed',
+  inventory_sync_failed: 'Inventory sync failed',
+  inventory_sync_partial_success: 'Inventory sync partially succeeded',
+  inventory_sku_not_bound: 'SKU is not bound',
+  inventory_sku_ambiguous: 'SKU binding is ambiguous',
+  inventory_stock_invalid: 'Inventory value is invalid',
+  inventory_platform_permission_denied: 'Insufficient platform inventory permission',
+  customer_reply_generate_failed: 'AI reply suggestion generation failed',
+  customer_reply_send_failed: 'Customer reply failed to send',
+  customer_reply_permission_denied: 'Insufficient customer-message permission',
+  customer_platform_not_authorized: 'Platform is not authorized',
+  customer_message_sync_failed: 'Customer-message sync failed',
+  customer_message_sync_partial_success: 'Customer-message sync partially succeeded',
+  customer_conversation_not_found: 'Conversation was not found',
+  inventory_product_not_bound: 'Platform product is not bound',
+  inventory_platform_sku_missing: 'Platform SKU is missing',
+  sku_mapping_missing: 'Variant mapping is missing',
+  worker_lease_expired: 'Background task timed out',
+  system_error: 'System error',
+  unknown: 'Unknown',
   // AI batch product copy (aiproducttext)
-  ai_text_generation_failed: 'AI 文案生成失败',
-  ai_text_apply_conflict: 'AI 文案应用时发现内容冲突',
-  ai_text_apply_failed: 'AI 文案应用失败',
-  ai_text_undo_failed: 'AI 文案撤销失败',
-  ai_text_quality_warning: 'AI 文案建议需要复核',
-  ai_image_process_failed: 'AI 图片处理失败',
-  ai_image_apply_conflict: 'AI 图片应用时发现冲突',
-  ai_image_apply_failed: 'AI 图片应用失败',
-  ai_image_undo_failed: 'AI 图片撤销失败',
-  ai_image_quality_warning: 'AI 图片质量提醒',
-  ai_image_provider_config_missing: 'AI 图片接入服务未配置',
-  ai_image_dashscope_key_missing: '通义万相 Key 未配置',
-  ai_image_storage_public_url_missing: '存储公网地址未配置',
-  ai_image_download_failed: 'AI 图片源图下载失败',
-  ai_image_unsupported_operation: 'AI 图片能力不支持',
+  ai_text_generation_failed: 'AI copy generation failed',
+  ai_text_apply_conflict: 'A content conflict was found while applying AI copy',
+  ai_text_apply_failed: 'Applying AI copy failed',
+  ai_text_undo_failed: 'Undoing AI copy failed',
+  ai_text_quality_warning: 'AI copy suggestion needs review',
+  ai_image_process_failed: 'AI image processing failed',
+  ai_image_apply_conflict: 'A conflict was found while applying AI images',
+  ai_image_apply_failed: 'Applying AI images failed',
+  ai_image_undo_failed: 'Undoing AI images failed',
+  ai_image_quality_warning: 'AI image quality warning',
+  ai_image_provider_config_missing: 'AI image provider is not configured',
+  ai_image_dashscope_key_missing: 'DashScope key is not configured',
+  ai_image_storage_public_url_missing: 'Public storage URL is not configured',
+  ai_image_download_failed: 'Source AI image could not be downloaded',
+  ai_image_unsupported_operation: 'AI image operation is not supported',
   // Douyin Shop platform-level in-app alerts (douyinruntime/alert.go)
-  douyin_token_refresh_failed: '访问令牌刷新失败',
-  douyin_webhook_shop_not_resolved: 'Webhook 店铺未解析',
-  douyin_webhook_shop_ambiguous: 'Webhook 店铺绑定歧义',
-  douyin_webhook_binding_mismatch: 'Webhook 绑定不一致',
-  douyin_webhook_tenant_mismatch: 'Webhook 租户不一致',
-  douyin_webhook_authorization_expired: 'Webhook 店铺授权过期',
-  douyin_webhook_binding_revoked: 'Webhook 店铺绑定失效',
-  douyin_webhook_app_binding_mismatch: 'Webhook 应用绑定不一致',
-  douyin_auth_expiring: '店铺授权即将过期',
-  douyin_auth_expired: '店铺授权已过期',
-  douyin_auth_need_check: '店铺授权需检查',
-  douyin_product_draft_failures: '商品草稿失败积压',
-  douyin_product_result_unknown: '商品结果暂时无法确认',
-  douyin_product_recovery_failed: '商品任务恢复失败',
-  douyin_image_upload_failure_rate: '图片上传失败率过高',
-  douyin_storage_public_failed: '存储公网访问异常',
-  douyin_order_sync_failed: '订单同步失败',
-  douyin_order_partial_stale: '订单同步部分停滞',
-  douyin_inventory_sync_failed: '库存同步失败',
-  douyin_inventory_stale: '库存同步停滞',
-  douyin_runtime_emergency_disabled: '抖店紧急停用',
-  douyin_stale_tasks_high: '停滞任务过多',
-  douyin_failure_backlog: '失败任务积压',
-  douyin_rate_limit_spike: '平台限流激增',
+  douyin_token_refresh_failed: 'Access token refresh failed',
+  douyin_webhook_shop_not_resolved: 'Webhook shop was not resolved',
+  douyin_webhook_shop_ambiguous: 'Webhook shop binding is ambiguous',
+  douyin_webhook_binding_mismatch: 'Webhook binding does not match',
+  douyin_webhook_tenant_mismatch: 'Webhook tenant does not match',
+  douyin_webhook_authorization_expired: 'Webhook shop authorization expired',
+  douyin_webhook_binding_revoked: 'Webhook shop binding was revoked',
+  douyin_webhook_app_binding_mismatch: 'Webhook app binding does not match',
+  douyin_auth_expiring: 'Shop authorization is expiring soon',
+  douyin_auth_expired: 'Shop authorization expired',
+  douyin_auth_need_check: 'Shop authorization needs review',
+  douyin_product_draft_failures: 'Product draft failure backlog',
+  douyin_product_result_unknown: 'Product result cannot yet be confirmed',
+  douyin_product_recovery_failed: 'Product task recovery failed',
+  douyin_image_upload_failure_rate: 'Image upload failure rate is too high',
+  douyin_storage_public_failed: 'Public storage access failed',
+  douyin_order_sync_failed: 'Order sync failed',
+  douyin_order_partial_stale: 'Order sync is partially stale',
+  douyin_inventory_sync_failed: 'Inventory sync failed',
+  douyin_inventory_stale: 'Inventory sync is stale',
+  douyin_runtime_emergency_disabled: 'Douyin Shop emergency shutdown',
+  douyin_stale_tasks_high: 'Too many stale tasks',
+  douyin_failure_backlog: 'Failed-task backlog',
+  douyin_rate_limit_spike: 'Platform rate-limit spike',
 };
 
 export function failureCategoryLabel(cat?: string): string {
@@ -130,16 +130,16 @@ const TASK_FAILURE_DETAIL_ID_RE =
 
 /** Task type (failed task center list) */
 export const TASK_CENTER_TASK_TYPE_LABEL: Record<string, string> = {
-  collect: '采集',
-  image: 'AI 图片',
-  order_sync: '订单同步',
-  customer_message_sync: '客服消息同步',
-  customer_failure: '客服异常',
-  product_publish: '商品刊登',
-  inventory_sync: '库存同步',
-  ai_text: 'AI 批量文案',
-  ai_image: 'AI 批量图片',
-  douyin_platform: '抖店平台告警',
+  collect: 'Collection',
+  image: 'AI image processing',
+  order_sync: 'Order sync',
+  customer_message_sync: 'Customer-message sync',
+  customer_failure: 'Customer-service issue',
+  product_publish: 'Product publishing',
+  inventory_sync: 'Inventory sync',
+  ai_text: 'AI batch copy',
+  ai_image: 'AI batch images',
+  douyin_platform: 'Douyin Shop platform alert',
 };
 
 export function isTaskCenterFailureTaskType(taskType?: string | null): boolean {
@@ -172,30 +172,30 @@ export function resolveAlertRelatedLink(alert: {
   const sourceId = (alert.sourceId || '').trim();
 
   if (taskType === 'douyin_platform') {
-    return { href: '/ops/platform-runtime?platform=douyin_shop', label: '平台运维' };
+    return { href: '/ops/platform-runtime?platform=douyin_shop', label: 'Platform operations' };
   }
   if (isPlatformAlertTaskType(taskType)) {
-    return { href: '/ops/task-center/alerts', label: '告警中心' };
+    return { href: '/ops/task-center/alerts', label: 'Alert center' };
   }
   if (canOpenFailureDetail(taskType, sourceId)) {
     const sp = new URLSearchParams({ taskType, jumpId: sourceId });
-    return { href: `/ops/task-center/failures?${sp.toString()}`, label: '失败任务' };
+    return { href: `/ops/task-center/failures?${sp.toString()}`, label: 'Failed tasks' };
   }
   if ((alert.platform || '').trim()) {
     const sp = new URLSearchParams({ platform: alert.platform!.trim() });
-    return { href: `/ops/task-center/failures?${sp.toString()}`, label: '失败任务' };
+    return { href: `/ops/task-center/failures?${sp.toString()}`, label: 'Failed tasks' };
   }
-  return { href: '/ops/task-center/failures', label: '失败任务' };
+  return { href: '/ops/task-center/failures', label: 'Failed tasks' };
 }
 
 /** Douyin Shop task recovery status → user-visible copy (does not display internal values like stale / result_unknown) */
 export const TASK_RECOVERY_STATUS_LABEL: Record<string, string> = {
-  stale: '任务执行时间过长',
-  result_unknown: '平台结果暂时无法确认',
-  recovery_required: '需要人工检查',
-  recovery_failed: '恢复失败',
-  superseded: '已被新任务取代',
-  skipped: '已跳过',
+  stale: 'Task has been running too long',
+  result_unknown: 'Platform result cannot yet be confirmed',
+  recovery_required: 'Manual review required',
+  recovery_failed: 'Recovery failed',
+  superseded: 'Replaced by a newer task',
+  skipped: 'Skipped',
 };
 
 export const TASK_RECOVERY_STATUS_OPTIONS = Object.entries(TASK_RECOVERY_STATUS_LABEL).map(
@@ -210,18 +210,18 @@ export function recoveryStatusLabel(status?: string | null): string {
 
 /** Worker process effective status (monitoring page) */
 export const WORKER_EFFECTIVE_STATUS: Record<string, { text: string; color: string }> = {
-  running: { text: '运行中', color: 'success' },
-  stale: { text: '心跳超时', color: 'warning' },
-  stopped: { text: '已停止', color: 'default' },
+  running: { text: 'Running', color: 'success' },
+  stale: { text: 'Heartbeat timed out', color: 'warning' },
+  stopped: { text: 'Stopped', color: 'default' },
 };
 
 export const WORKER_STATUS_METRIC: Record<
   'running' | 'stale' | 'stopped',
   { text: string; valueStyle: string }
 > = {
-  running: { text: '运行中', valueStyle: 'var(--ant-color-success)' },
-  stale: { text: '心跳超时', valueStyle: 'var(--ant-color-warning)' },
-  stopped: { text: '已停止', valueStyle: 'var(--ant-color-text-secondary)' },
+  running: { text: 'Running', valueStyle: 'var(--ant-color-success)' },
+  stale: { text: 'Heartbeat timed out', valueStyle: 'var(--ant-color-warning)' },
+  stopped: { text: 'Stopped', valueStyle: 'var(--ant-color-text-secondary)' },
 };
 
 /** Worker monitoring grouped by type (matches backend byType keys) */
@@ -251,13 +251,13 @@ export function taskCenterTaskTypeLabel(taskType?: string): string {
 
 /** Normalized status */
 export const TASK_NORMALIZED_STATUS: Record<string, { text: string; color: string }> = {
-  failed: { text: '失败', color: 'error' },
-  partial_success: { text: '部分成功', color: 'warning' },
-  retrying: { text: '重试中', color: 'processing' },
-  stale: { text: '停滞', color: 'warning' },
-  lease_expired: { text: '执行超时', color: 'warning' },
-  running: { text: '执行中', color: 'processing' },
-  pending: { text: '排队', color: 'default' },
-  success: { text: '成功', color: 'success' },
-  cancelled: { text: '取消', color: 'default' },
+  failed: { text: 'Failed', color: 'error' },
+  partial_success: { text: 'Partially succeeded', color: 'warning' },
+  retrying: { text: 'Retrying', color: 'processing' },
+  stale: { text: 'Stale', color: 'warning' },
+  lease_expired: { text: 'Timed out', color: 'warning' },
+  running: { text: 'Running', color: 'processing' },
+  pending: { text: 'Queued', color: 'default' },
+  success: { text: 'Succeeded', color: 'success' },
+  cancelled: { text: 'Cancelled', color: 'default' },
 };
