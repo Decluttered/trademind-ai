@@ -18,6 +18,7 @@ import {
 import { ProCard } from '@ant-design/pro-components';
 import { MetricCard, OperationToolbar, TmPageContainer, type MetricCardIntent } from '@/components/ui';
 import { useListEmptyLocale } from '@/hooks/useListEmptyLocale';
+import { useLocale } from '@/locale';
 import { formatDateTime } from '@/utils/formatTime';
 import { history } from '@umijs/max';
 import {
@@ -35,7 +36,6 @@ import {
 import dayjs, { type Dayjs } from 'dayjs';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PAGE_COPY } from '@/constants/copywriting';
 import { layoutTokens } from '@/constants/layoutTokens';
 import { PLATFORM_OPTIONS } from '@/constants/userFriendly';
 import {
@@ -67,26 +67,30 @@ import { appendSourceToUrl, resolveProductSourceFromQuery } from '@/utils/urlSta
 
 const { RangePicker } = DatePicker;
 
-const SOURCE_OPTIONS = [
-  { label: 'Amazon.de', value: 'amazon.de' },
-  { label: '拼多多', value: 'pinduoduo' },
-  { label: '自定义链接', value: 'custom' },
-  { label: '速卖通', value: 'aliexpress' },
-  { label: '手动创建', value: 'manual' },
-];
+type Translate = ReturnType<typeof useLocale>['t'];
+
+function sourceOptions(t: Translate) {
+  return [
+    { label: 'Amazon.de', value: 'amazon.de' },
+    { label: t('dashboard.sources.pinduoduo'), value: 'pinduoduo' },
+    { label: t('dashboard.sources.custom'), value: 'custom' },
+    { label: t('dashboard.sources.aliexpress'), value: 'aliexpress' },
+    { label: t('dashboard.sources.manual'), value: 'manual' },
+  ];
+}
 
 const RECENT_TYPE_META: Record<string, { icon: ReactNode; color: string; bg: string }> = {
-  采集: { icon: <CloudUploadOutlined />, color: 'var(--ant-color-primary)', bg: 'var(--ant-color-primary-bg)' },
-  'AI 文本': { icon: <RobotOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
-  'AI 批次': { icon: <FileTextOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
-  'AI 图片': { icon: <PictureOutlined />, color: 'var(--ant-color-info)', bg: 'var(--ant-color-info-bg)' },
-  刊登: { icon: <ShopOutlined />, color: 'var(--ant-color-success)', bg: 'var(--ant-color-success-bg)' },
-  库存: { icon: <WarningOutlined />, color: 'var(--ant-color-warning)', bg: 'var(--ant-color-warning-bg)' },
-  刊登失败: { icon: <ShopOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
-  库存同步失败: { icon: <WarningOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
-  采集失败: { icon: <CloudUploadOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
-  告警: { icon: <NotificationOutlined />, color: 'var(--ant-color-warning)', bg: 'var(--ant-color-warning-bg)' },
-  失败: { icon: <WarningOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
+  collect: { icon: <CloudUploadOutlined />, color: 'var(--ant-color-primary)', bg: 'var(--ant-color-primary-bg)' },
+  ai_task: { icon: <RobotOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
+  ai_batch: { icon: <FileTextOutlined />, color: 'var(--tm-ai-accent)', bg: 'var(--ant-color-primary-bg)' },
+  image_task: { icon: <PictureOutlined />, color: 'var(--ant-color-info)', bg: 'var(--ant-color-info-bg)' },
+  product_publish: { icon: <ShopOutlined />, color: 'var(--ant-color-success)', bg: 'var(--ant-color-success-bg)' },
+  inventory_alert: { icon: <WarningOutlined />, color: 'var(--ant-color-warning)', bg: 'var(--ant-color-warning-bg)' },
+  failed_publish: { icon: <ShopOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
+  failed_inventory_sync: { icon: <WarningOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
+  failed_collect: { icon: <CloudUploadOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
+  task_alert: { icon: <NotificationOutlined />, color: 'var(--ant-color-warning)', bg: 'var(--ant-color-warning-bg)' },
+  failed: { icon: <WarningOutlined />, color: 'var(--ant-color-error)', bg: 'var(--ant-color-error-bg)' },
 };
 
 const ellipsizedText: React.CSSProperties = {
@@ -104,7 +108,8 @@ function RecentActivityRow({
   item: DashboardRecentItem;
   bucket: string;
 }) {
-  const meta = RECENT_TYPE_META[bucket] ?? RECENT_TYPE_META['AI 图片'];
+  const { t } = useLocale();
+  const meta = RECENT_TYPE_META[item.type] ?? RECENT_TYPE_META.image_task;
   const { title, subtitle } = formatRecentItem(item);
   const statusLabel = recentStatusLabel(item.status);
   const statusColor = recentStatusColor(item.status);
@@ -190,36 +195,36 @@ function RecentActivityRow({
           history.push(appendSourceToUrl(item.link));
         }}
       >
-        查看
+        {t('dashboard.actions.view')}
       </Button>
     </div>
   );
 }
 
-const RECENT_TYPE_LABEL: Record<string, string> = {
-  collect: '采集',
-  ai_task: 'AI 文本',
-  ai_batch: 'AI 批次',
-  image_task: 'AI 图片',
-  product_publish: '刊登',
-  inventory_alert: '库存',
-  failed_publish: '刊登失败',
-  failed_inventory_sync: '库存同步失败',
-  failed_collect: '采集失败',
-  task_alert: '告警',
+const RECENT_TYPE_KEYS: Record<string, string> = {
+  collect: 'dashboard.recent.collect',
+  ai_task: 'dashboard.recent.aiTask',
+  ai_batch: 'dashboard.recent.aiBatch',
+  image_task: 'dashboard.recent.imageTask',
+  product_publish: 'dashboard.recent.productPublish',
+  inventory_alert: 'dashboard.recent.inventoryAlert',
+  failed_publish: 'dashboard.recent.failedPublish',
+  failed_inventory_sync: 'dashboard.recent.failedInventorySync',
+  failed_collect: 'dashboard.recent.failedCollect',
+  task_alert: 'dashboard.recent.taskAlert',
 };
 
-const TODO_ACTION_LABEL: Record<string, string> = {
-  missing_ai_title: '去优化',
-  missing_ai_description: '去生成',
-  readiness_blocked: '去检查',
-  publishable: '去刊登',
-  inventory_alerts: '去处理',
-  ai_image_failed: '去查看',
-  collect_failed: '去重试',
-  publish_failed: '去处理',
-  order_exceptions: '去处理',
-  failures: '去查看',
+const TODO_ACTION_KEYS: Record<string, string> = {
+  missing_ai_title: 'dashboard.todoActions.optimize',
+  missing_ai_description: 'dashboard.todoActions.generate',
+  readiness_blocked: 'dashboard.todoActions.review',
+  publishable: 'dashboard.todoActions.publish',
+  inventory_alerts: 'dashboard.todoActions.handle',
+  ai_image_failed: 'dashboard.todoActions.view',
+  collect_failed: 'dashboard.todoActions.retry',
+  publish_failed: 'dashboard.todoActions.handle',
+  order_exceptions: 'dashboard.todoActions.handle',
+  failures: 'dashboard.todoActions.view',
 };
 
 type FilterState = {
@@ -275,7 +280,8 @@ function parseRange(start?: string, end?: string): [Dayjs, Dayjs] | undefined {
 }
 
 function TodoCardItem({ item }: { item: DashboardTodo }) {
-  const actionLabel = TODO_ACTION_LABEL[item.key] ?? '去处理';
+  const { t } = useLocale();
+  const actionLabel = t(TODO_ACTION_KEYS[item.key] ?? 'dashboard.todoActions.handle');
   const hasCount = (item.count ?? 0) > 0;
   return (
     <ProCard
@@ -299,6 +305,7 @@ function TodoCardItem({ item }: { item: DashboardTodo }) {
 }
 
 function ExceptionRow({ item }: { item: DashboardException }) {
+  const { t } = useLocale();
   return (
     <ProCard
       variant="outlined"
@@ -316,14 +323,14 @@ function ExceptionRow({ item }: { item: DashboardException }) {
             </Space>
             {item.lastOccurredAt ? (
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                最近：{formatDateTime(item.lastOccurredAt)}
+                {t('dashboard.recently')}: {formatDateTime(item.lastOccurredAt)}
               </Typography.Text>
             ) : null}
           </Space>
         </Col>
         <Col>
           <Button type="link" icon={<ArrowRightOutlined />}>
-            去处理
+            {t('dashboard.todoActions.handle')}
           </Button>
         </Col>
       </Row>
@@ -346,9 +353,9 @@ const QUICK_LINK_META: Record<string, { icon: ReactNode; color: string; bg: stri
   '/settings/storage': { icon: <DatabaseOutlined />, color: 'var(--ant-color-text-secondary)', bg: 'var(--ant-color-fill-quaternary)' },
 };
 
-const QUICK_LINK_GROUPS: { label: string; links: string[] }[] = [
+const QUICK_LINK_GROUPS: { labelKey: string; links: string[] }[] = [
   {
-    label: '商品运营',
+    labelKey: 'dashboard.quickLinkGroups.productOperations',
     links: [
       '/collect/hub',
       '/product/drafts',
@@ -358,11 +365,11 @@ const QUICK_LINK_GROUPS: { label: string; links: string[] }[] = [
     ],
   },
   {
-    label: 'AI 工具',
+    labelKey: 'dashboard.quickLinkGroups.aiTools',
     links: ['/ai/text-batches', '/ai/image-tasks'],
   },
   {
-    label: '运维与设置',
+    labelKey: 'dashboard.quickLinkGroups.operationsAndSettings',
     links: [
       '/ops/task-center/failures',
       '/orders/exceptions',
@@ -372,6 +379,60 @@ const QUICK_LINK_GROUPS: { label: string; links: string[] }[] = [
     ],
   },
 ];
+
+const DASHBOARD_ITEM_TITLE_KEYS: Record<string, string> = {
+  missing_ai_title: 'dashboard.items.missingAiTitle',
+  missing_ai_description: 'dashboard.items.missingAiDescription',
+  readiness_blocked: 'dashboard.items.readinessBlocked',
+  publishable: 'dashboard.items.publishable',
+  inventory_alerts: 'dashboard.items.inventoryAlerts',
+  ai_image_failed: 'dashboard.items.aiImageFailed',
+  collect_failed: 'dashboard.items.collectFailed',
+  publish_failed: 'dashboard.items.publishFailed',
+  customer_pending: 'dashboard.items.customerPending',
+  failed_tasks: 'dashboard.items.failedTasks',
+  config_incomplete: 'dashboard.items.configIncomplete',
+  order_exceptions: 'dashboard.items.orderExceptions',
+  collected: 'dashboard.items.collected',
+  draft: 'dashboard.items.drafts',
+  ai_text: 'dashboard.items.aiText',
+  ai_image: 'dashboard.items.aiImage',
+  readiness_pass: 'dashboard.items.readinessPassed',
+  published: 'dashboard.items.published',
+  ai_text_failed: 'dashboard.items.aiTextFailed',
+  inventory_sync_failed: 'dashboard.items.inventorySyncFailed',
+};
+
+const QUICK_LINK_TITLE_KEYS: Record<string, string> = {
+  '/collect/hub': 'dashboard.quickLinks.collectHub',
+  '/product/drafts': 'dashboard.quickLinks.drafts',
+  '/ai/text-batches': 'dashboard.quickLinks.aiTextBatches',
+  '/ai/image-tasks': 'dashboard.quickLinks.aiImageTasks',
+  '/product/drafts?readiness=blocked': 'dashboard.quickLinks.readinessChecks',
+  '/product/publish-tasks': 'dashboard.quickLinks.publishTasks',
+  '/inventory/alerts': 'dashboard.quickLinks.inventoryAlerts',
+  '/ops/task-center/failures': 'dashboard.quickLinks.failedTasks',
+  '/orders/exceptions': 'dashboard.quickLinks.orderExceptions',
+  '/customer/hub': 'dashboard.quickLinks.customerHub',
+  '/settings/config-status': 'dashboard.quickLinks.configStatus',
+  '/settings/ai': 'dashboard.quickLinks.aiSettings',
+  '/settings/image': 'dashboard.quickLinks.imageSettings',
+  '/settings/storage': 'dashboard.quickLinks.storageSettings',
+};
+
+function localizeDashboardItems<T extends { key: string; title: string }>(items: T[], t: Translate): T[] {
+  return items.map((item) => {
+    const key = DASHBOARD_ITEM_TITLE_KEYS[item.key];
+    return key ? { ...item, title: t(key) } : item;
+  });
+}
+
+function localizeQuickLinks<T extends { title: string; link: string }>(items: T[], t: Translate): T[] {
+  return items.map((item) => {
+    const key = QUICK_LINK_TITLE_KEYS[item.link];
+    return key ? { ...item, title: t(key) } : item;
+  });
+}
 
 function QuickLinkCard(props: { title: string; link: string }) {
   const meta = QUICK_LINK_META[props.link] ?? {
@@ -437,6 +498,7 @@ function QuickLinkCard(props: { title: string; link: string }) {
 }
 
 function QuickLinkGroups({ links }: { links: { title: string; link: string }[] }) {
+  const { t } = useLocale();
   const byLink = new Map(links.map((item) => [item.link, item]));
 
   return (
@@ -449,12 +511,12 @@ function QuickLinkGroups({ links }: { links: { title: string; link: string }[] }
         if (!items.length) return null;
 
         return (
-          <div key={group.label}>
+          <div key={group.labelKey}>
             <Typography.Text
               type="secondary"
               style={{ display: 'block', fontSize: 12, marginBottom: 10, fontWeight: 500 }}
             >
-              {group.label}
+              {t(group.labelKey)}
             </Typography.Text>
             <Row gutter={[12, 12]}>
               {items.map((item) => (
@@ -470,7 +532,7 @@ function QuickLinkGroups({ links }: { links: { title: string; link: string }[] }
   );
 }
 
-function buildKpiCards(summary: DashboardSummary): {
+function buildKpiCards(summary: DashboardSummary, t: Translate): {
   title: string;
   value: number;
   link: string;
@@ -479,95 +541,96 @@ function buildKpiCards(summary: DashboardSummary): {
 }[] {
   return [
     {
-      title: '今日采集任务',
+      title: t('dashboard.kpi.collectTasks'),
       value: summary.collectFailedCount ?? 0,
       link: '/collect/tasks',
       intent: 'data',
-      emptyHint: '暂无采集任务',
+      emptyHint: t('dashboard.empty.noCollectTasks'),
     },
     {
-      title: '商品草稿',
+      title: t('dashboard.kpi.drafts'),
       value: summary.draftTotal ?? summary.draftProducts + summary.readyProducts,
       link: '/product/drafts',
-      emptyHint: '还没有商品草稿',
+      emptyHint: t('dashboard.empty.noDrafts'),
     },
     {
-      title: 'AI 待复核',
+      title: t('dashboard.kpi.aiReview'),
       value: (summary.aiPendingProducts ?? 0) + (summary.aiReplySuggestionPendingCount ?? 0),
       link: '/ai/operation-workbench',
       intent: 'ai',
-      emptyHint: '暂无待复核项',
+      emptyHint: t('dashboard.empty.noAiReview'),
     },
     {
-      title: '发布检查问题',
+      title: t('dashboard.kpi.readinessIssues'),
       value: summary.readinessBlocked ?? summary.readinessBlockedProducts ?? 0,
       link: '/product/drafts?readiness=blocked',
       intent: 'warning',
-      emptyHint: '发布检查均通过',
+      emptyHint: t('dashboard.empty.readinessPassed'),
     },
     {
-      title: '刊登任务异常',
+      title: t('dashboard.kpi.publishFailures'),
       value: summary.publishFailedTasks ?? 0,
       link: '/product/publish-tasks?status=failed',
       intent: 'danger',
-      emptyHint: '暂无刊登异常',
+      emptyHint: t('dashboard.empty.noPublishFailures'),
     },
     {
-      title: '订单异常',
+      title: t('dashboard.kpi.orderExceptions'),
       value: summary.orderExceptions ?? summary.orderExceptionTotal ?? 0,
       link: '/orders/exceptions',
       intent: 'danger',
-      emptyHint: '暂无订单异常',
+      emptyHint: t('dashboard.empty.noOrderExceptions'),
     },
     {
-      title: '库存异常',
+      title: t('dashboard.kpi.inventoryIssues'),
       value:
         (summary.inventoryAlerts ?? summary.lowStockSkus + summary.outOfStockSkus) +
         (summary.inventorySyncFailedCount ?? 0),
       link: '/inventory/alerts',
       intent: 'danger',
-      emptyHint: '库存状态正常',
+      emptyHint: t('dashboard.empty.inventoryHealthy'),
     },
     {
-      title: '客服待回复',
+      title: t('dashboard.kpi.customerReplies'),
       value: summary.customerPendingReplyCount ?? summary.customerPendingConversations ?? 0,
       link: '/customer/conversations?status=pending_reply',
       intent: 'data',
-      emptyHint: '暂无待回复会话',
+      emptyHint: t('dashboard.empty.noCustomerReplies'),
     },
     {
-      title: '失败任务',
+      title: t('dashboard.kpi.failedTasks'),
       value: summary.failedTaskTotal ?? summary.failedTasks ?? 0,
       link: '/ops/task-center/failures',
       intent: 'danger',
-      emptyHint: '暂无失败任务',
+      emptyHint: t('dashboard.empty.noFailedTasks'),
     },
     {
-      title: '配置风险',
+      title: t('dashboard.kpi.configurationRisks'),
       value: summary.configRiskCount ?? 0,
       link: '/settings/config-status',
       intent: 'warning',
-      emptyHint: '核心配置已完成',
+      emptyHint: t('dashboard.empty.configurationHealthy'),
     },
   ];
 }
 
 function mergeRecentItems(
   recent: ProductOperationDashboard['recent'] | undefined,
+  t: Translate,
 ): (DashboardRecentItem & { bucket: string })[] {
   if (!recent) return [];
   const buckets: { items: DashboardRecentItem[]; label: string }[] = [
-    { items: recent.collectedProducts ?? [], label: '采集' },
-    { items: recent.aiTasks ?? [], label: 'AI 文本' },
-    { items: recent.imageTasks ?? [], label: 'AI 图片' },
-    { items: recent.publishTasks ?? [], label: '刊登' },
-    { items: recent.failedTasks ?? [], label: '失败' },
+    { items: recent.collectedProducts ?? [], label: t('dashboard.recent.collect') },
+    { items: recent.aiTasks ?? [], label: t('dashboard.recent.aiTask') },
+    { items: recent.imageTasks ?? [], label: t('dashboard.recent.imageTask') },
+    { items: recent.publishTasks ?? [], label: t('dashboard.recent.productPublish') },
+    { items: recent.failedTasks ?? [], label: t('dashboard.recent.failed') },
   ];
   return buckets
     .flatMap(({ items, label }) =>
       items.map((x) => ({
         ...x,
-        bucket: RECENT_TYPE_LABEL[x.type] ?? label,
+        bucket: t(RECENT_TYPE_KEYS[x.type] ?? 'dashboard.recent.other') || label,
       })),
     )
     .sort((a, b) => dayjs(b.occurredAt).valueOf() - dayjs(a.occurredAt).valueOf())
@@ -742,6 +805,7 @@ function DashboardSkeleton() {
 }
 
 export default function ProductOperationsDashboardPage() {
+  const { t } = useLocale();
   const dashboardEmptyLocale = useListEmptyLocale('dashboard');
   const { state: urlState, setState: setUrlState, clearState: clearUrlState } =
     useUrlQueryState<Record<(typeof DASHBOARD_QUERY_KEYS)[number], string | undefined>>(
@@ -807,12 +871,13 @@ export default function ProductOperationsDashboardPage() {
   }, [loadBoard]);
 
   const summary = board?.summary ?? EMPTY_SUMMARY;
-  const todos = useMemo(() => mergeTodos(board?.todos), [board?.todos]);
-  const funnelSteps = useMemo(() => mergeFunnel(board?.funnel), [board?.funnel]);
-  const exceptions = useMemo(() => mergeExceptions(board?.exceptions), [board?.exceptions]);
-  const quickLinks = DEFAULT_QUICK_LINKS;
-  const recentFlat = useMemo(() => mergeRecentItems(board?.recent), [board?.recent]);
-  const kpiCards = useMemo(() => buildKpiCards(summary), [summary]);
+  const todos = useMemo(() => localizeDashboardItems(mergeTodos(board?.todos), t), [board?.todos, t]);
+  const funnelSteps = useMemo(() => localizeDashboardItems(mergeFunnel(board?.funnel), t), [board?.funnel, t]);
+  const exceptions = useMemo(() => localizeDashboardItems(mergeExceptions(board?.exceptions), t), [board?.exceptions, t]);
+  const quickLinks = useMemo(() => localizeQuickLinks(DEFAULT_QUICK_LINKS, t), [t]);
+  const recentFlat = useMemo(() => mergeRecentItems(board?.recent, t), [board?.recent, t]);
+  const kpiCards = useMemo(() => buildKpiCards(summary, t), [summary, t]);
+  const sources = useMemo(() => sourceOptions(t), [t]);
 
   const doRefresh = useCallback(() => {
     void loadBoard();
@@ -829,16 +894,16 @@ export default function ProductOperationsDashboardPage() {
   }, [autoRefresh, loadBoard]);
 
   const welcomeActions: { label: string; icon: ReactNode; link: string }[] = [
-    { label: '采集商品', icon: <CloudUploadOutlined />, link: '/collect/hub' },
-    { label: '批量 AI 优化', icon: <RobotOutlined />, link: '/ai/text-batches' },
-    { label: 'AI 图片任务', icon: <PictureOutlined />, link: '/ai/image-tasks' },
-    { label: '查看发布检查', icon: <SafetyCertificateOutlined />, link: '/product/drafts?readiness=blocked' },
+    { label: t('dashboard.actions.collectProducts'), icon: <CloudUploadOutlined />, link: '/collect/hub' },
+    { label: t('dashboard.actions.batchAi'), icon: <RobotOutlined />, link: '/ai/text-batches' },
+    { label: t('dashboard.actions.aiImageTasks'), icon: <PictureOutlined />, link: '/ai/image-tasks' },
+    { label: t('dashboard.actions.viewReadiness'), icon: <SafetyCertificateOutlined />, link: '/product/drafts?readiness=blocked' },
   ];
 
   return (
     <TmPageContainer
-      title={PAGE_COPY.dashboard.title}
-      subTitle={PAGE_COPY.dashboard.description}
+      title={t('dashboard.title')}
+      subTitle={t('dashboard.description')}
       contentMaxWidth={layoutTokens.dashboardMaxWidth}
       extra={
         <OperationToolbar>
@@ -848,10 +913,10 @@ export default function ProductOperationsDashboardPage() {
             size="small"
             onClick={() => setAutoRefresh((v) => !v)}
           >
-            {autoRefresh ? '自动刷新中' : '已暂停自动刷新'}
+            {autoRefresh ? t('dashboard.actions.autoRefreshOn') : t('dashboard.actions.autoRefreshOff')}
           </Button>
           <Button icon={<ReloadOutlined />} onClick={doRefresh} loading={loading}>
-            重新加载
+            {t('dashboard.actions.reload')}
           </Button>
         </OperationToolbar>
       }
@@ -863,11 +928,11 @@ export default function ProductOperationsDashboardPage() {
             value={filters.range}
             onChange={(v) => setFilters((f) => ({ ...f, range: v as [Dayjs, Dayjs] | undefined }))}
             allowClear
-            placeholder={['开始日期', '结束日期']}
+            placeholder={[t('dashboard.filters.startDate'), t('dashboard.filters.endDate')]}
           />
           <Select
             allowClear
-            placeholder="平台"
+            placeholder={t('dashboard.filters.platform')}
             style={{ width: 140 }}
             options={PLATFORM_OPTIONS}
             value={filters.platform}
@@ -875,7 +940,7 @@ export default function ProductOperationsDashboardPage() {
           />
           <Select
             allowClear
-            placeholder="店铺"
+            placeholder={t('dashboard.filters.shop')}
             style={{ width: 180 }}
             showSearch
             optionFilterProp="label"
@@ -888,9 +953,9 @@ export default function ProductOperationsDashboardPage() {
           />
           <Select
             allowClear
-            placeholder="商品来源"
+            placeholder={t('dashboard.filters.productSource')}
             style={{ width: 140 }}
-            options={SOURCE_OPTIONS}
+            options={sources}
             value={filters.source}
             onChange={(v) => setFilters((f) => ({ ...f, source: v }))}
           />
@@ -905,7 +970,7 @@ export default function ProductOperationsDashboardPage() {
               clearUrlState(DASHBOARD_QUERY_KEYS, { replace: true });
             }}
           >
-            重置筛选
+            {t('dashboard.actions.resetFilters')}
           </Button>
         </Space>
       </ProCard>
@@ -913,11 +978,11 @@ export default function ProductOperationsDashboardPage() {
       {error ? (
         <Result
           status="error"
-          title="看板数据加载失败，请稍后重试"
-          subTitle={error instanceof Error ? error.message : '网络或服务异常'}
+          title={t('dashboard.errors.loadFailed')}
+          subTitle={error instanceof Error ? error.message : t('dashboard.errors.network')}
           extra={
             <Button type="primary" onClick={doRefresh}>
-              重新加载
+              {t('dashboard.actions.reload')}
             </Button>
           }
         />
@@ -930,7 +995,7 @@ export default function ProductOperationsDashboardPage() {
             <Row align="middle" gutter={[16, 16]} wrap style={{ marginBottom: 20 }}>
               <Col flex="auto">
                 <Typography.Title level={4} style={{ margin: 0 }}>
-                  今日商品运营概览
+                  {t('dashboard.sections.todayOverview')}
                 </Typography.Title>
               </Col>
               <Col>
@@ -959,7 +1024,7 @@ export default function ProductOperationsDashboardPage() {
           </ProCard>
 
           {/* 2. Today's to-dos */}
-          <ProCard title="今日待办" variant="outlined" style={{ marginBottom: 16 }}>
+          <ProCard title={t('dashboard.sections.todayTodos')} variant="outlined" style={{ marginBottom: 16 }}>
             <Row gutter={[16, 16]}>
               {todos.map((item) => (
                 <Col xs={24} sm={12} md={8} lg={6} xl={6} key={item.key || item.id}>
@@ -972,14 +1037,14 @@ export default function ProductOperationsDashboardPage() {
           <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
             {/* 4. AI product operations progress funnel */}
             <Col xs={24} lg={10}>
-              <ProCard title="AI 商品运营进度" variant="outlined" bodyStyle={{ padding: '16px 20px 12px' }}>
+              <ProCard title={t('dashboard.sections.aiProgress')} variant="outlined" bodyStyle={{ padding: '16px 20px 12px' }}>
                 <FunnelSteps steps={funnelSteps} />
               </ProCard>
             </Col>
 
             {/* 5. Exception and failure alerts */}
             <Col xs={24} lg={14}>
-              <ProCard title="异常与失败提醒" variant="outlined">
+              <ProCard title={t('dashboard.sections.exceptions')} variant="outlined">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {exceptions.map((item) => (
                     <ExceptionRow key={item.key} item={item} />
@@ -990,7 +1055,7 @@ export default function ProductOperationsDashboardPage() {
           </Row>
 
           {/* Recent activity */}
-          <ProCard title="最近动态" variant="outlined" style={{ marginBottom: 16 }} bodyStyle={{ padding: '12px 16px 16px' }}>
+          <ProCard title={t('dashboard.sections.recentActivity')} variant="outlined" style={{ marginBottom: 16 }} bodyStyle={{ padding: '12px 16px 16px' }}>
             {recentFlat.length ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {recentFlat.map((item, idx) => (
@@ -1007,7 +1072,7 @@ export default function ProductOperationsDashboardPage() {
           </ProCard>
 
           {/* Quick links */}
-          <ProCard title="快捷入口" variant="outlined" bodyStyle={{ padding: '16px 20px 20px' }}>
+          <ProCard title={t('dashboard.sections.quickLinks')} variant="outlined" bodyStyle={{ padding: '16px 20px 20px' }}>
             <QuickLinkGroups links={quickLinks} />
           </ProCard>
         </>

@@ -1,5 +1,10 @@
 /** Path → message key for scoped menu labels. Unmapped menus keep route `name`. */
 export const MENU_LOCALE_KEYS: Record<string, string> = {
+  '/dashboard': 'menu.dashboard',
+  '/dashboard/product-operations': 'menu.operationsOverview',
+  '/system/operation-logs': 'menu.operationLogs',
+  '/ops': 'menu.operations',
+  '/files': 'menu.files',
   '/mindbay': 'menu.mindbay',
   '/mindbay/discovery': 'menu.mindbayDiscovery',
   '/mindbay/products': 'menu.mindbayProducts',
@@ -13,6 +18,11 @@ export const MENU_LOCALE_KEYS: Record<string, string> = {
   '/collect/tasks': 'menu.collectTasks',
   '/shops': 'menu.shops',
   '/shops/manage': 'menu.shopManage',
+  '/ai': 'menu.ai',
+  '/product': 'menu.products',
+  '/orders': 'menu.orders',
+  '/inventory': 'menu.inventory',
+  '/customer': 'menu.customerService',
   '/settings': 'menu.settings',
   '/settings/system': 'menu.settingsSystem',
   '/settings/platforms': 'menu.settingsPlatforms',
